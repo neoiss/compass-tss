@@ -26,8 +26,8 @@ import (
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 func TestETHPackage(t *testing.T) { TestingT(t) }

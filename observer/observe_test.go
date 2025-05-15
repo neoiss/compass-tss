@@ -35,8 +35,8 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }

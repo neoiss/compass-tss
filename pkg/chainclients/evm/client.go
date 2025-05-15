@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"math/big"
 	"net/http"
 	"strings"
@@ -36,7 +37,7 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
+	"github.com/mapprotocol/compass-tss/x/aggregators"
 	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
 )
 
@@ -614,7 +615,7 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, memo mem.Memo, n
 	if txOutItem.Aggregator != "" {
 		var gasLimitForAggregator uint64
 		gasLimitForAggregator, err = aggregators.FetchDexAggregatorGasLimit(
-			c.cfg.ChainID, txOutItem.Aggregator,
+			common.LatestVersion, c.cfg.ChainID, txOutItem.Aggregator,
 		)
 		if err != nil {
 			c.logger.Err(err).

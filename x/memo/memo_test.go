@@ -24,10 +24,10 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/keeper"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/x/keeper"
+	"github.com/mapprotocol/compass-tss/x/types"
 	kv1 "gitlab.com/thorchain/thornode/v3/x/thorchain/keeper/v1"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 type MemoSuite struct {

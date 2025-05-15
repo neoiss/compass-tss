@@ -13,7 +13,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 )
 
 // Test the AttestMessage interface implementations

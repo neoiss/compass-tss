@@ -2,12 +2,12 @@ package ethereum
 
 import (
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
+	"github.com/mapprotocol/compass-tss/x/aggregators"
 )
 
 func LatestAggregatorContracts() []common.Address {
 	addrs := []common.Address{}
-	for _, agg := range aggregators.DexAggregators() {
+	for _, agg := range aggregators.DexAggregators(common.LatestVersion) {
 		if agg.Chain.Equals(common.ETHChain) {
 			addrs = append(addrs, common.Address(agg.Address))
 		}

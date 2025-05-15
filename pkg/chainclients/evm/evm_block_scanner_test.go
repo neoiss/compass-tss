@@ -33,8 +33,8 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	evmtypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 	. "gopkg.in/check.v1"
 )
 

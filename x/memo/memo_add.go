@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/mapprotocol/compass-tss/common"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/x/keeper"
 	"gitlab.com/thorchain/thornode/v3/constants"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/keeper"
 )
 
 type AddLiquidityMemo struct {

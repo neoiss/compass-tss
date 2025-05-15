@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
 )
 
 // EventClient manages a single subscription to events

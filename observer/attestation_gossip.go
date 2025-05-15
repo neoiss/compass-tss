@@ -22,7 +22,7 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 )
 
 const (

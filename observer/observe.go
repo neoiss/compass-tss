@@ -25,7 +25,7 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 // signedTxOutCacheSize is the number of signed tx out observations to keep in memory

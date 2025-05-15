@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 const (

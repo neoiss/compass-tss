@@ -19,10 +19,10 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 // -------------------------------------------------------------------------------------

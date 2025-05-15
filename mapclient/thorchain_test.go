@@ -18,7 +18,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }

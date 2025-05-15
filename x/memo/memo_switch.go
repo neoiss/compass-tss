@@ -1,7 +1,7 @@
 package thorchain
 
 import (
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type SwitchMemo struct {

@@ -9,9 +9,9 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/observer"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

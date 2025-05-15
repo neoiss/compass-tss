@@ -9,7 +9,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
-	ttypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 func (s *DogecoinSuite) TestGetAddress(c *C) {

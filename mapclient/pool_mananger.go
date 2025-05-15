@@ -11,7 +11,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 // PoolManager provide all the functionalities need to deal with pool

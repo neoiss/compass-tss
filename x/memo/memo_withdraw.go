@@ -2,8 +2,8 @@ package thorchain
 
 import (
 	"github.com/mapprotocol/compass-tss/common"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 type WithdrawLiquidityMemo struct {

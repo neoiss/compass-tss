@@ -30,9 +30,9 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/app"
 	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 // Endpoint urls

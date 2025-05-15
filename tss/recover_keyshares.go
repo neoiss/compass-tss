@@ -16,9 +16,9 @@ import (
 
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/app"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 func RecoverKeyShares(conf config.Bifrost, thorchain mapclient.ThorchainBridge) error {

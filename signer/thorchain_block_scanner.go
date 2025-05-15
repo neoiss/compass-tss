@@ -16,7 +16,7 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	ttypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 type ThorchainBlockScan struct {

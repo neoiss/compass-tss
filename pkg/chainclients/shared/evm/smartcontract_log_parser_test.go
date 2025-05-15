@@ -11,7 +11,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 	. "gopkg.in/check.v1"
 )
 

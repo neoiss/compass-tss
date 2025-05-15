@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/mapprotocol/compass-tss/common"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/constants"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 // "pool+"

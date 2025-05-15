@@ -33,8 +33,8 @@ import (
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 type BitcoinSignerSuite struct {

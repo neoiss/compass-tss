@@ -30,8 +30,8 @@ import (
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 // Mock ThorchainBridge that always returns active status and correct node count

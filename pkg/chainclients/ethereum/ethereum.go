@@ -40,7 +40,7 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
+	"github.com/mapprotocol/compass-tss/x/aggregators"
 	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
 )
 
@@ -603,7 +603,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	if tx.Aggregator != "" {
 		var gasLimitForAggregator uint64
 		gasLimitForAggregator, err = aggregators.FetchDexAggregatorGasLimit(
-			c.cfg.ChainID, tx.Aggregator,
+			common.LatestVersion, c.cfg.ChainID, tx.Aggregator,
 		)
 		if err != nil {
 			c.logger.Err(err).

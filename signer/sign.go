@@ -32,8 +32,8 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
+	ttypes "github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/app"
-	ttypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 // Signer will pull the tx out from thorchain and then forward it to chain

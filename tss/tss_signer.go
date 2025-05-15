@@ -14,10 +14,10 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keysign"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/tendermint/btcd/btcec"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 const (

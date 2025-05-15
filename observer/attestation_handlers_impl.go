@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 // handleObservedTxAttestation processes attestations for observed transactions

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/keeper"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/x/keeper"
+	"github.com/mapprotocol/compass-tss/x/types"
 
 	"github.com/blang/semver"
 )

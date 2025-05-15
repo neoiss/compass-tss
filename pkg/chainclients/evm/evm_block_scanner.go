@@ -36,8 +36,8 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	. "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	"github.com/mapprotocol/compass-tss/x/aggregators"
 	memo "github.com/mapprotocol/compass-tss/x/memo"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +164,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 
 	// load whitelist contracts for the chain
 	whitelistContracts := []common.Address{}
-	for _, agg := range aggregators.DexAggregators() {
+	for _, agg := range aggregators.DexAggregators(common.LatestVersion) {
 		if agg.Chain.Equals(cfg.ChainID) {
 			whitelistContracts = append(whitelistContracts, common.Address(agg.Address))
 		}

@@ -23,8 +23,8 @@ import (
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
 )
 
 // TestLogWriter is a custom writer that writes to testing.T.Log
