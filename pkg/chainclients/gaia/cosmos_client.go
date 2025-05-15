@@ -40,7 +40,7 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	"github.com/mapprotocol/compass-tss/tss"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	memo "github.com/mapprotocol/compass-tss/x/memo"
 
 	"google.golang.org/grpc/metadata"
 )

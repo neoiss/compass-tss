@@ -12,9 +12,9 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	memo "github.com/mapprotocol/compass-tss/x/memo"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
 )
 
 const (

@@ -32,7 +32,7 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/tss"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	memo "github.com/mapprotocol/compass-tss/x/memo"
 
 	binarycodec "github.com/Peersyst/xrpl-go/binary-codec"
 	"github.com/Peersyst/xrpl-go/xrpl/hash"

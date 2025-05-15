@@ -36,8 +36,8 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	. "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	memo "github.com/mapprotocol/compass-tss/x/memo"
 	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
