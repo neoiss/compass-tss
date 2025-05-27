@@ -8,10 +8,10 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/mapprotocol/compass-tss/api/types"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	"gitlab.com/thorchain/thornode/v3/api/types"
 )
 
 var (

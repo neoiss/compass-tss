@@ -9,8 +9,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/mapprotocol/compass-tss/api/types"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/api/types"
 )
 
 var (
