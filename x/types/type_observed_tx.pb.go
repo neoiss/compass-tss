@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,16 +26,16 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ObservedTxVoter struct {
-	TxID            gitlab_com_thorchain_thornode_v3_common.TxID        `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
-	Tx              common.ObservedTx                                   `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
-	Height          int64                                               `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-	Txs             gitlab_com_thorchain_thornode_v3_common.ObservedTxs `protobuf:"bytes,4,rep,name=txs,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.ObservedTxs" json:"txs"`
-	Actions         []TxOutItem                                         `protobuf:"bytes,5,rep,name=actions,proto3" json:"actions"`
-	OutTxs          gitlab_com_thorchain_thornode_v3_common.Txs         `protobuf:"bytes,6,rep,name=out_txs,json=outTxs,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Txs" json:"out_txs"`
-	FinalisedHeight int64                                               `protobuf:"varint,7,opt,name=finalised_height,json=finalisedHeight,proto3" json:"finalised_height,omitempty"`
-	UpdatedVault    bool                                                `protobuf:"varint,8,opt,name=updated_vault,json=updatedVault,proto3" json:"updated_vault,omitempty"`
-	Reverted        bool                                                `protobuf:"varint,9,opt,name=reverted,proto3" json:"reverted,omitempty"`
-	OutboundHeight  int64                                               `protobuf:"varint,10,opt,name=outbound_height,json=outboundHeight,proto3" json:"outbound_height,omitempty"`
+	TxID            github_com_mapprotocol_compass_v3_common.TxID        `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
+	Tx              common.ObservedTx                                    `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
+	Height          int64                                                `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	Txs             github_com_mapprotocol_compass_v3_common.ObservedTxs `protobuf:"bytes,4,rep,name=txs,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.ObservedTxs" json:"txs"`
+	Actions         []TxOutItem                                          `protobuf:"bytes,5,rep,name=actions,proto3" json:"actions"`
+	OutTxs          github_com_mapprotocol_compass_v3_common.Txs         `protobuf:"bytes,6,rep,name=out_txs,json=outTxs,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Txs" json:"out_txs"`
+	FinalisedHeight int64                                                `protobuf:"varint,7,opt,name=finalised_height,json=finalisedHeight,proto3" json:"finalised_height,omitempty"`
+	UpdatedVault    bool                                                 `protobuf:"varint,8,opt,name=updated_vault,json=updatedVault,proto3" json:"updated_vault,omitempty"`
+	Reverted        bool                                                 `protobuf:"varint,9,opt,name=reverted,proto3" json:"reverted,omitempty"`
+	OutboundHeight  int64                                                `protobuf:"varint,10,opt,name=outbound_height,json=outboundHeight,proto3" json:"outbound_height,omitempty"`
 }
 
 func (m *ObservedTxVoter) Reset()      { *m = ObservedTxVoter{} }
@@ -350,7 +350,7 @@ func (m *ObservedTxVoter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

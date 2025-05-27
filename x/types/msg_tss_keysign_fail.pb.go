@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,13 +28,13 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgTssKeysignFail struct {
-	ID     string                                         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Height int64                                          `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
-	Blame  Blame                                          `protobuf:"bytes,3,opt,name=blame,proto3" json:"blame"`
-	Memo   string                                         `protobuf:"bytes,4,opt,name=memo,proto3" json:"memo,omitempty"`
-	Coins  gitlab_com_thorchain_thornode_v3_common.Coins  `protobuf:"bytes,5,rep,name=coins,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Coins" json:"coins"`
-	PubKey gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,6,opt,name=pub_key,json=pubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"pub_key,omitempty"`
-	Signer github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	ID     string                                          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Height int64                                           `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	Blame  Blame                                           `protobuf:"bytes,3,opt,name=blame,proto3" json:"blame"`
+	Memo   string                                          `protobuf:"bytes,4,opt,name=memo,proto3" json:"memo,omitempty"`
+	Coins  github_com_mapprotocol_compass_v3_common.Coins  `protobuf:"bytes,5,rep,name=coins,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Coins" json:"coins"`
+	PubKey github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,6,opt,name=pub_key,json=pubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"pub_key,omitempty"`
+	Signer github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgTssKeysignFail) Reset()         { *m = MsgTssKeysignFail{} }
@@ -449,7 +449,7 @@ func (m *MsgTssKeysignFail) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.PubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {

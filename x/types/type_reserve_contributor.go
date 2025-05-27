@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 // ReserveContributors a list of reserve contributors

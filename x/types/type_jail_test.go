@@ -10,7 +10,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type JailSuite struct{}

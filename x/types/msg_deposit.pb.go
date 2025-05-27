@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,9 +28,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgDeposit struct {
-	Coins  gitlab_com_thorchain_thornode_v3_common.Coins `protobuf:"bytes,1,rep,name=coins,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Coins" json:"coins"`
-	Memo   string                                        `protobuf:"bytes,2,opt,name=memo,proto3" json:"memo,omitempty"`
-	Signer github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,3,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Coins  github_com_mapprotocol_compass_v3_common.Coins `protobuf:"bytes,1,rep,name=coins,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Coins" json:"coins"`
+	Memo   string                                         `protobuf:"bytes,2,opt,name=memo,proto3" json:"memo,omitempty"`
+	Signer github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,3,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgDeposit) Reset()         { *m = MsgDeposit{} }
@@ -66,7 +66,7 @@ func (m *MsgDeposit) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgDeposit proto.InternalMessageInfo
 
-func (m *MsgDeposit) GetCoins() gitlab_com_thorchain_thornode_v3_common.Coins {
+func (m *MsgDeposit) GetCoins() github_com_mapprotocol_compass_v3_common.Coins {
 	if m != nil {
 		return m.Coins
 	}

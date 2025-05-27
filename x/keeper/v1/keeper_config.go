@@ -2,7 +2,7 @@ package keeperv1
 
 import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/constants"
+	"github.com/mapprotocol/compass-tss/constants"
 )
 
 // GetConstants returns the constant values

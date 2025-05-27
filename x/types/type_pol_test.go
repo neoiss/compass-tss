@@ -3,7 +3,7 @@ package types
 import (
 	. "gopkg.in/check.v1"
 
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type ProtocolOwnedLiquiditySuite struct{}

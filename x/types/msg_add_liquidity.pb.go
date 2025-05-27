@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,15 +28,15 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgAddLiquidity struct {
-	Tx                   common.Tx                                       `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
-	Asset                gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,2,opt,name=asset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"asset"`
-	AssetAmount          cosmossdk_io_math.Uint                          `protobuf:"bytes,3,opt,name=asset_amount,json=assetAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"asset_amount"`
-	RuneAmount           cosmossdk_io_math.Uint                          `protobuf:"bytes,4,opt,name=rune_amount,json=runeAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"rune_amount"`
-	RuneAddress          gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,5,opt,name=rune_address,json=runeAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"rune_address,omitempty"`
-	AssetAddress         gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,6,opt,name=asset_address,json=assetAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"asset_address,omitempty"`
-	AffiliateAddress     gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,7,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"affiliate_address,omitempty"`
-	AffiliateBasisPoints cosmossdk_io_math.Uint                          `protobuf:"bytes,8,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
-	Signer               github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,9,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Tx                   common.Tx                                        `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
+	Asset                github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,2,opt,name=asset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"asset"`
+	AssetAmount          cosmossdk_io_math.Uint                           `protobuf:"bytes,3,opt,name=asset_amount,json=assetAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"asset_amount"`
+	RuneAmount           cosmossdk_io_math.Uint                           `protobuf:"bytes,4,opt,name=rune_amount,json=runeAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"rune_amount"`
+	RuneAddress          github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,5,opt,name=rune_address,json=runeAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"rune_address,omitempty"`
+	AssetAddress         github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,6,opt,name=asset_address,json=assetAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"asset_address,omitempty"`
+	AffiliateAddress     github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,7,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"affiliate_address,omitempty"`
+	AffiliateBasisPoints cosmossdk_io_math.Uint                           `protobuf:"bytes,8,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
+	Signer               github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,9,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgAddLiquidity) Reset()         { *m = MsgAddLiquidity{} }
@@ -79,21 +79,21 @@ func (m *MsgAddLiquidity) GetTx() common.Tx {
 	return common.Tx{}
 }
 
-func (m *MsgAddLiquidity) GetRuneAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgAddLiquidity) GetRuneAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.RuneAddress
 	}
 	return ""
 }
 
-func (m *MsgAddLiquidity) GetAssetAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgAddLiquidity) GetAssetAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AssetAddress
 	}
 	return ""
 }
 
-func (m *MsgAddLiquidity) GetAffiliateAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgAddLiquidity) GetAffiliateAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AffiliateAddress
 	}
@@ -490,7 +490,7 @@ func (m *MsgAddLiquidity) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RuneAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.RuneAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -522,7 +522,7 @@ func (m *MsgAddLiquidity) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AssetAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AssetAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -554,7 +554,7 @@ func (m *MsgAddLiquidity) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AffiliateAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AffiliateAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {

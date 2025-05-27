@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -27,8 +27,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type THORNameAlias struct {
-	Chain   gitlab_com_thorchain_thornode_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Chain" json:"chain,omitempty"`
-	Address gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,2,opt,name=address,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"address,omitempty"`
+	Chain   github_com_mapprotocol_compass_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=github.com/mapprotocol/compass-tss/common.Chain" json:"chain,omitempty"`
+	Address github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,2,opt,name=address,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"address,omitempty"`
 }
 
 func (m *THORNameAlias) Reset()         { *m = THORNameAlias{} }
@@ -64,14 +64,14 @@ func (m *THORNameAlias) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_THORNameAlias proto.InternalMessageInfo
 
-func (m *THORNameAlias) GetChain() gitlab_com_thorchain_thornode_v3_common.Chain {
+func (m *THORNameAlias) GetChain() github_com_mapprotocol_compass_v3_common.Chain {
 	if m != nil {
 		return m.Chain
 	}
 	return ""
 }
 
-func (m *THORNameAlias) GetAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *THORNameAlias) GetAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Address
 	}
@@ -79,11 +79,11 @@ func (m *THORNameAlias) GetAddress() gitlab_com_thorchain_thornode_v3_common.Add
 }
 
 type THORName struct {
-	Name              string                                        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	ExpireBlockHeight int64                                         `protobuf:"varint,2,opt,name=expire_block_height,json=expireBlockHeight,proto3" json:"expire_block_height,omitempty"`
-	Owner             github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,3,opt,name=owner,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"owner,omitempty"`
-	PreferredAsset    gitlab_com_thorchain_thornode_v3_common.Asset `protobuf:"bytes,4,opt,name=preferred_asset,json=preferredAsset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"preferred_asset"`
-	Aliases           []THORNameAlias                               `protobuf:"bytes,5,rep,name=aliases,proto3" json:"aliases"`
+	Name              string                                         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ExpireBlockHeight int64                                          `protobuf:"varint,2,opt,name=expire_block_height,json=expireBlockHeight,proto3" json:"expire_block_height,omitempty"`
+	Owner             github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,3,opt,name=owner,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"owner,omitempty"`
+	PreferredAsset    github_com_mapprotocol_compass_v3_common.Asset `protobuf:"bytes,4,opt,name=preferred_asset,json=preferredAsset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"preferred_asset"`
+	Aliases           []THORNameAlias                                `protobuf:"bytes,5,rep,name=aliases,proto3" json:"aliases"`
 }
 
 func (m *THORName) Reset()         { *m = THORName{} }
@@ -407,7 +407,7 @@ func (m *THORNameAlias) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Chain = gitlab_com_thorchain_thornode_v3_common.Chain(dAtA[iNdEx:postIndex])
+			m.Chain = github_com_mapprotocol_compass_v3_common.Chain(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -439,7 +439,7 @@ func (m *THORNameAlias) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Address = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Address = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

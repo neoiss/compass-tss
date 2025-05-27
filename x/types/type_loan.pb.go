@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -27,14 +27,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Loan struct {
-	Owner               gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"owner,omitempty"`
-	Asset               gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,2,opt,name=asset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"asset"`
-	DebtIssued          cosmossdk_io_math.Uint                          `protobuf:"bytes,3,opt,name=debt_issued,json=debtIssued,proto3,customtype=cosmossdk.io/math.Uint" json:"debt_issued"`
-	DebtRepaid          cosmossdk_io_math.Uint                          `protobuf:"bytes,4,opt,name=debt_repaid,json=debtRepaid,proto3,customtype=cosmossdk.io/math.Uint" json:"debt_repaid"`
-	CollateralDeposited cosmossdk_io_math.Uint                          `protobuf:"bytes,5,opt,name=collateral_deposited,json=collateralDeposited,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_deposited"`
-	CollateralWithdrawn cosmossdk_io_math.Uint                          `protobuf:"bytes,6,opt,name=collateral_withdrawn,json=collateralWithdrawn,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_withdrawn"`
-	LastOpenHeight      int64                                           `protobuf:"varint,9,opt,name=last_open_height,json=lastOpenHeight,proto3" json:"last_open_height,omitempty"`
-	LastRepayHeight     int64                                           `protobuf:"varint,10,opt,name=last_repay_height,json=lastRepayHeight,proto3" json:"last_repay_height,omitempty"`
+	Owner               github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"owner,omitempty"`
+	Asset               github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,2,opt,name=asset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"asset"`
+	DebtIssued          cosmossdk_io_math.Uint                           `protobuf:"bytes,3,opt,name=debt_issued,json=debtIssued,proto3,customtype=cosmossdk.io/math.Uint" json:"debt_issued"`
+	DebtRepaid          cosmossdk_io_math.Uint                           `protobuf:"bytes,4,opt,name=debt_repaid,json=debtRepaid,proto3,customtype=cosmossdk.io/math.Uint" json:"debt_repaid"`
+	CollateralDeposited cosmossdk_io_math.Uint                           `protobuf:"bytes,5,opt,name=collateral_deposited,json=collateralDeposited,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_deposited"`
+	CollateralWithdrawn cosmossdk_io_math.Uint                           `protobuf:"bytes,6,opt,name=collateral_withdrawn,json=collateralWithdrawn,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_withdrawn"`
+	LastOpenHeight      int64                                            `protobuf:"varint,9,opt,name=last_open_height,json=lastOpenHeight,proto3" json:"last_open_height,omitempty"`
+	LastRepayHeight     int64                                            `protobuf:"varint,10,opt,name=last_repay_height,json=lastRepayHeight,proto3" json:"last_repay_height,omitempty"`
 }
 
 func (m *Loan) Reset()         { *m = Loan{} }
@@ -70,7 +70,7 @@ func (m *Loan) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Loan proto.InternalMessageInfo
 
-func (m *Loan) GetOwner() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *Loan) GetOwner() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Owner
 	}
@@ -321,7 +321,7 @@ func (m *Loan) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Owner = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Owner = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 func NewSwapperClout(addr common.Address) SwapperClout {

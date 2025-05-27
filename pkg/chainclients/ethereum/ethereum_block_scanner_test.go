@@ -3,6 +3,7 @@ package ethereum
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"math/big"
 	"net/http"
@@ -32,8 +33,8 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	"github.com/mapprotocol/compass-tss/x/thorchain"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 const Mainnet = 1

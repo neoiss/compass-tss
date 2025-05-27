@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -159,19 +159,19 @@ func (m *QueryOutboundResponse) GetTxOutItems() []*QueryTxOutItem {
 
 // Fields are rearranged for querier response readability while preserving their field numbers.
 type QueryTxOutItem struct {
-	Height                int64                                       `protobuf:"varint,10,opt,name=height,proto3" json:"height,omitempty"`
-	VaultPubKey           string                                      `protobuf:"bytes,3,opt,name=vault_pub_key,json=vaultPubKey,proto3" json:"vault_pub_key,omitempty"`
-	InHash                string                                      `protobuf:"bytes,8,opt,name=in_hash,json=inHash,proto3" json:"in_hash,omitempty"`
-	OutHash               string                                      `protobuf:"bytes,9,opt,name=out_hash,json=outHash,proto3" json:"out_hash,omitempty"`
-	Chain                 string                                      `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain"`
-	ToAddress             string                                      `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address"`
-	Coin                  *common.Coin                                `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
-	MaxGas                gitlab_com_thorchain_thornode_v3_common.Gas `protobuf:"bytes,6,rep,name=max_gas,json=maxGas,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Gas" json:"max_gas"`
-	GasRate               int64                                       `protobuf:"varint,7,opt,name=gas_rate,json=gasRate,proto3" json:"gas_rate,omitempty"`
-	Memo                  string                                      `protobuf:"bytes,5,opt,name=memo,proto3" json:"memo,omitempty"`
-	Aggregator            string                                      `protobuf:"bytes,12,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
-	AggregatorTargetAsset string                                      `protobuf:"bytes,13,opt,name=aggregator_target_asset,json=aggregatorTargetAsset,proto3" json:"aggregator_target_asset,omitempty"`
-	AggregatorTargetLimit string                                      `protobuf:"bytes,14,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3" json:"aggregator_target_limit,omitempty"`
+	Height                int64                                        `protobuf:"varint,10,opt,name=height,proto3" json:"height,omitempty"`
+	VaultPubKey           string                                       `protobuf:"bytes,3,opt,name=vault_pub_key,json=vaultPubKey,proto3" json:"vault_pub_key,omitempty"`
+	InHash                string                                       `protobuf:"bytes,8,opt,name=in_hash,json=inHash,proto3" json:"in_hash,omitempty"`
+	OutHash               string                                       `protobuf:"bytes,9,opt,name=out_hash,json=outHash,proto3" json:"out_hash,omitempty"`
+	Chain                 string                                       `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain"`
+	ToAddress             string                                       `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address"`
+	Coin                  *common.Coin                                 `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
+	MaxGas                github_com_mapprotocol_compass_v3_common.Gas `protobuf:"bytes,6,rep,name=max_gas,json=maxGas,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Gas" json:"max_gas"`
+	GasRate               int64                                        `protobuf:"varint,7,opt,name=gas_rate,json=gasRate,proto3" json:"gas_rate,omitempty"`
+	Memo                  string                                       `protobuf:"bytes,5,opt,name=memo,proto3" json:"memo,omitempty"`
+	Aggregator            string                                       `protobuf:"bytes,12,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
+	AggregatorTargetAsset string                                       `protobuf:"bytes,13,opt,name=aggregator_target_asset,json=aggregatorTargetAsset,proto3" json:"aggregator_target_asset,omitempty"`
+	AggregatorTargetLimit string                                       `protobuf:"bytes,14,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3" json:"aggregator_target_limit,omitempty"`
 	// clout spent in RUNE for the outbound
 	CloutSpent string `protobuf:"bytes,11,opt,name=clout_spent,json=cloutSpent,proto3" json:"clout_spent,omitempty"`
 }
@@ -258,7 +258,7 @@ func (m *QueryTxOutItem) GetCoin() *common.Coin {
 	return nil
 }
 
-func (m *QueryTxOutItem) GetMaxGas() gitlab_com_thorchain_thornode_v3_common.Gas {
+func (m *QueryTxOutItem) GetMaxGas() github_com_mapprotocol_compass_v3_common.Gas {
 	if m != nil {
 		return m.MaxGas
 	}

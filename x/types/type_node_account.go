@@ -11,7 +11,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 // Valid check whether the node status is valid or not

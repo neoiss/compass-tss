@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/mapprotocol/compass-tss/common"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
 	. "gopkg.in/check.v1"
 )
 

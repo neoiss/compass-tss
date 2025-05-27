@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
 )
 
 type InjectedTxDecorator struct{}

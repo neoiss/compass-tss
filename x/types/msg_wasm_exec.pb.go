@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,13 +28,13 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgWasmExec struct {
-	Tx       common.Tx                                     `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
-	Asset    gitlab_com_thorchain_thornode_v3_common.Asset `protobuf:"bytes,2,opt,name=asset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"asset"`
-	Amount   cosmossdk_io_math.Uint                        `protobuf:"bytes,3,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
-	Contract github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,4,opt,name=contract,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"contract,omitempty"`
-	Msg      []byte                                        `protobuf:"bytes,5,opt,name=msg,proto3" json:"msg,omitempty"`
-	Sender   github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,6,opt,name=sender,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"sender,omitempty"`
-	Signer   github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Tx       common.Tx                                      `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
+	Asset    github_com_mapprotocol_compass_v3_common.Asset `protobuf:"bytes,2,opt,name=asset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"asset"`
+	Amount   cosmossdk_io_math.Uint                         `protobuf:"bytes,3,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
+	Contract github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,4,opt,name=contract,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"contract,omitempty"`
+	Msg      []byte                                         `protobuf:"bytes,5,opt,name=msg,proto3" json:"msg,omitempty"`
+	Sender   github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,6,opt,name=sender,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"sender,omitempty"`
+	Signer   github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgWasmExec) Reset()         { *m = MsgWasmExec{} }

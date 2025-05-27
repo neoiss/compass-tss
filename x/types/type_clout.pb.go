@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,12 +26,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type SwapperClout struct {
-	Address           gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=address,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"address,omitempty"`
-	Score             cosmossdk_io_math.Uint                          `protobuf:"bytes,2,opt,name=score,proto3,customtype=cosmossdk.io/math.Uint" json:"score"`
-	Reclaimed         cosmossdk_io_math.Uint                          `protobuf:"bytes,3,opt,name=reclaimed,proto3,customtype=cosmossdk.io/math.Uint" json:"reclaimed"`
-	Spent             cosmossdk_io_math.Uint                          `protobuf:"bytes,4,opt,name=spent,proto3,customtype=cosmossdk.io/math.Uint" json:"spent"`
-	LastSpentHeight   int64                                           `protobuf:"varint,5,opt,name=last_spent_height,json=lastSpentHeight,proto3" json:"last_spent_height,omitempty"`
-	LastReclaimHeight int64                                           `protobuf:"varint,6,opt,name=last_reclaim_height,json=lastReclaimHeight,proto3" json:"last_reclaim_height,omitempty"`
+	Address           github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=address,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"address,omitempty"`
+	Score             cosmossdk_io_math.Uint                           `protobuf:"bytes,2,opt,name=score,proto3,customtype=cosmossdk.io/math.Uint" json:"score"`
+	Reclaimed         cosmossdk_io_math.Uint                           `protobuf:"bytes,3,opt,name=reclaimed,proto3,customtype=cosmossdk.io/math.Uint" json:"reclaimed"`
+	Spent             cosmossdk_io_math.Uint                           `protobuf:"bytes,4,opt,name=spent,proto3,customtype=cosmossdk.io/math.Uint" json:"spent"`
+	LastSpentHeight   int64                                            `protobuf:"varint,5,opt,name=last_spent_height,json=lastSpentHeight,proto3" json:"last_spent_height,omitempty"`
+	LastReclaimHeight int64                                            `protobuf:"varint,6,opt,name=last_reclaim_height,json=lastReclaimHeight,proto3" json:"last_reclaim_height,omitempty"`
 }
 
 func (m *SwapperClout) Reset()         { *m = SwapperClout{} }
@@ -67,7 +67,7 @@ func (m *SwapperClout) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SwapperClout proto.InternalMessageInfo
 
-func (m *SwapperClout) GetAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *SwapperClout) GetAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Address
 	}
@@ -289,7 +289,7 @@ func (m *SwapperClout) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Address = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Address = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

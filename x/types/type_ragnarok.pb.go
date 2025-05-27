@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,8 +26,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type RagnarokWithdrawPosition struct {
-	Number int64                                         `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
-	Pool   gitlab_com_thorchain_thornode_v3_common.Asset `protobuf:"bytes,2,opt,name=pool,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"pool"`
+	Number int64                                          `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
+	Pool   github_com_mapprotocol_compass_v3_common.Asset `protobuf:"bytes,2,opt,name=pool,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"pool"`
 }
 
 func (m *RagnarokWithdrawPosition) Reset()         { *m = RagnarokWithdrawPosition{} }

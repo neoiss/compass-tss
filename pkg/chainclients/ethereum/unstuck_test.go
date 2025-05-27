@@ -24,10 +24,10 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient"
 	ttypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 	. "gopkg.in/check.v1"
 )
 

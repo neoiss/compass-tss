@@ -3,7 +3,7 @@ package types
 import (
 	"errors"
 
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 // NewBanVoter create a new instance of BanVoter

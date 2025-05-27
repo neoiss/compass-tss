@@ -10,8 +10,8 @@ import (
 
 	"github.com/hashicorp/go-metrics"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/constants"
 	"gitlab.com/thorchain/thornode/v3/config"
-	"gitlab.com/thorchain/thornode/v3/constants"
 )
 
 var (

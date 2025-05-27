@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -25,14 +25,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TssVoter struct {
-	ID                           string                                         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PoolPubKey                   gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,2,opt,name=pool_pub_key,json=poolPubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"pool_pub_key,omitempty"`
-	PubKeys                      []string                                       `protobuf:"bytes,3,rep,name=pub_keys,json=pubKeys,proto3" json:"pub_keys,omitempty"`
-	BlockHeight                  int64                                          `protobuf:"varint,4,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	Chains                       []string                                       `protobuf:"bytes,5,rep,name=chains,proto3" json:"chains,omitempty"`
-	Signers                      []string                                       `protobuf:"bytes,6,rep,name=signers,proto3" json:"signers,omitempty"`
-	MajorityConsensusBlockHeight int64                                          `protobuf:"varint,7,opt,name=majority_consensus_block_height,json=majorityConsensusBlockHeight,proto3" json:"majority_consensus_block_height,omitempty"`
-	Secp256K1Signatures          []string                                       `protobuf:"bytes,8,rep,name=secp256k1_signatures,json=secp256k1Signatures,proto3" json:"secp256k1_signatures,omitempty"`
+	ID                           string                                          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PoolPubKey                   github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,2,opt,name=pool_pub_key,json=poolPubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"pool_pub_key,omitempty"`
+	PubKeys                      []string                                        `protobuf:"bytes,3,rep,name=pub_keys,json=pubKeys,proto3" json:"pub_keys,omitempty"`
+	BlockHeight                  int64                                           `protobuf:"varint,4,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	Chains                       []string                                        `protobuf:"bytes,5,rep,name=chains,proto3" json:"chains,omitempty"`
+	Signers                      []string                                        `protobuf:"bytes,6,rep,name=signers,proto3" json:"signers,omitempty"`
+	MajorityConsensusBlockHeight int64                                           `protobuf:"varint,7,opt,name=majority_consensus_block_height,json=majorityConsensusBlockHeight,proto3" json:"majority_consensus_block_height,omitempty"`
+	Secp256K1Signatures          []string                                        `protobuf:"bytes,8,rep,name=secp256k1_signatures,json=secp256k1Signatures,proto3" json:"secp256k1_signatures,omitempty"`
 }
 
 func (m *TssVoter) Reset()      { *m = TssVoter{} }
@@ -338,7 +338,7 @@ func (m *TssVoter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PoolPubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.PoolPubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

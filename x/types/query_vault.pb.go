@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -78,12 +78,12 @@ func (m *QueryVaultRequest) GetHeight() string {
 }
 
 type QueryVaultResponse struct {
-	BlockHeight int64                                         `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	PubKey      string                                        `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
-	Coins       gitlab_com_thorchain_thornode_v3_common.Coins `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Coins" json:"coins"`
-	Type        string                                        `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
-	Status      string                                        `protobuf:"bytes,5,opt,name=status,proto3" json:"status"`
-	StatusSince int64                                         `protobuf:"varint,6,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
+	BlockHeight int64                                          `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	PubKey      string                                         `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
+	Coins       github_com_mapprotocol_compass_v3_common.Coins `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Coins" json:"coins"`
+	Type        string                                         `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	Status      string                                         `protobuf:"bytes,5,opt,name=status,proto3" json:"status"`
+	StatusSince int64                                          `protobuf:"varint,6,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
 	// the list of node public keys which are members of the vault
 	Membership            []string        `protobuf:"bytes,7,rep,name=membership,proto3" json:"membership,omitempty"`
 	Chains                []string        `protobuf:"bytes,8,rep,name=chains,proto3" json:"chains,omitempty"`
@@ -142,7 +142,7 @@ func (m *QueryVaultResponse) GetPubKey() string {
 	return ""
 }
 
-func (m *QueryVaultResponse) GetCoins() gitlab_com_thorchain_thornode_v3_common.Coins {
+func (m *QueryVaultResponse) GetCoins() github_com_mapprotocol_compass_v3_common.Coins {
 	if m != nil {
 		return m.Coins
 	}

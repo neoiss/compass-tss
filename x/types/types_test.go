@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }

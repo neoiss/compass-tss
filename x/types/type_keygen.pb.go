@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -50,9 +50,9 @@ func (KeygenType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Keygen struct {
-	ID      gitlab_com_thorchain_thornode_v3_common.TxID `protobuf:"bytes,1,opt,name=id,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"id,omitempty"`
-	Type    KeygenType                                   `protobuf:"varint,2,opt,name=type,proto3,enum=types.KeygenType" json:"type,omitempty"`
-	Members []string                                     `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
+	ID      github_com_mapprotocol_compass_v3_common.TxID `protobuf:"bytes,1,opt,name=id,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"id,omitempty"`
+	Type    KeygenType                                    `protobuf:"varint,2,opt,name=type,proto3,enum=types.KeygenType" json:"type,omitempty"`
+	Members []string                                      `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
 }
 
 func (m *Keygen) Reset()      { *m = Keygen{} }
@@ -359,7 +359,7 @@ func (m *Keygen) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.ID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {

@@ -15,7 +15,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/constants"
+	"github.com/mapprotocol/compass-tss/constants"
 	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 
 	"github.com/mapprotocol/compass-tss/x/types"

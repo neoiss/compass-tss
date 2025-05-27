@@ -7,7 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	common "github.com/mapprotocol/compass-tss/common"
-	cosmos "gitlab.com/thorchain/thornode/v3/common/cosmos"
+	cosmos "github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type MsgDepositSuite struct{}

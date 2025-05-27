@@ -6,7 +6,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/constants"
+	"github.com/mapprotocol/compass-tss/constants"
 )
 
 func (k KVStore) GetAnchors(ctx cosmos.Context, asset common.Asset) []common.Asset {

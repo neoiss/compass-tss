@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,12 +28,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgUnBond struct {
-	TxIn                common.Tx                                       `protobuf:"bytes,1,opt,name=tx_in,json=txIn,proto3" json:"tx_in"`
-	NodeAddress         github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,2,opt,name=node_address,json=nodeAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"node_address,omitempty"`
-	BondAddress         gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,5,opt,name=bond_address,json=bondAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"bond_address,omitempty"`
-	Amount              cosmossdk_io_math.Uint                          `protobuf:"bytes,6,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
-	Signer              github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
-	BondProviderAddress github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,8,opt,name=bond_provider_address,json=bondProviderAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"bond_provider_address,omitempty"`
+	TxIn                common.Tx                                        `protobuf:"bytes,1,opt,name=tx_in,json=txIn,proto3" json:"tx_in"`
+	NodeAddress         github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,2,opt,name=node_address,json=nodeAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"node_address,omitempty"`
+	BondAddress         github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,5,opt,name=bond_address,json=bondAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"bond_address,omitempty"`
+	Amount              cosmossdk_io_math.Uint                           `protobuf:"bytes,6,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
+	Signer              github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	BondProviderAddress github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,8,opt,name=bond_provider_address,json=bondProviderAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"bond_provider_address,omitempty"`
 }
 
 func (m *MsgUnBond) Reset()         { *m = MsgUnBond{} }
@@ -83,7 +83,7 @@ func (m *MsgUnBond) GetNodeAddress() github_com_cosmos_cosmos_sdk_types.AccAddre
 	return nil
 }
 
-func (m *MsgUnBond) GetBondAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgUnBond) GetBondAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.BondAddress
 	}
@@ -380,7 +380,7 @@ func (m *MsgUnBond) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BondAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.BondAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {

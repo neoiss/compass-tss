@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -27,17 +27,17 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type LiquidityProvider struct {
-	Asset              gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,1,opt,name=asset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"asset"`
-	RuneAddress        gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,2,opt,name=rune_address,json=runeAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"rune_address,omitempty"`
-	AssetAddress       gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,3,opt,name=asset_address,json=assetAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"asset_address,omitempty"`
-	LastAddHeight      int64                                           `protobuf:"varint,4,opt,name=last_add_height,json=lastAddHeight,proto3" json:"last_add_height,omitempty"`
-	LastWithdrawHeight int64                                           `protobuf:"varint,5,opt,name=last_withdraw_height,json=lastWithdrawHeight,proto3" json:"last_withdraw_height,omitempty"`
-	Units              cosmossdk_io_math.Uint                          `protobuf:"bytes,6,opt,name=units,proto3,customtype=cosmossdk.io/math.Uint" json:"units"`
-	PendingRune        cosmossdk_io_math.Uint                          `protobuf:"bytes,7,opt,name=pending_rune,json=pendingRune,proto3,customtype=cosmossdk.io/math.Uint" json:"pending_rune"`
-	PendingAsset       cosmossdk_io_math.Uint                          `protobuf:"bytes,8,opt,name=pending_asset,json=pendingAsset,proto3,customtype=cosmossdk.io/math.Uint" json:"pending_asset"`
-	PendingTxID        gitlab_com_thorchain_thornode_v3_common.TxID    `protobuf:"bytes,9,opt,name=pending_tx_Id,json=pendingTxId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"pending_tx_Id,omitempty"`
-	RuneDepositValue   cosmossdk_io_math.Uint                          `protobuf:"bytes,10,opt,name=rune_deposit_value,json=runeDepositValue,proto3,customtype=cosmossdk.io/math.Uint" json:"rune_deposit_value"`
-	AssetDepositValue  cosmossdk_io_math.Uint                          `protobuf:"bytes,11,opt,name=asset_deposit_value,json=assetDepositValue,proto3,customtype=cosmossdk.io/math.Uint" json:"asset_deposit_value"`
+	Asset              github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,1,opt,name=asset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"asset"`
+	RuneAddress        github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,2,opt,name=rune_address,json=runeAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"rune_address,omitempty"`
+	AssetAddress       github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,3,opt,name=asset_address,json=assetAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"asset_address,omitempty"`
+	LastAddHeight      int64                                            `protobuf:"varint,4,opt,name=last_add_height,json=lastAddHeight,proto3" json:"last_add_height,omitempty"`
+	LastWithdrawHeight int64                                            `protobuf:"varint,5,opt,name=last_withdraw_height,json=lastWithdrawHeight,proto3" json:"last_withdraw_height,omitempty"`
+	Units              cosmossdk_io_math.Uint                           `protobuf:"bytes,6,opt,name=units,proto3,customtype=cosmossdk.io/math.Uint" json:"units"`
+	PendingRune        cosmossdk_io_math.Uint                           `protobuf:"bytes,7,opt,name=pending_rune,json=pendingRune,proto3,customtype=cosmossdk.io/math.Uint" json:"pending_rune"`
+	PendingAsset       cosmossdk_io_math.Uint                           `protobuf:"bytes,8,opt,name=pending_asset,json=pendingAsset,proto3,customtype=cosmossdk.io/math.Uint" json:"pending_asset"`
+	PendingTxID        github_com_mapprotocol_compass_v3_common.TxID    `protobuf:"bytes,9,opt,name=pending_tx_Id,json=pendingTxId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"pending_tx_Id,omitempty"`
+	RuneDepositValue   cosmossdk_io_math.Uint                           `protobuf:"bytes,10,opt,name=rune_deposit_value,json=runeDepositValue,proto3,customtype=cosmossdk.io/math.Uint" json:"rune_deposit_value"`
+	AssetDepositValue  cosmossdk_io_math.Uint                           `protobuf:"bytes,11,opt,name=asset_deposit_value,json=assetDepositValue,proto3,customtype=cosmossdk.io/math.Uint" json:"asset_deposit_value"`
 }
 
 func (m *LiquidityProvider) Reset()         { *m = LiquidityProvider{} }
@@ -73,14 +73,14 @@ func (m *LiquidityProvider) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_LiquidityProvider proto.InternalMessageInfo
 
-func (m *LiquidityProvider) GetRuneAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *LiquidityProvider) GetRuneAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.RuneAddress
 	}
 	return ""
 }
 
-func (m *LiquidityProvider) GetAssetAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *LiquidityProvider) GetAssetAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AssetAddress
 	}
@@ -101,7 +101,7 @@ func (m *LiquidityProvider) GetLastWithdrawHeight() int64 {
 	return 0
 }
 
-func (m *LiquidityProvider) GetPendingTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *LiquidityProvider) GetPendingTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.PendingTxID
 	}
@@ -412,7 +412,7 @@ func (m *LiquidityProvider) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RuneAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.RuneAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -444,7 +444,7 @@ func (m *LiquidityProvider) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AssetAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AssetAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -616,7 +616,7 @@ func (m *LiquidityProvider) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PendingTxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.PendingTxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {

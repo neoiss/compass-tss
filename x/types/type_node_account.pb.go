@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -95,21 +95,21 @@ func (NodeType) EnumDescriptor() ([]byte, []int) {
 }
 
 type NodeAccount struct {
-	NodeAddress         github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,1,opt,name=node_address,json=nodeAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"node_address,omitempty"`
-	Status              NodeStatus                                      `protobuf:"varint,2,opt,name=status,proto3,enum=types.NodeStatus" json:"status,omitempty"`
-	PubKeySet           common.PubKeySet                                `protobuf:"bytes,3,opt,name=pub_key_set,json=pubKeySet,proto3" json:"pub_key_set"`
-	ValidatorConsPubKey string                                          `protobuf:"bytes,4,opt,name=validator_cons_pub_key,json=validatorConsPubKey,proto3" json:"validator_cons_pub_key,omitempty"`
-	Bond                cosmossdk_io_math.Uint                          `protobuf:"bytes,5,opt,name=bond,proto3,customtype=cosmossdk.io/math.Uint" json:"bond"`
-	ActiveBlockHeight   int64                                           `protobuf:"varint,6,opt,name=active_block_height,json=activeBlockHeight,proto3" json:"active_block_height,omitempty"`
-	BondAddress         gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,7,opt,name=bond_address,json=bondAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"bond_address,omitempty"`
-	StatusSince         int64                                           `protobuf:"varint,8,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
-	SignerMembership    []string                                        `protobuf:"bytes,9,rep,name=signer_membership,json=signerMembership,proto3" json:"signer_membership,omitempty"`
-	RequestedToLeave    bool                                            `protobuf:"varint,10,opt,name=requested_to_leave,json=requestedToLeave,proto3" json:"requested_to_leave,omitempty"`
-	ForcedToLeave       bool                                            `protobuf:"varint,11,opt,name=forced_to_leave,json=forcedToLeave,proto3" json:"forced_to_leave,omitempty"`
-	LeaveScore          uint64                                          `protobuf:"varint,12,opt,name=leave_score,json=leaveScore,proto3" json:"leave_score,omitempty"`
-	IPAddress           string                                          `protobuf:"bytes,13,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
-	Version             string                                          `protobuf:"bytes,14,opt,name=version,proto3" json:"version,omitempty"`
-	Type                NodeType                                        `protobuf:"varint,15,opt,name=type,proto3,enum=types.NodeType" json:"type,omitempty"`
+	NodeAddress         github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,1,opt,name=node_address,json=nodeAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"node_address,omitempty"`
+	Status              NodeStatus                                       `protobuf:"varint,2,opt,name=status,proto3,enum=types.NodeStatus" json:"status,omitempty"`
+	PubKeySet           common.PubKeySet                                 `protobuf:"bytes,3,opt,name=pub_key_set,json=pubKeySet,proto3" json:"pub_key_set"`
+	ValidatorConsPubKey string                                           `protobuf:"bytes,4,opt,name=validator_cons_pub_key,json=validatorConsPubKey,proto3" json:"validator_cons_pub_key,omitempty"`
+	Bond                cosmossdk_io_math.Uint                           `protobuf:"bytes,5,opt,name=bond,proto3,customtype=cosmossdk.io/math.Uint" json:"bond"`
+	ActiveBlockHeight   int64                                            `protobuf:"varint,6,opt,name=active_block_height,json=activeBlockHeight,proto3" json:"active_block_height,omitempty"`
+	BondAddress         github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,7,opt,name=bond_address,json=bondAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"bond_address,omitempty"`
+	StatusSince         int64                                            `protobuf:"varint,8,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
+	SignerMembership    []string                                         `protobuf:"bytes,9,rep,name=signer_membership,json=signerMembership,proto3" json:"signer_membership,omitempty"`
+	RequestedToLeave    bool                                             `protobuf:"varint,10,opt,name=requested_to_leave,json=requestedToLeave,proto3" json:"requested_to_leave,omitempty"`
+	ForcedToLeave       bool                                             `protobuf:"varint,11,opt,name=forced_to_leave,json=forcedToLeave,proto3" json:"forced_to_leave,omitempty"`
+	LeaveScore          uint64                                           `protobuf:"varint,12,opt,name=leave_score,json=leaveScore,proto3" json:"leave_score,omitempty"`
+	IPAddress           string                                           `protobuf:"bytes,13,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
+	Version             string                                           `protobuf:"bytes,14,opt,name=version,proto3" json:"version,omitempty"`
+	Type                NodeType                                         `protobuf:"varint,15,opt,name=type,proto3,enum=types.NodeType" json:"type,omitempty"`
 }
 
 func (m *NodeAccount) Reset()      { *m = NodeAccount{} }
@@ -992,7 +992,7 @@ func (m *NodeAccount) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BondAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.BondAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {

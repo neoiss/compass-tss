@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,12 +28,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgSolvency struct {
-	Id     gitlab_com_thorchain_thornode_v3_common.TxID   `protobuf:"bytes,1,opt,name=id,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"id,omitempty"`
-	Chain  gitlab_com_thorchain_thornode_v3_common.Chain  `protobuf:"bytes,2,opt,name=chain,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Chain" json:"chain,omitempty"`
-	PubKey gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,3,opt,name=pub_key,json=pubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"pub_key,omitempty"`
-	Coins  gitlab_com_thorchain_thornode_v3_common.Coins  `protobuf:"bytes,4,rep,name=coins,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Coins" json:"coins"`
-	Height int64                                          `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
-	Signer github_com_cosmos_cosmos_sdk_types.AccAddress  `protobuf:"bytes,6,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Id     github_com_mapprotocol_compass_v3_common.TxID   `protobuf:"bytes,1,opt,name=id,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"id,omitempty"`
+	Chain  github_com_mapprotocol_compass_v3_common.Chain  `protobuf:"bytes,2,opt,name=chain,proto3,casttype=github.com/mapprotocol/compass-tss/common.Chain" json:"chain,omitempty"`
+	PubKey github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,3,opt,name=pub_key,json=pubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"pub_key,omitempty"`
+	Coins  github_com_mapprotocol_compass_v3_common.Coins  `protobuf:"bytes,4,rep,name=coins,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Coins" json:"coins"`
+	Height int64                                           `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
+	Signer github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,6,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgSolvency) Reset()         { *m = MsgSolvency{} }
@@ -69,28 +69,28 @@ func (m *MsgSolvency) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSolvency proto.InternalMessageInfo
 
-func (m *MsgSolvency) GetId() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *MsgSolvency) GetId() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *MsgSolvency) GetChain() gitlab_com_thorchain_thornode_v3_common.Chain {
+func (m *MsgSolvency) GetChain() github_com_mapprotocol_compass_v3_common.Chain {
 	if m != nil {
 		return m.Chain
 	}
 	return ""
 }
 
-func (m *MsgSolvency) GetPubKey() gitlab_com_thorchain_thornode_v3_common.PubKey {
+func (m *MsgSolvency) GetPubKey() github_com_mapprotocol_compass_v3_common.PubKey {
 	if m != nil {
 		return m.PubKey
 	}
 	return ""
 }
 
-func (m *MsgSolvency) GetCoins() gitlab_com_thorchain_thornode_v3_common.Coins {
+func (m *MsgSolvency) GetCoins() github_com_mapprotocol_compass_v3_common.Coins {
 	if m != nil {
 		return m.Coins
 	}
@@ -441,7 +441,7 @@ func (m *MsgSolvency) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Id = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.Id = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -473,7 +473,7 @@ func (m *MsgSolvency) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Chain = gitlab_com_thorchain_thornode_v3_common.Chain(dAtA[iNdEx:postIndex])
+			m.Chain = github_com_mapprotocol_compass_v3_common.Chain(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -505,7 +505,7 @@ func (m *MsgSolvency) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.PubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {

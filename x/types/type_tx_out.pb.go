@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -29,20 +29,20 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TxOutItem struct {
-	Chain                 gitlab_com_thorchain_thornode_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Chain" json:"chain"`
-	ToAddress             gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"to_address"`
-	VaultPubKey           gitlab_com_thorchain_thornode_v3_common.PubKey  `protobuf:"bytes,3,opt,name=vault_pub_key,json=vaultPubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"vault_pub_key,omitempty"`
-	Coin                  common.Coin                                     `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
-	Memo                  string                                          `protobuf:"bytes,5,opt,name=memo,proto3" json:"memo,omitempty"`
-	MaxGas                gitlab_com_thorchain_thornode_v3_common.Gas     `protobuf:"bytes,6,rep,name=max_gas,json=maxGas,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Gas" json:"max_gas"`
-	GasRate               int64                                           `protobuf:"varint,7,opt,name=gas_rate,json=gasRate,proto3" json:"gas_rate,omitempty"`
-	InHash                gitlab_com_thorchain_thornode_v3_common.TxID    `protobuf:"bytes,8,opt,name=in_hash,json=inHash,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"in_hash,omitempty"`
-	OutHash               gitlab_com_thorchain_thornode_v3_common.TxID    `protobuf:"bytes,9,opt,name=out_hash,json=outHash,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"out_hash,omitempty"`
-	ModuleName            string                                          `protobuf:"bytes,10,opt,name=module_name,json=-,proto3" json:"-"`
-	Aggregator            string                                          `protobuf:"bytes,11,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
-	AggregatorTargetAsset string                                          `protobuf:"bytes,12,opt,name=aggregator_target_asset,json=aggregatorTargetAsset,proto3" json:"aggregator_target_asset,omitempty"`
-	AggregatorTargetLimit *cosmossdk_io_math.Uint                         `protobuf:"bytes,13,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
-	CloutSpent            *cosmossdk_io_math.Uint                         `protobuf:"bytes,14,opt,name=clout_spent,json=cloutSpent,proto3,customtype=cosmossdk.io/math.Uint" json:"clout_spent,omitempty"`
+	Chain                 github_com_mapprotocol_compass_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=github.com/mapprotocol/compass-tss/common.Chain" json:"chain"`
+	ToAddress             github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"to_address"`
+	VaultPubKey           github_com_mapprotocol_compass_v3_common.PubKey  `protobuf:"bytes,3,opt,name=vault_pub_key,json=vaultPubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"vault_pub_key,omitempty"`
+	Coin                  common.Coin                                      `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
+	Memo                  string                                           `protobuf:"bytes,5,opt,name=memo,proto3" json:"memo,omitempty"`
+	MaxGas                github_com_mapprotocol_compass_v3_common.Gas     `protobuf:"bytes,6,rep,name=max_gas,json=maxGas,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Gas" json:"max_gas"`
+	GasRate               int64                                            `protobuf:"varint,7,opt,name=gas_rate,json=gasRate,proto3" json:"gas_rate,omitempty"`
+	InHash                github_com_mapprotocol_compass_v3_common.TxID    `protobuf:"bytes,8,opt,name=in_hash,json=inHash,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"in_hash,omitempty"`
+	OutHash               github_com_mapprotocol_compass_v3_common.TxID    `protobuf:"bytes,9,opt,name=out_hash,json=outHash,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"out_hash,omitempty"`
+	ModuleName            string                                           `protobuf:"bytes,10,opt,name=module_name,json=-,proto3" json:"-"`
+	Aggregator            string                                           `protobuf:"bytes,11,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
+	AggregatorTargetAsset string                                           `protobuf:"bytes,12,opt,name=aggregator_target_asset,json=aggregatorTargetAsset,proto3" json:"aggregator_target_asset,omitempty"`
+	AggregatorTargetLimit *cosmossdk_io_math.Uint                          `protobuf:"bytes,13,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
+	CloutSpent            *cosmossdk_io_math.Uint                          `protobuf:"bytes,14,opt,name=clout_spent,json=cloutSpent,proto3,customtype=cosmossdk.io/math.Uint" json:"clout_spent,omitempty"`
 }
 
 func (m *TxOutItem) Reset()      { *m = TxOutItem{} }
@@ -528,7 +528,7 @@ func (m *TxOutItem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Chain = gitlab_com_thorchain_thornode_v3_common.Chain(dAtA[iNdEx:postIndex])
+			m.Chain = github_com_mapprotocol_compass_v3_common.Chain(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -560,7 +560,7 @@ func (m *TxOutItem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ToAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.ToAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -592,7 +592,7 @@ func (m *TxOutItem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VaultPubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.VaultPubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -742,7 +742,7 @@ func (m *TxOutItem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InHash = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.InHash = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -774,7 +774,7 @@ func (m *TxOutItem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OutHash = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.OutHash = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {

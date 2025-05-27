@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -82,19 +82,19 @@ func (VaultStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type Vault struct {
-	BlockHeight           int64                                          `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	PubKey                gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"pub_key,omitempty"`
-	Coins                 gitlab_com_thorchain_thornode_v3_common.Coins  `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Coins" json:"coins"`
-	Type                  VaultType                                      `protobuf:"varint,4,opt,name=type,proto3,enum=types.VaultType" json:"type,omitempty"`
-	Status                VaultStatus                                    `protobuf:"varint,5,opt,name=status,proto3,enum=types.VaultStatus" json:"status,omitempty"`
-	StatusSince           int64                                          `protobuf:"varint,6,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
-	Membership            []string                                       `protobuf:"bytes,7,rep,name=membership,proto3" json:"membership,omitempty"`
-	Chains                []string                                       `protobuf:"bytes,8,rep,name=chains,proto3" json:"chains,omitempty"`
-	InboundTxCount        int64                                          `protobuf:"varint,9,opt,name=inbound_tx_count,json=inboundTxCount,proto3" json:"inbound_tx_count,omitempty"`
-	OutboundTxCount       int64                                          `protobuf:"varint,10,opt,name=outbound_tx_count,json=outboundTxCount,proto3" json:"outbound_tx_count,omitempty"`
-	PendingTxBlockHeights []int64                                        `protobuf:"varint,11,rep,packed,name=pending_tx_block_heights,json=pendingTxBlockHeights,proto3" json:"pending_tx_block_heights,omitempty"`
-	Routers               []ChainContract                                `protobuf:"bytes,22,rep,name=routers,proto3" json:"routers"`
-	Frozen                []string                                       `protobuf:"bytes,23,rep,name=frozen,proto3" json:"frozen,omitempty"`
+	BlockHeight           int64                                           `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	PubKey                github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"pub_key,omitempty"`
+	Coins                 github_com_mapprotocol_compass_v3_common.Coins  `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Coins" json:"coins"`
+	Type                  VaultType                                       `protobuf:"varint,4,opt,name=type,proto3,enum=types.VaultType" json:"type,omitempty"`
+	Status                VaultStatus                                     `protobuf:"varint,5,opt,name=status,proto3,enum=types.VaultStatus" json:"status,omitempty"`
+	StatusSince           int64                                           `protobuf:"varint,6,opt,name=status_since,json=statusSince,proto3" json:"status_since,omitempty"`
+	Membership            []string                                        `protobuf:"bytes,7,rep,name=membership,proto3" json:"membership,omitempty"`
+	Chains                []string                                        `protobuf:"bytes,8,rep,name=chains,proto3" json:"chains,omitempty"`
+	InboundTxCount        int64                                           `protobuf:"varint,9,opt,name=inbound_tx_count,json=inboundTxCount,proto3" json:"inbound_tx_count,omitempty"`
+	OutboundTxCount       int64                                           `protobuf:"varint,10,opt,name=outbound_tx_count,json=outboundTxCount,proto3" json:"outbound_tx_count,omitempty"`
+	PendingTxBlockHeights []int64                                         `protobuf:"varint,11,rep,packed,name=pending_tx_block_heights,json=pendingTxBlockHeights,proto3" json:"pending_tx_block_heights,omitempty"`
+	Routers               []ChainContract                                 `protobuf:"bytes,22,rep,name=routers,proto3" json:"routers"`
+	Frozen                []string                                        `protobuf:"bytes,23,rep,name=frozen,proto3" json:"frozen,omitempty"`
 }
 
 func (m *Vault) Reset()         { *m = Vault{} }
@@ -478,7 +478,7 @@ func (m *Vault) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.PubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

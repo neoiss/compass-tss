@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -80,11 +80,11 @@ func (m *MsgRunePoolDeposit) GetTx() common.Tx {
 }
 
 type MsgRunePoolWithdraw struct {
-	Signer               github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,1,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
-	Tx                   common.Tx                                       `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
-	BasisPoints          cosmossdk_io_math.Uint                          `protobuf:"bytes,3,opt,name=basis_points,json=basisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"basis_points"`
-	AffiliateAddress     gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,4,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"affiliate_address,omitempty"`
-	AffiliateBasisPoints cosmossdk_io_math.Uint                          `protobuf:"bytes,5,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
+	Signer               github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,1,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Tx                   common.Tx                                        `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
+	BasisPoints          cosmossdk_io_math.Uint                           `protobuf:"bytes,3,opt,name=basis_points,json=basisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"basis_points"`
+	AffiliateAddress     github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,4,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"affiliate_address,omitempty"`
+	AffiliateBasisPoints cosmossdk_io_math.Uint                           `protobuf:"bytes,5,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
 }
 
 func (m *MsgRunePoolWithdraw) Reset()         { *m = MsgRunePoolWithdraw{} }
@@ -134,7 +134,7 @@ func (m *MsgRunePoolWithdraw) GetTx() common.Tx {
 	return common.Tx{}
 }
 
-func (m *MsgRunePoolWithdraw) GetAffiliateAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgRunePoolWithdraw) GetAffiliateAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AffiliateAddress
 	}
@@ -615,7 +615,7 @@ func (m *MsgRunePoolWithdraw) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AffiliateAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AffiliateAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {

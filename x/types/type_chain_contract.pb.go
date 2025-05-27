@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -25,8 +25,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ChainContract struct {
-	Chain  gitlab_com_thorchain_thornode_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Chain" json:"chain,omitempty"`
-	Router gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,2,opt,name=router,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"router,omitempty"`
+	Chain  github_com_mapprotocol_compass_v3_common.Chain   `protobuf:"bytes,1,opt,name=chain,proto3,casttype=github.com/mapprotocol/compass-tss/common.Chain" json:"chain,omitempty"`
+	Router github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,2,opt,name=router,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"router,omitempty"`
 }
 
 func (m *ChainContract) Reset()      { *m = ChainContract{} }
@@ -216,7 +216,7 @@ func (m *ChainContract) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Chain = gitlab_com_thorchain_thornode_v3_common.Chain(dAtA[iNdEx:postIndex])
+			m.Chain = github_com_mapprotocol_compass_v3_common.Chain(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -248,7 +248,7 @@ func (m *ChainContract) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Router = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Router = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

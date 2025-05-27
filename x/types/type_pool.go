@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 // Valid is to check whether the pool status is valid or not

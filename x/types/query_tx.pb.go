@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -223,10 +223,10 @@ func (m *QueryTxStatusRequest) GetHeight() string {
 }
 
 type QueryTxStatusResponse struct {
-	Tx            *common.Tx                                  `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx,omitempty"`
-	PlannedOutTxs []*PlannedOutTx                             `protobuf:"bytes,2,rep,name=planned_out_txs,json=plannedOutTxs,proto3" json:"planned_out_txs,omitempty"`
-	OutTxs        gitlab_com_thorchain_thornode_v3_common.Txs `protobuf:"bytes,3,rep,name=out_txs,json=outTxs,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Txs" json:"out_txs"`
-	Stages        QueryTxStagesResponse                       `protobuf:"bytes,4,opt,name=stages,proto3" json:"stages"`
+	Tx            *common.Tx                                   `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx,omitempty"`
+	PlannedOutTxs []*PlannedOutTx                              `protobuf:"bytes,2,rep,name=planned_out_txs,json=plannedOutTxs,proto3" json:"planned_out_txs,omitempty"`
+	OutTxs        github_com_mapprotocol_compass_v3_common.Txs `protobuf:"bytes,3,rep,name=out_txs,json=outTxs,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Txs" json:"out_txs"`
+	Stages        QueryTxStagesResponse                        `protobuf:"bytes,4,opt,name=stages,proto3" json:"stages"`
 }
 
 func (m *QueryTxStatusResponse) Reset()         { *m = QueryTxStatusResponse{} }
@@ -276,7 +276,7 @@ func (m *QueryTxStatusResponse) GetPlannedOutTxs() []*PlannedOutTx {
 	return nil
 }
 
-func (m *QueryTxStatusResponse) GetOutTxs() gitlab_com_thorchain_thornode_v3_common.Txs {
+func (m *QueryTxStatusResponse) GetOutTxs() github_com_mapprotocol_compass_v3_common.Txs {
 	if m != nil {
 		return m.OutTxs
 	}
@@ -423,17 +423,17 @@ func (m *QueryTxResponse) GetKeysignMetric() *TssKeysignMetric {
 
 // Same as ObservedTx, but changes block_height and finalise_height (openapi spec)
 type QueryObservedTx struct {
-	Tx                    common.Tx                                      `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
-	Status                string                                         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	OutHashes             []string                                       `protobuf:"bytes,3,rep,name=out_hashes,json=outHashes,proto3" json:"out_hashes,omitempty"`
-	BlockHeight           int64                                          `protobuf:"varint,4,opt,name=block_height,json=blockHeight,proto3" json:"external_observed_height,omitempty"`
-	Signers               []string                                       `protobuf:"bytes,5,rep,name=signers,proto3" json:"signers,omitempty"`
-	ObservedPubKey        gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,6,opt,name=observed_pub_key,json=observedPubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"observed_pub_key,omitempty"`
-	KeysignMs             int64                                          `protobuf:"varint,7,opt,name=keysign_ms,json=keysignMs,proto3" json:"keysign_ms,omitempty"`
-	FinaliseHeight        int64                                          `protobuf:"varint,8,opt,name=finalise_height,json=finaliseHeight,proto3" json:"external_confirmation_delay_height,omitempty"`
-	Aggregator            string                                         `protobuf:"bytes,9,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
-	AggregatorTarget      string                                         `protobuf:"bytes,10,opt,name=aggregator_target,json=aggregatorTarget,proto3" json:"aggregator_target,omitempty"`
-	AggregatorTargetLimit *cosmossdk_io_math.Uint                        `protobuf:"bytes,11,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
+	Tx                    common.Tx                                       `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
+	Status                string                                          `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	OutHashes             []string                                        `protobuf:"bytes,3,rep,name=out_hashes,json=outHashes,proto3" json:"out_hashes,omitempty"`
+	BlockHeight           int64                                           `protobuf:"varint,4,opt,name=block_height,json=blockHeight,proto3" json:"external_observed_height,omitempty"`
+	Signers               []string                                        `protobuf:"bytes,5,rep,name=signers,proto3" json:"signers,omitempty"`
+	ObservedPubKey        github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,6,opt,name=observed_pub_key,json=observedPubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"observed_pub_key,omitempty"`
+	KeysignMs             int64                                           `protobuf:"varint,7,opt,name=keysign_ms,json=keysignMs,proto3" json:"keysign_ms,omitempty"`
+	FinaliseHeight        int64                                           `protobuf:"varint,8,opt,name=finalise_height,json=finaliseHeight,proto3" json:"external_confirmation_delay_height,omitempty"`
+	Aggregator            string                                          `protobuf:"bytes,9,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
+	AggregatorTarget      string                                          `protobuf:"bytes,10,opt,name=aggregator_target,json=aggregatorTarget,proto3" json:"aggregator_target,omitempty"`
+	AggregatorTargetLimit *cosmossdk_io_math.Uint                         `protobuf:"bytes,11,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
 }
 
 func (m *QueryObservedTx) Reset()         { *m = QueryObservedTx{} }
@@ -504,7 +504,7 @@ func (m *QueryObservedTx) GetSigners() []string {
 	return nil
 }
 
-func (m *QueryObservedTx) GetObservedPubKey() gitlab_com_thorchain_thornode_v3_common.PubKey {
+func (m *QueryObservedTx) GetObservedPubKey() github_com_mapprotocol_compass_v3_common.PubKey {
 	if m != nil {
 		return m.ObservedPubKey
 	}
@@ -541,16 +541,16 @@ func (m *QueryObservedTx) GetAggregatorTarget() string {
 
 // Same as ObservedTxVoter, but changes height (openapi spec)
 type QueryObservedTxVoter struct {
-	TxID            gitlab_com_thorchain_thornode_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
-	Tx              QueryObservedTx                              `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
-	Height          int64                                        `protobuf:"varint,3,opt,name=height,proto3" json:"consensus_height,omitempty"`
-	Txs             []QueryObservedTx                            `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs"`
-	Actions         []TxOutItem                                  `protobuf:"bytes,5,rep,name=actions,proto3" json:"actions"`
-	OutTxs          gitlab_com_thorchain_thornode_v3_common.Txs  `protobuf:"bytes,6,rep,name=out_txs,json=outTxs,proto3,castrepeated=gitlab.com/thorchain/thornode/v3/common.Txs" json:"out_txs"`
-	FinalisedHeight int64                                        `protobuf:"varint,7,opt,name=finalised_height,json=finalisedHeight,proto3" json:"finalised_height,omitempty"`
-	UpdatedVault    bool                                         `protobuf:"varint,8,opt,name=updated_vault,json=updatedVault,proto3" json:"updated_vault,omitempty"`
-	Reverted        bool                                         `protobuf:"varint,9,opt,name=reverted,proto3" json:"reverted,omitempty"`
-	OutboundHeight  int64                                        `protobuf:"varint,10,opt,name=outbound_height,json=outboundHeight,proto3" json:"outbound_height,omitempty"`
+	TxID            github_com_mapprotocol_compass_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
+	Tx              QueryObservedTx                               `protobuf:"bytes,2,opt,name=tx,proto3" json:"tx"`
+	Height          int64                                         `protobuf:"varint,3,opt,name=height,proto3" json:"consensus_height,omitempty"`
+	Txs             []QueryObservedTx                             `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs"`
+	Actions         []TxOutItem                                   `protobuf:"bytes,5,rep,name=actions,proto3" json:"actions"`
+	OutTxs          github_com_mapprotocol_compass_v3_common.Txs  `protobuf:"bytes,6,rep,name=out_txs,json=outTxs,proto3,castrepeated=github.com/mapprotocol/compass-tss/common.Txs" json:"out_txs"`
+	FinalisedHeight int64                                         `protobuf:"varint,7,opt,name=finalised_height,json=finalisedHeight,proto3" json:"finalised_height,omitempty"`
+	UpdatedVault    bool                                          `protobuf:"varint,8,opt,name=updated_vault,json=updatedVault,proto3" json:"updated_vault,omitempty"`
+	Reverted        bool                                          `protobuf:"varint,9,opt,name=reverted,proto3" json:"reverted,omitempty"`
+	OutboundHeight  int64                                         `protobuf:"varint,10,opt,name=outbound_height,json=outboundHeight,proto3" json:"outbound_height,omitempty"`
 }
 
 func (m *QueryObservedTxVoter) Reset()         { *m = QueryObservedTxVoter{} }
@@ -586,7 +586,7 @@ func (m *QueryObservedTxVoter) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryObservedTxVoter proto.InternalMessageInfo
 
-func (m *QueryObservedTxVoter) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *QueryObservedTxVoter) GetTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.TxID
 	}
@@ -621,7 +621,7 @@ func (m *QueryObservedTxVoter) GetActions() []TxOutItem {
 	return nil
 }
 
-func (m *QueryObservedTxVoter) GetOutTxs() gitlab_com_thorchain_thornode_v3_common.Txs {
+func (m *QueryObservedTxVoter) GetOutTxs() github_com_mapprotocol_compass_v3_common.Txs {
 	if m != nil {
 		return m.OutTxs
 	}
@@ -4074,7 +4074,7 @@ func (m *QueryObservedTx) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ObservedPubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.ObservedPubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 0 {
@@ -4294,7 +4294,7 @@ func (m *QueryObservedTxVoter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

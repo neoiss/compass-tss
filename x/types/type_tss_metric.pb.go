@@ -8,7 +8,7 @@ import (
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -78,8 +78,8 @@ func (m *NodeTssTime) GetTssTime() int64 {
 }
 
 type TssKeygenMetric struct {
-	PubKey       gitlab_com_thorchain_thornode_v3_common.PubKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.PubKey" json:"pub_key,omitempty"`
-	NodeTssTimes []NodeTssTime                                  `protobuf:"bytes,2,rep,name=node_tss_times,json=nodeTssTimes,proto3" json:"node_tss_times"`
+	PubKey       github_com_mapprotocol_compass_v3_common.PubKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3,casttype=github.com/mapprotocol/compass-tss/common.PubKey" json:"pub_key,omitempty"`
+	NodeTssTimes []NodeTssTime                                   `protobuf:"bytes,2,rep,name=node_tss_times,json=nodeTssTimes,proto3" json:"node_tss_times"`
 }
 
 func (m *TssKeygenMetric) Reset()         { *m = TssKeygenMetric{} }
@@ -115,7 +115,7 @@ func (m *TssKeygenMetric) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TssKeygenMetric proto.InternalMessageInfo
 
-func (m *TssKeygenMetric) GetPubKey() gitlab_com_thorchain_thornode_v3_common.PubKey {
+func (m *TssKeygenMetric) GetPubKey() github_com_mapprotocol_compass_v3_common.PubKey {
 	if m != nil {
 		return m.PubKey
 	}
@@ -130,8 +130,8 @@ func (m *TssKeygenMetric) GetNodeTssTimes() []NodeTssTime {
 }
 
 type TssKeysignMetric struct {
-	TxID         gitlab_com_thorchain_thornode_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
-	NodeTssTimes []NodeTssTime                                `protobuf:"bytes,2,rep,name=node_tss_times,json=nodeTssTimes,proto3" json:"node_tss_times"`
+	TxID         github_com_mapprotocol_compass_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
+	NodeTssTimes []NodeTssTime                                 `protobuf:"bytes,2,rep,name=node_tss_times,json=nodeTssTimes,proto3" json:"node_tss_times"`
 }
 
 func (m *TssKeysignMetric) Reset()         { *m = TssKeysignMetric{} }
@@ -167,7 +167,7 @@ func (m *TssKeysignMetric) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TssKeysignMetric proto.InternalMessageInfo
 
-func (m *TssKeysignMetric) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *TssKeysignMetric) GetTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.TxID
 	}
@@ -572,7 +572,7 @@ func (m *TssKeygenMetric) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PubKey = gitlab_com_thorchain_thornode_v3_common.PubKey(dAtA[iNdEx:postIndex])
+			m.PubKey = github_com_mapprotocol_compass_v3_common.PubKey(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -688,7 +688,7 @@ func (m *TssKeysignMetric) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

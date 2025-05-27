@@ -3,7 +3,7 @@ package types
 import (
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type CloutSuite struct{}

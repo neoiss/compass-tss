@@ -4,7 +4,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
 type MsgSetNodeKeysSuite struct{}

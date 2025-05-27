@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -27,8 +27,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TCYStaker struct {
-	Address gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=address,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"address,omitempty"`
-	Amount  cosmossdk_io_math.Uint                          `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
+	Address github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=address,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"address,omitempty"`
+	Amount  cosmossdk_io_math.Uint                           `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Uint" json:"amount"`
 }
 
 func (m *TCYStaker) Reset()         { *m = TCYStaker{} }
@@ -221,7 +221,7 @@ func (m *TCYStaker) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Address = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Address = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mapprotocol/compass-tss/common/relay"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/constants"
 )
 
 type ver struct {

@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,19 +28,19 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgLoanOpen struct {
-	Owner                   gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"owner,omitempty"`
-	CollateralAsset         gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,2,opt,name=collateral_asset,json=collateralAsset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"collateral_asset"`
-	CollateralAmount        cosmossdk_io_math.Uint                          `protobuf:"bytes,3,opt,name=collateral_amount,json=collateralAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_amount"`
-	TargetAddress           gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,4,opt,name=target_address,json=targetAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"target_address,omitempty"`
-	TargetAsset             gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,5,opt,name=target_asset,json=targetAsset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"target_asset"`
-	MinOut                  cosmossdk_io_math.Uint                          `protobuf:"bytes,6,opt,name=min_out,json=minOut,proto3,customtype=cosmossdk.io/math.Uint" json:"min_out"`
-	AffiliateAddress        gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,7,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"affiliate_address,omitempty"`
-	AffiliateBasisPoints    cosmossdk_io_math.Uint                          `protobuf:"bytes,8,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
-	Aggregator              string                                          `protobuf:"bytes,9,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
-	AggregatorTargetAddress string                                          `protobuf:"bytes,10,opt,name=aggregator_target_address,json=aggregatorTargetAddress,proto3" json:"aggregator_target_address,omitempty"`
-	AggregatorTargetLimit   cosmossdk_io_math.Uint                          `protobuf:"bytes,11,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit"`
-	Signer                  github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,12,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
-	TxID                    gitlab_com_thorchain_thornode_v3_common.TxID    `protobuf:"bytes,13,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
+	Owner                   github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"owner,omitempty"`
+	CollateralAsset         github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,2,opt,name=collateral_asset,json=collateralAsset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"collateral_asset"`
+	CollateralAmount        cosmossdk_io_math.Uint                           `protobuf:"bytes,3,opt,name=collateral_amount,json=collateralAmount,proto3,customtype=cosmossdk.io/math.Uint" json:"collateral_amount"`
+	TargetAddress           github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,4,opt,name=target_address,json=targetAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"target_address,omitempty"`
+	TargetAsset             github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,5,opt,name=target_asset,json=targetAsset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"target_asset"`
+	MinOut                  cosmossdk_io_math.Uint                           `protobuf:"bytes,6,opt,name=min_out,json=minOut,proto3,customtype=cosmossdk.io/math.Uint" json:"min_out"`
+	AffiliateAddress        github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,7,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"affiliate_address,omitempty"`
+	AffiliateBasisPoints    cosmossdk_io_math.Uint                           `protobuf:"bytes,8,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
+	Aggregator              string                                           `protobuf:"bytes,9,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
+	AggregatorTargetAddress string                                           `protobuf:"bytes,10,opt,name=aggregator_target_address,json=aggregatorTargetAddress,proto3" json:"aggregator_target_address,omitempty"`
+	AggregatorTargetLimit   cosmossdk_io_math.Uint                           `protobuf:"bytes,11,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit"`
+	Signer                  github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,12,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	TxID                    github_com_mapprotocol_compass_v3_common.TxID    `protobuf:"bytes,13,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
 }
 
 func (m *MsgLoanOpen) Reset()         { *m = MsgLoanOpen{} }
@@ -76,21 +76,21 @@ func (m *MsgLoanOpen) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLoanOpen proto.InternalMessageInfo
 
-func (m *MsgLoanOpen) GetOwner() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgLoanOpen) GetOwner() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Owner
 	}
 	return ""
 }
 
-func (m *MsgLoanOpen) GetTargetAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgLoanOpen) GetTargetAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.TargetAddress
 	}
 	return ""
 }
 
-func (m *MsgLoanOpen) GetAffiliateAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgLoanOpen) GetAffiliateAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AffiliateAddress
 	}
@@ -118,7 +118,7 @@ func (m *MsgLoanOpen) GetSigner() github_com_cosmos_cosmos_sdk_types.AccAddress 
 	return nil
 }
 
-func (m *MsgLoanOpen) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *MsgLoanOpen) GetTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.TxID
 	}
@@ -126,13 +126,13 @@ func (m *MsgLoanOpen) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
 }
 
 type MsgLoanRepayment struct {
-	Owner           gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"owner,omitempty"`
-	CollateralAsset gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,2,opt,name=collateral_asset,json=collateralAsset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"collateral_asset"`
-	Coin            common.Coin                                     `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
-	MinOut          cosmossdk_io_math.Uint                          `protobuf:"bytes,4,opt,name=min_out,json=minOut,proto3,customtype=cosmossdk.io/math.Uint" json:"min_out"`
-	Signer          github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,5,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
-	From            gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,6,opt,name=from,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"from,omitempty"`
-	TxID            gitlab_com_thorchain_thornode_v3_common.TxID    `protobuf:"bytes,7,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
+	Owner           github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=owner,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"owner,omitempty"`
+	CollateralAsset github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,2,opt,name=collateral_asset,json=collateralAsset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"collateral_asset"`
+	Coin            common.Coin                                      `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
+	MinOut          cosmossdk_io_math.Uint                           `protobuf:"bytes,4,opt,name=min_out,json=minOut,proto3,customtype=cosmossdk.io/math.Uint" json:"min_out"`
+	Signer          github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,5,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	From            github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,6,opt,name=from,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"from,omitempty"`
+	TxID            github_com_mapprotocol_compass_v3_common.TxID    `protobuf:"bytes,7,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
 }
 
 func (m *MsgLoanRepayment) Reset()         { *m = MsgLoanRepayment{} }
@@ -168,7 +168,7 @@ func (m *MsgLoanRepayment) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLoanRepayment proto.InternalMessageInfo
 
-func (m *MsgLoanRepayment) GetOwner() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgLoanRepayment) GetOwner() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Owner
 	}
@@ -189,14 +189,14 @@ func (m *MsgLoanRepayment) GetSigner() github_com_cosmos_cosmos_sdk_types.AccAdd
 	return nil
 }
 
-func (m *MsgLoanRepayment) GetFrom() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgLoanRepayment) GetFrom() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.From
 	}
 	return ""
 }
 
-func (m *MsgLoanRepayment) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *MsgLoanRepayment) GetTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.TxID
 	}
@@ -621,7 +621,7 @@ func (m *MsgLoanOpen) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Owner = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Owner = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -720,7 +720,7 @@ func (m *MsgLoanOpen) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TargetAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.TargetAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -819,7 +819,7 @@ func (m *MsgLoanOpen) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AffiliateAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AffiliateAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -1017,7 +1017,7 @@ func (m *MsgLoanOpen) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1099,7 +1099,7 @@ func (m *MsgLoanRepayment) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Owner = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Owner = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1265,7 +1265,7 @@ func (m *MsgLoanRepayment) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.From = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.From = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -1297,7 +1297,7 @@ func (m *MsgLoanRepayment) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

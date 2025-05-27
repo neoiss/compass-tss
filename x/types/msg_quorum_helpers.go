@@ -3,8 +3,8 @@ package types
 import (
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 	apicommon "gitlab.com/thorchain/thornode/v3/api/common"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
 )
 
 // signersFromAttestations extracts signers from any type of attestation struct

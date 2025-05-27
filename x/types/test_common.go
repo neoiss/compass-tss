@@ -14,9 +14,9 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/constants"
 	"gitlab.com/thorchain/thornode/v3/cmd"
-	"gitlab.com/thorchain/thornode/v3/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/constants"
 )
 
 // GetRandomValidatorNode creates a random validator node account, used for testing

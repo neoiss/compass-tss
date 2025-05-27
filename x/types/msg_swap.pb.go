@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -53,19 +53,19 @@ func (OrderType) EnumDescriptor() ([]byte, []int) {
 }
 
 type MsgSwap struct {
-	Tx                      common.Tx                                       `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
-	TargetAsset             gitlab_com_thorchain_thornode_v3_common.Asset   `protobuf:"bytes,2,opt,name=target_asset,json=targetAsset,proto3,customtype=gitlab.com/thorchain/thornode/v3/common.Asset" json:"target_asset"`
-	Destination             gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,3,opt,name=destination,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"destination,omitempty"`
-	TradeTarget             cosmossdk_io_math.Uint                          `protobuf:"bytes,4,opt,name=trade_target,json=tradeTarget,proto3,customtype=cosmossdk.io/math.Uint" json:"trade_target"`
-	AffiliateAddress        gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,5,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"affiliate_address,omitempty"`
-	AffiliateBasisPoints    cosmossdk_io_math.Uint                          `protobuf:"bytes,6,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
-	Signer                  github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
-	Aggregator              string                                          `protobuf:"bytes,8,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
-	AggregatorTargetAddress string                                          `protobuf:"bytes,9,opt,name=aggregator_target_address,json=aggregatorTargetAddress,proto3" json:"aggregator_target_address,omitempty"`
-	AggregatorTargetLimit   *cosmossdk_io_math.Uint                         `protobuf:"bytes,10,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
-	OrderType               OrderType                                       `protobuf:"varint,11,opt,name=order_type,json=orderType,proto3,enum=types.OrderType" json:"order_type,omitempty"`
-	StreamQuantity          uint64                                          `protobuf:"varint,12,opt,name=stream_quantity,json=streamQuantity,proto3" json:"stream_quantity,omitempty"`
-	StreamInterval          uint64                                          `protobuf:"varint,13,opt,name=stream_interval,json=streamInterval,proto3" json:"stream_interval,omitempty"`
+	Tx                      common.Tx                                        `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
+	TargetAsset             github_com_mapprotocol_compass_v3_common.Asset   `protobuf:"bytes,2,opt,name=target_asset,json=targetAsset,proto3,customtype=github.com/mapprotocol/compass-tss/common.Asset" json:"target_asset"`
+	Destination             github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,3,opt,name=destination,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"destination,omitempty"`
+	TradeTarget             cosmossdk_io_math.Uint                           `protobuf:"bytes,4,opt,name=trade_target,json=tradeTarget,proto3,customtype=cosmossdk.io/math.Uint" json:"trade_target"`
+	AffiliateAddress        github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,5,opt,name=affiliate_address,json=affiliateAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"affiliate_address,omitempty"`
+	AffiliateBasisPoints    cosmossdk_io_math.Uint                           `protobuf:"bytes,6,opt,name=affiliate_basis_points,json=affiliateBasisPoints,proto3,customtype=cosmossdk.io/math.Uint" json:"affiliate_basis_points"`
+	Signer                  github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,7,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	Aggregator              string                                           `protobuf:"bytes,8,opt,name=aggregator,proto3" json:"aggregator,omitempty"`
+	AggregatorTargetAddress string                                           `protobuf:"bytes,9,opt,name=aggregator_target_address,json=aggregatorTargetAddress,proto3" json:"aggregator_target_address,omitempty"`
+	AggregatorTargetLimit   *cosmossdk_io_math.Uint                          `protobuf:"bytes,10,opt,name=aggregator_target_limit,json=aggregatorTargetLimit,proto3,customtype=cosmossdk.io/math.Uint" json:"aggregator_target_limit,omitempty"`
+	OrderType               OrderType                                        `protobuf:"varint,11,opt,name=order_type,json=orderType,proto3,enum=types.OrderType" json:"order_type,omitempty"`
+	StreamQuantity          uint64                                           `protobuf:"varint,12,opt,name=stream_quantity,json=streamQuantity,proto3" json:"stream_quantity,omitempty"`
+	StreamInterval          uint64                                           `protobuf:"varint,13,opt,name=stream_interval,json=streamInterval,proto3" json:"stream_interval,omitempty"`
 }
 
 func (m *MsgSwap) Reset()         { *m = MsgSwap{} }
@@ -108,14 +108,14 @@ func (m *MsgSwap) GetTx() common.Tx {
 	return common.Tx{}
 }
 
-func (m *MsgSwap) GetDestination() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgSwap) GetDestination() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.Destination
 	}
 	return ""
 }
 
-func (m *MsgSwap) GetAffiliateAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgSwap) GetAffiliateAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.AffiliateAddress
 	}
@@ -529,7 +529,7 @@ func (m *MsgSwap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Destination = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.Destination = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -595,7 +595,7 @@ func (m *MsgSwap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AffiliateAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.AffiliateAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {

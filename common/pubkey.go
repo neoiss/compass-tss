@@ -23,7 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	eth "github.com/ethereum/go-ethereum/crypto"
 
-	xrpkm "gitlab.com/thorchain/thornode/v3/bifrost/pkg/chainclients/xrp/keymanager"
+	xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
 
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 )

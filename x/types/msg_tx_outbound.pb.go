@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	common "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,7 +28,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgOutboundTx struct {
 	Tx     common.ObservedTx                             `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx"`
-	InTxID gitlab_com_thorchain_thornode_v3_common.TxID  `protobuf:"bytes,2,opt,name=in_tx_id,json=inTxId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"in_tx_id,omitempty"`
+	InTxID github_com_mapprotocol_compass_v3_common.TxID `protobuf:"bytes,2,opt,name=in_tx_id,json=inTxId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"in_tx_id,omitempty"`
 	Signer github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,3,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
@@ -72,7 +72,7 @@ func (m *MsgOutboundTx) GetTx() common.ObservedTx {
 	return common.ObservedTx{}
 }
 
-func (m *MsgOutboundTx) GetInTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *MsgOutboundTx) GetInTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.InTxID
 	}
@@ -291,7 +291,7 @@ func (m *MsgOutboundTx) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InTxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.InTxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

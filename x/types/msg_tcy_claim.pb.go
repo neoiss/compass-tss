@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/mapprotocol/compass-tss/common"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -28,9 +28,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgTCYClaim struct {
-	RuneAddress gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,1,opt,name=rune_address,json=runeAddress,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"rune_address,omitempty"`
-	L1Address   gitlab_com_thorchain_thornode_v3_common.Address `protobuf:"bytes,2,opt,name=l1_address,json=l1Address,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.Address" json:"l1_address,omitempty"`
-	Signer      github_com_cosmos_cosmos_sdk_types.AccAddress   `protobuf:"bytes,3,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
+	RuneAddress github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,1,opt,name=rune_address,json=runeAddress,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"rune_address,omitempty"`
+	L1Address   github_com_mapprotocol_compass_v3_common.Address `protobuf:"bytes,2,opt,name=l1_address,json=l1Address,proto3,casttype=github.com/mapprotocol/compass-tss/common.Address" json:"l1_address,omitempty"`
+	Signer      github_com_cosmos_cosmos_sdk_types.AccAddress    `protobuf:"bytes,3,opt,name=signer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"signer,omitempty"`
 }
 
 func (m *MsgTCYClaim) Reset()         { *m = MsgTCYClaim{} }
@@ -66,14 +66,14 @@ func (m *MsgTCYClaim) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTCYClaim proto.InternalMessageInfo
 
-func (m *MsgTCYClaim) GetRuneAddress() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgTCYClaim) GetRuneAddress() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.RuneAddress
 	}
 	return ""
 }
 
-func (m *MsgTCYClaim) GetL1Address() gitlab_com_thorchain_thornode_v3_common.Address {
+func (m *MsgTCYClaim) GetL1Address() github_com_mapprotocol_compass_v3_common.Address {
 	if m != nil {
 		return m.L1Address
 	}
@@ -257,7 +257,7 @@ func (m *MsgTCYClaim) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RuneAddress = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.RuneAddress = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -289,7 +289,7 @@ func (m *MsgTCYClaim) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.L1Address = gitlab_com_thorchain_thornode_v3_common.Address(dAtA[iNdEx:postIndex])
+			m.L1Address = github_com_mapprotocol_compass_v3_common.Address(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

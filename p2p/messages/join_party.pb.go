@@ -169,13 +169,13 @@ func (m *JoinPartyLeaderComm) GetPeerIDs() []string {
 }
 
 func init() {
-	proto.RegisterEnum("bifrost.p2p.messages.JoinPartyLeaderComm_ResponseType", JoinPartyLeaderComm_ResponseType_name, JoinPartyLeaderComm_ResponseType_value)
-	proto.RegisterType((*JoinPartyRequest)(nil), "bifrost.p2p.messages.JoinPartyRequest")
-	proto.RegisterType((*JoinPartyLeaderComm)(nil), "bifrost.p2p.messages.JoinPartyLeaderComm")
+	//proto.RegisterEnum("bifrost.p2p.messages.JoinPartyLeaderComm_ResponseType", JoinPartyLeaderComm_ResponseType_name, JoinPartyLeaderComm_ResponseType_value)
+	//proto.RegisterType((*JoinPartyRequest)(nil), "bifrost.p2p.messages.JoinPartyRequest")
+	//proto.RegisterType((*JoinPartyLeaderComm)(nil), "bifrost.p2p.messages.JoinPartyLeaderComm")
 }
 
 func init() {
-	proto.RegisterFile("bifrost/p2p/messages/join_party.proto", fileDescriptor_727397ef7e12a4dc)
+	//proto.RegisterFile("bifrost/p2p/messages/join_party.proto", fileDescriptor_727397ef7e12a4dc)
 }
 
 var fileDescriptor_727397ef7e12a4dc = []byte{

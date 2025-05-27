@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	gitlab_com_thorchain_thornode_v3_common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,17 +26,17 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type StreamingSwap struct {
-	TxID              gitlab_com_thorchain_thornode_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=gitlab.com/thorchain/thornode/v3/common.TxID" json:"tx_id,omitempty"`
-	Interval          uint64                                       `protobuf:"varint,2,opt,name=interval,proto3" json:"interval,omitempty"`
-	Quantity          uint64                                       `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	Count             uint64                                       `protobuf:"varint,4,opt,name=count,proto3" json:"count,omitempty"`
-	LastHeight        int64                                        `protobuf:"varint,5,opt,name=last_height,json=lastHeight,proto3" json:"last_height,omitempty"`
-	TradeTarget       cosmossdk_io_math.Uint                       `protobuf:"bytes,6,opt,name=trade_target,json=tradeTarget,proto3,customtype=cosmossdk.io/math.Uint" json:"trade_target"`
-	Deposit           cosmossdk_io_math.Uint                       `protobuf:"bytes,7,opt,name=deposit,proto3,customtype=cosmossdk.io/math.Uint" json:"deposit"`
-	In                cosmossdk_io_math.Uint                       `protobuf:"bytes,8,opt,name=in,proto3,customtype=cosmossdk.io/math.Uint" json:"in"`
-	Out               cosmossdk_io_math.Uint                       `protobuf:"bytes,9,opt,name=out,proto3,customtype=cosmossdk.io/math.Uint" json:"out"`
-	FailedSwaps       []uint64                                     `protobuf:"varint,10,rep,packed,name=failed_swaps,json=failedSwaps,proto3" json:"failed_swaps,omitempty"`
-	FailedSwapReasons []string                                     `protobuf:"bytes,11,rep,name=failed_swap_reasons,json=failedSwapReasons,proto3" json:"failed_swap_reasons,omitempty"`
+	TxID              github_com_mapprotocol_compass_v3_common.TxID `protobuf:"bytes,1,opt,name=tx_id,json=txId,proto3,casttype=github.com/mapprotocol/compass-tss/common.TxID" json:"tx_id,omitempty"`
+	Interval          uint64                                        `protobuf:"varint,2,opt,name=interval,proto3" json:"interval,omitempty"`
+	Quantity          uint64                                        `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Count             uint64                                        `protobuf:"varint,4,opt,name=count,proto3" json:"count,omitempty"`
+	LastHeight        int64                                         `protobuf:"varint,5,opt,name=last_height,json=lastHeight,proto3" json:"last_height,omitempty"`
+	TradeTarget       cosmossdk_io_math.Uint                        `protobuf:"bytes,6,opt,name=trade_target,json=tradeTarget,proto3,customtype=cosmossdk.io/math.Uint" json:"trade_target"`
+	Deposit           cosmossdk_io_math.Uint                        `protobuf:"bytes,7,opt,name=deposit,proto3,customtype=cosmossdk.io/math.Uint" json:"deposit"`
+	In                cosmossdk_io_math.Uint                        `protobuf:"bytes,8,opt,name=in,proto3,customtype=cosmossdk.io/math.Uint" json:"in"`
+	Out               cosmossdk_io_math.Uint                        `protobuf:"bytes,9,opt,name=out,proto3,customtype=cosmossdk.io/math.Uint" json:"out"`
+	FailedSwaps       []uint64                                      `protobuf:"varint,10,rep,packed,name=failed_swaps,json=failedSwaps,proto3" json:"failed_swaps,omitempty"`
+	FailedSwapReasons []string                                      `protobuf:"bytes,11,rep,name=failed_swap_reasons,json=failedSwapReasons,proto3" json:"failed_swap_reasons,omitempty"`
 }
 
 func (m *StreamingSwap) Reset()         { *m = StreamingSwap{} }
@@ -72,7 +72,7 @@ func (m *StreamingSwap) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StreamingSwap proto.InternalMessageInfo
 
-func (m *StreamingSwap) GetTxID() gitlab_com_thorchain_thornode_v3_common.TxID {
+func (m *StreamingSwap) GetTxID() github_com_mapprotocol_compass_v3_common.TxID {
 	if m != nil {
 		return m.TxID
 	}
@@ -396,7 +396,7 @@ func (m *StreamingSwap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TxID = gitlab_com_thorchain_thornode_v3_common.TxID(dAtA[iNdEx:postIndex])
+			m.TxID = github_com_mapprotocol_compass_v3_common.TxID(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
