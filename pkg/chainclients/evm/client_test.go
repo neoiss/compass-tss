@@ -35,7 +35,7 @@ func TestEVMPackage(t *testing.T) { TestingT(t) }
 type EVMSuite struct {
 	thordir  string
 	thorKeys *mapclient.Keys
-	bridge   mapclient.ThorchainBridge
+	bridge   mapo.ThorchainBridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }

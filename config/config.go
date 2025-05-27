@@ -802,6 +802,8 @@ type BifrostBlockScannerConfiguration struct {
 
 	// MaxReorgRescanBlocks is the maximum number of blocks to rescan during a reorg.
 	MaxReorgRescanBlocks int64 `mapstructure:"max_reorg_rescan_blocks"`
+
+	Mos string `mapstructure:"mos"`
 }
 
 type BifrostClientConfiguration struct {
@@ -811,6 +813,7 @@ type BifrostClientConfiguration struct {
 	ChainEBifrost   string       `mapstructure:"chain_ebifrost"`
 	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
 	SignerName      string       `mapstructure:"signer_name"`
+	PrivateKey      string       `mapstructure:"private_key"`
 	SignerPasswd    string
 }
 

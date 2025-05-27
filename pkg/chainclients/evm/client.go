@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashicorp/go-multierror"
+	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"net/http"
 	"strings"
@@ -28,7 +30,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -38,7 +40,7 @@ import (
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/aggregators"
-	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,7 @@ type EVMClient struct {
 	kw                      *evm.KeySignWrapper
 	ethClient               *ethclient.Client
 	evmScanner              *EVMScanner
-	bridge                  mapclient.ThorchainBridge
+	bridge                  mapo.ThorchainBridge
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
@@ -68,10 +70,10 @@ type EVMClient struct {
 
 // NewEVMClient creates a new EVMClient.
 func NewEVMClient(
-	thorKeys *mapclient.Keys,
+	thorKeys *mapo.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	poolMgr mapclient.PoolManager,

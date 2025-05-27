@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"strconv"
 	"sync"
@@ -29,7 +30,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/tss"
 	memo "github.com/mapprotocol/compass-tss/x/memo"
@@ -53,7 +53,7 @@ type Client struct {
 	accts               *XrpMetaDataStore
 	tssKeyManager       *tss.KeySign
 	localKeyManager     *keymanager.KeyManager
-	thorchainBridge     mapclient.ThorchainBridge
+	thorchainBridge     mapo.ThorchainBridge
 	storage             *blockscanner.BlockScannerStorage
 	blockScanner        *blockscanner.BlockScanner
 	signerCacheManager  *signercache.CacheManager
@@ -67,10 +67,10 @@ type Client struct {
 
 // NewClient creates a new instance of an XRP-based chain client
 func NewClient(
-	thorKeys *mapclient.Keys,
+	thorKeys *mapo.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	thorchainBridge mapclient.ThorchainBridge,
+	thorchainBridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 ) (*Client, error) {
 	logger := log.With().Str("module", cfg.ChainID.String()).Logger()

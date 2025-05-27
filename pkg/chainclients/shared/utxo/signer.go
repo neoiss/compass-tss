@@ -3,9 +3,9 @@ package utxo
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/tss"
 	"github.com/rs/zerolog"
@@ -19,7 +19,7 @@ type SignCheckpoint struct {
 }
 
 func PostKeysignFailure(
-	thorchainBridge mapclient.ThorchainBridge,
+	thorchainBridge mapo.ThorchainBridge,
 	tx stypes.TxOutItem,
 	logger zerolog.Logger,
 	thorchainHeight int64,

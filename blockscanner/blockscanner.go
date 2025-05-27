@@ -3,6 +3,7 @@ package blockscanner
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 )
@@ -50,13 +50,13 @@ type BlockScanner struct {
 	globalTxsQueue        chan types.TxIn
 	globalNetworkFeeQueue chan common.NetworkFee
 	errorCounter          *prometheus.CounterVec
-	thorchainBridge       mapclient.ThorchainBridge
+	thorchainBridge       mapo.ThorchainBridge
 	chainScanner          BlockScannerFetcher
 	healthy               *atomic.Bool
 }
 
 // NewBlockScanner create a new instance of BlockScanner
-func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage ScannerStorage, m *metrics.Metrics, thorchainBridge mapclient.ThorchainBridge, chainScanner BlockScannerFetcher) (*BlockScanner, error) {
+func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage ScannerStorage, m *metrics.Metrics, thorchainBridge mapo.ThorchainBridge, chainScanner BlockScannerFetcher) (*BlockScanner, error) {
 	var err error
 	if scannerStorage == nil {
 		return nil, errors.New("scannerStorage is nil")

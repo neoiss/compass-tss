@@ -1,4 +1,4 @@
-package mapclient
+package mapo
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 
 const (
 	// folder name for thorchain thorcli
-	thorchainCliFolderName = `.thornode`
+	thorchainCliFolderName = `.compass`
 )
 
 // Keys manages all the keys used by thorchain

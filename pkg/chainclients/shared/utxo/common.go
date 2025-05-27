@@ -2,12 +2,12 @@ package utxo
 
 import (
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/mapclient"
 )
 
-func GetAsgardAddress(chain common.Chain, bridge mapclient.ThorchainBridge) ([]common.Address, error) {
+func GetAsgardAddress(chain common.Chain, bridge mapo.ThorchainBridge) ([]common.Address, error) {
 	vaults, err := bridge.GetAsgardPubKeys()
 	if err != nil {
 		return nil, fmt.Errorf("fail to get asgards : %w", err)

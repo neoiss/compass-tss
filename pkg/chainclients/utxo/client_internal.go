@@ -22,7 +22,7 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////

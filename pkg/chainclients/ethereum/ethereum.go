@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/hashicorp/go-multierror"
+	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"strings"
 	"sync"
@@ -35,13 +37,13 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/aggregators"
-	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 const (
@@ -57,7 +59,7 @@ type Client struct {
 	chainID                 *big.Int
 	kw                      *evm.KeySignWrapper
 	ethScanner              *ETHScanner
-	bridge                  mapclient.ThorchainBridge
+	bridge                  mapo.ThorchainBridge
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
@@ -73,10 +75,10 @@ type Client struct {
 }
 
 // NewClient create new instance of Ethereum client
-func NewClient(thorKeys *mapclient.Keys,
+func NewClient(thorKeys *mapo.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	poolMgr mapclient.PoolManager,
@@ -663,7 +665,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 			Data:      data,
 		})
 	} else {
-
+		// keyring
 		// if over max scheduled gas, abort and let thornode reschedule
 		estimatedFee = big.NewInt(int64(estimatedGas) * gasRate.Int64())
 		if scheduledMaxFee.Cmp(estimatedFee) < 0 {
@@ -748,6 +750,7 @@ func (c *Client) sign(tx *etypes.Transaction, poolPubKey common.PubKey, height i
 			return nil, fmt.Errorf("fail to sign tx: %w", err)
 		}
 		// key sign error forward the keysign blame to thorchain
+		// todo replace
 		txID, errPostKeysignFail := c.bridge.PostKeysignFailure(keysignError.Blame, height, txOutItem.Memo, txOutItem.Coins, txOutItem.VaultPubKey)
 		if errPostKeysignFail != nil {
 			return nil, multierror.Append(err, errPostKeysignFail)

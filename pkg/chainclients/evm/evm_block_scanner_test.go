@@ -89,7 +89,7 @@ func CreateBlock(height int) (*etypes.Header, error) {
 
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapclient.ThorchainBridge
+	bridge mapo.ThorchainBridge
 	keys   *mapclient.Keys
 }
 

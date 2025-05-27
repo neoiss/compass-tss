@@ -3,6 +3,7 @@ package tss
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"sort"
 	"sync"
@@ -12,7 +13,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keysign"
 	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog"
@@ -33,7 +33,7 @@ type tssServer interface {
 type KeySign struct {
 	logger         zerolog.Logger
 	server         tssServer
-	bridge         mapclient.ThorchainBridge
+	bridge         mapo.ThorchainBridge
 	currentVersion semver.Version
 	lastCheck      time.Time
 	wg             *sync.WaitGroup
@@ -42,7 +42,7 @@ type KeySign struct {
 }
 
 // NewKeySign create a new instance of KeySign
-func NewKeySign(server tssServer, bridge mapclient.ThorchainBridge) (*KeySign, error) {
+func NewKeySign(server tssServer, bridge mapo.ThorchainBridge) (*KeySign, error) {
 	return &KeySign{
 		server:    server,
 		bridge:    bridge,

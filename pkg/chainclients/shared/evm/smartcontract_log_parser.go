@@ -110,6 +110,9 @@ type vaultTransferOutEvent struct {
 	Memo   string
 }
 
+// messageOut
+//
+
 func (scp *SmartContractLogParser) parseTransferOut(log etypes.Log) (vaultTransferOutEvent, error) {
 	const TransferOutEventName = "TransferOut"
 	event := vaultTransferOutEvent{}

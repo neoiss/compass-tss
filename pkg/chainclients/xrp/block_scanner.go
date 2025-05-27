@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"sync"
 
 	sdkmath "cosmossdk.io/math"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 
 	xrplcommon "github.com/Peersyst/xrpl-go/xrpl/queries/common"
@@ -53,7 +53,7 @@ type XrpBlockScanner struct {
 	cfg              config.BifrostBlockScannerConfiguration
 	logger           zerolog.Logger
 	db               blockscanner.ScannerStorage
-	bridge           mapclient.ThorchainBridge
+	bridge           mapo.ThorchainBridge
 	solvencyReporter SolvencyReporter
 	rpcClient        *rpc.Client
 
@@ -70,7 +70,7 @@ type XrpBlockScanner struct {
 func NewXrpBlockScanner(rpcHost string,
 	cfg config.BifrostBlockScannerConfiguration,
 	scanStorage blockscanner.ScannerStorage,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	solvencyReporter SolvencyReporter,
 ) (*XrpBlockScanner, error) {

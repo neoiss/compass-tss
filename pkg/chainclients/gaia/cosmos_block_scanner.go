@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"strings"
 	"time"
 
@@ -38,7 +39,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 )
@@ -79,7 +79,7 @@ type CosmosBlockScanner struct {
 	cdc                   *codec.ProtoCodec
 	txConfig              client.TxConfig
 	rpc                   TendermintRPC
-	bridge                mapclient.ThorchainBridge
+	bridge                mapo.ThorchainBridge
 	solvencyReporter      SolvencyReporter
 	globalNetworkFeeQueue chan common.NetworkFee
 
@@ -95,7 +95,7 @@ type CosmosBlockScanner struct {
 func NewCosmosBlockScanner(rpcHost string,
 	cfg config.BifrostBlockScannerConfiguration,
 	scanStorage blockscanner.ScannerStorage,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	solvencyReporter SolvencyReporter,
 ) (*CosmosBlockScanner, error) {

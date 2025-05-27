@@ -2,6 +2,7 @@ package tss
 
 import (
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"net/http"
 	"sort"
 	"strings"
@@ -16,23 +17,23 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 // KeyGen is
 type KeyGen struct {
-	keys           *mapclient.Keys
+	keys           *mapo.Keys
 	logger         zerolog.Logger
 	client         *http.Client
 	server         *tss.TssServer
-	bridge         mapclient.ThorchainBridge
+	bridge         mapo.ThorchainBridge
 	currentVersion semver.Version
 	lastCheck      time.Time
 }
 
 // NewTssKeyGen create a new instance of TssKeyGen which will look after TSS key stuff
-func NewTssKeyGen(keys *mapclient.Keys, server *tss.TssServer, bridge mapclient.ThorchainBridge) (*KeyGen, error) {
+func NewTssKeyGen(keys *mapo.Keys, server *tss.TssServer, bridge mapo.ThorchainBridge) (*KeyGen, error) {
 	if keys == nil {
 		return nil, fmt.Errorf("keys is nil")
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"os"
 	"sync"
@@ -34,7 +35,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
@@ -65,7 +65,7 @@ type CosmosClient struct {
 	accts               *CosmosMetaDataStore
 	tssKeyManager       *tss.KeySign
 	localKeyManager     *keyManager
-	thorchainBridge     mapclient.ThorchainBridge
+	thorchainBridge     mapo.ThorchainBridge
 	storage             *blockscanner.BlockScannerStorage
 	blockScanner        *blockscanner.BlockScanner
 	signerCacheManager  *signercache.CacheManager
@@ -77,10 +77,10 @@ type CosmosClient struct {
 
 // NewCosmosClient creates a new instance of a Cosmos-based chain client
 func NewCosmosClient(
-	thorKeys *mapclient.Keys,
+	thorKeys *mapo.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	thorchainBridge mapclient.ThorchainBridge,
+	thorchainBridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 ) (*CosmosClient, error) {
 	logger := log.With().Str("module", cfg.ChainID.String()).Logger()

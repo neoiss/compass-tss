@@ -69,7 +69,7 @@ func (m *MockFeeTx) FeeGranter() []byte {
 
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapclient.ThorchainBridge
+	bridge mapo.ThorchainBridge
 	keys   *mapclient.Keys
 }
 

@@ -1,6 +1,7 @@
 package chainclients
 
 import (
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/ethereum"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
@@ -23,13 +24,13 @@ import (
 type ChainClient = types.ChainClient
 
 // LoadChains returns chain clients from chain configuration
-func LoadChains(thorKeys *mapclient.Keys,
+func LoadChains(thorKeys *mapo.Keys,
 	cfg map[common.Chain]config.BifrostChainConfiguration,
 	server *tss.TssServer,
-	thorchainBridge mapclient.ThorchainBridge,
+	thorchainBridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubKeyValidator pubkeymanager.PubKeyValidator,
-	poolMgr mapclient.PoolManager,
+	poolMgr mapo.PoolManager,
 ) (chains map[common.Chain]ChainClient, restart chan struct{}) {
 	logger := log.Logger.With().Str("module", "bifrost").Logger()
 

@@ -37,7 +37,7 @@ func TestPackage(t *testing.T) { TestingT(t) }
 type CosmosTestSuite struct {
 	thordir  string
 	thorKeys *mapclient.Keys
-	bridge   mapclient.ThorchainBridge
+	bridge   mapo.ThorchainBridge
 	m        *metrics.Metrics
 }
 

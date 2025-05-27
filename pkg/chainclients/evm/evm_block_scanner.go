@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"sort"
 	"strings"
@@ -27,7 +28,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/tokenlist"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -58,7 +58,7 @@ type EVMScanner struct {
 	blockMetaAccessor     evm.BlockMetaAccessor
 	globalErrataQueue     chan<- stypes.ErrataBlock
 	globalNetworkFeeQueue chan<- common.NetworkFee
-	bridge                mapclient.ThorchainBridge
+	bridge                mapo.ThorchainBridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
 	currentBlockHeight    int64
@@ -79,7 +79,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	chainID *big.Int,
 	ethClient *ethclient.Client,
 	ethRpc *evm.EthRPC,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	solvencyReporter SolvencyReporter,

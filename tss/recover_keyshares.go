@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,13 +17,13 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/x/ebifrost"
 	"github.com/mapprotocol/compass-tss/x/types"
 	"gitlab.com/thorchain/thornode/v3/app"
 )
 
-func RecoverKeyShares(conf config.Bifrost, thorchain mapclient.ThorchainBridge) error {
+func RecoverKeyShares(conf config.Bifrost, thorchain mapo.ThorchainBridge) error {
 	tctx := thorchain.GetContext()
 
 	// fetch the node account

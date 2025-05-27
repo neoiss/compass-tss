@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"os"
 	"os/signal"
@@ -18,7 +19,6 @@ import (
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
 	"github.com/mapprotocol/compass-tss/p2p"
@@ -75,14 +75,14 @@ func main() {
 	if len(cfg.Thorchain.SignerPasswd) == 0 {
 		log.Fatal().Msg("signer password is empty")
 	}
-	kb, _, err := mapclient.GetKeyringKeybase(cfg.Thorchain.ChainHomeFolder, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
+	kb, _, err := mapo.GetKeyringKeybase(cfg.Thorchain.PrivateKey)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := mapclient.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
+	k := mapo.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
 	// thorchain bridge
-	thorchainBridge, err := mapclient.NewThorchainBridge(cfg.Thorchain, m, k)
+	thorchainBridge, err := mapo.NewThorchainBridge(cfg.Thorchain, m, k)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new thorchain bridge")
 	}
@@ -172,7 +172,7 @@ func main() {
 			chainCfg.RPCHost = fmt.Sprintf("http://%s", chainCfg.RPCHost)
 		}
 	}
-	poolMgr := mapclient.NewPoolMgr(thorchainBridge)
+	poolMgr := mapo.NewPoolMgr(thorchainBridge)
 	chains, restart := chainclients.LoadChains(k, cfgChains, tssIns, thorchainBridge, m, pubkeyMgr, poolMgr)
 	if len(chains) == 0 {
 		log.Fatal().Msg("fail to load any chains")

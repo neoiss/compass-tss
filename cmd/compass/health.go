@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/types"
@@ -235,7 +236,7 @@ func (s *HealthServer) currentSigning(w http.ResponseWriter, _ *http.Request) {
 	res := make([]VaultResponse, 0)
 
 	thornode := config.GetBifrost().Thorchain.ChainHost
-	url := fmt.Sprintf("http://%s%s", thornode, mapclient.AsgardVault)
+	url := fmt.Sprintf("http://%s%s", thornode, mapo.AsgardVault)
 	resp, err := http.Get(url)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get thornode status")

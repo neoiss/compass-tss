@@ -30,7 +30,7 @@ var m *metrics.Metrics
 
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapclient.ThorchainBridge
+	bridge mapo.ThorchainBridge
 	cfg    config.BifrostClientConfiguration
 	keys   *mapclient.Keys
 }

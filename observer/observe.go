@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"runtime"
 	"slices"
 	"strconv"
@@ -20,7 +21,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
@@ -62,7 +62,7 @@ type Observer struct {
 	globalNetworkFeeQueue chan common.NetworkFee
 	m                     *metrics.Metrics
 	errCounter            *prometheus.CounterVec
-	thorchainBridge       mapclient.ThorchainBridge
+	thorchainBridge       mapo.ThorchainBridge
 	storage               *ObserverStorage
 	tssKeysignMetricMgr   *metrics.TssKeysignMetricMgr
 
@@ -81,7 +81,7 @@ type Observer struct {
 // NewObserver create a new instance of Observer for chain
 func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 	chains map[common.Chain]chainclients.ChainClient,
-	thorchainBridge mapclient.ThorchainBridge,
+	thorchainBridge mapo.ThorchainBridge,
 	m *metrics.Metrics, dataPath string,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
 	attestationGossip *AttestationGossip,

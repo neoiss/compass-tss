@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
@@ -41,7 +42,7 @@ type Signer struct {
 	logger                zerolog.Logger
 	cfg                   config.Bifrost
 	wg                    *sync.WaitGroup
-	thorchainBridge       mapclient.ThorchainBridge
+	thorchainBridge       mapo.ThorchainBridge
 	stopChan              chan struct{}
 	blockScanner          *blockscanner.BlockScanner
 	thorchainBlockScanner *ThorchainBlockScan
@@ -61,8 +62,8 @@ type Signer struct {
 
 // NewSigner create a new instance of signer
 func NewSigner(cfg config.Bifrost,
-	thorchainBridge mapclient.ThorchainBridge,
-	thorKeys *mapclient.Keys,
+	thorchainBridge mapo.ThorchainBridge,
+	thorKeys *mapo.Keys,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	tssServer *tssp.TssServer,
 	chains map[common.Chain]chainclients.ChainClient,

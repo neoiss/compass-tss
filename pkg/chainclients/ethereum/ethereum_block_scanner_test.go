@@ -40,7 +40,7 @@ const Mainnet = 1
 
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapclient.ThorchainBridge
+	bridge mapo.ThorchainBridge
 	keys   *mapclient.Keys
 }
 

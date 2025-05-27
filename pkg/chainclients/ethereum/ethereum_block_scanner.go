@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"sort"
 	"strings"
@@ -27,7 +28,6 @@ import (
 	tokenlist "github.com/mapprotocol/compass-tss/common/tokenlist"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -69,7 +69,7 @@ type ETHScanner struct {
 	vaultABI              *abi.ABI
 	erc20ABI              *abi.ABI
 	tokens                *evm.LevelDBTokenMeta
-	bridge                mapclient.ThorchainBridge
+	bridge                mapo.ThorchainBridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
 	currentBlockHeight    int64
@@ -84,7 +84,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 	storage blockscanner.ScannerStorage,
 	chainID *big.Int,
 	client *ethclient.Client,
-	bridge mapclient.ThorchainBridge,
+	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	solvencyReporter SolvencyReporter,
@@ -187,7 +187,20 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	txIn, err := e.processBlock(block)
+	logs, err := e.getRPCFilterLogs(ethereum.FilterQuery{
+		FromBlock: big.NewInt(height),
+		ToBlock:   big.NewInt(height),
+		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
+		Topics:    [][]ecommon.Hash{{ecommon.HexToHash(constants.EventOfMessageOut)}},
+	})
+	if err != nil {
+		return stypes.TxIn{}, err
+	}
+	// todo empty handle
+	if len(logs) == 0 {
+		return stypes.TxIn{}, nil
+	}
+	txIn, err := e.processBlock(block, logs)
 	if err != nil {
 		e.logger.Error().Err(err).Int64("height", height).Msg("fail to search tx in block")
 		return stypes.TxIn{}, fmt.Errorf("fail to process block: %d, err:%w", height, err)
@@ -249,17 +262,17 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 	}
 
 	// find the 25th percentile priority fee in the block
-	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 })
-	priorityFee := priorityFees[len(priorityFees)/4]
+	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 }) // 从小到大
+	priorityFee := priorityFees[len(priorityFees)/4]                                                    //
 
 	// consider gas price as base fee + 25th percentile priority fee
-	gasPriceWei := new(big.Int).Add(baseFee, priorityFee)
+	gasPriceWei := new(big.Int).Add(baseFee, priorityFee) // 20000
 
 	// round the price up to nearest configured resolution
-	resolution := big.NewInt(e.cfg.GasPriceResolution)
-	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1)))
-	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)
-	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)
+	resolution := big.NewInt(e.cfg.GasPriceResolution)                        // 10000
+	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1))) // 20000 + 9999
+	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)                    // 29999 / 9999 = 3
+	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)                    // 3 * 9999
 
 	// add to the cache
 	e.gasCache = append(e.gasCache, gasPriceWei)
@@ -267,7 +280,7 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 		e.gasCache = e.gasCache[(len(e.gasCache) - e.cfg.GasCacheBlocks):]
 	}
 
-	e.updateGasPriceFromCache()
+	e.updateGasPriceFromCache() //
 }
 
 func (e *ETHScanner) updateGasPriceFromCache() {
@@ -281,19 +294,22 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 	for _, fee := range e.gasCache {
 		sum.Add(sum, fee)
 	}
+	// avg
 	mean := new(big.Int).Quo(sum, big.NewInt(int64(e.cfg.GasCacheBlocks)))
 
 	// compute the standard deviation of cache
+	// 标准值
 	std := new(big.Int)
 	for _, fee := range e.gasCache {
-		v := new(big.Int).Sub(fee, mean)
-		v.Mul(v, v)
-		std.Add(std, v)
+		v := new(big.Int).Sub(fee, mean) // 每个值在减去平均值, 4 - 2
+		v.Mul(v, v)                      // 2*2
+		std.Add(std, v)                  // 4 +4 +4+ 4  16
 	}
-	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks)))
-	std.Sqrt(std)
+	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks))) // 在除以缓存长度 16/4 = 4
+	std.Sqrt(std)                                         // std开根号 2
 
 	// mean + 3x standard deviation over cache blocks
+	// 2 + 2*3 = 8
 	e.gasPrice = mean.Add(mean, std.Mul(std, big.NewInt(3)))
 
 	// record metrics
@@ -303,7 +319,7 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 }
 
 // processBlock extracts transactions from block
-func (e *ETHScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
+func (e *ETHScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	height := int64(block.NumberU64())
 	txIn := stypes.TxIn{
 		Chain:    common.ETHChain,
@@ -341,7 +357,7 @@ func (e *ETHScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
 		return txIn, nil
 	}
 
-	txInBlock, err := e.extractTxs(block)
+	txInBlock, err := e.extractTxs(block, logs)
 	if err != nil {
 		return txIn, err
 	}
@@ -351,7 +367,7 @@ func (e *ETHScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
 	return txIn, nil
 }
 
-func (e *ETHScanner) extractTxs(block *etypes.Block) (stypes.TxIn, error) {
+func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	txInbound := stypes.TxIn{
 		Chain:    common.ETHChain,
 		Filtered: false,
@@ -362,7 +378,7 @@ func (e *ETHScanner) extractTxs(block *etypes.Block) (stypes.TxIn, error) {
 	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 
-	processTx := func(tx *etypes.Transaction) {
+	processTx := func(ll *etypes.Log) {
 		defer wg.Done()
 		if err := sem.Acquire(context.Background(), 1); err != nil {
 			e.logger.Err(err).Msg("fail to acquire semaphore")
@@ -370,20 +386,20 @@ func (e *ETHScanner) extractTxs(block *etypes.Block) (stypes.TxIn, error) {
 		}
 		defer sem.Release(1)
 
-		if tx.To() == nil {
-			return
-		}
+		//if ll.To() == nil {
+		//	return
+		//}
 
 		// just try to remove the transaction hash from key value store
 		// it doesn't matter whether the transaction is ours or not , success or failure
 		// as long as the transaction id matches
-		if err := e.blockMetaAccessor.RemoveSignedTxItem(tx.Hash().String()); err != nil {
-			e.logger.Err(err).Msgf("fail to remove signed tx item, hash:%s", tx.Hash().String())
+		if err := e.blockMetaAccessor.RemoveSignedTxItem(ll.TxHash.Hex()); err != nil { // todo more log in on e tx
+			e.logger.Err(err).Msgf("fail to remove signed tx item, hash:%s", ll.TxHash.Hex())
 		}
 
-		txInItem, err := e.fromTxToTxIn(tx)
+		txInItem, err := e.fromTxToTxInLog(ll)
 		if err != nil {
-			e.logger.Error().Err(err).Str("hash", tx.Hash().Hex()).Msg("fail to get one tx from server")
+			e.logger.Error().Err(err).Str("hash", ll.TxHash.Hex()).Msg("fail to get one tx from server")
 			return
 		}
 		if txInItem == nil {
@@ -400,19 +416,24 @@ func (e *ETHScanner) extractTxs(block *etypes.Block) (stypes.TxIn, error) {
 		mu.Lock()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
 		mu.Unlock()
-		e.logger.Debug().Str("hash", tx.Hash().Hex()).Msgf("%s got %d tx", e.cfg.ChainID, 1)
+		e.logger.Debug().Str("hash", ll.TxHash.Hex()).Msgf("%s got %d tx", e.cfg.ChainID, 1)
 	}
 
-	// process txs in parallel
-	for _, tx := range block.Transactions() {
-		// skip blob transactions
-		if tx.Type() == etypes.BlobTxType {
-			continue
-		}
-
+	for _, ll := range logs {
 		wg.Add(1)
-		go processTx(tx)
+		tmp := ll
+		go processTx(&tmp)
 	}
+	//// process txs in parallel
+	//for _, tx := range block.Transactions() {
+	//	// skip blob transactions
+	//	if tx.Type() == etypes.BlobTxType {
+	//		continue
+	//	}
+	//
+	//	wg.Add(1)
+	//	go processTx(tx)
+	//}
 	wg.Wait()
 
 	count := len(txInbound.TxArray)
@@ -484,7 +505,7 @@ func (e *ETHScanner) processReorg(block *etypes.Header) ([]stypes.TxIn, error) {
 			continue
 		}
 		var txIn stypes.TxIn
-		txIn, err = e.extractTxs(block)
+		txIn, err = e.extractTxs(block, nil)
 		if err != nil {
 			e.logger.Err(err).Msgf("fail to extract txs from block (%d)", item)
 			continue
@@ -601,6 +622,20 @@ func (e *ETHScanner) getRPCBlock(height int64) (*etypes.Block, error) {
 		return nil, fmt.Errorf("fail to fetch block: %w", err)
 	}
 	return block, nil
+}
+
+func (e *ETHScanner) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
+	ctx, cancel := e.getContext()
+	defer cancel()
+	return e.client.FilterLogs(ctx, query)
+}
+
+func (e *ETHScanner) getRPCFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
+	ret, err := e.getFilterLogs(query)
+	if err != nil {
+		return nil, fmt.Errorf("fail to fetch logs: %w", err)
+	}
+	return ret, nil
 }
 
 func (e *ETHScanner) getDecimals(token string) (uint64, error) {
@@ -894,6 +929,7 @@ func (e *ETHScanner) fromTxToTxIn(tx *etypes.Transaction) (*stypes.TxInItem, err
 		return e.getTxInFromFailedTransaction(tx, receipt), nil
 	}
 
+	// todo replace
 	disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
 	if err != nil {
 		e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
@@ -926,6 +962,63 @@ func (e *ETHScanner) fromTxToTxIn(tx *etypes.Transaction) (*stypes.TxInItem, err
 		}
 		return e.getTxInFromTransaction(tx, receipt)
 	}
+}
+
+func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
+	//if tx == nil || tx.To() == nil {
+	//	return nil, nil
+	//}
+	//receipt, err := e.getReceipt(tx.Hash().Hex())
+	//if err != nil {
+	//	if errors.Is(err, ethereum.NotFound) {
+	//		return nil, nil
+	//	}
+	//	return nil, fmt.Errorf("fail to get transaction receipt: %w", err)
+	//}
+	//if receipt.Status != 1 {
+	//	// a transaction that is failed
+	//	// remove the Signer cache , so the tx out item can be retried
+	//	if e.signerCacheManager != nil {
+	//		e.signerCacheManager.RemoveSigned(tx.Hash().String())
+	//	}
+	//	e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", tx.Hash().String(), receipt.Status)
+	//	return e.getTxInFromFailedTransaction(tx, receipt), nil
+	//}
+	//
+	//// todo replace
+	//disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
+	//if err != nil {
+	//	e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
+	//	disableWhitelist = 0
+	//}
+	//
+	//if disableWhitelist == 1 {
+	//	// parse tx without whitelist
+	//	destination := tx.To()
+	//	isToVault, _ := e.pubkeyMgr.IsValidPoolAddress(destination.String(), e.cfg.ChainID)
+	//
+	//	switch {
+	//	case isToVault:
+	//		// Tx to a vault
+	//		return e.getTxInFromTransaction(tx, receipt)
+	//	case e.isToValidContractAddress(destination, true):
+	//		// Deposit directly to router
+	//		return e.getTxInFromSmartContract(tx, receipt, 0)
+	//	case evm.IsSmartContractCall(tx, receipt):
+	//		// Tx to a different contract, attempt to parse with max allowable logs
+	//		return e.getTxInFromSmartContract(tx, receipt, int64(e.cfg.MaxContractTxLogs))
+	//	default:
+	//		// Tx to a non-contract or vault address
+	//		return e.getTxInFromTransaction(tx, receipt)
+	//	}
+	//} else {
+	//	// parse tx with whitelist
+	//	if e.isToValidContractAddress(tx.To(), true) {
+	//		return e.getTxInFromSmartContract(tx, receipt, 0)
+	//	}
+	//	return e.getTxInFromTransaction(tx, receipt)
+	//}
+	return nil, nil
 }
 
 // getTxInFromFailedTransaction when a transaction failed due to out of gas, this method will check whether the transaction is an outbound

@@ -6,10 +6,10 @@ package utxo
 import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 )
 
-func GetConfMulBasisPoint(chain string, bridge mapclient.ThorchainBridge) (cosmos.Uint, error) {
+func GetConfMulBasisPoint(chain string, bridge mapo.ThorchainBridge) (cosmos.Uint, error) {
 	confMultiplier, err := bridge.GetMimirWithRef(constants.MimirTemplateConfMultiplierBasisPoints, chain)
 	// should never be negative
 	if err != nil || confMultiplier <= 0 {
@@ -18,7 +18,7 @@ func GetConfMulBasisPoint(chain string, bridge mapclient.ThorchainBridge) (cosmo
 	return cosmos.NewUint(uint64(confMultiplier)), nil
 }
 
-func MaxConfAdjustment(confirm uint64, chain string, bridge mapclient.ThorchainBridge) (uint64, error) {
+func MaxConfAdjustment(confirm uint64, chain string, bridge mapo.ThorchainBridge) (uint64, error) {
 	maxConfirmations, err := bridge.GetMimirWithRef(constants.MimirTemplateMaxConfirmations, chain)
 	if err != nil {
 		return confirm, err

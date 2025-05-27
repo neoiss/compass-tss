@@ -3,6 +3,7 @@ package signer
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,7 +13,7 @@ import (
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
@@ -27,13 +28,13 @@ type ThorchainBlockScan struct {
 	keygenChan     chan ttypes.KeygenBlock
 	cfg            config.BifrostBlockScannerConfiguration
 	scannerStorage blockscanner.ScannerStorage
-	thorchain      mapclient.ThorchainBridge
+	thorchain      mapo.ThorchainBridge
 	errCounter     *prometheus.CounterVec
 	pubkeyMgr      pubkeymanager.PubKeyValidator
 }
 
 // NewThorchainBlockScan create a new instance of thorchain block scanner
-func NewThorchainBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage blockscanner.ScannerStorage, thorchain mapclient.ThorchainBridge, m *metrics.Metrics, pubkeyMgr pubkeymanager.PubKeyValidator) (*ThorchainBlockScan, error) {
+func NewThorchainBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage blockscanner.ScannerStorage, thorchain mapo.ThorchainBridge, m *metrics.Metrics, pubkeyMgr pubkeymanager.PubKeyValidator) (*ThorchainBlockScan, error) {
 	if scanStorage == nil {
 		return nil, errors.New("scanStorage is nil")
 	}
