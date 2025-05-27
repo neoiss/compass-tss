@@ -9,8 +9,8 @@ import (
 
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
 	"github.com/mapprotocol/compass-tss/common"
+	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	"github.com/mapprotocol/compass-tss/x/types"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 )
 
 // GetKeygenBlock retrieves keygen request for the given block height from thorchain

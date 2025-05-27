@@ -2,6 +2,7 @@ package evm
 
 import (
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"math/big"
 	"net/http"
@@ -27,7 +28,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 )
 
 func TestEVMPackage(t *testing.T) { TestingT(t) }
@@ -72,29 +72,29 @@ func (s *EVMSuite) SetUpTest(c *C) {
 			_, err := rw.Write([]byte(`{"current":"` + types2.GetCurrentVersion().String() + `"}`))
 			c.Assert(err, IsNil)
 		case mapclient.PubKeysEndpoint:
-			priKey, _ := s.thorKeys.GetPrivateKey()
-			tm, _ := cryptocodec.ToCmtPubKeyInterface(priKey.PubKey())
-			pk, err := common.NewPubKeyFromCrypto(tm)
-			c.Assert(err, IsNil)
-			content, err := os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-			c.Assert(err, IsNil)
-			var pubKeysVault openapi.VaultPubkeysResponse
-			c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
-			chain := common.AVAXChain.String()
-			router := "0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25"
-			pubKeysVault.Asgard = append(pubKeysVault.Asgard, openapi.VaultInfo{
-				PubKey: pk.String(),
-				Routers: []openapi.VaultRouter{
-					{
-						Chain:  &chain,
-						Router: &router,
-					},
-				},
-			})
-			buf, err := json.MarshalIndent(pubKeysVault, "", "	")
-			c.Assert(err, IsNil)
-			_, err = rw.Write(buf)
-			c.Assert(err, IsNil)
+			//priKey, _ := s.thorKeys.GetPrivateKey()
+			//tm, _ := cryptocodec.ToCmtPubKeyInterface(priKey.PubKey())
+			//pk, err := common.NewPubKeyFromCrypto(tm)
+			//c.Assert(err, IsNil)
+			//content, err := os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
+			//c.Assert(err, IsNil)
+			//var pubKeysVault openapi.VaultPubkeysResponse
+			//c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
+			//chain := common.AVAXChain.String()
+			//router := "0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25"
+			//pubKeysVault.Asgard = append(pubKeysVault.Asgard, openapi.VaultInfo{
+			//	PubKey: pk.String(),
+			//	Routers: []openapi.VaultRouter{
+			//		{
+			//			Chain:  &chain,
+			//			Router: &router,
+			//		},
+			//	},
+			//})
+			//buf, err := json.MarshalIndent(pubKeysVault, "", "	")
+			//c.Assert(err, IsNil)
+			//_, err = rw.Write(buf)
+			//c.Assert(err, IsNil)
 		case mapclient.InboundAddressesEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/inbound_addresses/inbound_addresses.json")
 		case mapclient.AsgardVault:

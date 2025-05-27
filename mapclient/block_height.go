@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/mapprotocol/compass-tss/common"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
+	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 )
 
 // GetLastObservedInHeight returns the lastobservedin value for the chain past in

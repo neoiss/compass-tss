@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +28,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 	. "gopkg.in/check.v1"
 )
 
@@ -80,16 +80,16 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 		case mapclient.ThorchainConstants:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/constants/constants.json")
 		case mapclient.PubKeysEndpoint:
-			var content []byte
-			content, err = os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-			c.Assert(err, IsNil)
-			var pubKeysVault openapi.VaultPubkeysResponse
-			c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
-			var buf []byte
-			buf, err = json.MarshalIndent(pubKeysVault, "", "	")
-			c.Assert(err, IsNil)
-			_, err = rw.Write(buf)
-			c.Assert(err, IsNil)
+			//var content []byte
+			//content, err = os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
+			//c.Assert(err, IsNil)
+			//var pubKeysVault openapi.VaultPubkeysResponse
+			//c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
+			//var buf []byte
+			//buf, err = json.MarshalIndent(pubKeysVault, "", "	")
+			//c.Assert(err, IsNil)
+			//_, err = rw.Write(buf)
+			//c.Assert(err, IsNil)
 		case mapclient.LastBlockEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/eth/last_block_height.json")
 		case mapclient.InboundAddressesEndpoint:

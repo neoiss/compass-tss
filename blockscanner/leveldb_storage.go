@@ -29,7 +29,7 @@ func NewLevelDBScannerStorage(db *leveldb.DB) (*LevelDBScannerStorage, error) {
 	return &LevelDBScannerStorage{db: db}, nil
 }
 
-// GetScanPos get current Scan Pos
+// GetScanPos get current Scan Position
 func (ldbss *LevelDBScannerStorage) GetScanPos() (int64, error) {
 	buf, err := ldbss.db.Get([]byte(ScanPosKey), nil)
 	if err != nil {

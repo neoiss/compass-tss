@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net"
 	"net/http"
@@ -14,16 +13,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-
+	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/types"
+
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
 )
 
 // -------------------------------------------------------------------------------------
