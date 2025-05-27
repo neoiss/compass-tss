@@ -130,7 +130,7 @@ func main() {
 	comm, stateManager, err := p2p.StartP2P(
 		cfg.TSS,
 		tmPrivateKey,
-		DefaultHome,
+		constants.DefaultHome,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to start p2p")

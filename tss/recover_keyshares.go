@@ -17,9 +17,9 @@ import (
 
 	"github.com/mapprotocol/compass-tss/config"
 
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/x/ebifrost"
 	"github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/app"
 )
 
 func RecoverKeyShares(conf config.Bifrost, thorchain mapo.ThorchainBridge) error {
@@ -44,7 +44,7 @@ func RecoverKeyShares(conf config.Bifrost, thorchain mapo.ThorchainBridge) error
 		return fmt.Errorf("fail to get signer membership")
 	}
 	vault := membership[len(membership)-1]
-	keysharesPath := filepath.Join(app.DefaultNodeHome, fmt.Sprintf("localstate-%s.json", vault))
+	keysharesPath := filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", vault))
 
 	// skip recovery if keyshares for the nodes current vault already exist
 	if _, err = os.Stat(keysharesPath); !os.IsNotExist(err) {

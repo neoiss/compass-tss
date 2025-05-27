@@ -34,7 +34,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/app"
 )
 
 // Signer will pull the tx out from thorchain and then forward it to chain
@@ -467,7 +466,7 @@ func (s *Signer) sendKeygenToThorchain(height int64, poolPk common.PubKey, secp2
 	var err error
 	if s.cfg.Signer.BackupKeyshares && !poolPk.IsEmpty() {
 		keyshares, err = tss.EncryptKeyshares(
-			filepath.Join(app.DefaultNodeHome, fmt.Sprintf("localstate-%s.json", poolPk)),
+			filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", poolPk)),
 			os.Getenv("SIGNER_SEED_PHRASE"),
 		)
 		if err != nil {

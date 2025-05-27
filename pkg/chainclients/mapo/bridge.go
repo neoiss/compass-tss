@@ -20,7 +20,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -33,7 +32,6 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/app"
 )
 
 // Endpoint urls
@@ -179,12 +177,12 @@ func (b *thorchainBridge) GetContext() client.Context {
 	ctx = ctx.WithFromAddress(signerAddr)
 	ctx = ctx.WithBroadcastMode("sync")
 
-	encodingConfig := app.MakeEncodingConfig()
-	ctx = ctx.WithCodec(encodingConfig.Codec)
-	ctx = ctx.WithInterfaceRegistry(encodingConfig.InterfaceRegistry)
-	ctx = ctx.WithTxConfig(encodingConfig.TxConfig)
-	ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
-	ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
+	//encodingConfig := app.MakeEncodingConfig()
+	//ctx = ctx.WithCodec(encodingConfig.Codec)
+	//ctx = ctx.WithInterfaceRegistry(encodingConfig.InterfaceRegistry)
+	//ctx = ctx.WithTxConfig(encodingConfig.TxConfig)
+	//ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
+	//ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
 
 	remote := b.cfg.ChainRPC
 	if !strings.HasPrefix(b.cfg.ChainHost, "http") {
