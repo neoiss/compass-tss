@@ -16,8 +16,8 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
+	kvTypes "github.com/mapprotocol/compass-tss/x/keeper/types"
 	"github.com/mapprotocol/compass-tss/x/types"
-	kvTypes "gitlab.com/thorchain/thornode/v3/x/thorchain/keeper/types"
 )
 
 var kaboom = errors.New("Kaboom!!!")

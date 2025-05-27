@@ -13,10 +13,10 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
+	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	"gitlab.com/thorchain/thornode/v3/cmd"
 )
 
 // GetRandomValidatorNode creates a random validator node account, used for testing
@@ -204,8 +204,8 @@ func SetupConfigForTest() {
 	config.SetBech32PrefixForAccount(cmd.Bech32PrefixAccAddr, cmd.Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(cmd.Bech32PrefixValAddr, cmd.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(cmd.Bech32PrefixConsAddr, cmd.Bech32PrefixConsPub)
-	config.SetCoinType(cmd.THORChainCoinType)
-	config.SetPurpose(cmd.THORChainCoinPurpose)
+	//config.SetCoinType(cmd.THORChainCoinType)
+	//config.SetPurpose(cmd.THORChainCoinPurpose)
 }
 
 // GetCurrentVersion - intended for unit tests, fetches the current version of

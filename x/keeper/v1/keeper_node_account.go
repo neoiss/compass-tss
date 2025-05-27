@@ -12,9 +12,9 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"gitlab.com/thorchain/thornode/v3/config"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/keeper/types"
+	"github.com/mapprotocol/compass-tss/x/keeper/types"
 )
 
 func (k KVStore) setNodeAccount(ctx cosmos.Context, key string, record NodeAccount) {

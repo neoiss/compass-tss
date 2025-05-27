@@ -6,7 +6,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/keeper/types"
+	"github.com/mapprotocol/compass-tss/x/keeper/types"
 )
 
 // SetLastSignedHeight save last signed height into kv store
