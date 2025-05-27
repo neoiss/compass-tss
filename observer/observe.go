@@ -147,11 +147,11 @@ func (o *Observer) Start(ctx context.Context) error {
 	for _, chain := range o.chains {
 		chain.Start(o.globalTxsQueue, o.globalErrataQueue, o.globalSolvencyQueue, o.globalNetworkFeeQueue)
 	}
-	go o.processTxIns()
+	go o.processTxIns() //  o.globalTxsQueue --> txIn, txIn --> o.onDeck, txIn --> o.storage
 	go o.processErrataTx(ctx)
 	go o.processSolvencyQueue(ctx)
 	go o.processNetworkFeeQueue(ctx)
-	go o.deck(ctx)
+	go o.deck(ctx) // o.onDeck --> txIn, txIn --> ObservedTxs,
 	go o.attestationGossip.Start(ctx)
 	return nil
 }

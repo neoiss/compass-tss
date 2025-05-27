@@ -1,4 +1,4 @@
-package mapo
+package mapclient
 
 import (
 	"encoding/json"

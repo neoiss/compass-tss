@@ -113,8 +113,8 @@ func (b *BlockScanner) Start(globalTxsQueue chan types.TxIn, globalNetworkFeeQue
 		b.previousBlock = currentPos
 	}
 	b.wg.Add(2)
-	go b.scanBlocks()
-	go b.scanMempool()
+	go b.scanBlocks()  // b.globalTxsQueue <- txIn, b.globalNetworkFeeQueue <- networkFee
+	go b.scanMempool() // b.globalTxsQueue <- txInMemPool
 }
 
 func (b *BlockScanner) scanMempool() {
@@ -211,7 +211,7 @@ func (b *BlockScanner) scanBlocks() {
 		default:
 			preBlockHeight := atomic.LoadInt64(&b.previousBlock)
 			currentBlock := preBlockHeight + 1
-			// check if mimir has disabled this chain
+			// check if mimir has disabled this chain // todo remove this check, it's not needed
 			if time.Since(lastMimirCheck) >= constants.MAPRelayChainBlockTime {
 				isChainPaused = b.isChainPaused()
 				lastMimirCheck = time.Now()
