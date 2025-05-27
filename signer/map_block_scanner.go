@@ -20,7 +20,7 @@ import (
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
-type ThorchainBlockScan struct {
+type MapChainBlockScan struct {
 	logger         zerolog.Logger
 	wg             *sync.WaitGroup
 	stopChan       chan struct{}
@@ -33,53 +33,52 @@ type ThorchainBlockScan struct {
 	pubkeyMgr      pubkeymanager.PubKeyValidator
 }
 
-// NewThorchainBlockScan create a new instance of thorchain block scanner
-func NewThorchainBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage blockscanner.ScannerStorage, thorchain mapo.ThorchainBridge, m *metrics.Metrics, pubkeyMgr pubkeymanager.PubKeyValidator) (*ThorchainBlockScan, error) {
+// NewMapChainBlockScan create a new instance of map block scanner
+func NewMapChainBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage blockscanner.ScannerStorage, bridge mapo.ThorchainBridge, m *metrics.Metrics, pubkeyMgr pubkeymanager.PubKeyValidator) (*MapChainBlockScan, error) {
 	if scanStorage == nil {
 		return nil, errors.New("scanStorage is nil")
 	}
 	if m == nil {
 		return nil, errors.New("metric is nil")
 	}
-	return &ThorchainBlockScan{
-		logger:         log.With().Str("module", "blockscanner").Str("chain", "THOR").Logger(),
+	return &MapChainBlockScan{
+		logger:         log.With().Str("module", "blockscanner").Str("chain", "map").Logger(),
 		wg:             &sync.WaitGroup{},
 		stopChan:       make(chan struct{}),
 		txOutChan:      make(chan types.TxOut),
 		keygenChan:     make(chan ttypes.KeygenBlock),
 		cfg:            cfg,
 		scannerStorage: scanStorage,
-		thorchain:      thorchain,
-		errCounter:     m.GetCounterVec(metrics.ThorchainBlockScannerError),
+		thorchain:      bridge,
+		errCounter:     m.GetCounterVec(metrics.MapChainBlockScannerError),
 		pubkeyMgr:      pubkeyMgr,
 	}, nil
 }
 
-// GetMessages return the channel
-func (b *ThorchainBlockScan) GetTxOutMessages() <-chan types.TxOut {
+func (b *MapChainBlockScan) GetTxOutMessages() <-chan types.TxOut {
 	return b.txOutChan
 }
 
-func (b *ThorchainBlockScan) GetKeygenMessages() <-chan ttypes.KeygenBlock {
+func (b *MapChainBlockScan) GetKeygenMessages() <-chan ttypes.KeygenBlock {
 	return b.keygenChan
 }
 
-func (b *ThorchainBlockScan) GetHeight() (int64, error) {
+func (b *MapChainBlockScan) GetHeight() (int64, error) {
 	return b.thorchain.GetBlockHeight()
 }
 
-// ThorchainBlockScan's GetNetworkFee only exists to satisfy the BlockScannerFetcher interface
+// GetNetworkFee : MapChainBlockScan's only exists to satisfy the BlockScannerFetcher interface
 // and should never be called, since broadcast network fees are for external chains' observed fees.
-func (b *ThorchainBlockScan) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	b.logger.Error().Msg("ThorchainBlockScan GetNetworkFee was called (which should never happen)")
+func (b *MapChainBlockScan) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
+	b.logger.Error().Msg("MapChainBlockScan GetNetworkFee was called (which should never happen)")
 	return 0, 0
 }
 
-func (c *ThorchainBlockScan) FetchMemPool(height int64) (types.TxIn, error) {
+func (b *MapChainBlockScan) FetchMemPool(height int64) (types.TxIn, error) {
 	return types.TxIn{}, nil
 }
 
-func (b *ThorchainBlockScan) FetchTxs(height, _ int64) (types.TxIn, error) {
+func (b *MapChainBlockScan) FetchTxs(height, _ int64) (types.TxIn, error) {
 	if err := b.processTxOutBlock(height); err != nil {
 		return types.TxIn{}, err
 	}
@@ -89,7 +88,7 @@ func (b *ThorchainBlockScan) FetchTxs(height, _ int64) (types.TxIn, error) {
 	return types.TxIn{}, nil
 }
 
-func (b *ThorchainBlockScan) processKeygenBlock(blockHeight int64) error {
+func (b *MapChainBlockScan) processKeygenBlock(blockHeight int64) error {
 	pk := b.pubkeyMgr.GetNodePubKey()
 	keygen, err := b.thorchain.GetKeygenBlock(blockHeight, pk.String())
 	if err != nil {
@@ -108,7 +107,7 @@ func (b *ThorchainBlockScan) processKeygenBlock(blockHeight int64) error {
 	return nil
 }
 
-func (b *ThorchainBlockScan) processTxOutBlock(blockHeight int64) error {
+func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	for _, pk := range b.pubkeyMgr.GetSignPubKeys() {
 		if len(pk.String()) == 0 {
 			continue

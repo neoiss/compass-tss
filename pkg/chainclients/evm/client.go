@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashicorp/go-multierror"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"net/http"
@@ -59,7 +58,7 @@ type EVMClient struct {
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
-	poolMgr                 mapclient.PoolManager
+	poolMgr                 mapo.PoolManager
 	tssKeySigner            *tss.KeySign
 	wg                      *sync.WaitGroup
 	stopchan                chan struct{}
@@ -76,7 +75,7 @@ func NewEVMClient(
 	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
-	poolMgr mapclient.PoolManager,
+	poolMgr mapo.PoolManager,
 ) (*EVMClient, error) {
 	// check required arguments
 	if thorKeys == nil {

@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	ttypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
@@ -32,7 +32,7 @@ import (
 )
 
 type UnstuckTestSuite struct {
-	thorKeys *mapclient.Keys
+	thorKeys *mapo.Keys
 	bridge   mapo.ThorchainBridge
 	m        *metrics.Metrics
 	server   *httptest.Server
@@ -58,7 +58,7 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
+	s.thorKeys = mapo.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
 
 	// get public key
 	priv, err := s.thorKeys.GetPrivateKey()
@@ -77,9 +77,9 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		switch req.RequestURI {
-		case mapclient.ThorchainConstants:
+		case mapo.ThorchainConstants:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/constants/constants.json")
-		case mapclient.PubKeysEndpoint:
+		case mapo.PubKeysEndpoint:
 			var content []byte
 			content, err = os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
 			c.Assert(err, IsNil)
@@ -90,20 +90,20 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 			c.Assert(err, IsNil)
 			_, err = rw.Write(buf)
 			c.Assert(err, IsNil)
-		case mapclient.LastBlockEndpoint:
+		case mapo.LastBlockEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/eth/last_block_height.json")
-		case mapclient.InboundAddressesEndpoint:
+		case mapo.InboundAddressesEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/inbound_addresses/inbound_addresses.json")
-		case mapclient.AsgardVault:
+		case mapo.AsgardVault:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/asgard.json")
-		case mapclient.NodeAccountEndpoint:
+		case mapo.NodeAccountEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/nodeaccount/template.json")
-		case mapclient.ChainVersionEndpoint:
+		case mapo.ChainVersionEndpoint:
 			_, err = rw.Write([]byte(`{"current":"` + types2.GetCurrentVersion().String() + `"}`))
 			c.Assert(err, IsNil)
 		default:
 			// return -1 for all unset mimirs
-			if strings.HasPrefix(req.RequestURI, mapclient.MimirEndpoint+"/key") {
+			if strings.HasPrefix(req.RequestURI, mapo.MimirEndpoint+"/key") {
 				_, err = rw.Write([]byte(`-1`))
 				c.Assert(err, IsNil)
 				return
@@ -277,7 +277,7 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 	s.server = server
 
 	cfg.ChainHost = server.Listener.Addr().String()
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.thorKeys)
+	s.bridge, err = mapo.NewThorchainBridge(cfg, s.m, s.thorKeys)
 	c.Assert(err, IsNil)
 }
 
@@ -289,7 +289,7 @@ func (s *UnstuckTestSuite) TestUnstuckProcess(c *C) {
 	config.Init()
 	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
 	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
+	poolMgr := mapo.NewPoolMgr(s.bridge)
 	e, err := NewEVMClient(s.thorKeys, config.BifrostChainConfiguration{
 		ChainID:        common.AVAXChain,
 		RPCHost:        "http://" + s.server.Listener.Addr().String(),

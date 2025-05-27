@@ -24,14 +24,14 @@ const (
 	TotalRetryBlocks        MetricName = `total_retry_blocks`
 	CommonBlockScannerError MetricName = `block_scanner_error`
 
-	ThorchainBlockScannerError MetricName = `thorchain_block_scan_error`
-	BlockDiscoveryDuration     MetricName = `block_discovery_duration`
+	MapChainBlockScannerError MetricName = `map_block_scan_error`
+	BlockDiscoveryDuration    MetricName = `block_discovery_duration`
 
-	ThorchainClientError    MetricName = `thorchain_client_error`
-	TxToThorchain           MetricName = `tx_to_thorchain`
-	TxToThorchainSigned     MetricName = `tx_to_thorchain_signed`
-	SignToThorchainDuration MetricName = `sign_to_thorchain_duration`
-	SendToThorchainDuration MetricName = `send_to_thorchain_duration`
+	MapChainClientError MetricName = `map_client_error`
+	TxToMapChain        MetricName = `tx_to_map`
+	TxToMapSigned       MetricName = `tx_to_map_signed`
+	SignToMapDuration   MetricName = `sign_to_map_duration`
+	SendToMapDuration   MetricName = `send_to_map_duration`
 
 	ObserverError MetricName = `observer_error`
 	SignerError   MetricName = `signer_error`
@@ -72,13 +72,13 @@ var (
 			Name:      "total_retry_blocks_total",
 			Help:      "total blocks retried ",
 		}),
-		TxToThorchain: prometheus.NewCounter(prometheus.CounterOpts{
+		TxToMapChain: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: "observer",
 			Subsystem: "thorchain_client",
 			Name:      "tx_to_thorchain_total",
 			Help:      "number of tx observer post to thorchain successfully",
 		}),
-		TxToThorchainSigned: prometheus.NewCounter(prometheus.CounterOpts{
+		TxToMapSigned: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: "observer",
 			Subsystem: "thorchain_client",
 			Name:      "tx_to_thorchain_signed_total",
@@ -107,16 +107,16 @@ var (
 			"error_name", "additional",
 		}),
 
-		ThorchainBlockScannerError: prometheus.NewCounterVec(prometheus.CounterOpts{
+		MapChainBlockScannerError: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "block_scanner",
-			Subsystem: "thorchain_block_scanner",
+			Subsystem: "map_block_scanner",
 			Name:      "errors_total",
-			Help:      "errors in thorchain block scanner",
+			Help:      "errors in map block scanner",
 		}, []string{
 			"error_name", "additional",
 		}),
 
-		ThorchainClientError: prometheus.NewCounterVec(prometheus.CounterOpts{
+		MapChainClientError: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "thorchain",
 			Subsystem: "thorchain_client",
 			Name:      "errors_total",
@@ -166,13 +166,13 @@ var (
 			Name:      "block_discovery",
 			Help:      "how long it takes to discovery a block height",
 		}),
-		SignToThorchainDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+		SignToMapDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "observer",
 			Subsystem: "thorchain",
 			Name:      "sign_to_thorchain_duration",
 			Help:      "how long it takes to sign a tx to thorchain",
 		}),
-		SendToThorchainDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+		SendToMapDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "observer",
 			Subsystem: "thorchain",
 			Name:      "send_to_thorchain_duration",

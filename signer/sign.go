@@ -39,25 +39,25 @@ import (
 
 // Signer will pull the tx out from thorchain and then forward it to chain
 type Signer struct {
-	logger                zerolog.Logger
-	cfg                   config.Bifrost
-	wg                    *sync.WaitGroup
-	thorchainBridge       mapo.ThorchainBridge
-	stopChan              chan struct{}
-	blockScanner          *blockscanner.BlockScanner
-	thorchainBlockScanner *ThorchainBlockScan
-	chains                map[common.Chain]chainclients.ChainClient
-	storage               SignerStorage
-	m                     *metrics.Metrics
-	errCounter            *prometheus.CounterVec
-	tssKeygen             *tss.KeyGen
-	tssServer             *tssp.TssServer
-	pubkeyMgr             pubkeymanager.PubKeyValidator
-	constantsProvider     *ConstantsProvider
-	localPubKey           common.PubKey
-	tssKeysignMetricMgr   *metrics.TssKeysignMetricMgr
-	observer              *observer.Observer
-	pipeline              *pipeline
+	logger               zerolog.Logger
+	cfg                  config.Bifrost
+	wg                   *sync.WaitGroup
+	thorchainBridge      mapo.ThorchainBridge
+	stopChan             chan struct{}
+	blockScanner         *blockscanner.BlockScanner
+	mapChainBlockScanner *MapChainBlockScan
+	chains               map[common.Chain]chainclients.ChainClient
+	storage              SignerStorage
+	m                    *metrics.Metrics
+	errCounter           *prometheus.CounterVec
+	tssKeygen            *tss.KeyGen
+	tssServer            *tssp.TssServer
+	pubkeyMgr            pubkeymanager.PubKeyValidator
+	constantsProvider    *ConstantsProvider
+	localPubKey          common.PubKey
+	tssKeysignMetricMgr  *metrics.TssKeysignMetricMgr
+	observer             *observer.Observer
+	pipeline             *pipeline
 }
 
 // NewSigner create a new instance of signer
@@ -105,12 +105,12 @@ func NewSigner(cfg config.Bifrost,
 	cfg.Signer.BlockScanner.ChainID = common.THORChain // hard code to thorchain
 
 	// Create pubkey manager and add our private key
-	thorchainBlockScanner, err := NewThorchainBlockScan(cfg.Signer.BlockScanner, storage, thorchainBridge, m, pubkeyMgr)
+	mapChainBlockScanner, err := NewMapChainBlockScan(cfg.Signer.BlockScanner, storage, thorchainBridge, m, pubkeyMgr)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create thorchain block scan: %w", err)
 	}
 
-	blockScanner, err := blockscanner.NewBlockScanner(cfg.Signer.BlockScanner, storage, m, thorchainBridge, thorchainBlockScanner)
+	blockScanner, err := blockscanner.NewBlockScanner(cfg.Signer.BlockScanner, storage, m, thorchainBridge, mapChainBlockScanner)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create block scanner: %w", err)
 	}
@@ -121,24 +121,24 @@ func NewSigner(cfg config.Bifrost,
 	}
 	constantProvider := NewConstantsProvider(thorchainBridge)
 	return &Signer{
-		logger:                log.With().Str("module", "signer").Logger(),
-		cfg:                   cfg,
-		wg:                    &sync.WaitGroup{},
-		stopChan:              make(chan struct{}),
-		blockScanner:          blockScanner,
-		thorchainBlockScanner: thorchainBlockScanner,
-		chains:                chains,
-		m:                     m,
-		storage:               storage,
-		errCounter:            m.GetCounterVec(metrics.SignerError),
-		pubkeyMgr:             pubkeyMgr,
-		thorchainBridge:       thorchainBridge,
-		tssKeygen:             kg,
-		tssServer:             tssServer,
-		constantsProvider:     constantProvider,
-		localPubKey:           na.PubKeySet.Secp256k1,
-		tssKeysignMetricMgr:   tssKeysignMetricMgr,
-		observer:              obs,
+		logger:               log.With().Str("module", "signer").Logger(),
+		cfg:                  cfg,
+		wg:                   &sync.WaitGroup{},
+		stopChan:             make(chan struct{}),
+		blockScanner:         blockScanner,
+		mapChainBlockScanner: mapChainBlockScanner,
+		chains:               chains,
+		m:                    m,
+		storage:              storage,
+		errCounter:           m.GetCounterVec(metrics.SignerError),
+		pubkeyMgr:            pubkeyMgr,
+		thorchainBridge:      thorchainBridge,
+		tssKeygen:            kg,
+		tssServer:            tssServer,
+		constantsProvider:    constantProvider,
+		localPubKey:          na.PubKeySet.Secp256k1,
+		tssKeysignMetricMgr:  tssKeysignMetricMgr,
+		observer:             obs,
 	}, nil
 }
 
@@ -154,10 +154,10 @@ func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error
 // Start signer process
 func (s *Signer) Start() error {
 	s.wg.Add(1)
-	go s.processTxnOut(s.thorchainBlockScanner.GetTxOutMessages(), 1)
+	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1)
 
 	s.wg.Add(1)
-	go s.processKeygen(s.thorchainBlockScanner.GetKeygenMessages())
+	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
 
 	s.wg.Add(1)
 	go s.signTransactions()

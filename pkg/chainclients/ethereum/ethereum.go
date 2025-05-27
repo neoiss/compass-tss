@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/hashicorp/go-multierror"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"strings"
@@ -63,7 +62,7 @@ type Client struct {
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
-	poolMgr                 mapclient.PoolManager
+	poolMgr                 mapo.PoolManager
 	asgardAddresses         []common.Address
 	lastAsgard              time.Time
 	tssKeySigner            *tss.KeySign
@@ -81,7 +80,7 @@ func NewClient(thorKeys *mapo.Keys,
 	bridge mapo.ThorchainBridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
-	poolMgr mapclient.PoolManager,
+	poolMgr mapo.PoolManager,
 ) (*Client, error) {
 	if thorKeys == nil {
 		return nil, fmt.Errorf("fail to create ETH client,thor keys is empty")

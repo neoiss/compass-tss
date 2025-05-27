@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"io"
 	"net/http"
 	"net/url"
@@ -70,6 +71,7 @@ type thorchainBridge struct {
 	seqNumber     uint64
 	httpClient    *retryablehttp.Client
 	broadcastLock *sync.RWMutex
+	client        *ethclient.Client
 }
 
 // ThorchainBridge todo replace
@@ -139,15 +141,20 @@ func NewThorchainBridge(cfg config.BifrostClientConfiguration, m *metrics.Metric
 
 	httpClient := retryablehttp.NewClient()
 	httpClient.Logger = nil
+	ethClient, err := ethclient.Dial(cfg.ChainHost)
+	if err != nil {
+		return nil, fmt.Errorf("fail to dial ETH rpc host(%s): %w", cfg.ChainHost, err)
+	}
 
 	return &thorchainBridge{
 		logger:        logger,
 		cfg:           cfg,
 		keys:          k,
-		errCounter:    m.GetCounterVec(metrics.ThorchainClientError),
+		errCounter:    m.GetCounterVec(metrics.MapChainClientError),
 		httpClient:    httpClient,
 		m:             m,
 		broadcastLock: &sync.RWMutex{},
+		client:        ethClient,
 	}, nil
 }
 
@@ -290,7 +297,7 @@ func (b *thorchainBridge) GetConfig() config.BifrostClientConfiguration {
 func (b *thorchainBridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (common.TxID, error) {
 	start := time.Now()
 	defer func() {
-		b.m.GetHistograms(metrics.SignToThorchainDuration).Observe(time.Since(start).Seconds())
+		b.m.GetHistograms(metrics.SignToMapDuration).Observe(time.Since(start).Seconds())
 	}()
 
 	if blame.IsEmpty() {
@@ -688,7 +695,7 @@ func (b *thorchainBridge) PostNetworkFee(height int64, chain common.Chain, trans
 	}
 	start := time.Now()
 	defer func() {
-		b.m.GetHistograms(metrics.SignToThorchainDuration).Observe(time.Since(start).Seconds())
+		b.m.GetHistograms(metrics.SignToMapDuration).Observe(time.Since(start).Seconds())
 	}()
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {

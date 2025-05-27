@@ -24,7 +24,7 @@ func (b *thorchainBridge) Broadcast(msgs ...stypes.Msg) (common.TxID, error) {
 
 	start := time.Now()
 	defer func() {
-		b.m.GetHistograms(metrics.SendToThorchainDuration).Observe(time.Since(start).Seconds())
+		b.m.GetHistograms(metrics.SendToMapDuration).Observe(time.Since(start).Seconds())
 	}()
 
 	blockHeight, err := b.GetBlockHeight()
@@ -77,7 +77,7 @@ func (b *thorchainBridge) Broadcast(msgs ...stypes.Msg) (common.TxID, error) {
 		return noTxID, fmt.Errorf("fail to broadcast tx: %w", err)
 	}
 
-	b.m.GetCounter(metrics.TxToThorchainSigned).Inc()
+	b.m.GetCounter(metrics.TxToMapSigned).Inc()
 	txHash, err := common.NewTxID(commit.TxHash)
 	if err != nil {
 		return common.BlankTxID, fmt.Errorf("fail to convert txhash: %w", err)
@@ -98,7 +98,7 @@ func (b *thorchainBridge) Broadcast(msgs ...stypes.Msg) (common.TxID, error) {
 			return txHash, fmt.Errorf("fail to broadcast to THORChain,code:%d, log:%s", commit.Code, commit.RawLog)
 		}
 	}
-	b.m.GetCounter(metrics.TxToThorchain).Inc()
+	b.m.GetCounter(metrics.TxToMapChain).Inc()
 	b.logger.Info().Msgf("Received a TxHash of %v from the thorchain", commit.TxHash)
 
 	// increment seqNum

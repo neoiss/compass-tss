@@ -409,25 +409,25 @@ func (s *SignSuite) TestProcess(c *C) {
 		},
 	}
 
-	blockScan, err := NewThorchainBlockScan(cfg.BlockScanner, s.storage, s.bridge, s.metrics, pubkeymanager.NewMockPoolAddressValidator())
+	blockScan, err := mapo.NewBlockScan(cfg.BlockScanner, s.storage, s.bridge, s.metrics, pubkeymanager.NewMockPoolAddressValidator())
 	c.Assert(err, IsNil)
 
 	blockScanner, err := blockscanner.NewBlockScanner(cfg.BlockScanner, s.storage, m, s.bridge, blockScan)
 	c.Assert(err, IsNil)
 
 	sign := &Signer{
-		logger:                log.With().Str("module", "signer").Logger(),
-		cfg:                   config.Bifrost{Signer: cfg},
-		wg:                    &sync.WaitGroup{},
-		stopChan:              make(chan struct{}),
-		blockScanner:          blockScanner,
-		thorchainBlockScanner: blockScan,
-		chains:                chains,
-		m:                     s.metrics,
-		storage:               s.storage,
-		errCounter:            s.metrics.GetCounterVec(metrics.SignerError),
-		pubkeyMgr:             pubkeymanager.NewMockPoolAddressValidator(),
-		thorchainBridge:       s.bridge,
+		logger:               log.With().Str("module", "signer").Logger(),
+		cfg:                  config.Bifrost{Signer: cfg},
+		wg:                   &sync.WaitGroup{},
+		stopChan:             make(chan struct{}),
+		blockScanner:         blockScanner,
+		mapChainBlockScanner: blockScan,
+		chains:               chains,
+		m:                    s.metrics,
+		storage:              s.storage,
+		errCounter:           s.metrics.GetCounterVec(metrics.SignerError),
+		pubkeyMgr:            pubkeymanager.NewMockPoolAddressValidator(),
+		thorchainBridge:      s.bridge,
 	}
 	c.Assert(sign, NotNil)
 	err = sign.Start()

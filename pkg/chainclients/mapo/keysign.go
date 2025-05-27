@@ -1,13 +1,16 @@
 package mapo
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
+	"context"
 	"fmt"
-	"net/http"
+	"github.com/ethereum/go-ethereum"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/constants"
+	"math/big"
+	"time"
 
-	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 )
 
@@ -18,48 +21,50 @@ type QueryKeysign struct {
 	Signature string      `json:"signature"`
 }
 
+func (b *thorchainBridge) getContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), time.Second*5)
+}
+
+func (b *thorchainBridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
+	ctx, cancel := b.getContext()
+	defer cancel()
+	return b.client.FilterLogs(ctx, query)
+}
+
 // GetKeysign retrieves txout from this block height from thorchain
 func (b *thorchainBridge) GetKeysign(blockHeight int64, pk string) (types.TxOut, error) {
-	path := fmt.Sprintf("%s/%d/%s", KeysignEndpoint, blockHeight, pk)
-	body, status, err := b.getWithPath(path)
-	if err != nil {
-		if status == http.StatusNotFound {
-			return types.TxOut{}, btypes.ErrUnavailableBlock
-		}
-		return types.TxOut{}, fmt.Errorf("failed to get tx from a block height: %w", err)
-	}
-	var query QueryKeysign
-	if err = json.Unmarshal(body, &query); err != nil {
-		return types.TxOut{}, fmt.Errorf("failed to unmarshal TxOut: %w", err)
-	}
-	// there is no txout item , thus no need to validate signature either
-	if len(query.Keysign.TxArray) == 0 {
-		return query.Keysign, nil
-	}
-	if query.Signature == "" {
-		return types.TxOut{}, errors.New("invalid keysign signature: empty")
-	}
-	buf, err := json.Marshal(query.Keysign)
-	if err != nil {
-		return types.TxOut{}, fmt.Errorf("fail to marshal keysign block to json: %w", err)
-	}
-	pubKey, err := b.keys.GetSignerInfo().GetPubKey()
-	if err != nil {
-		return types.TxOut{}, fmt.Errorf("fail to get signer pub key: %w", err)
-	}
-	s, err := base64.StdEncoding.DecodeString(query.Signature)
-	if err != nil {
-		return types.TxOut{}, errors.New("invalid keysign signature: cannot decode signature")
-	}
-	if !pubKey.VerifySignature(buf, s) {
-		return types.TxOut{}, errors.New("invalid keysign signature: bad signature")
+	logs, err := b.getFilterLogs(ethereum.FilterQuery{
+		FromBlock: big.NewInt(blockHeight),
+		ToBlock:   big.NewInt(blockHeight),
+		Addresses: []ecommon.Address{ecommon.HexToAddress(constants.MosAddressOfMap)},
+		Topics:    [][]ecommon.Hash{{ecommon.HexToHash(constants.EventOfMapRelay)}},
+	})
+	if len(logs) == 0 {
+		return types.TxOut{}, err
 	}
 
-	// ensure the block height received is the one requested. Without this
-	// check, an attacker could use a replay attack to steal funds
-	if query.Keysign.Height != blockHeight {
-		return types.TxOut{}, fmt.Errorf("invalid keysign: block height mismatch (%d vs %d)", query.Keysign.Height, blockHeight)
+	ret := types.TxOut{
+		Height:  blockHeight,
+		TxArray: make([]types.TxArrayItem, 0, len(logs)),
+	}
+	for _, ele := range logs {
+		inHash, _ := common.NewTxID(ele.TxHash.Hex())
+		ret.TxArray = append(ret.TxArray, types.TxArrayItem{
+			Chain:                 common.MapChain,
+			ToAddress:             "",
+			VaultPubKey:           "",
+			Coin:                  common.Coin{},
+			Memo:                  "",
+			MaxGas:                nil,
+			GasRate:               0,
+			InHash:                inHash,
+			OutHash:               "",
+			Aggregator:            "",
+			AggregatorTargetAsset: "",
+			AggregatorTargetLimit: nil,
+			CloutSpent:            "",
+		})
 	}
 
-	return query.Keysign, nil
+	return ret, nil
 }

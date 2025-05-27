@@ -26,6 +26,7 @@ const (
 	AVAXChain  = Chain("AVAX")
 	BASEChain  = Chain("BASE")
 	XRPChain   = Chain("XRP")
+	MapChain   = Chain("MAP")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -43,6 +44,7 @@ var AllChains = [...]Chain{
 	AVAXChain,
 	BASEChain,
 	XRPChain,
+	MapChain,
 }
 
 type SigningAlgo string
