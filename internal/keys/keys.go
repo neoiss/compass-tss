@@ -1,7 +1,8 @@
-package mapo
+package keys
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"io"
 	"os/user"
 	"path/filepath"
@@ -37,20 +38,24 @@ func NewKeysWithKeybase(kb ckeys.Keyring, name, password string) *Keys {
 }
 
 // GetKeyringKeybase return keyring and key info
-func GetKeyringKeybase(priKey string) (ckeys.Keyring, *ckeys.Record, error) {
+func GetKeyringKeybase(priKeyStr, signerName string) (ckeys.Keyring, *ckeys.Record, error) {
 	//if len(signerName) == 0 {
 	//	return nil, nil, fmt.Errorf("signer name is empty")
 	//}
 	//if len(password) == 0 {
 	//	return nil, nil, fmt.Errorf("password is empty")
 	//}
-	if len(priKey) == 0 {
+	if len(priKeyStr) == 0 {
 		return nil, nil, fmt.Errorf("priKey is empty")
 	}
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
 	kb := ckeys.NewInMemory(cdc)
+	err := kb.ImportPrivKeyHex(signerName, priKeyStr, string(hd.Secp256k1.Name()))
+	if err != nil {
+		return nil, nil, err
+	}
 	//
 	//buf := bytes.NewBufferString(password)
 	//// the library used by keyring is using ReadLine , which expect a new line
@@ -103,7 +108,11 @@ func (k *Keys) GetSignerInfo() *ckeys.Record {
 
 // GetPrivateKey return the private key
 func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
-	// return k.kb.ExportPrivateKeyObject(k.signerName)
+	//addr, err := sdk.AccAddressFromHexUnsafe("2b7588165556aB2fA1d30c520491C385BAa424d8")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//privKeyArmor, err := k.kb.ExportPrivKeyArmorByAddress(addr, k.password)
 	privKeyArmor, err := k.kb.ExportPrivKeyArmor(k.signerName, k.password)
 	if err != nil {
 		return nil, err

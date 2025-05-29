@@ -3,15 +3,17 @@ package mapo
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"sort"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
-	"math/big"
-	"time"
-
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/metrics"
 )
 
 var ErrNotFound = fmt.Errorf("not found")
@@ -21,22 +23,39 @@ type QueryKeysign struct {
 	Signature string      `json:"signature"`
 }
 
-func (b *thorchainBridge) getContext() (context.Context, context.CancelFunc) {
+func (b *Bridge) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)
 }
 
-func (b *thorchainBridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
+func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
 	ctx, cancel := b.getContext()
 	defer cancel()
-	return b.client.FilterLogs(ctx, query)
+	return b.ethClient.FilterLogs(ctx, query)
 }
 
-// GetKeysign retrieves txout from this block height from thorchain
-func (b *thorchainBridge) GetKeysign(blockHeight int64, pk string) (types.TxOut, error) {
+// GetKeySign retrieves txout from this block height from mapBridge
+func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) {
+	// get block
+	if blockHeight%100 == 0 {
+		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")
+	}
+
+	// process all transactions in the block
+	//e.currentBlockHeight = height
+	block, err := b.ethRpc.GetBlock(blockHeight)
+	if err != nil {
+		return types.TxOut{}, err
+	}
+	err = b.processBlock(block)
+	if err != nil {
+		b.logger.Error().Err(err).Int64("height", blockHeight).Msg("failed to search tx in block")
+		return types.TxOut{}, fmt.Errorf("failed to process block: %d, err:%w", blockHeight, err)
+	}
+	// todo handler
 	logs, err := b.getFilterLogs(ethereum.FilterQuery{
 		FromBlock: big.NewInt(blockHeight),
 		ToBlock:   big.NewInt(blockHeight),
-		Addresses: []ecommon.Address{ecommon.HexToAddress(constants.MosAddressOfMap)},
+		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // todo handler add cfg
 		Topics:    [][]ecommon.Hash{{ecommon.HexToHash(constants.EventOfMapRelay)}},
 	})
 	if len(logs) == 0 {
@@ -67,4 +86,56 @@ func (b *thorchainBridge) GetKeysign(blockHeight int64, pk string) (types.TxOut,
 	}
 
 	return ret, nil
+}
+
+func (b *Bridge) processBlock(block *etypes.Block) error {
+	// collect gas prices of txs in current block
+	var txsGas []*big.Int
+	for _, tx := range block.Transactions() {
+		txsGas = append(txsGas, tx.GasPrice())
+	}
+	b.updateGasPrice(txsGas)
+
+	return nil
+}
+
+// updateGasPrice calculates and stores the current gas price to reported to thornode
+func (b *Bridge) updateGasPrice(prices []*big.Int) {
+	// skip empty blocks
+	if len(prices) == 0 {
+		return
+	}
+
+	// find the median gas price in the block
+	sort.Slice(prices, func(i, j int) bool { return prices[i].Cmp(prices[j]) == -1 })
+	gasPrice := prices[len(prices)/2]
+
+	// add to the cache
+	b.gasCache = append(b.gasCache, gasPrice)
+	if len(b.gasCache) > 20 {
+		b.gasCache = b.gasCache[(len(b.gasCache) - 20):]
+	}
+
+	// skip update unless cache is full
+	if len(b.gasCache) < 20 { // b.cfg.GasCacheBlocks todo handler add cfg
+		return
+	}
+
+	// compute the median of the median prices in the cache
+	medians := []*big.Int{}
+	medians = append(medians, b.gasCache...)
+	sort.Slice(medians, func(i, j int) bool { return medians[i].Cmp(medians[j]) == -1 })
+	median := medians[len(medians)/2]
+
+	// round the price up to nearest configured resolution
+	resolution := big.NewInt(100000000) // todo handler add cfg
+	median.Add(median, new(big.Int).Sub(resolution, big.NewInt(1)))
+	median = median.Div(median, resolution)
+	median = median.Mul(median, resolution)
+	b.gasPrice = median
+
+	// record metrics
+	gasPriceFloat, _ := new(big.Float).SetInt64(b.gasPrice.Int64()).Float64()
+	b.m.GetGauge(metrics.GasPrice(b.cfg.ChainID)).Set(gasPriceFloat)
+	b.m.GetCounter(metrics.GasPriceChange(b.cfg.ChainID)).Inc()
 }

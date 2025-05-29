@@ -20,6 +20,7 @@ const (
 )
 
 func getSeedAddrs() (addrs []string) {
+	// todo get ips by contract
 	if config.Thornode.SeedNodesEndpoint == "" {
 		log.Warn().Msg("no seed nodes endpoint provided")
 		return

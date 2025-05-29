@@ -1,116 +1,88 @@
 package mapo
 
 import (
+	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/std"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	keys2 "github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
+
+	"github.com/blang/semver"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // Endpoint urls
 const (
 	AuthAccountEndpoint      = "/cosmos/auth/v1beta1/accounts"
 	BroadcastTxsEndpoint     = "/"
-	KeygenEndpoint           = "/thorchain/keygen"
-	KeysignEndpoint          = "/thorchain/keysign"
-	LastBlockEndpoint        = "/thorchain/lastblock"
-	NodeAccountEndpoint      = "/thorchain/node"
-	NodeAccountsEndpoint     = "/thorchain/nodes"
-	SignerMembershipEndpoint = "/thorchain/vaults/%s/signers"
+	KeygenEndpoint           = "/mapBridge/keygen"
+	KeysignEndpoint          = "/mapBridge/keysign"
+	LastBlockEndpoint        = "/mapBridge/lastblock"
+	NodeAccountEndpoint      = "/mapBridge/node"
+	NodeAccountsEndpoint     = "/mapBridge/nodes"
+	SignerMembershipEndpoint = "/mapBridge/vaults/%s/signers"
 	StatusEndpoint           = "/status"
-	VaultEndpoint            = "/thorchain/vault/%s"
-	AsgardVault              = "/thorchain/vaults/asgard"
-	PubKeysEndpoint          = "/thorchain/vaults/pubkeys"
-	ThorchainConstants       = "/thorchain/constants"
-	RagnarokEndpoint         = "/thorchain/ragnarok"
-	MimirEndpoint            = "/thorchain/mimir"
-	ChainVersionEndpoint     = "/thorchain/version"
-	InboundAddressesEndpoint = "/thorchain/inbound_addresses"
-	PoolsEndpoint            = "/thorchain/pools"
-	THORNameEndpoint         = "/thorchain/thorname/%s"
+	VaultEndpoint            = "/mapBridge/vault/%s"
+	AsgardVault              = "/mapBridge/vaults/asgard"
+	PubKeysEndpoint          = "/mapBridge/vaults/pubkeys"
+	ThorchainConstants       = "/mapBridge/constants"
+	RagnarokEndpoint         = "/mapBridge/ragnarok"
+	MimirEndpoint            = "/mapBridge/mimir"
+	ChainVersionEndpoint     = "/mapBridge/version"
+	InboundAddressesEndpoint = "/mapBridge/inbound_addresses"
+	PoolsEndpoint            = "/mapBridge/pools"
+	THORNameEndpoint         = "/mapBridge/thorname/%s"
 )
 
-// thorchainBridge will be used to send tx to THORChain
-type thorchainBridge struct {
+// Bridge will be used to send tx to THORChain
+type Bridge struct {
 	logger        zerolog.Logger
 	cfg           config.BifrostClientConfiguration
-	keys          *Keys
+	keys          *keys2.Keys
 	errCounter    *prometheus.CounterVec
 	m             *metrics.Metrics
 	blockHeight   int64
 	accountNumber uint64
 	seqNumber     uint64
+	chainID       *big.Int
 	httpClient    *retryablehttp.Client
 	broadcastLock *sync.RWMutex
-	client        *ethclient.Client
-}
-
-// ThorchainBridge todo replace
-type ThorchainBridge interface {
-	EnsureNodeWhitelisted() error
-	EnsureNodeWhitelistedWithTimeout() error
-	FetchNodeStatus() (stypes.NodeStatus, error)
-	FetchActiveNodes() ([]common.PubKey, error)
-	GetAsgards() (stypes.Vaults, error)
-	GetVault(pubkey string) (stypes.Vault, error)
-	GetConfig() config.BifrostClientConfiguration
-	GetConstants() (map[string]int64, error)
-	GetContext() client.Context
-	GetContractAddress() ([]PubKeyContractAddressPair, error)
-	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
-	GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Signature, keysharesBackup []byte, blame stypes.Blame, inputPks common.PubKeys, keygenType stypes.KeygenType, chains common.Chains, height, keygenTime int64) (sdk.Msg, error)
-	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
-	GetMimir(key string) (int64, error)
-	GetMimirWithRef(template, ref string) (int64, error)
-	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
-	GetPools() (stypes.Pools, error)
-	GetPubKeys() ([]PubKeyContractAddressPair, error)
-	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
-	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
-	GetTHORName(name string) (stypes.THORName, error)
-	GetThorchainVersion() (semver.Version, error)
-	IsCatchingUp() (bool, error)
-	HasNetworkFee(chain common.Chain) (bool, error)
-	GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error)
-	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (common.TxID, error)
-	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (common.TxID, error)
-	RagnarokInProgress() (bool, error)
-	WaitToCatchUp() error
-	GetBlockHeight() (int64, error)
-	GetLastObservedInHeight(chain common.Chain) (int64, error)
-	GetLastSignedOutHeight(chain common.Chain) (int64, error)
-	Broadcast(msgs ...sdk.Msg) (common.TxID, error)
-	GetKeysign(blockHeight int64, pk string) (types.TxOut, error)
-	GetNodeAccount(string) (*stypes.NodeAccount, error)
-	GetNodeAccounts() ([]*stypes.NodeAccount, error)
-	GetKeygenBlock(int64, string) (stypes.KeygenBlock, error)
+	ethClient     *ethclient.Client
+	blockScanner  *MapChainBlockScan
+	stopChan      chan struct{}
+	wg            *sync.WaitGroup
+	gasPrice      *big.Int
+	gasCache      []*big.Int
+	ethPriKey     *ecdsa.PrivateKey
+	kw            *evm.KeySignWrapper
+	ethRpc        *evm.EthRPC
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -125,10 +97,10 @@ var (
 	httpResponseCachesMu = &sync.Mutex{}
 )
 
-// NewThorchainBridge create a new instance of ThorchainBridge
-func NewThorchainBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *Keys) (ThorchainBridge, error) {
+// NewBridge create a new instance of Bridge
+func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *keys2.Keys) (shareTypes.Bridge, error) {
 	// main module logger
-	logger := log.With().Str("module", "thorchain_client").Logger()
+	logger := log.With().Str("module", "mapo_client").Logger()
 
 	if len(cfg.ChainID) == 0 {
 		return nil, errors.New("chain id is empty")
@@ -141,30 +113,62 @@ func NewThorchainBridge(cfg config.BifrostClientConfiguration, m *metrics.Metric
 	httpClient.Logger = nil
 	ethClient, err := ethclient.Dial(cfg.ChainHost)
 	if err != nil {
-		return nil, fmt.Errorf("fail to dial ETH rpc host(%s): %w", cfg.ChainHost, err)
+		return nil, fmt.Errorf("fail to dial map rpc host(%s): %w", cfg.ChainHost, err)
 	}
 
-	return &thorchainBridge{
+	chainID, err := getChainID(ethClient, time.Second*5)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := k.GetPrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("fail to get private key: %w", err)
+	}
+	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
+	if err != nil {
+		return nil, fmt.Errorf("fail to get tm pub key: %w", err)
+	}
+	pk, err := common.NewPubKeyFromCrypto(temp)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get pub key: %w", err)
+	}
+	ethPrivateKey, err := evm.GetPrivateKey(priv)
+	if err != nil {
+		return nil, err
+	}
+
+	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "ETH")
+	if err != nil {
+		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
+	}
+
+	rpcClient, err := evm.NewEthRPC(
+		ethClient,
+		time.Second*5,
+		cfg.ChainID.String(),
+	)
+
+	return &Bridge{
 		logger:        logger,
 		cfg:           cfg,
 		keys:          k,
 		errCounter:    m.GetCounterVec(metrics.MapChainClientError),
 		httpClient:    httpClient,
 		m:             m,
+		chainID:       chainID,
 		broadcastLock: &sync.RWMutex{},
-		client:        ethClient,
+		ethClient:     ethClient,
+		stopChan:      make(chan struct{}),
+		wg:            &sync.WaitGroup{},
+		ethPriKey:     ethPrivateKey,
+		kw:            keySignWrapper,
+		ethRpc:        rpcClient,
 	}, nil
 }
 
-func MakeCodec() codec.ProtoCodecMarshaler {
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	std.RegisterInterfaces(interfaceRegistry)
-	stypes.RegisterInterfaces(interfaceRegistry)
-	return codec.NewProtoCodec(interfaceRegistry)
-}
-
 // GetContext return a valid context with all relevant values set
-func (b *thorchainBridge) GetContext() client.Context {
+func (b *Bridge) GetContext() client.Context {
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {
 		panic(err)
@@ -176,13 +180,6 @@ func (b *thorchainBridge) GetContext() client.Context {
 	ctx = ctx.WithFromName(b.cfg.SignerName)
 	ctx = ctx.WithFromAddress(signerAddr)
 	ctx = ctx.WithBroadcastMode("sync")
-
-	//encodingConfig := app.MakeEncodingConfig()
-	//ctx = ctx.WithCodec(encodingConfig.Codec)
-	//ctx = ctx.WithInterfaceRegistry(encodingConfig.InterfaceRegistry)
-	//ctx = ctx.WithTxConfig(encodingConfig.TxConfig)
-	//ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
-	//ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
 
 	remote := b.cfg.ChainRPC
 	if !strings.HasPrefix(b.cfg.ChainHost, "http") {
@@ -197,12 +194,12 @@ func (b *thorchainBridge) GetContext() client.Context {
 	return ctx
 }
 
-func (b *thorchainBridge) getWithPath(path string) ([]byte, int, error) {
+func (b *Bridge) getWithPath(path string) ([]byte, int, error) {
 	return b.get(b.getThorChainURL(path))
 }
 
-// get handle all the low level http GET calls using retryablehttp.ThorchainBridge
-func (b *thorchainBridge) get(url string) ([]byte, int, error) {
+// get handle all the low level http GET calls using retryablehttp.Bridge
+func (b *Bridge) get(url string) ([]byte, int, error) {
 	// To reduce querying time and chance of "429 Too Many Requests",
 	// do not query the same endpoint more than once per block time.
 	httpResponseCachesMu.Lock()
@@ -226,7 +223,7 @@ func (b *thorchainBridge) get(url string) ([]byte, int, error) {
 	resp, err := b.httpClient.Get(url)
 	if err != nil {
 		b.errCounter.WithLabelValues("fail_get_from_thorchain", "").Inc()
-		return nil, http.StatusNotFound, fmt.Errorf("failed to GET from thorchain: %w", err)
+		return nil, http.StatusNotFound, fmt.Errorf("failed to GET from mapBridge: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -251,7 +248,7 @@ func (b *thorchainBridge) get(url string) ([]byte, int, error) {
 }
 
 // getThorChainURL with the given path
-func (b *thorchainBridge) getThorChainURL(path string) string {
+func (b *Bridge) getThorChainURL(path string) string {
 	if strings.HasPrefix(b.cfg.ChainHost, "http") {
 		return fmt.Sprintf("%s/%s", b.cfg.ChainHost, path)
 	}
@@ -264,8 +261,8 @@ func (b *thorchainBridge) getThorChainURL(path string) string {
 	return uri.String()
 }
 
-// getAccountNumberAndSequenceNumber returns account and Sequence number required to post into thorchain
-func (b *thorchainBridge) getAccountNumberAndSequenceNumber() (uint64, uint64, error) {
+// getAccountNumberAndSequenceNumber returns account and Sequence number required to post into mapBridge
+func (b *Bridge) getAccountNumberAndSequenceNumber() (uint64, uint64, error) {
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get signer address: %w", err)
@@ -287,34 +284,17 @@ func (b *thorchainBridge) getAccountNumberAndSequenceNumber() (uint64, uint64, e
 }
 
 // GetConfig return the configuration
-func (b *thorchainBridge) GetConfig() config.BifrostClientConfiguration {
+func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 	return b.cfg
 }
 
 // PostKeysignFailure generate and  post a keysign fail tx to thorchan
-func (b *thorchainBridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (common.TxID, error) {
-	start := time.Now()
-	defer func() {
-		b.m.GetHistograms(metrics.SignToMapDuration).Observe(time.Since(start).Seconds())
-	}()
-
-	if blame.IsEmpty() {
-		// MsgTssKeysignFail will fail validation if having no FailReason.
-		blame.FailReason = "no fail reason available"
-	}
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		return common.BlankTxID, fmt.Errorf("failed to get signer address: %w", err)
-	}
-	msg, err := stypes.NewMsgTssKeysignFail(height, blame, memo, coins, signerAddr, pubkey)
-	if err != nil {
-		return common.BlankTxID, fmt.Errorf("fail to create keysign fail message: %w", err)
-	}
-	return b.Broadcast(msg)
+func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
+	return b.Broadcast(types.TxOutItem{}, []byte{})
 }
 
 // GetErrataMsg get errata tx from params
-func (b *thorchainBridge) GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg {
+func (b *Bridge) GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg {
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {
 		panic(err)
@@ -323,7 +303,7 @@ func (b *thorchainBridge) GetErrataMsg(txID common.TxID, chain common.Chain) sdk
 }
 
 // GetSolvencyMsg create MsgSolvency from the given parameters
-func (b *thorchainBridge) GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency {
+func (b *Bridge) GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency {
 	// To prevent different MsgSolvency ID incompatibility between nodes with different coin-observation histories,
 	// only report coins for which the amounts are not currently 0.
 	coins = coins.NoneEmpty()
@@ -340,7 +320,7 @@ func (b *thorchainBridge) GetSolvencyMsg(height int64, chain common.Chain, pubKe
 }
 
 // GetKeygenStdTx get keygen tx from params
-func (b *thorchainBridge) GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Signature, keysharesBackup []byte, blame stypes.Blame, inputPks common.PubKeys, keygenType stypes.KeygenType, chains common.Chains, height, keygenTime int64) (sdk.Msg, error) {
+func (b *Bridge) GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Signature, keysharesBackup []byte, blame stypes.Blame, inputPks common.PubKeys, keygenType stypes.KeygenType, chains common.Chains, height, keygenTime int64) (sdk.Msg, error) {
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get signer address: %w", err)
@@ -349,7 +329,7 @@ func (b *thorchainBridge) GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Sign
 }
 
 // GetInboundOutbound separate the txs into inbound and outbound
-func (b *thorchainBridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error) {
+func (b *Bridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error) {
 	if len(txIns) == 0 {
 		return nil, nil, nil
 	}
@@ -406,7 +386,7 @@ func (b *thorchainBridge) GetInboundOutbound(txIns common.ObservedTxs) (common.O
 }
 
 // EnsureNodeWhitelistedWithTimeout check node is whitelisted with timeout retry
-func (b *thorchainBridge) EnsureNodeWhitelistedWithTimeout() error {
+func (b *Bridge) EnsureNodeWhitelistedWithTimeout() error {
 	for {
 		select {
 		case <-time.After(time.Hour):
@@ -423,19 +403,19 @@ func (b *thorchainBridge) EnsureNodeWhitelistedWithTimeout() error {
 	}
 }
 
-// EnsureNodeWhitelisted will call to thorchain to check whether the observer had been whitelist or not
-func (b *thorchainBridge) EnsureNodeWhitelisted() error {
+// EnsureNodeWhitelisted will call to mapBridge to check whether the observer had been whitelist or not
+func (b *Bridge) EnsureNodeWhitelisted() error {
 	status, err := b.FetchNodeStatus()
 	if err != nil {
 		return fmt.Errorf("failed to get node status: %w", err)
 	}
 	if status == stypes.NodeStatus_Unknown {
-		return fmt.Errorf("node account status %s , will not be able to forward transaction to thorchain", status)
+		return fmt.Errorf("node account status %s , will not be able to forward transaction to mapBridge", status)
 	}
 	return nil
 }
 
-func (b *thorchainBridge) FetchActiveNodes() ([]common.PubKey, error) {
+func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 	na, err := b.GetNodeAccounts()
 	if err != nil {
 		return nil, fmt.Errorf("fail to get node accounts: %w", err)
@@ -449,8 +429,8 @@ func (b *thorchainBridge) FetchActiveNodes() ([]common.PubKey, error) {
 	return active, nil
 }
 
-// FetchNodeStatus get current node status from thorchain
-func (b *thorchainBridge) FetchNodeStatus() (stypes.NodeStatus, error) {
+// FetchNodeStatus get current node status from mapBridge
+func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
 	if err != nil {
 		return stypes.NodeStatus_Unknown, fmt.Errorf("fail to get signer address: %w", err)
@@ -466,12 +446,12 @@ func (b *thorchainBridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 	return na.Status, nil
 }
 
-// GetKeysignParty call into thorchain to get the node accounts that should be join together to sign the message
-func (b *thorchainBridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error) {
+// GetKeysignParty call into mapBridge to get the node accounts that should be join together to sign the message
+func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error) {
 	p := fmt.Sprintf(SignerMembershipEndpoint, vaultPubKey.String())
 	result, _, err := b.getWithPath(p)
 	if err != nil {
-		return common.PubKeys{}, fmt.Errorf("fail to get key sign party from thorchain: %w", err)
+		return common.PubKeys{}, fmt.Errorf("fail to get key sign party from mapBridge: %w", err)
 	}
 	var keys common.PubKeys
 	if err = json.Unmarshal(result, &keys); err != nil {
@@ -480,9 +460,9 @@ func (b *thorchainBridge) GetKeysignParty(vaultPubKey common.PubKey) (common.Pub
 	return keys, nil
 }
 
-// IsCatchingUp returns bool for if thorchain is catching up to the rest of the
+// IsCatchingUp returns bool for if mapBridge is catching up to the rest of the
 // nodes. Returns yes, if it is, false if it is caught up.
-func (b *thorchainBridge) IsCatchingUp() (bool, error) {
+func (b *Bridge) IsCatchingUp() (bool, error) {
 	uri := url.URL{
 		Scheme: "http",
 		Host:   b.cfg.ChainRPC,
@@ -510,7 +490,7 @@ func (b *thorchainBridge) IsCatchingUp() (bool, error) {
 
 // HasNetworkFee checks whether the given chain has set a network fee - determined by
 // whether the `outbound_tx_size` for the inbound address response is non-zero.
-func (b *thorchainBridge) HasNetworkFee(chain common.Chain) (bool, error) {
+func (b *Bridge) HasNetworkFee(chain common.Chain) (bool, error) {
 	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
 	if err != nil {
 		return false, fmt.Errorf("fail to get inbound addresses: %w", err)
@@ -539,7 +519,7 @@ func (b *thorchainBridge) HasNetworkFee(chain common.Chain) (bool, error) {
 }
 
 // GetNetworkFee get chain's network fee from THORNode.
-func (b *thorchainBridge) GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error) {
+func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error) {
 	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
 	if err != nil {
 		return 0, 0, fmt.Errorf("fail to get inbound addresses: %w", err)
@@ -574,8 +554,8 @@ func (b *thorchainBridge) GetNetworkFee(chain common.Chain) (transactionSize, tr
 	return
 }
 
-// WaitToCatchUp wait for thorchain to catch up
-func (b *thorchainBridge) WaitToCatchUp() error {
+// WaitToCatchUp wait for mapBridge to catch up
+func (b *Bridge) WaitToCatchUp() error {
 	for {
 		yes, err := b.IsCatchingUp()
 		if err != nil {
@@ -584,14 +564,14 @@ func (b *thorchainBridge) WaitToCatchUp() error {
 		if !yes {
 			break
 		}
-		b.logger.Info().Msg("thorchain is not caught up... waiting...")
+		b.logger.Info().Msg("mapBridge is not caught up... waiting...")
 		time.Sleep(constants.MAPRelayChainBlockTime)
 	}
 	return nil
 }
 
-// GetAsgards retrieve all the asgard vaults from thorchain
-func (b *thorchainBridge) GetAsgards() (stypes.Vaults, error) {
+// GetAsgards retrieve all the asgard vaults from mapBridge
+func (b *Bridge) GetAsgards() (stypes.Vaults, error) {
 	buf, s, err := b.getWithPath(AsgardVault)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
@@ -606,8 +586,8 @@ func (b *thorchainBridge) GetAsgards() (stypes.Vaults, error) {
 	return vaults, nil
 }
 
-// GetVault retrieves a specific vault from thorchain.
-func (b *thorchainBridge) GetVault(pubkey string) (stypes.Vault, error) {
+// GetVault retrieves a specific vault from mapBridge.
+func (b *Bridge) GetVault(pubkey string) (stypes.Vault, error) {
 	buf, s, err := b.getWithPath(fmt.Sprintf(VaultEndpoint, pubkey))
 	if err != nil {
 		return stypes.Vault{}, fmt.Errorf("fail to get vault: %w", err)
@@ -622,7 +602,7 @@ func (b *thorchainBridge) GetVault(pubkey string) (stypes.Vault, error) {
 	return vault, nil
 }
 
-func (b *thorchainBridge) getVaultPubkeys() ([]byte, error) {
+func (b *Bridge) getVaultPubkeys() ([]byte, error) {
 	buf, s, err := b.getWithPath(PubKeysEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
@@ -634,7 +614,7 @@ func (b *thorchainBridge) getVaultPubkeys() ([]byte, error) {
 }
 
 // GetPubKeys retrieve vault pub keys and their relevant smart contracts
-func (b *thorchainBridge) GetPubKeys() ([]PubKeyContractAddressPair, error) {
+func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 	buf, err := b.getVaultPubkeys()
 	if err != nil {
 		return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
@@ -643,9 +623,9 @@ func (b *thorchainBridge) GetPubKeys() ([]PubKeyContractAddressPair, error) {
 	if err = json.Unmarshal(buf, &result); err != nil {
 		return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
 	}
-	var addressPairs []PubKeyContractAddressPair
+	var addressPairs []shareTypes.PubKeyContractAddressPair
 	for _, v := range append(result.Asgard, result.Inactive...) {
-		kp := PubKeyContractAddressPair{
+		kp := shareTypes.PubKeyContractAddressPair{
 			PubKey:    common.PubKey(v.PubKey),
 			Contracts: make(map[common.Chain]common.Address),
 		}
@@ -658,7 +638,7 @@ func (b *thorchainBridge) GetPubKeys() ([]PubKeyContractAddressPair, error) {
 }
 
 // GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
-func (b *thorchainBridge) GetAsgardPubKeys() ([]PubKeyContractAddressPair, error) {
+func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 	buf, err := b.getVaultPubkeys()
 	if err != nil {
 		return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
@@ -667,9 +647,9 @@ func (b *thorchainBridge) GetAsgardPubKeys() ([]PubKeyContractAddressPair, error
 	if err = json.Unmarshal(buf, &result); err != nil {
 		return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
 	}
-	var addressPairs []PubKeyContractAddressPair
+	var addressPairs []shareTypes.PubKeyContractAddressPair
 	for _, v := range append(result.Asgard, result.Inactive...) {
-		kp := PubKeyContractAddressPair{
+		kp := shareTypes.PubKeyContractAddressPair{
 			PubKey:    common.PubKey(v.PubKey),
 			Contracts: make(map[common.Chain]common.Address),
 		}
@@ -682,29 +662,12 @@ func (b *thorchainBridge) GetAsgardPubKeys() ([]PubKeyContractAddressPair, error
 }
 
 // PostNetworkFee send network fee message to THORNode
-func (b *thorchainBridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (common.TxID, error) {
-	nodeStatus, err := b.FetchNodeStatus()
-	if err != nil {
-		return common.BlankTxID, fmt.Errorf("failed to get node status: %w", err)
-	}
-
-	if nodeStatus != stypes.NodeStatus_Active {
-		return common.BlankTxID, nil
-	}
-	start := time.Now()
-	defer func() {
-		b.m.GetHistograms(metrics.SignToMapDuration).Observe(time.Since(start).Seconds())
-	}()
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		return common.BlankTxID, fmt.Errorf("fail to get signer address: %w", err)
-	}
-	msg := stypes.NewMsgNetworkFee(height, chain, transactionSize, transactionRate, signerAddr)
-	return b.Broadcast(msg)
+func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error) {
+	return b.Broadcast(types.TxOutItem{}, []byte{})
 }
 
 // GetConstants from thornode
-func (b *thorchainBridge) GetConstants() (map[string]int64, error) {
+func (b *Bridge) GetConstants() (map[string]int64, error) {
 	var result struct {
 		Int64Values map[string]int64 `json:"int_64_values"`
 	}
@@ -721,8 +684,8 @@ func (b *thorchainBridge) GetConstants() (map[string]int64, error) {
 	return result.Int64Values, nil
 }
 
-// RagnarokInProgress is to query thorchain to check whether ragnarok had been triggered
-func (b *thorchainBridge) RagnarokInProgress() (bool, error) {
+// RagnarokInProgress is to query mapBridge to check whether ragnarok had been triggered
+func (b *Bridge) RagnarokInProgress() (bool, error) {
 	buf, s, err := b.getWithPath(RagnarokEndpoint)
 	if err != nil {
 		return false, fmt.Errorf("fail to get ragnarok status: %w", err)
@@ -737,8 +700,8 @@ func (b *thorchainBridge) RagnarokInProgress() (bool, error) {
 	return ragnarok, nil
 }
 
-// GetThorchainVersion retrieve thorchain version
-func (b *thorchainBridge) GetThorchainVersion() (semver.Version, error) {
+// GetThorchainVersion retrieve mapBridge version
+func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
 	buf, s, err := b.getWithPath(ChainVersionEndpoint)
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("fail to get THORChain version: %w", err)
@@ -754,7 +717,7 @@ func (b *thorchainBridge) GetThorchainVersion() (semver.Version, error) {
 }
 
 // GetMimir - get mimir settings
-func (b *thorchainBridge) GetMimir(key string) (int64, error) {
+func (b *Bridge) GetMimir(key string) (int64, error) {
 	buf, s, err := b.getWithPath(MimirEndpoint + "/key/" + key)
 	if err != nil {
 		return 0, fmt.Errorf("fail to get mimir: %w", err)
@@ -770,7 +733,7 @@ func (b *thorchainBridge) GetMimir(key string) (int64, error) {
 }
 
 // GetMimirWithRef is a helper function to more readably insert references (such as Asset MimirString or Chain) into Mimir key templates.
-func (b *thorchainBridge) GetMimirWithRef(template, ref string) (int64, error) {
+func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
 	// 'template' should be something like "Halt%sChain" (to halt an arbitrary specified chain)
 	// or "Ragnarok-%s" (to halt the pool of an arbitrary specified Asset (MimirString used for Assets to join Chain and Symbol with a hyphen).
 	key := fmt.Sprintf(template, ref)
@@ -778,13 +741,9 @@ func (b *thorchainBridge) GetMimirWithRef(template, ref string) (int64, error) {
 }
 
 // PubKeyContractAddressPair is an entry to map pubkey and contract addresses
-type PubKeyContractAddressPair struct {
-	PubKey    common.PubKey
-	Contracts map[common.Chain]common.Address
-}
 
 // GetContractAddress retrieve the contract address from asgard
-func (b *thorchainBridge) GetContractAddress() ([]PubKeyContractAddressPair, error) {
+func (b *Bridge) GetContractAddress() ([]shareTypes.PubKeyContractAddressPair, error) {
 	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get inbound addresses: %w", err)
@@ -803,7 +762,7 @@ func (b *thorchainBridge) GetContractAddress() ([]PubKeyContractAddressPair, err
 	if err = json.Unmarshal(buf, &resp); err != nil {
 		return nil, fmt.Errorf("fail to unmarshal response: %w", err)
 	}
-	var result []PubKeyContractAddressPair
+	var result []shareTypes.PubKeyContractAddressPair
 	for _, item := range resp {
 		exist := false
 		for _, pair := range result {
@@ -814,7 +773,7 @@ func (b *thorchainBridge) GetContractAddress() ([]PubKeyContractAddressPair, err
 			}
 		}
 		if !exist {
-			pair := PubKeyContractAddressPair{
+			pair := shareTypes.PubKeyContractAddressPair{
 				PubKey:    item.PubKey,
 				Contracts: map[common.Chain]common.Address{},
 			}
@@ -826,7 +785,7 @@ func (b *thorchainBridge) GetContractAddress() ([]PubKeyContractAddressPair, err
 }
 
 // GetPools get pools from THORChain
-func (b *thorchainBridge) GetPools() (stypes.Pools, error) {
+func (b *Bridge) GetPools() (stypes.Pools, error) {
 	buf, s, err := b.getWithPath(PoolsEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get pools addresses: %w", err)
@@ -842,7 +801,7 @@ func (b *thorchainBridge) GetPools() (stypes.Pools, error) {
 }
 
 // GetTHORName get THORName from THORChain
-func (b *thorchainBridge) GetTHORName(name string) (stypes.THORName, error) {
+func (b *Bridge) GetTHORName(name string) (stypes.THORName, error) {
 	p := fmt.Sprintf(THORNameEndpoint, name)
 	buf, s, err := b.getWithPath(p)
 	if err != nil {
@@ -856,4 +815,30 @@ func (b *thorchainBridge) GetTHORName(name string) (stypes.THORName, error) {
 		return stypes.THORName{}, fmt.Errorf("fail to unmarshal THORNames from json: %w", err)
 	}
 	return tn, nil
+}
+
+// GetChain returns the chain.
+func (b *Bridge) GetChain() common.Chain {
+	return b.cfg.ChainID
+}
+
+func WithBlockScanner(blockScan *MapChainBlockScan) shareTypes.BridgeOption {
+	return func(bridge shareTypes.Bridge) error {
+		mapBridge, ok := bridge.(*Bridge)
+		if !ok {
+			return fmt.Errorf("invalid bridge type(%v)", reflect.TypeOf(bridge))
+		}
+		mapBridge.blockScanner = blockScan
+		return nil
+	}
+}
+
+func (b *Bridge) InitBlockScanner(ops ...shareTypes.BridgeOption) error {
+	for _, op := range ops {
+		err := op(b)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

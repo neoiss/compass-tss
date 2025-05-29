@@ -7,8 +7,8 @@ import (
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
-// GetNodeAccount retrieves node account for this address from thorchain
-func (b *thorchainBridge) GetNodeAccount(thorAddr string) (*types.NodeAccount, error) {
+// GetNodeAccount retrieves node account for this address from mapBridge
+func (b *Bridge) GetNodeAccount(thorAddr string) (*types.NodeAccount, error) {
 	path := fmt.Sprintf("%s/%s", NodeAccountEndpoint, thorAddr)
 	body, _, err := b.getWithPath(path)
 	if err != nil {
@@ -21,8 +21,8 @@ func (b *thorchainBridge) GetNodeAccount(thorAddr string) (*types.NodeAccount, e
 	return &na, nil
 }
 
-// GetNodeAccounts retrieves all node accounts from thorchain
-func (b *thorchainBridge) GetNodeAccounts() ([]*types.NodeAccount, error) {
+// GetNodeAccounts retrieves all node accounts from mapBridge
+func (b *Bridge) GetNodeAccounts() ([]*types.NodeAccount, error) {
 	path := NodeAccountsEndpoint
 	body, _, err := b.getWithPath(path)
 	if err != nil {

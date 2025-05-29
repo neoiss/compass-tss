@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	"github.com/mapprotocol/compass-tss/internal/codec"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ import (
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
-func RecoverKeyShares(conf config.Bifrost, thorchain mapo.ThorchainBridge) error {
+func RecoverKeyShares(conf config.Bifrost, thorchain shareTypes.Bridge) error {
 	tctx := thorchain.GetContext()
 
 	// fetch the node account
@@ -72,7 +73,7 @@ func RecoverKeyShares(conf config.Bifrost, thorchain mapo.ThorchainBridge) error
 
 	// walk backward from the churn height until we find the TssPool message we sent
 	var keysharesEncBytes []byte
-	cdc := mapo.MakeCodec()
+	cdc := codec.Make()
 	dec := ebifrost.TxDecoder(cdc, tx.DefaultTxDecoder(cdc))
 	for i := lastVaultHeight; i > lastVaultHeight-conf.TSS.MaxKeyshareRecoverScanBlocks; i-- {
 		if i%1000 == 0 {

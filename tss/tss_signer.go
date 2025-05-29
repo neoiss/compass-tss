@@ -3,7 +3,7 @@ package tss
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"sort"
 	"sync"
@@ -33,7 +33,7 @@ type tssServer interface {
 type KeySign struct {
 	logger         zerolog.Logger
 	server         tssServer
-	bridge         mapo.ThorchainBridge
+	bridge         shareTypes.Bridge
 	currentVersion semver.Version
 	lastCheck      time.Time
 	wg             *sync.WaitGroup
@@ -42,7 +42,7 @@ type KeySign struct {
 }
 
 // NewKeySign create a new instance of KeySign
-func NewKeySign(server tssServer, bridge mapo.ThorchainBridge) (*KeySign, error) {
+func NewKeySign(server tssServer, bridge shareTypes.Bridge) (*KeySign, error) {
 	return &KeySign{
 		server:    server,
 		bridge:    bridge,

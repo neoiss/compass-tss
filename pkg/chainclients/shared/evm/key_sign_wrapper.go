@@ -52,6 +52,8 @@ func (w *KeySignWrapper) GetPubKey() common.PubKey {
 	return w.pubKey
 }
 
+// todo self sign, look this
+
 // Sign the given transaction
 func (w *KeySignWrapper) Sign(tx *etypes.Transaction, poolPubKey common.PubKey) ([]byte, error) {
 	if tx == nil {
@@ -111,4 +113,20 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 	copy(result, sig)
 	result[64] = recovery[0]
 	return result, nil
+}
+
+func (w *KeySignWrapper) LocalSign(tx *etypes.Transaction) ([]byte, error) {
+	sig, err := w.sign(tx)
+	if err != nil {
+		return nil, fmt.Errorf("fail to sign tx: %w", err)
+	}
+	newTx, err := tx.WithSignature(w.signer, sig)
+	if err != nil {
+		return nil, fmt.Errorf("fail to apply signature to tx: %w", err)
+	}
+	enc, err := newTx.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("fail to marshal tx to json: %w", err)
+	}
+	return enc, nil
 }

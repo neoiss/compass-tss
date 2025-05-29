@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"strconv"
 	"sync"
@@ -20,6 +20,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	"github.com/mapprotocol/compass-tss/blockscanner"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
@@ -53,7 +54,7 @@ type Client struct {
 	accts               *XrpMetaDataStore
 	tssKeyManager       *tss.KeySign
 	localKeyManager     *keymanager.KeyManager
-	thorchainBridge     mapo.ThorchainBridge
+	bridge              shareTypes.Bridge
 	storage             *blockscanner.BlockScannerStorage
 	blockScanner        *blockscanner.BlockScanner
 	signerCacheManager  *signercache.CacheManager
@@ -67,10 +68,10 @@ type Client struct {
 
 // NewClient creates a new instance of an XRP-based chain client
 func NewClient(
-	thorKeys *mapo.Keys,
+	thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	thorchainBridge mapo.ThorchainBridge,
+	thorchainBridge shareTypes.Bridge,
 	m *metrics.Metrics,
 ) (*Client, error) {
 	logger := log.With().Str("module", cfg.ChainID.String()).Logger()
@@ -114,7 +115,7 @@ func NewClient(
 		accts:           NewXrpMetaDataStore(),
 		tssKeyManager:   tssKm,
 		localKeyManager: localKm,
-		thorchainBridge: thorchainBridge,
+		bridge:          thorchainBridge,
 		wg:              &sync.WaitGroup{},
 		stopchan:        make(chan struct{}),
 		rpcClient:       rpcClient,
@@ -134,7 +135,7 @@ func NewClient(
 		c.cfg.RPCHost,
 		c.cfg.BlockScanner,
 		c.storage,
-		c.thorchainBridge,
+		c.bridge,
 		m,
 		c.ReportSolvency,
 	)
@@ -142,7 +143,7 @@ func NewClient(
 		return nil, fmt.Errorf("failed to create cosmos scanner: %w", err)
 	}
 
-	c.blockScanner, err = blockscanner.NewBlockScanner(c.cfg.BlockScanner, c.storage, m, c.thorchainBridge, c.xrpScanner)
+	c.blockScanner, err = blockscanner.NewBlockScanner(c.cfg.BlockScanner, c.storage, m, c.bridge, c.xrpScanner)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create block scanner: %w", err)
 	}
@@ -163,7 +164,7 @@ func (c *Client) Start(globalTxsQueue chan stypes.TxIn, globalErrataQueue chan s
 	c.tssKeyManager.Start()
 	c.blockScanner.Start(globalTxsQueue, globalNetworkFeeQueue)
 	c.wg.Add(1)
-	go runners.SolvencyCheckRunner(c.GetChain(), c, c.thorchainBridge, c.stopchan, c.wg, constants.MAPRelayChainBlockTime)
+	go runners.SolvencyCheckRunner(c.GetChain(), c, c.bridge, c.stopchan, c.wg, constants.MAPRelayChainBlockTime)
 }
 
 // Stop Xrp chain client
@@ -298,13 +299,13 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 				}
 
 				// key sign error forward the keysign blame to thorchain
-				var txID common.TxID
-				txID, err = c.thorchainBridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
+				var txID string
+				txID, err = c.bridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
 				if err != nil {
 					c.logger.Err(err).Msg("fail to post keysign failure to THORChain")
 					return
 				}
-				c.logger.Info().Str("tx_id", txID.String()).Msgf("post keysign failure to thorchain")
+				c.logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
 			}
 			c.logger.Err(err).Msg("failed to sign tx")
 			return
@@ -585,7 +586,7 @@ func (c *Client) ReportSolvency(blockHeight int64) error {
 	}
 
 	// fetch all asgard vaults
-	asgardVaults, err := c.thorchainBridge.GetAsgards()
+	asgardVaults, err := c.bridge.GetAsgards()
 	if err != nil {
 		return fmt.Errorf("fail to get asgards,err: %w", err)
 	}

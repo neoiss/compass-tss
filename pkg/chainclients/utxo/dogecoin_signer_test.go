@@ -42,7 +42,7 @@ import (
 type DogecoinSignerSuite struct {
 	client *Client
 	server *httptest.Server
-	bridge mapo.ThorchainBridge
+	bridge shareTypes.ThorchainBridge
 	cfg    config.BifrostChainConfiguration
 	m      *metrics.Metrics
 	db     *leveldb.DB

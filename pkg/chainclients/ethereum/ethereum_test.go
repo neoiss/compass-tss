@@ -27,7 +27,7 @@ func TestETHPackage(t *testing.T) { TestingT(t) }
 type EthereumSuite struct {
 	thordir  string
 	thorKeys *mapclient.Keys
-	bridge   mapo.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }
@@ -209,7 +209,7 @@ func GetMetricForTest(c *C) *metrics.Metrics {
 //	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 //	c.Assert(err, IsNil)
 //	s.thorKeys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
-//	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.thorKeys)
+//	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.thorKeys)
 //	c.Assert(err, IsNil)
 //}
 

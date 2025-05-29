@@ -36,7 +36,7 @@ import (
 
 // Mock ThorchainBridge that always returns active status and correct node count
 type mockThorchainBridge struct {
-	mapo.ThorchainBridge
+	shareTypes.ThorchainBridge
 	activeNodes []common.PubKey
 }
 

@@ -2,7 +2,7 @@ package runners
 
 import (
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"sync"
 	"time"
 
@@ -25,7 +25,7 @@ type SolvencyCheckProvider interface {
 // not report current solvency status to THORNode anymore, this method is to ensure that the chain client will continue to do solvency check even when the chain has been halted
 func SolvencyCheckRunner(chain common.Chain,
 	provider SolvencyCheckProvider,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	stopper <-chan struct{},
 	wg *sync.WaitGroup,
 	backOffDuration time.Duration,

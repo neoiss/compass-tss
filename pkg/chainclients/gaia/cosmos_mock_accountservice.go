@@ -12,7 +12,7 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// MockAccountServiceClient For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MockAccountServiceClient interface {
 	// Accounts returns all the existing accounts
 	//

@@ -8,7 +8,7 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// MockBankServiceClient For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MockBankServiceClient interface {
 	// Balance queries the balance of a single coin for a single account.
 	Balance(ctx context.Context, in *btypes.QueryBalanceRequest, opts ...grpc.CallOption) (*btypes.QueryBalanceResponse, error)

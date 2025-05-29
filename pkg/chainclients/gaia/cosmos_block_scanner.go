@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"strings"
 	"time"
 
@@ -41,6 +40,7 @@ import (
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
 // SolvencyReporter is to report solvency info to THORNode
@@ -79,7 +79,7 @@ type CosmosBlockScanner struct {
 	cdc                   *codec.ProtoCodec
 	txConfig              client.TxConfig
 	rpc                   TendermintRPC
-	bridge                mapo.ThorchainBridge
+	bridge                shareTypes.Bridge
 	solvencyReporter      SolvencyReporter
 	globalNetworkFeeQueue chan common.NetworkFee
 
@@ -95,7 +95,7 @@ type CosmosBlockScanner struct {
 func NewCosmosBlockScanner(rpcHost string,
 	cfg config.BifrostBlockScannerConfiguration,
 	scanStorage blockscanner.ScannerStorage,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	solvencyReporter SolvencyReporter,
 ) (*CosmosBlockScanner, error) {
