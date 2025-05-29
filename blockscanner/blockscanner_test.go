@@ -13,9 +13,9 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }

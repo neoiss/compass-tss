@@ -15,7 +15,7 @@ import (
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/types"
 )

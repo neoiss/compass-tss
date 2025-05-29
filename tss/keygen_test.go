@@ -20,7 +20,7 @@ import (
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 )
 
 func TestTSSKeyGen(t *testing.T) { TestingT(t) }
