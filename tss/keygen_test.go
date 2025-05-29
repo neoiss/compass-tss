@@ -21,7 +21,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 func TestTSSKeyGen(t *testing.T) { TestingT(t) }
@@ -31,7 +30,6 @@ type KeyGenTestSuite struct{}
 var _ = Suite(&KeyGenTestSuite{})
 
 func (*KeyGenTestSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 }
 
 const (

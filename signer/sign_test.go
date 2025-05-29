@@ -42,7 +42,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }
@@ -331,7 +330,6 @@ type SignSuite struct {
 var _ = Suite(&SignSuite{})
 
 func (s *SignSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 	s.metrics = GetMetricForTest(c)
 	c.Assert(s.metrics, NotNil)
 

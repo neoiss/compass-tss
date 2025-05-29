@@ -27,7 +27,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/x/keeper"
 	"github.com/mapprotocol/compass-tss/x/types"
-	kv1 "gitlab.com/thorchain/thornode/v3/x/thorchain/keeper/v1"
 )
 
 type MemoSuite struct {
@@ -97,7 +96,7 @@ func (s *MemoSuite) SetUpSuite(c *C) {
 		nil,
 		authtypes.NewModuleAddress(types.ModuleName).String(),
 	)
-	s.k = kv1.NewKVStore(encodingConfig.Codec, bk, ak, uk, keyThorchain, types.GetCurrentVersion())
+	//s.k = kv1.NewKVStore(encodingConfig.Codec, bk, ak, uk, keyThorchain, types.GetCurrentVersion())
 }
 
 func (s *MemoSuite) TestTxType(c *C) {
