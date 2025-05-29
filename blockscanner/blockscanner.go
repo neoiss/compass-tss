@@ -3,7 +3,6 @@ package blockscanner
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
 // BlockScannerFetcher define the methods a block scanner need to implement
@@ -50,13 +50,14 @@ type BlockScanner struct {
 	globalTxsQueue        chan types.TxIn
 	globalNetworkFeeQueue chan common.NetworkFee
 	errorCounter          *prometheus.CounterVec
-	thorchainBridge       mapo.ThorchainBridge
+	bridge                shareTypes.Bridge
 	chainScanner          BlockScannerFetcher
 	healthy               *atomic.Bool
 }
 
 // NewBlockScanner create a new instance of BlockScanner
-func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage ScannerStorage, m *metrics.Metrics, thorchainBridge mapo.ThorchainBridge, chainScanner BlockScannerFetcher) (*BlockScanner, error) {
+func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage ScannerStorage, m *metrics.Metrics, bridge shareTypes.Bridge,
+	chainScanner BlockScannerFetcher) (*BlockScanner, error) {
 	var err error
 	if scannerStorage == nil {
 		return nil, errors.New("scannerStorage is nil")
@@ -64,23 +65,23 @@ func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage
 	if m == nil {
 		return nil, errors.New("metrics instance is nil")
 	}
-	if thorchainBridge == nil {
+	if bridge == nil {
 		return nil, errors.New("thorchain bridge is nil")
 	}
 
 	logger := log.Logger.With().Str("module", "blockscanner").Str("chain", cfg.ChainID.String()).Logger()
 	scanner := &BlockScanner{
-		cfg:             cfg,
-		logger:          logger,
-		wg:              &sync.WaitGroup{},
-		stopChan:        make(chan struct{}),
-		scanChan:        make(chan int64),
-		scannerStorage:  scannerStorage,
-		metrics:         m,
-		errorCounter:    m.GetCounterVec(metrics.CommonBlockScannerError),
-		thorchainBridge: thorchainBridge,
-		chainScanner:    chainScanner,
-		healthy:         &atomic.Bool{},
+		cfg:            cfg,
+		logger:         logger,
+		wg:             &sync.WaitGroup{},
+		stopChan:       make(chan struct{}),
+		scanChan:       make(chan int64),
+		scannerStorage: scannerStorage,
+		metrics:        m,
+		errorCounter:   m.GetCounterVec(metrics.CommonBlockScannerError),
+		bridge:         bridge,
+		chainScanner:   chainScanner,
+		healthy:        &atomic.Bool{},
 	}
 
 	scanner.previousBlock, err = scanner.FetchLastHeight()
@@ -160,17 +161,17 @@ func (b *BlockScanner) isChainPaused() bool {
 	var haltHeight, solvencyHaltHeight, nodeHaltHeight, thorHeight int64
 
 	// Check if chain has been halted via mimir
-	haltHeight, err := b.thorchainBridge.GetMimir(fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
+	haltHeight, err := b.bridge.GetMimir(fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
 	if err != nil {
 		b.logger.Error().Err(err).Msgf("fail to get mimir setting %s", fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
 	}
 	// Check if chain has been halted by auto solvency checks
-	solvencyHaltHeight, err = b.thorchainBridge.GetMimir(fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
+	solvencyHaltHeight, err = b.bridge.GetMimir(fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
 	if err != nil {
 		b.logger.Error().Err(err).Msgf("fail to get mimir %s", fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
 	}
 	// Check if all chains halted globally
-	globalHaltHeight, err := b.thorchainBridge.GetMimir("HaltChainGlobal")
+	globalHaltHeight, err := b.bridge.GetMimir("HaltChainGlobal")
 	if err != nil {
 		b.logger.Error().Err(err).Msg("fail to get mimir setting HaltChainGlobal")
 	}
@@ -178,11 +179,11 @@ func (b *BlockScanner) isChainPaused() bool {
 		haltHeight = globalHaltHeight
 	}
 	// Check if a node paused all chains
-	nodeHaltHeight, err = b.thorchainBridge.GetMimir("NodePauseChainGlobal")
+	nodeHaltHeight, err = b.bridge.GetMimir("NodePauseChainGlobal")
 	if err != nil {
 		b.logger.Error().Err(err).Msg("fail to get mimir setting NodePauseChainGlobal")
 	}
-	thorHeight, err = b.thorchainBridge.GetBlockHeight()
+	thorHeight, err = b.bridge.GetBlockHeight()
 	if err != nil {
 		b.logger.Error().Err(err).Msg("fail to get THORChain block height")
 	}
@@ -305,7 +306,7 @@ func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
 	}
 
 	transactionSize, transactionFeeRate := b.chainScanner.GetNetworkFee()
-	thorTransactionSize, thorTransactionFeeRate, err := b.thorchainBridge.GetNetworkFee(b.cfg.ChainID)
+	thorTransactionSize, thorTransactionFeeRate, err := b.bridge.GetNetworkFee(b.cfg.ChainID)
 	if err != nil {
 		b.logger.Error().Err(err).Msg("fail to get thornode network fee")
 		return
@@ -346,16 +347,16 @@ func (b *BlockScanner) FetchLastHeight() (int64, error) {
 	}
 
 	// wait for thorchain to be caught up first
-	if err := b.thorchainBridge.WaitToCatchUp(); err != nil {
+	if err := b.bridge.WaitToCatchUp(); err != nil {
 		return 0, err
 	}
 
-	if b.thorchainBridge != nil {
+	if b.bridge != nil {
 		var height int64
 		if b.cfg.ChainID.Equals(common.THORChain) {
-			height, _ = b.thorchainBridge.GetBlockHeight()
+			height, _ = b.bridge.GetBlockHeight()
 		} else {
-			height, _ = b.thorchainBridge.GetLastObservedInHeight(b.cfg.ChainID)
+			height, _ = b.bridge.GetLastObservedInHeight(b.cfg.ChainID)
 		}
 		if height > 0 {
 

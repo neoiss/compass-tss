@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"net/http"
@@ -54,7 +55,7 @@ func TestPackage(t *testing.T) { TestingT(t) }
 // -------------------------------- bridge ---------------------------------
 
 type fakeBridge struct {
-	mapo.ThorchainBridge
+	shareTypes.ThorchainBridge
 }
 
 func (b fakeBridge) GetBlockHeight() (int64, error) {
@@ -322,7 +323,7 @@ func GetMetricForTest(c *C) *metrics.Metrics {
 
 type SignSuite struct {
 	thorKeys *mapclient.Keys
-	bridge   mapo.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	metrics  *metrics.Metrics
 	rpcHost  string
 	storage  *SignerStore
@@ -376,9 +377,9 @@ func (s *SignSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapo.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
+	s.thorKeys = keys.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
 	c.Assert(err, IsNil)
-	s.bridge, err = mapo.NewThorchainBridge(cfg, s.metrics, s.thorKeys)
+	s.bridge, err = mapo.NewBridge(cfg, s.metrics, s.thorKeys)
 	c.Assert(err, IsNil)
 	s.storage, err = NewSignerStore("", config.LevelDBOptions{}, "")
 	c.Assert(err, IsNil)

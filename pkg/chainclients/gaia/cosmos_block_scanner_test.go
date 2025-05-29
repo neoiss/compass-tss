@@ -2,6 +2,7 @@ package gaia
 
 import (
 	"fmt"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/rs/zerolog/log"
 
@@ -69,7 +69,7 @@ func (m *MockFeeTx) FeeGranter() []byte {
 
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapo.ThorchainBridge
+	bridge shareTypes.Bridge
 	keys   *mapclient.Keys
 }
 

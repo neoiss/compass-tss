@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"runtime"
 	"slices"
 	"strconv"
@@ -62,7 +62,7 @@ type Observer struct {
 	globalNetworkFeeQueue chan common.NetworkFee
 	m                     *metrics.Metrics
 	errCounter            *prometheus.CounterVec
-	thorchainBridge       mapo.ThorchainBridge
+	bridge                shareTypes.Bridge
 	storage               *ObserverStorage
 	tssKeysignMetricMgr   *metrics.TssKeysignMetricMgr
 
@@ -81,7 +81,7 @@ type Observer struct {
 // NewObserver create a new instance of Observer for chain
 func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 	chains map[common.Chain]chainclients.ChainClient,
-	thorchainBridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics, dataPath string,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
 	attestationGossip *AttestationGossip,
@@ -124,7 +124,7 @@ func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 		globalSolvencyQueue:   make(chan types.Solvency),
 		globalNetworkFeeQueue: make(chan common.NetworkFee),
 		errCounter:            m.GetCounterVec(metrics.ObserverError),
-		thorchainBridge:       thorchainBridge,
+		bridge:                bridge,
 		storage:               storage,
 		tssKeysignMetricMgr:   tssKeysignMetricMgr,
 		signedTxOutCache:      signedTxOutCache,
@@ -277,7 +277,7 @@ func (o *Observer) handleObservedTxCommitted(tx common.ObservedTx) {
 
 func (o *Observer) sendDeck(ctx context.Context) {
 	// fetch and update active validator count on attestation gossip so it can calculate quorum
-	activeVals, err := o.thorchainBridge.FetchActiveNodes()
+	activeVals, err := o.bridge.FetchActiveNodes()
 	if err != nil {
 		o.logger.Error().Err(err).Msg("failed to get active node count")
 		return
@@ -285,7 +285,7 @@ func (o *Observer) sendDeck(ctx context.Context) {
 	o.attestationGossip.setActiveValidators(activeVals)
 
 	// check if node is active
-	nodeStatus, err := o.thorchainBridge.FetchNodeStatus()
+	nodeStatus, err := o.bridge.FetchNodeStatus()
 	if err != nil {
 		o.logger.Error().Err(err).Msg("failed to get node status")
 		return
@@ -329,7 +329,7 @@ func (o *Observer) sendToQuorumChecker(deck *types.TxIn, finalised bool) {
 		return
 	}
 
-	inbound, outbound, err := o.thorchainBridge.GetInboundOutbound(txs)
+	inbound, outbound, err := o.bridge.GetInboundOutbound(txs)
 	if err != nil {
 		o.logger.Error().Err(err).Msg("fail to get inbound and outbound txs")
 		return

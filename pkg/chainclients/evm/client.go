@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashicorp/go-multierror"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"net/http"
 	"strings"
@@ -54,7 +56,7 @@ type EVMClient struct {
 	kw                      *evm.KeySignWrapper
 	ethClient               *ethclient.Client
 	evmScanner              *EVMScanner
-	bridge                  mapo.ThorchainBridge
+	bridge                  shareTypes.Bridge
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
@@ -69,10 +71,10 @@ type EVMClient struct {
 
 // NewEVMClient creates a new EVMClient.
 func NewEVMClient(
-	thorKeys *mapo.Keys,
+	thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	poolMgr mapo.PoolManager,
@@ -827,7 +829,7 @@ func (c *EVMClient) sign(tx *etypes.Transaction, poolPubKey common.PubKey, heigh
 		if errPostKeysignFail != nil {
 			return nil, multierror.Append(err, errPostKeysignFail)
 		}
-		c.logger.Info().Str("tx_id", txID.String()).Msg("post keysign failure to thorchain")
+		c.logger.Info().Str("tx_id", txID).Msg("post keysign failure to thorchain")
 	}
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
 }

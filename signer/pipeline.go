@@ -2,7 +2,7 @@ package signer
 
 import (
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/common"
@@ -95,7 +95,7 @@ func newPipeline(concurrency int64) (*pipeline, error) {
 // The signing routines will be spawned in a goroutine, and this function will not
 // block on their completion. The spawned routines will release the corresponding vault
 // status semaphore and vault/chain lock when they are complete.
-func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapo.ThorchainBridge) {
+func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 	allItems := s.storageList()
 
 	// gather all vault/chain combinations with an out item in retry

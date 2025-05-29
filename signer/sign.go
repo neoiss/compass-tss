@@ -4,18 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
-	"os"
-	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cenkalti/backoff"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -41,10 +39,10 @@ type Signer struct {
 	logger               zerolog.Logger
 	cfg                  config.Bifrost
 	wg                   *sync.WaitGroup
-	thorchainBridge      mapo.ThorchainBridge
+	thorchainBridge      shareTypes.Bridge
 	stopChan             chan struct{}
 	blockScanner         *blockscanner.BlockScanner
-	mapChainBlockScanner *MapChainBlockScan
+	mapChainBlockScanner *mapo.MapChainBlockScan
 	chains               map[common.Chain]chainclients.ChainClient
 	storage              SignerStorage
 	m                    *metrics.Metrics
@@ -61,8 +59,8 @@ type Signer struct {
 
 // NewSigner create a new instance of signer
 func NewSigner(cfg config.Bifrost,
-	thorchainBridge mapo.ThorchainBridge,
-	thorKeys *mapo.Keys,
+	bridge shareTypes.Bridge,
+	thorKeys *keys.Keys,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	tssServer *tssp.TssServer,
 	chains map[common.Chain]chainclients.ChainClient,
@@ -70,7 +68,7 @@ func NewSigner(cfg config.Bifrost,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
 	obs *observer.Observer,
 ) (*Signer, error) {
-	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB, thorchainBridge.GetConfig().SignerPasswd)
+	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB, bridge.GetConfig().SignerPasswd)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
 	}
@@ -84,7 +82,7 @@ func NewSigner(cfg config.Bifrost,
 		if err != nil {
 			return nil, fmt.Errorf("failed to get address from thorKeys signer: %w", err)
 		}
-		na, err = thorchainBridge.GetNodeAccount(signerAddr.String())
+		na, err = bridge.GetNodeAccount(signerAddr.String())
 		if err != nil {
 			return nil, fmt.Errorf("fail to get node account from thorchain,err:%w", err)
 		}
@@ -101,24 +99,28 @@ func NewSigner(cfg config.Bifrost,
 	}
 	pubkeyMgr.AddNodePubKey(na.PubKeySet.Secp256k1)
 
-	cfg.Signer.BlockScanner.ChainID = common.THORChain // hard code to thorchain
-
+	cfg.Signer.BlockScanner.ChainID = common.MapChain // hard code to thorchain
 	// Create pubkey manager and add our private key
-	mapChainBlockScanner, err := NewMapChainBlockScan(cfg.Signer.BlockScanner, storage, thorchainBridge, m, pubkeyMgr)
+	mapChainBlockScanner, err := mapo.NewBlockScan(cfg.Signer.BlockScanner, storage, bridge, m, pubkeyMgr)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create thorchain block scan: %w", err)
 	}
 
-	blockScanner, err := blockscanner.NewBlockScanner(cfg.Signer.BlockScanner, storage, m, thorchainBridge, mapChainBlockScanner)
+	blockScanner, err := blockscanner.NewBlockScanner(cfg.Signer.BlockScanner, storage, m, bridge, mapChainBlockScanner)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create block scanner: %w", err)
 	}
+	ops := []shareTypes.BridgeOption{mapo.WithBlockScanner(mapChainBlockScanner)}
+	err = bridge.InitBlockScanner(ops...)
+	if err != nil {
+		return nil, fmt.Errorf("fail to init block scanner: %w", err)
+	}
 
-	kg, err := tss.NewTssKeyGen(thorKeys, tssServer, thorchainBridge)
+	kg, err := tss.NewTssKeyGen(thorKeys, tssServer, bridge)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create Tss Key gen,err:%w", err)
 	}
-	constantProvider := NewConstantsProvider(thorchainBridge)
+	constantProvider := NewConstantsProvider(bridge)
 	return &Signer{
 		logger:               log.With().Str("module", "signer").Logger(),
 		cfg:                  cfg,
@@ -131,7 +133,7 @@ func NewSigner(cfg config.Bifrost,
 		storage:              storage,
 		errCounter:           m.GetCounterVec(metrics.SignerError),
 		pubkeyMgr:            pubkeyMgr,
-		thorchainBridge:      thorchainBridge,
+		thorchainBridge:      bridge,
 		tssKeygen:            kg,
 		tssServer:            tssServer,
 		constantsProvider:    constantProvider,
@@ -153,7 +155,7 @@ func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error
 // Start signer process
 func (s *Signer) Start() error {
 	s.wg.Add(1)
-	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1)
+	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
 
 	s.wg.Add(1)
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
@@ -450,48 +452,50 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	return sigBytes
 }
 
-func (s *Signer) sendKeygenToThorchain(height int64, poolPk common.PubKey, secp256k1Signature []byte, blame ttypes.Blame, input common.PubKeys, keygenType ttypes.KeygenType, keygenTime int64) error {
-	// collect supported chains in the configuration
-	chains := common.Chains{
-		common.THORChain,
-	}
-	for chain, chainCfg := range s.cfg.GetChains() {
-		if !chainCfg.OptToRetire && !chainCfg.Disabled {
-			chains = append(chains, chain)
-		}
-	}
-
-	// make a best effort to add encrypted keyshares to the message
-	var keyshares []byte
-	var err error
-	if s.cfg.Signer.BackupKeyshares && !poolPk.IsEmpty() {
-		keyshares, err = tss.EncryptKeyshares(
-			filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", poolPk)),
-			os.Getenv("SIGNER_SEED_PHRASE"),
-		)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to encrypt keyshares")
-		}
-	}
-
-	keygenMsg, err := s.thorchainBridge.GetKeygenStdTx(poolPk, secp256k1Signature, keyshares, blame, input, keygenType, chains, height, keygenTime)
-	if err != nil {
-		return fmt.Errorf("fail to get keygen id: %w", err)
-	}
-	strHeight := strconv.FormatInt(height, 10)
-
-	bf := backoff.NewExponentialBackOff()
-	bf.MaxElapsedTime = constants.MAPRelayChainBlockTime
-	return backoff.Retry(func() error {
-		txID, err := s.thorchainBridge.Broadcast(keygenMsg)
-		if err != nil {
-			s.logger.Warn().Err(err).Msg("fail to send keygen tx to thorchain")
-			s.errCounter.WithLabelValues("fail_to_send_to_thorchain", strHeight).Inc()
-			return fmt.Errorf("fail to send the tx to thorchain: %w", err)
-		}
-		s.logger.Info().Stringer("txid", txID).Int64("block", height).Msg("sent keygen tx to thorchain")
-		return nil
-	}, bf)
+func (s *Signer) sendKeygenToThorchain(height int64, poolPk common.PubKey, secp256k1Signature []byte, blame ttypes.Blame, input common.PubKeys,
+	keygenType ttypes.KeygenType, keygenTime int64) error {
+	//// collect supported chains in the configuration
+	//chains := common.Chains{
+	//	common.THORChain,
+	//}
+	//for chain, chainCfg := range s.cfg.GetChains() {
+	//	if !chainCfg.OptToRetire && !chainCfg.Disabled {
+	//		chains = append(chains, chain)
+	//	}
+	//}
+	//
+	//// make a best effort to add encrypted keyshares to the message
+	//var keyshares []byte
+	//var err error
+	//if s.cfg.Signer.BackupKeyshares && !poolPk.IsEmpty() {
+	//	keyshares, err = tss.EncryptKeyshares(
+	//		filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", poolPk)),
+	//		os.Getenv("SIGNER_SEED_PHRASE"),
+	//	)
+	//	if err != nil {
+	//		s.logger.Error().Err(err).Msg("fail to encrypt keyshares")
+	//	}
+	//}
+	//
+	//keygenMsg, err := s.thorchainBridge.GetKeygenStdTx(poolPk, secp256k1Signature, keyshares, blame, input, keygenType, chains, height, keygenTime)
+	//if err != nil {
+	//	return fmt.Errorf("fail to get keygen id: %w", err)
+	//}
+	//strHeight := strconv.FormatInt(height, 10)
+	//
+	//bf := backoff.NewExponentialBackOff()
+	//bf.MaxElapsedTime = constants.MAPRelayChainBlockTime
+	//return backoff.Retry(func() error {
+	//	txID, err := s.thorchainBridge.Broadcast(keygenMsg)
+	//	if err != nil {
+	//		s.logger.Warn().Err(err).Msg("fail to send keygen tx to thorchain")
+	//		s.errCounter.WithLabelValues("fail_to_send_to_thorchain", strHeight).Inc()
+	//		return fmt.Errorf("fail to send the tx to thorchain: %w", err)
+	//	}
+	//	s.logger.Info().Stringer("txid", txID).Int64("block", height).Msg("sent keygen tx to thorchain")
+	//	return nil
+	//}, bf)
+	return nil
 }
 
 // signAndBroadcast will sign the tx and broadcast it to the corresponding chain. On
@@ -619,7 +623,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// been signed already, and we can skip. This helps us not get stuck on
 	// a task that we'll never sign, because 2/3rds already has and will
 	// never be available to sign again.
-	txOut, err := s.thorchainBridge.GetKeysign(height, tx.VaultPubKey.String())
+	txOut, err := s.thorchainBridge.GetKeySign(height, tx.VaultPubKey.String())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get keysign items")
 		return nil, nil, err

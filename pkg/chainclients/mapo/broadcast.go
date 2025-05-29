@@ -1,108 +1,54 @@
 package mapo
 
 import (
-	"fmt"
-	"sync/atomic"
+	"context"
 	"time"
 
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	flag "github.com/spf13/pflag"
-
-	stypes "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/metrics"
+	etypes "github.com/ethereum/go-ethereum/core/types"
+	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 )
 
-// Broadcast Broadcasts tx to thorchain
-func (b *thorchainBridge) Broadcast(msgs ...stypes.Msg) (common.TxID, error) {
+// Broadcast Broadcasts tx to mapBridge
+func (b *Bridge) Broadcast(txOutItem stypes.TxOutItem, hexTx []byte) (string, error) {
+	// todo handler
 	b.broadcastLock.Lock()
 	defer b.broadcastLock.Unlock()
 
-	noTxID := common.TxID("")
+	// decode the transaction
+	tx := &etypes.Transaction{}
+	if err := tx.UnmarshalJSON(hexTx); err != nil {
+		return "", err
+	}
+	txID := tx.Hash().String()
 
-	start := time.Now()
-	defer func() {
-		b.m.GetHistograms(metrics.SendToMapDuration).Observe(time.Since(start).Seconds())
-	}()
+	// get context with default timeout
+	ctx, cancel := b.getTimeoutContext()
+	defer cancel()
+
+	// send the transaction
+	if err := b.ethClient.SendTransaction(ctx, tx); !isAcceptableError(err) {
+		b.logger.Error().Str("txid", txID).Err(err).Msg("failed to send transaction")
+		return "", err
+	}
+	b.logger.Info().Str("memo", txOutItem.Memo).Str("txid", txID).Msg("broadcast tx")
+
+	//// update the signer cache, send to map don’t need cache
+	//if err := b.signerCacheManager.SetSigned(txOutItem.CacheHash(), txOutItem.CacheVault(b.GetChain()), txID); err != nil {
+	//	b.logger.Err(err).Interface("txOutItem", txOutItem).Msg("fail to mark tx out item as signed")
+	//}
 
 	blockHeight, err := b.GetBlockHeight()
 	if err != nil {
-		return noTxID, err
-	}
-	if blockHeight > b.blockHeight {
-		var seqNum uint64
-		b.accountNumber, seqNum, err = b.getAccountNumberAndSequenceNumber()
-		if err != nil {
-			return noTxID, fmt.Errorf("fail to get account number and sequence number from thorchain : %w", err)
-		}
-		b.blockHeight = blockHeight
-		if seqNum > b.seqNumber {
-			b.seqNumber = seqNum
-		}
+		b.logger.Err(err).Msg("fail to get current THORChain block height")
+		// at this point , the tx already broadcast successfully , don't return an error
+		// otherwise will cause the same tx to retry
+	} else if err = b.AddSignedTxItem(txID, blockHeight, txOutItem.VaultPubKey.String(), &txOutItem); err != nil {
+		b.logger.Err(err).Str("hash", txID).Msg("fail to add signed tx item")
 	}
 
-	b.logger.Info().Uint64("account_number", b.accountNumber).Uint64("sequence_number", b.seqNumber).Msg("account info")
+	return txID, nil
+}
 
-	flags := flag.NewFlagSet("thorchain", 0)
-
-	ctx := b.GetContext()
-	factory, err := clienttx.NewFactoryCLI(ctx, flags)
-	if err != nil {
-		return noTxID, fmt.Errorf("failed to get factory, %w", err)
-	}
-	factory = factory.WithAccountNumber(b.accountNumber)
-	factory = factory.WithSequence(b.seqNumber)
-	factory = factory.WithSignMode(signing.SignMode_SIGN_MODE_DIRECT)
-
-	builder, err := factory.BuildUnsignedTx(msgs...)
-	if err != nil {
-		return noTxID, err
-	}
-	builder.SetGasLimit(4000000000)
-	err = clienttx.Sign(ctx.CmdContext, factory, ctx.GetFromName(), builder, true)
-	if err != nil {
-		return noTxID, err
-	}
-
-	txBytes, err := ctx.TxConfig.TxEncoder()(builder.GetTx())
-	if err != nil {
-		return noTxID, err
-	}
-
-	// broadcast to a Tendermint node
-	commit, err := ctx.BroadcastTx(txBytes)
-	if err != nil {
-		return noTxID, fmt.Errorf("fail to broadcast tx: %w", err)
-	}
-
-	b.m.GetCounter(metrics.TxToMapSigned).Inc()
-	txHash, err := common.NewTxID(commit.TxHash)
-	if err != nil {
-		return common.BlankTxID, fmt.Errorf("fail to convert txhash: %w", err)
-	}
-	// Code will be the tendermint ABICode , it start at 1 , so if it is an error , code will not be zero
-	if commit.Code > 0 {
-		if commit.Code == 32 {
-			// bad sequence number, fetch new one
-			_, seqNum, _ := b.getAccountNumberAndSequenceNumber()
-			if seqNum > 0 {
-				b.seqNumber = seqNum
-			}
-		}
-		b.logger.Info().Int("bytes", len(txBytes)).Uint32("code", commit.Code).Interface("messages", msgs).Msg("failed tx")
-		// commit code 6 means `unknown request` , which means the tx can't be accepted by thorchain
-		// if that's the case, let's just ignore it and move on
-		if commit.Code != 6 {
-			return txHash, fmt.Errorf("fail to broadcast to THORChain,code:%d, log:%s", commit.Code, commit.RawLog)
-		}
-	}
-	b.m.GetCounter(metrics.TxToMapChain).Inc()
-	b.logger.Info().Msgf("Received a TxHash of %v from the thorchain", commit.TxHash)
-
-	// increment seqNum
-	atomic.AddUint64(&b.seqNumber, 1)
-
-	return txHash, nil
+func (b *Bridge) getTimeoutContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), time.Second*5)
 }

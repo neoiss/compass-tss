@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"sort"
 	"strings"
@@ -69,7 +69,7 @@ type ETHScanner struct {
 	vaultABI              *abi.ABI
 	erc20ABI              *abi.ABI
 	tokens                *evm.LevelDBTokenMeta
-	bridge                mapo.ThorchainBridge
+	bridge                shareTypes.Bridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
 	currentBlockHeight    int64
@@ -84,7 +84,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 	storage blockscanner.ScannerStorage,
 	chainID *big.Int,
 	client *ethclient.Client,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	solvencyReporter SolvencyReporter,

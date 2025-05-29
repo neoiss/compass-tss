@@ -33,7 +33,7 @@ import (
 
 type UnstuckTestSuite struct {
 	thorKeys *mapclient.Keys
-	bridge   mapo.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }

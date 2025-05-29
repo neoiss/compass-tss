@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/hashicorp/go-multierror"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"strings"
 	"sync"
@@ -58,7 +60,7 @@ type Client struct {
 	chainID                 *big.Int
 	kw                      *evm.KeySignWrapper
 	ethScanner              *ETHScanner
-	bridge                  mapo.ThorchainBridge
+	bridge                  shareTypes.Bridge
 	blockScanner            *blockscanner.BlockScanner
 	vaultABI                *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
@@ -74,10 +76,10 @@ type Client struct {
 }
 
 // NewClient create new instance of Ethereum client
-func NewClient(thorKeys *mapo.Keys,
+func NewClient(thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	poolMgr mapo.PoolManager,
@@ -754,7 +756,7 @@ func (c *Client) sign(tx *etypes.Transaction, poolPubKey common.PubKey, height i
 		if errPostKeysignFail != nil {
 			return nil, multierror.Append(err, errPostKeysignFail)
 		}
-		c.logger.Info().Str("tx_id", txID.String()).Msgf("post keysign failure to thorchain")
+		c.logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
 	}
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
 }

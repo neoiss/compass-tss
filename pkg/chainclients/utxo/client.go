@@ -3,7 +3,7 @@ package utxo
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -24,6 +24,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
@@ -78,7 +79,7 @@ type Client struct {
 	currentBlockHeight    *atomic.Int64
 
 	// ---------- thornode state ----------
-	bridge          mapo.ThorchainBridge
+	bridge          shareTypes.Bridge
 	asgardAddresses []common.Address
 	lastAsgard      time.Time
 
@@ -98,10 +99,10 @@ type Client struct {
 
 // NewClient generates a new Client
 func NewClient(
-	thorKeys *mapo.Keys,
+	thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *gotss.TssServer,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 ) (*Client, error) {
 	// verify the chain is supported

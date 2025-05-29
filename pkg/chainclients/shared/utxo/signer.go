@@ -3,7 +3,7 @@ package utxo
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/hashicorp/go-multierror"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
@@ -19,7 +19,7 @@ type SignCheckpoint struct {
 }
 
 func PostKeysignFailure(
-	thorchainBridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	tx stypes.TxOutItem,
 	logger zerolog.Logger,
 	thorchainHeight int64,
@@ -35,13 +35,13 @@ func PostKeysignFailure(
 		}
 
 		// key sign error forward the keysign blame to thorchain
-		txID, err := thorchainBridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
+		txID, err := bridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
 		if err != nil {
 			logger.Error().Err(err).Msg("fail to post keysign failure to thorchain")
 			utxoErr = multierror.Append(utxoErr, fmt.Errorf("fail to post keysign failure to THORChain: %w", err))
 			return fmt.Errorf("fail to sign the message: %w", utxoErr)
 		}
-		logger.Info().Str("tx_id", txID.String()).Msgf("post keysign failure to thorchain")
+		logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
 	}
 	return utxoErr
 }

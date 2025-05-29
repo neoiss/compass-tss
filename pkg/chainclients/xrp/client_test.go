@@ -36,7 +36,7 @@ func TestPackage(t *testing.T) { TestingT(t) }
 type XrpTestSuite struct {
 	thordir  string
 	thorKeys *mapclient.Keys
-	bridge   mapo.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	m        *metrics.Metrics
 }
 

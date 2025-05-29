@@ -1,6 +1,10 @@
 package types
 
 import (
+	"github.com/blang/semver"
+	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"math/big"
 
 	"github.com/mapprotocol/compass-tss/common"
@@ -66,3 +70,52 @@ type ChainClient interface {
 
 // SolvencyReporter reports the solvency of the chain at the given height.
 type SolvencyReporter func(height int64) error
+
+// Bridge is compass 2 map
+type Bridge interface {
+	EnsureNodeWhitelisted() error
+	EnsureNodeWhitelistedWithTimeout() error
+	FetchNodeStatus() (stypes.NodeStatus, error)
+	FetchActiveNodes() ([]common.PubKey, error)
+	GetAsgards() (stypes.Vaults, error)
+	GetVault(pubkey string) (stypes.Vault, error)
+	GetConfig() config.BifrostClientConfiguration
+	GetConstants() (map[string]int64, error)
+	GetContext() client.Context
+	GetContractAddress() ([]PubKeyContractAddressPair, error)
+	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
+	GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Signature, keysharesBackup []byte, blame stypes.Blame, inputPks common.PubKeys, keygenType stypes.KeygenType, chains common.Chains, height, keygenTime int64) (sdk.Msg, error)
+	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
+	GetMimir(key string) (int64, error)
+	GetMimirWithRef(template, ref string) (int64, error)
+	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
+	GetPools() (stypes.Pools, error)
+	GetPubKeys() ([]PubKeyContractAddressPair, error)
+	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
+	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
+	GetTHORName(name string) (stypes.THORName, error)
+	GetThorchainVersion() (semver.Version, error)
+	IsCatchingUp() (bool, error)
+	HasNetworkFee(chain common.Chain) (bool, error)
+	GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error)
+	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
+	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error)
+	RagnarokInProgress() (bool, error)
+	WaitToCatchUp() error
+	GetBlockHeight() (int64, error)
+	GetLastObservedInHeight(chain common.Chain) (int64, error)
+	GetLastSignedOutHeight(chain common.Chain) (int64, error)
+	Broadcast(txOutItem types.TxOutItem, hexTx []byte) (string, error)
+	GetKeySign(blockHeight int64, pk string) (types.TxOut, error)
+	GetNodeAccount(string) (*stypes.NodeAccount, error)
+	GetNodeAccounts() ([]*stypes.NodeAccount, error)
+	GetKeygenBlock(int64, string) (stypes.KeygenBlock, error)
+	InitBlockScanner(...BridgeOption) error
+}
+
+type BridgeOption func(Bridge) error
+
+type PubKeyContractAddressPair struct {
+	PubKey    common.PubKey
+	Contracts map[common.Chain]common.Address
+}

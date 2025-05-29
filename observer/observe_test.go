@@ -44,7 +44,7 @@ func TestPackage(t *testing.T) { TestingT(t) }
 type ObserverSuite struct {
 	metrics  *metrics.Metrics
 	thorKeys *mapclient.Keys
-	bridge   mapo.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	client   *evm.EVMClient
 }
 

@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"sync"
 	"time"
 
@@ -102,7 +103,7 @@ type AttestationGossip struct {
 
 	grpcClient  ebifrost.LocalhostBifrostClient
 	eventClient EventClientInterface
-	bridge      mapo.ThorchainBridge
+	bridge      shareTypes.Bridge
 
 	privKey cryptotypes.PrivKey // our private key, cached for performance
 	pubKey  []byte              // our public key, cached for performance
@@ -143,9 +144,9 @@ type cachedKeySignParty struct {
 // NewAttestationGossip create a new instance of AttestationGossip
 func NewAttestationGossip(
 	host host.Host,
-	keys *mapo.Keys,
+	keys *keys.Keys,
 	thornodeBifrostGRPCAddress string,
-	bridge mapo.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	config config.BifrostAttestationGossipConfig,
 ) (*AttestationGossip, error) {

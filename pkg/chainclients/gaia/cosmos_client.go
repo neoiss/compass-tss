@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"os"
 	"sync"
@@ -65,7 +66,7 @@ type CosmosClient struct {
 	accts               *CosmosMetaDataStore
 	tssKeyManager       *tss.KeySign
 	localKeyManager     *keyManager
-	thorchainBridge     mapo.ThorchainBridge
+	thorchainBridge     shareTypes.Bridge
 	storage             *blockscanner.BlockScannerStorage
 	blockScanner        *blockscanner.BlockScanner
 	signerCacheManager  *signercache.CacheManager
@@ -77,10 +78,10 @@ type CosmosClient struct {
 
 // NewCosmosClient creates a new instance of a Cosmos-based chain client
 func NewCosmosClient(
-	thorKeys *mapo.Keys,
+	thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
-	thorchainBridge mapo.ThorchainBridge,
+	thorchainBridge shareTypes.Bridge,
 	m *metrics.Metrics,
 ) (*CosmosClient, error) {
 	logger := log.With().Str("module", cfg.ChainID.String()).Logger()
@@ -343,13 +344,12 @@ func (c *CosmosClient) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signe
 				}
 
 				// key sign error forward the keysign blame to thorchain
-				var txID common.TxID
-				txID, err = c.thorchainBridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
+				txID, err := c.thorchainBridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
 				if err != nil {
 					c.logger.Err(err).Msg("fail to post keysign failure to THORChain")
 					return
 				}
-				c.logger.Info().Str("tx_id", txID.String()).Msgf("post keysign failure to thorchain")
+				c.logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
 			}
 			c.logger.Err(err).Msg("failed to sign tx")
 			return

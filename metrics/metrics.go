@@ -74,14 +74,14 @@ var (
 		}),
 		TxToMapChain: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: "observer",
-			Subsystem: "thorchain_client",
-			Name:      "tx_to_thorchain_total",
-			Help:      "number of tx observer post to thorchain successfully",
+			Subsystem: "map_chain_client",
+			Name:      "tx_to_map_chain_total",
+			Help:      "number of tx observer post to map_chain successfully",
 		}),
 		TxToMapSigned: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: "observer",
-			Subsystem: "thorchain_client",
-			Name:      "tx_to_thorchain_signed_total",
+			Subsystem: "map_chain_client",
+			Name:      "tx_to_map_chain_signed_total",
 			Help:      "number of tx observer signed successfully",
 		}),
 		BatchSends: prometheus.NewCounter(prometheus.CounterOpts{
@@ -117,10 +117,10 @@ var (
 		}),
 
 		MapChainClientError: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "thorchain",
-			Subsystem: "thorchain_client",
+			Namespace: "map_chain",
+			Subsystem: "map_chain_client",
 			Name:      "errors_total",
-			Help:      "errors in thorchain client",
+			Help:      "errors in map_chain client",
 		}, []string{
 			"error_name", "additional",
 		}),
@@ -168,15 +168,15 @@ var (
 		}),
 		SignToMapDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "observer",
-			Subsystem: "thorchain",
-			Name:      "sign_to_thorchain_duration",
-			Help:      "how long it takes to sign a tx to thorchain",
+			Subsystem: "map_chain",
+			Name:      "sign_to_map_chain_duration",
+			Help:      "how long it takes to sign a tx to map_chain",
 		}),
 		SendToMapDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "observer",
-			Subsystem: "thorchain",
-			Name:      "send_to_thorchain_duration",
-			Help:      "how long it takes to sign and broadcast to thorchain",
+			Subsystem: "map_chain",
+			Name:      "send_to_map_chain_duration",
+			Help:      "how long it takes to sign and broadcast to map_chain",
 		}),
 		BatchSize: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "observer",

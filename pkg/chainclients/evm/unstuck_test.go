@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net/http"
@@ -31,8 +32,8 @@ import (
 )
 
 type UnstuckTestSuite struct {
-	thorKeys *mapo.Keys
-	bridge   mapo.ThorchainBridge
+	thorKeys *keys.Keys
+	bridge   shareTypes.ThorchainBridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }
@@ -57,7 +58,7 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapo.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
+	s.thorKeys = keys.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
 
 	// get public key
 	priv, err := s.thorKeys.GetPrivateKey()
@@ -276,7 +277,7 @@ func (s *UnstuckTestSuite) SetUpTest(c *C) {
 	s.server = server
 
 	cfg.ChainHost = server.Listener.Addr().String()
-	s.bridge, err = mapo.NewThorchainBridge(cfg, s.m, s.thorKeys)
+	s.bridge, err = mapo.NewBridge(cfg, s.m, s.thorKeys)
 	c.Assert(err, IsNil)
 }
 

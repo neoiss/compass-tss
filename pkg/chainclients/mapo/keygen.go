@@ -13,8 +13,8 @@ import (
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
-// GetKeygenBlock retrieves keygen request for the given block height from thorchain
-func (b *thorchainBridge) GetKeygenBlock(blockHeight int64, pk string) (types.KeygenBlock, error) {
+// GetKeygenBlock retrieves keygen request for the given block height from mapBridge
+func (b *Bridge) GetKeygenBlock(blockHeight int64, pk string) (types.KeygenBlock, error) {
 	path := fmt.Sprintf("%s/%d/%s", KeygenEndpoint, blockHeight, pk)
 	body, status, err := b.getWithPath(path)
 	if err != nil {
