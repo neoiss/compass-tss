@@ -19,16 +19,11 @@ bifrost:
     read_timeout: 30s
     write_timeout: 30s
     chains:
-      - AVAX
       - BCH
       - BTC
-      - DOGE
       - ETH
-      - GAIA
-      - LTC
       - BSC
       - BASE
-      - XRP
   thorchain:
     chain_id: map
     chain_host: https://testnet-rpc.maplabs.io
@@ -51,7 +46,7 @@ bifrost:
     peer_concurrent_receives: 5
   signer:
     backup_keyshares: true
-    signer_db_path: //Users/zmm/Desktop/code/github/compass-tss/build/signer_db
+    signer_db_path: ./build/signer_db
     retry_interval: 2s
     reschedule_buffer_blocks: 150 # 15 minutes
     block_scanner:
@@ -82,8 +77,8 @@ bifrost:
     btc: &default-chain
       disabled: false
       chain_id: BTC
-      username: thorchain
-      password: password
+      username:
+      password:
       http_post_mode: 1
       disable_tls: 1
       parallel_mempool_scan: 5
@@ -123,7 +118,7 @@ bifrost:
         http_request_read_timeout: 30s
         http_request_write_timeout: 30s
         max_http_request_retry: 10
-        db_path: /Users/zmm/Desktop/code/github/compass-tss/build/observer
+        db_path: ./build/observer
         scan_mempool: true
         max_contract_tx_logs: 0
 
@@ -145,7 +140,7 @@ bifrost:
       # the following defaults must be defined to override with environment
       chain_host: ""
       chain_network: ""
-      rpc_host: ""
+      rpc_host: "https://rpc.bitlayer.org"
       cosmos_grpc_host: ""
       cosmos_grpc_tls: false
       opt_to_retire: false
@@ -154,6 +149,7 @@ bifrost:
     eth:
       <<: *default-chain
       chain_id: ETH
+      rpc_host: "https://eth.llamarpc.com"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
       token_max_gas_multiplier: 3
@@ -173,6 +169,7 @@ bifrost:
     base:
       <<: *default-chain
       chain_id: BASE
+      rpc_host: "https://base.llamarpc.com"
       solvency_blocks: 100
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
@@ -228,6 +225,7 @@ bifrost:
       disabled: true
       <<: *default-chain
       chain_id: BSC
+      rpc_host: "https://binance.llamarpc.com"
       solvency_blocks: 100
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
@@ -361,6 +359,7 @@ bifrost:
         observation_flexibility_blocks: 3
       mempool_tx_id_cache_size: 1_000_000
       scanner_leveldb: *default-leveldb
+      rpc_host: "https://smartbch.fountainhead.cash/mainnet"
       utxo:
         <<: *utxo
         block_cache_count: 144

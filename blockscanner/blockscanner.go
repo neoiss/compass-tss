@@ -2,7 +2,6 @@ package blockscanner
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -158,41 +157,42 @@ func (b *BlockScanner) scanMempool() {
 // Checks current mimir settings to determine if the current chain is paused
 // either globally or specifically
 func (b *BlockScanner) isChainPaused() bool {
-	var haltHeight, solvencyHaltHeight, nodeHaltHeight, thorHeight int64
-
-	// Check if chain has been halted via mimir
-	haltHeight, err := b.bridge.GetMimir(fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
-	if err != nil {
-		b.logger.Error().Err(err).Msgf("fail to get mimir setting %s", fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
-	}
-	// Check if chain has been halted by auto solvency checks
-	solvencyHaltHeight, err = b.bridge.GetMimir(fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
-	if err != nil {
-		b.logger.Error().Err(err).Msgf("fail to get mimir %s", fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
-	}
-	// Check if all chains halted globally
-	globalHaltHeight, err := b.bridge.GetMimir("HaltChainGlobal")
-	if err != nil {
-		b.logger.Error().Err(err).Msg("fail to get mimir setting HaltChainGlobal")
-	}
-	if globalHaltHeight > haltHeight {
-		haltHeight = globalHaltHeight
-	}
-	// Check if a node paused all chains
-	nodeHaltHeight, err = b.bridge.GetMimir("NodePauseChainGlobal")
-	if err != nil {
-		b.logger.Error().Err(err).Msg("fail to get mimir setting NodePauseChainGlobal")
-	}
-	thorHeight, err = b.bridge.GetBlockHeight()
-	if err != nil {
-		b.logger.Error().Err(err).Msg("fail to get THORChain block height")
-	}
-
-	if nodeHaltHeight > 0 && thorHeight < nodeHaltHeight {
-		haltHeight = 1
-	}
-
-	return (haltHeight > 0 && thorHeight > haltHeight) || (solvencyHaltHeight > 0 && thorHeight > solvencyHaltHeight)
+	//var haltHeight, solvencyHaltHeight, nodeHaltHeight, thorHeight int64
+	//
+	//// Check if chain has been halted via mimir
+	//haltHeight, err := b.bridge.GetMimir(fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
+	//if err != nil {
+	//	b.logger.Error().Err(err).Msgf("fail to get mimir setting %s", fmt.Sprintf("Halt%sChain", b.cfg.ChainID))
+	//}
+	//// Check if chain has been halted by auto solvency checks
+	//solvencyHaltHeight, err = b.bridge.GetMimir(fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
+	//if err != nil {
+	//	b.logger.Error().Err(err).Msgf("fail to get mimir %s", fmt.Sprintf("SolvencyHalt%sChain", b.cfg.ChainID))
+	//}
+	//// Check if all chains halted globally
+	//globalHaltHeight, err := b.bridge.GetMimir("HaltChainGlobal")
+	//if err != nil {
+	//	b.logger.Error().Err(err).Msg("fail to get mimir setting HaltChainGlobal")
+	//}
+	//if globalHaltHeight > haltHeight {
+	//	haltHeight = globalHaltHeight
+	//}
+	//// Check if a node paused all chains
+	//nodeHaltHeight, err = b.bridge.GetMimir("NodePauseChainGlobal")
+	//if err != nil {
+	//	b.logger.Error().Err(err).Msg("fail to get mimir setting NodePauseChainGlobal")
+	//}
+	//thorHeight, err = b.bridge.GetBlockHeight()
+	//if err != nil {
+	//	b.logger.Error().Err(err).Msg("fail to get THORChain block height")
+	//}
+	//
+	//if nodeHaltHeight > 0 && thorHeight < nodeHaltHeight {
+	//	haltHeight = 1
+	//}
+	//
+	//return (haltHeight > 0 && thorHeight > haltHeight) || (solvencyHaltHeight > 0 && thorHeight > solvencyHaltHeight)
+	return false
 }
 
 // scanBlocks

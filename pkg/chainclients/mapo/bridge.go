@@ -387,20 +387,22 @@ func (b *Bridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTx
 
 // EnsureNodeWhitelistedWithTimeout check node is whitelisted with timeout retry
 func (b *Bridge) EnsureNodeWhitelistedWithTimeout() error {
-	for {
-		select {
-		case <-time.After(time.Hour):
-			return errors.New("Observer is not whitelisted yet")
-		default:
-			err := b.EnsureNodeWhitelisted()
-			if err == nil {
-				// node had been whitelisted
-				return nil
-			}
-			b.logger.Error().Err(err).Msg("observer is not whitelisted , will retry a bit later")
-			time.Sleep(time.Second * 5)
-		}
-	}
+	// todo handler
+	//for {
+	//	select {
+	//	case <-time.After(time.Hour):
+	//		return errors.New("Observer is not whitelisted yet")
+	//	default:
+	//		err := b.EnsureNodeWhitelisted()
+	//		if err == nil {
+	//			// node had been whitelisted
+	//			return nil
+	//		}
+	//		b.logger.Error().Err(err).Msg("observer is not whitelisted , will retry a bit later")
+	//		time.Sleep(time.Second * 5)
+	//	}
+	//}
+	return nil
 }
 
 // EnsureNodeWhitelisted will call to mapBridge to check whether the observer had been whitelist or not
@@ -463,29 +465,30 @@ func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, err
 // IsCatchingUp returns bool for if mapBridge is catching up to the rest of the
 // nodes. Returns yes, if it is, false if it is caught up.
 func (b *Bridge) IsCatchingUp() (bool, error) {
-	uri := url.URL{
-		Scheme: "http",
-		Host:   b.cfg.ChainRPC,
-		Path:   StatusEndpoint,
-	}
-
-	body, _, err := b.get(uri.String())
-	if err != nil {
-		return false, fmt.Errorf("failed to get status data: %w", err)
-	}
-
-	var resp struct {
-		Result struct {
-			SyncInfo struct {
-				CatchingUp bool `json:"catching_up"`
-			} `json:"sync_info"`
-		} `json:"result"`
-	}
-
-	if err = json.Unmarshal(body, &resp); err != nil {
-		return false, fmt.Errorf("failed to unmarshal tendermint status: %w", err)
-	}
-	return resp.Result.SyncInfo.CatchingUp, nil
+	//uri := url.URL{
+	//	Scheme: "http",
+	//	Host:   b.cfg.ChainRPC,
+	//	Path:   StatusEndpoint,
+	//}
+	//
+	//body, _, err := b.get(uri.String())
+	//if err != nil {
+	//	return false, fmt.Errorf("failed to get status data: %w", err)
+	//}
+	//
+	//var resp struct {
+	//	Result struct {
+	//		SyncInfo struct {
+	//			CatchingUp bool `json:"catching_up"`
+	//		} `json:"sync_info"`
+	//	} `json:"result"`
+	//}
+	//
+	//if err = json.Unmarshal(body, &resp); err != nil {
+	//	return false, fmt.Errorf("failed to unmarshal tendermint status: %w", err)
+	//}
+	//return resp.Result.SyncInfo.CatchingUp, nil
+	return false, nil
 }
 
 // HasNetworkFee checks whether the given chain has set a network fee - determined by
@@ -615,26 +618,28 @@ func (b *Bridge) getVaultPubkeys() ([]byte, error) {
 
 // GetPubKeys retrieve vault pub keys and their relevant smart contracts
 func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	buf, err := b.getVaultPubkeys()
-	if err != nil {
-		return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
-	}
-	var result openapi.VaultPubkeysResponse
-	if err = json.Unmarshal(buf, &result); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
-	}
-	var addressPairs []shareTypes.PubKeyContractAddressPair
-	for _, v := range append(result.Asgard, result.Inactive...) {
-		kp := shareTypes.PubKeyContractAddressPair{
-			PubKey:    common.PubKey(v.PubKey),
-			Contracts: make(map[common.Chain]common.Address),
-		}
-		for _, item := range v.Routers {
-			kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
-		}
-		addressPairs = append(addressPairs, kp)
-	}
-	return addressPairs, nil
+	//// todo handler
+	//buf, err := b.getVaultPubkeys()
+	//if err != nil {
+	//	return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
+	//}
+	//var result openapi.VaultPubkeysResponse
+	//if err = json.Unmarshal(buf, &result); err != nil {
+	//	return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
+	//}
+	//var addressPairs []shareTypes.PubKeyContractAddressPair
+	//for _, v := range append(result.Asgard, result.Inactive...) {
+	//	kp := shareTypes.PubKeyContractAddressPair{
+	//		PubKey:    common.PubKey(v.PubKey),
+	//		Contracts: make(map[common.Chain]common.Address),
+	//	}
+	//	for _, item := range v.Routers {
+	//		kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
+	//	}
+	//	addressPairs = append(addressPairs, kp)
+	//}
+	//return addressPairs, nil
+	return nil, nil
 }
 
 // GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
@@ -718,18 +723,20 @@ func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
 
 // GetMimir - get mimir settings
 func (b *Bridge) GetMimir(key string) (int64, error) {
-	buf, s, err := b.getWithPath(MimirEndpoint + "/key/" + key)
-	if err != nil {
-		return 0, fmt.Errorf("fail to get mimir: %w", err)
-	}
-	if s != http.StatusOK {
-		return 0, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var value int64
-	if err = json.Unmarshal(buf, &value); err != nil {
-		return 0, fmt.Errorf("fail to unmarshal mimir: %w", err)
-	}
-	return value, nil
+	//buf, s, err := b.getWithPath(MimirEndpoint + "/key/" + key)
+	//if err != nil {
+	//	return 0, fmt.Errorf("fail to get mimir: %w", err)
+	//}
+	//if s != http.StatusOK {
+	//	return 0, fmt.Errorf("unexpected status code: %d", s)
+	//}
+	//var value int64
+	//if err = json.Unmarshal(buf, &value); err != nil {
+	//	return 0, fmt.Errorf("fail to unmarshal mimir: %w", err)
+	//}
+	//return value, nil
+	// todo handler
+	return 0, nil
 }
 
 // GetMimirWithRef is a helper function to more readably insert references (such as Asset MimirString or Chain) into Mimir key templates.
