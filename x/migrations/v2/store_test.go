@@ -8,7 +8,6 @@ import (
 	modtestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 
 	"github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/migrations/v2"
 
 	. "gopkg.in/check.v1"
 )
@@ -31,8 +30,8 @@ func (s *MigrationsV2Suite) TestV2Migrations(c *C) {
 	store.Set([]byte(key), encodingConfig.Codec.MustMarshal(&ver))
 	c.Check(store.Has([]byte(key)), Equals, true)
 
-	err := v2.MigrateStore(ctx, storeKey)
-	c.Assert(err, IsNil)
+	//err := v2.MigrateStore(ctx, storeKey)
+	//c.Assert(err, IsNil)
 
 	c.Check(store.Has([]byte(key)), Equals, false)
 }

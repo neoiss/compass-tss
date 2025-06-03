@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"math/big"
 	"net/http"
@@ -14,27 +15,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	cKeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mapprotocol/compass-tss/blockscanner"
-	"github.com/mapprotocol/compass-tss/cmd"
 	thorcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	evmtypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 	. "gopkg.in/check.v1"
 )
 
@@ -94,31 +88,6 @@ type BlockScannerTestSuite struct {
 }
 
 var _ = Suite(&BlockScannerTestSuite{})
-
-func (s *BlockScannerTestSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
-	s.m = GetMetricForTest(c)
-	c.Assert(s.m, NotNil)
-	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       "localhost",
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: "",
-	}
-
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-	cdc := codec.NewProtoCodec(registry)
-	kb := cKeys.NewInMemory(cdc)
-	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
-	c.Assert(err, IsNil)
-	thorKeys := mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
-	c.Assert(err, IsNil)
-	s.keys = thorKeys
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, thorKeys)
-	c.Assert(err, IsNil)
-}
 
 func getConfigForTest() config.BifrostBlockScannerConfiguration {
 	return config.BifrostBlockScannerConfiguration{

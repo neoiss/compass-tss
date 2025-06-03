@@ -1,6 +1,7 @@
 package blockscanner
 
 import (
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,19 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	ckeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }
@@ -36,38 +30,6 @@ type BlockScannerTestSuite struct {
 }
 
 var _ = Suite(&BlockScannerTestSuite{})
-
-func (s *BlockScannerTestSuite) SetUpSuite(c *C) {
-	var err error
-	m, err = metrics.NewMetrics(config.BifrostMetricsConfiguration{
-		Enabled:      false,
-		ListenPort:   9090,
-		ReadTimeout:  time.Second,
-		WriteTimeout: time.Second,
-		Chains:       common.Chains{common.ETHChain},
-	})
-	c.Assert(m, NotNil)
-	c.Assert(err, IsNil)
-	thorchain.SetupConfigForTest()
-	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       "localhost",
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: ".",
-	}
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-	cdc := codec.NewProtoCodec(registry)
-	kb := ckeys.NewInMemory(cdc)
-	_, _, err = kb.NewMnemonic(cfg.SignerName, ckeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
-	c.Assert(err, IsNil)
-
-	s.cfg = cfg
-	s.keys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
-	s.bridge, err = mapclient.NewThorchainBridge(s.cfg, s.m, s.keys)
-	c.Assert(err, IsNil)
-}
 
 func (s *BlockScannerTestSuite) TearDownSuite(c *C) {
 }

@@ -36,14 +36,13 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	types2 "github.com/mapprotocol/compass-tss/x/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }
@@ -332,7 +331,6 @@ type SignSuite struct {
 var _ = Suite(&SignSuite{})
 
 func (s *SignSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 	s.metrics = GetMetricForTest(c)
 	c.Assert(s.metrics, NotNil)
 
