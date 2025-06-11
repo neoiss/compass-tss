@@ -69,7 +69,7 @@ func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) 
 	for _, ele := range logs {
 		inHash, _ := common.NewTxID(ele.TxHash.Hex())
 		ret.TxArray = append(ret.TxArray, types.TxArrayItem{
-			Chain:                 common.MapChain,
+			Chain:                 common.MAPChain,
 			ToAddress:             "",
 			VaultPubKey:           "",
 			Coin:                  common.Coin{},

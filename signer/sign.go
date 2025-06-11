@@ -99,7 +99,7 @@ func NewSigner(cfg config.Bifrost,
 	}
 	pubkeyMgr.AddNodePubKey(na.PubKeySet.Secp256k1)
 
-	cfg.Signer.BlockScanner.ChainID = common.MapChain // hard code to map
+	cfg.Signer.BlockScanner.ChainID = common.MAPChain // hard code to map
 	// Create pubkey manager and add our private key
 	mapChainBlockScanner, err := mapo.NewBlockScan(cfg.Signer.BlockScanner, storage, bridge, m, pubkeyMgr)
 	if err != nil {
