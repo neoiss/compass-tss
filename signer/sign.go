@@ -13,8 +13,6 @@ import (
 	"sync"
 	"time"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/btcsuite/btcd/btcec"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/prometheus/client_golang/prometheus"
@@ -79,12 +77,12 @@ func NewSigner(cfg config.Bifrost,
 	}
 	var na *structure.MaintainerInfo
 	for i := 0; i < 300; i++ { // wait for 5 min before timing out
-		var signerAddr sdktypes.AccAddress
-		signerAddr, err = thorKeys.GetSignerInfo().GetAddress()
+
+		signerAddr, err := thorKeys.GetEthAddress()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get address from thorKeys signer: %w", err)
 		}
-		na, err = bridge.GetNodeAccount(signerAddr.String())
+		na, err = bridge.GetNodeAccount(signerAddr)
 		if err != nil {
 			return nil, fmt.Errorf("fail to get node account from thorchain,err:%w", err)
 		}

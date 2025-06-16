@@ -33,8 +33,7 @@ func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 	if err != nil {
 		return stypes.NodeStatus_Unknown, nil
 	}
-	fmt.Println("addr ---------------- ", addr)
-	// todo handler
+	// done
 	na, err := b.GetNodeAccount(addr)
 	if err != nil {
 		return stypes.NodeStatus_Unknown, fmt.Errorf("failed to get node status: %w", err)
@@ -73,7 +72,7 @@ func (b *Bridge) GetNodeAccount(thorAddr string) (*structure.MaintainerInfo, err
 		Info structure.MaintainerInfo `json:"info"`
 	}
 	ret := Back{}
-	fmt.Println("GetNodeAccount unpack ----------- ", unpack)
+	b.logger.Info().Str("addr", thorAddr).Interface("unpack", unpack).Msg("GetNodeAccount unpack")
 	if err = outputs.Copy(&ret, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
