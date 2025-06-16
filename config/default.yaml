@@ -32,6 +32,7 @@ bifrost:
     chain_home_folder: ""
     signer_name: "first_cosmos"
     private_key: "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
+    maintainer: "0x50C1c1832797D015F20FBa9E739dc8cad49DfcA7"
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m
@@ -70,7 +71,10 @@ bifrost:
     rendezvous: asgard
     p2p_port: 5040
     info_address: :6040
-    bootstrap_peers: ""
+    bootstrap_peers:
+      - 10.0.3.51
+      - 10.0.3.39
+      - 10.0.3.31
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
   chains:

@@ -9,8 +9,8 @@ import (
 )
 
 // Broadcast Broadcasts tx to mapBridge
-func (b *Bridge) Broadcast(txOutItem stypes.TxOutItem, hexTx []byte) (string, error) {
-	// todo handler
+func (b *Bridge) Broadcast(txOutItem *stypes.TxOutItem, hexTx []byte) (string, error) {
+	// done
 	b.broadcastLock.Lock()
 	defer b.broadcastLock.Unlock()
 
@@ -42,7 +42,7 @@ func (b *Bridge) Broadcast(txOutItem stypes.TxOutItem, hexTx []byte) (string, er
 		b.logger.Err(err).Msg("fail to get current THORChain block height")
 		// at this point , the tx already broadcast successfully , don't return an error
 		// otherwise will cause the same tx to retry
-	} else if err = b.AddSignedTxItem(txID, blockHeight, txOutItem.VaultPubKey.String(), &txOutItem); err != nil {
+	} else if err = b.AddSignedTxItem(txID, blockHeight, txOutItem.VaultPubKey.String(), txOutItem); err != nil {
 		b.logger.Err(err).Str("hash", txID).Msg("fail to add signed tx item")
 	}
 

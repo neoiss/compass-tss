@@ -3,6 +3,7 @@ package mapo
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"strings"
@@ -19,7 +20,6 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 type MapChainBlockScan struct {
@@ -27,7 +27,7 @@ type MapChainBlockScan struct {
 	wg                *sync.WaitGroup
 	stopChan          chan struct{}
 	txOutChan         chan types.TxOut
-	keygenChan        chan ttypes.KeygenBlock
+	keygenChan        chan *structure.KeyGen
 	cfg               config.BifrostBlockScannerConfiguration
 	scannerStorage    blockscanner.ScannerStorage
 	mapBridge         shareTypes.Bridge
@@ -63,7 +63,7 @@ func NewBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage block
 		wg:                &sync.WaitGroup{},
 		stopChan:          make(chan struct{}),
 		txOutChan:         make(chan types.TxOut),
-		keygenChan:        make(chan ttypes.KeygenBlock),
+		keygenChan:        make(chan *structure.KeyGen),
 		cfg:               cfg,
 		scannerStorage:    scanStorage,
 		mapBridge:         bridge,
@@ -77,7 +77,7 @@ func (b *MapChainBlockScan) GetTxOutMessages() <-chan types.TxOut {
 	return b.txOutChan
 }
 
-func (b *MapChainBlockScan) GetKeygenMessages() <-chan ttypes.KeygenBlock {
+func (b *MapChainBlockScan) GetKeygenMessages() <-chan *structure.KeyGen {
 	return b.keygenChan
 }
 
@@ -85,7 +85,7 @@ func (b *MapChainBlockScan) GetHeight() (int64, error) {
 	return b.mapBridge.GetBlockHeight()
 }
 
-// GetNetworkFee : MapChainBlockScan's only exists to satisfy the BlockScannerFetcher interface
+// GetNetworkFee : MapChainBlockScan's only exists to satisfy the Fetcher interface
 // and should never be called, since broadcast network fees are for external chains' observed fees.
 func (b *MapChainBlockScan) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
 	b.logger.Error().Msg("MapChainBlockScan GetNetworkFee was called (which should never happen)")
@@ -100,33 +100,29 @@ func (b *MapChainBlockScan) FetchTxs(height, _ int64) (types.TxIn, error) {
 	if err := b.processTxOutBlock(height); err != nil {
 		return types.TxIn{}, err
 	}
-	if err := b.processKeygenBlock(height); err != nil {
+	if err := b.processKeygenBlock(); err != nil {
 		return types.TxIn{}, err
 	}
 	return types.TxIn{}, nil
 }
 
-func (b *MapChainBlockScan) processKeygenBlock(blockHeight int64) error {
-	// todo by contract
-	pk := b.pubkeyMgr.GetNodePubKey()
-	keygen, err := b.mapBridge.GetKeygenBlock(blockHeight, pk.String())
+func (b *MapChainBlockScan) processKeygenBlock() error {
+	// done
+	keygen, err := b.mapBridge.GetKeygenBlock()
 	if err != nil {
 		return fmt.Errorf("fail to get keygen from mapBridge: %w", err)
 	}
-
-	// custom error (to be dropped and not logged) because the block is
-	// available yet
-	if keygen.Height == 0 {
-		return btypes.ErrUnavailableBlock
+	if keygen == nil {
+		return nil
 	}
 
-	if len(keygen.Keygens) > 0 {
-		b.keygenChan <- keygen
-	}
+	b.keygenChan <- keygen
 	return nil
 }
 
+// todo handler
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
+	fmt.Println("mapChain blockHeight ------------------------ ", blockHeight)
 	tx, err := b.mapBridge.GetKeySign(blockHeight, b.cfg.Mos)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {

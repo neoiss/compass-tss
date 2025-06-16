@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"io"
 	"math/big"
 	"net/http"
@@ -41,12 +42,8 @@ import (
 // Endpoint urls
 const (
 	AuthAccountEndpoint      = "/cosmos/auth/v1beta1/accounts"
-	BroadcastTxsEndpoint     = "/"
-	KeygenEndpoint           = "/mapBridge/keygen"
-	KeysignEndpoint          = "/mapBridge/keysign"
 	LastBlockEndpoint        = "/mapBridge/lastblock"
 	NodeAccountEndpoint      = "/mapBridge/node"
-	NodeAccountsEndpoint     = "/mapBridge/nodes"
 	SignerMembershipEndpoint = "/mapBridge/vaults/%s/signers"
 	StatusEndpoint           = "/status"
 	VaultEndpoint            = "/mapBridge/vault/%s"
@@ -83,6 +80,7 @@ type Bridge struct {
 	ethPriKey     *ecdsa.PrivateKey
 	kw            *evm.KeySignWrapper
 	ethRpc        *evm.EthRPC
+	mainAbi       *abi.ABI
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -137,8 +135,12 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	if err != nil {
 		return nil, err
 	}
+	mainAbi, err := newMaintainerABi()
+	if err != nil {
+		return nil, err
+	}
 
-	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "ETH")
+	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	if err != nil {
 		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
 	}
@@ -164,6 +166,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		ethPriKey:     ethPrivateKey,
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
+		mainAbi:       mainAbi,
 	}, nil
 }
 
@@ -290,7 +293,7 @@ func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 
 // PostKeysignFailure generate and  post a keysign fail tx to thorchan
 func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
-	return b.Broadcast(types.TxOutItem{}, []byte{})
+	return b.Broadcast(&types.TxOutItem{}, []byte{})
 }
 
 // GetErrataMsg get errata tx from params
@@ -317,15 +320,6 @@ func (b *Bridge) GetSolvencyMsg(height int64, chain common.Chain, pubKey common.
 		return nil
 	}
 	return msg
-}
-
-// GetKeygenStdTx get keygen tx from params
-func (b *Bridge) GetKeygenStdTx(poolPubKey common.PubKey, secp256k1Signature, keysharesBackup []byte, blame stypes.Blame, inputPks common.PubKeys, keygenType stypes.KeygenType, chains common.Chains, height, keygenTime int64) (sdk.Msg, error) {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get signer address: %w", err)
-	}
-	return stypes.NewMsgTssPool(inputPks.Strings(), poolPubKey, secp256k1Signature, keysharesBackup, keygenType, height, blame, chains.Strings(), signerAddr, keygenTime)
 }
 
 // GetInboundOutbound separate the txs into inbound and outbound
@@ -387,22 +381,21 @@ func (b *Bridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTx
 
 // EnsureNodeWhitelistedWithTimeout check node is whitelisted with timeout retry
 func (b *Bridge) EnsureNodeWhitelistedWithTimeout() error {
-	// todo handler
-	//for {
-	//	select {
-	//	case <-time.After(time.Hour):
-	//		return errors.New("Observer is not whitelisted yet")
-	//	default:
-	//		err := b.EnsureNodeWhitelisted()
-	//		if err == nil {
-	//			// node had been whitelisted
-	//			return nil
-	//		}
-	//		b.logger.Error().Err(err).Msg("observer is not whitelisted , will retry a bit later")
-	//		time.Sleep(time.Second * 5)
-	//	}
-	//}
-	return nil
+	// todo handler done
+	for {
+		select {
+		case <-time.After(time.Hour):
+			return errors.New("Observer is not whitelisted yet")
+		default:
+			err := b.EnsureNodeWhitelisted()
+			if err == nil {
+				// node had been whitelisted
+				return nil
+			}
+			b.logger.Error().Err(err).Msg("observer is not whitelisted , will retry a bit later")
+			time.Sleep(time.Second * 5)
+		}
+	}
 }
 
 // EnsureNodeWhitelisted will call to mapBridge to check whether the observer had been whitelist or not
@@ -415,37 +408,6 @@ func (b *Bridge) EnsureNodeWhitelisted() error {
 		return fmt.Errorf("node account status %s , will not be able to forward transaction to mapBridge", status)
 	}
 	return nil
-}
-
-func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
-	na, err := b.GetNodeAccounts()
-	if err != nil {
-		return nil, fmt.Errorf("fail to get node accounts: %w", err)
-	}
-	active := make([]common.PubKey, 0)
-	for _, item := range na {
-		if item.Status == stypes.NodeStatus_Active {
-			active = append(active, item.PubKeySet.Secp256k1)
-		}
-	}
-	return active, nil
-}
-
-// FetchNodeStatus get current node status from mapBridge
-func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		return stypes.NodeStatus_Unknown, fmt.Errorf("fail to get signer address: %w", err)
-	}
-	bepAddr := signerAddr.String()
-	if len(bepAddr) == 0 {
-		return stypes.NodeStatus_Unknown, errors.New("bep address is empty")
-	}
-	na, err := b.GetNodeAccount(bepAddr)
-	if err != nil {
-		return stypes.NodeStatus_Unknown, fmt.Errorf("failed to get node status: %w", err)
-	}
-	return na.Status, nil
 }
 
 // GetKeysignParty call into mapBridge to get the node accounts that should be join together to sign the message
@@ -668,7 +630,7 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 
 // PostNetworkFee send network fee message to THORNode
 func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error) {
-	return b.Broadcast(types.TxOutItem{}, []byte{})
+	return b.Broadcast(&types.TxOutItem{}, []byte{})
 }
 
 // GetConstants from thornode

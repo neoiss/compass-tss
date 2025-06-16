@@ -19,8 +19,8 @@ import (
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
-// BlockScannerFetcher define the methods a block scanner need to implement
-type BlockScannerFetcher interface {
+// Fetcher define the methods a block scanner need to implement
+type Fetcher interface {
 	// FetchMemPool scan the mempool
 	FetchMemPool(height int64) (types.TxIn, error)
 	// FetchTxs scan block with the given height
@@ -50,13 +50,13 @@ type BlockScanner struct {
 	globalNetworkFeeQueue chan common.NetworkFee
 	errorCounter          *prometheus.CounterVec
 	bridge                shareTypes.Bridge
-	chainScanner          BlockScannerFetcher
+	chainScanner          Fetcher
 	healthy               *atomic.Bool
 }
 
 // NewBlockScanner create a new instance of BlockScanner
 func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage ScannerStorage, m *metrics.Metrics, bridge shareTypes.Bridge,
-	chainScanner BlockScannerFetcher) (*BlockScanner, error) {
+	chainScanner Fetcher) (*BlockScanner, error) {
 	var err error
 	if scannerStorage == nil {
 		return nil, errors.New("scannerStorage is nil")
@@ -65,10 +65,10 @@ func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage
 		return nil, errors.New("metrics instance is nil")
 	}
 	if bridge == nil {
-		return nil, errors.New("thorchain bridge is nil")
+		return nil, errors.New("mapChain bridge is nil")
 	}
 
-	logger := log.Logger.With().Str("module", "blockscanner").Str("chain", cfg.ChainID.String()).Logger()
+	logger := log.Logger.With().Str("module", "blockScanner").Str("chain", cfg.ChainID.String()).Logger()
 	scanner := &BlockScanner{
 		cfg:            cfg,
 		logger:         logger,
@@ -84,7 +84,7 @@ func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage
 	}
 
 	scanner.previousBlock, err = scanner.FetchLastHeight()
-	logger.Info().Int64("block height", scanner.previousBlock).Msg("block scanner last fetch height")
+	logger.Info().Int64("block height", scanner.previousBlock).Err(err).Msg("block scanner last fetch height")
 	return scanner, err
 }
 
@@ -197,8 +197,8 @@ func (b *BlockScanner) isChainPaused() bool {
 
 // scanBlocks
 func (b *BlockScanner) scanBlocks() {
-	b.logger.Debug().Msg("start to scan blocks")
-	defer b.logger.Debug().Msg("stop scan blocks")
+	b.logger.Info().Str("chain", b.cfg.ChainID.String()).Msg("start to scan blocks")
+	defer b.logger.Info().Msg("stop scan blocks")
 	defer b.wg.Done()
 
 	lastMimirCheck := time.Now().Add(-constants.MAPRelayChainBlockTime)
@@ -353,7 +353,7 @@ func (b *BlockScanner) FetchLastHeight() (int64, error) {
 
 	if b.bridge != nil {
 		var height int64
-		if b.cfg.ChainID.Equals(common.THORChain) {
+		if b.cfg.ChainID.Equals(common.MAPChain) {
 			height, _ = b.bridge.GetBlockHeight()
 		} else {
 			height, _ = b.bridge.GetLastObservedInHeight(b.cfg.ChainID)

@@ -1,6 +1,7 @@
 package tss
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
@@ -117,6 +118,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 	// the statistic of keygen only care about Tss it self, even if the
 	// following http response aborts, it still counted as a successful keygen
 	// as the Tss model runs successfully.
+	fmt.Println("keyGen ------------------------------------------------------------------- keyGen")
 	beforeKeygen := time.Now()
 	k, err := keygenInstance.GenerateNewKey(req)
 	keygenTime := time.Since(beforeKeygen)

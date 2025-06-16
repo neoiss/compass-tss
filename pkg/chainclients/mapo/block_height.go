@@ -37,7 +37,8 @@ func (b *Bridge) GetLastSignedOutHeight(chain common.Chain) (int64, error) {
 
 // GetBlockHeight returns the current height for mapBridge blocks
 func (b *Bridge) GetBlockHeight() (int64, error) {
-	latestBlocks, err := b.getLastBlock(common.EmptyChain)
+	// todo handler
+	latestBlocks, err := b.getLastBlock(common.MAPChain)
 	if err != nil {
 		return 0, fmt.Errorf("failed to GetThorchainHeight: %w", err)
 	}
@@ -75,5 +76,15 @@ func (b *Bridge) getLastBlock(chain common.Chain) ([]openapi.LastBlock, error) {
 			LastSignedOut:  31070793,
 			Thorchain:      31070793,
 		},
+		{
+			Chain:          "MAP",
+			LastObservedIn: 18229656,
+			LastSignedOut:  18229656,
+			Thorchain:      18229656,
+		},
 	}, nil
+}
+
+func (b *Bridge) GetMapBlockHeight() (int64, error) {
+	return b.ethRpc.GetBlockHeight()
 }

@@ -294,9 +294,9 @@ func (c *Client) estimateGas(from string, tx *etypes.Transaction) (uint64, error
 		From:     ecommon.HexToAddress(from),
 		To:       tx.To(),
 		GasPrice: tx.GasPrice(),
-		// Gas:      tx.Gas(),
-		Value: tx.Value(),
-		Data:  tx.Data(),
+		Gas:      tx.Gas(),
+		Value:    tx.Value(),
+		Data:     tx.Data(),
 	})
 }
 

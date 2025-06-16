@@ -1,66 +1,144 @@
 package mapo
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
+	"context"
 	"fmt"
-	"net/http"
+	"math/big"
 
-	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
+	"github.com/ethereum/go-ethereum"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/common"
-	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
-	"github.com/mapprotocol/compass-tss/x/types"
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/structure"
+	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/pkg/errors"
 )
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
-func (b *Bridge) GetKeygenBlock(blockHeight int64, pk string) (types.KeygenBlock, error) {
-	path := fmt.Sprintf("%s/%d/%s", KeygenEndpoint, blockHeight, pk)
-	body, status, err := b.getWithPath(path)
+func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
+	method := "getElectionEpoch"
+	input, err := b.mainAbi.Pack(method)
 	if err != nil {
-		if status == http.StatusNotFound {
-			return types.KeygenBlock{}, btypes.ErrUnavailableBlock
-		}
-		return types.KeygenBlock{}, fmt.Errorf("failed to get keygen for a block height: %w", err)
-	}
-	var query openapi.KeygenResponse
-	if err = json.Unmarshal(body, &query); err != nil {
-		return types.KeygenBlock{}, fmt.Errorf("failed to unmarshal Keygen: %w", err)
+		return nil, errors.Wrap(err, "fail to pack input")
 	}
 
-	if query.Signature == "" {
-		return types.KeygenBlock{}, errors.New("invalid keygen signature: empty")
-	}
-
-	buf, err := json.Marshal(query.KeygenBlock)
+	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	outPut, err := b.ethClient.CallContract(context.Background(), ethereum.CallMsg{
+		From: constants.ZeroAddress,
+		To:   &to,
+		Data: input,
+	}, nil)
 	if err != nil {
-		return types.KeygenBlock{}, fmt.Errorf("fail to marshal keygen block to json: %w", err)
+		return nil, errors.Wrap(err, "fail to call contract")
 	}
 
-	pubKey, err := b.keys.GetSignerInfo().GetPubKey()
+	outputs := b.mainAbi.Methods[method].Outputs
+	unpack, err := outputs.Unpack(outPut)
 	if err != nil {
-		return types.KeygenBlock{}, fmt.Errorf("fail to get signer pub key: %w", err)
+		return nil, errors.Wrap(err, "unpack output")
 	}
-	s, err := base64.StdEncoding.DecodeString(query.Signature)
+
+	var epoch *big.Int
+	if err = outputs.Copy(&epoch, unpack); err != nil {
+		return nil, errors.Wrap(err, "copy output")
+	}
+	if epoch.Uint64() == 0 { // not in epoch
+		return nil, nil
+	}
+	// done
+	ret, err := b.GetNodeAccounts()
 	if err != nil {
-		return types.KeygenBlock{}, errors.New("invalid keygen signature: cannot decode signature")
-	}
-	if !pubKey.VerifySignature(buf, s) {
-		return types.KeygenBlock{}, errors.New("invalid keygen signature: bad signature")
+		return nil, err
 	}
 
-	keygens := make([]types.Keygen, len(query.KeygenBlock.Keygens))
-	for i := range query.KeygenBlock.Keygens {
-		keygens[i] = types.Keygen{
-			ID:      common.TxID(*query.KeygenBlock.Keygens[i].Id),
-			Type:    types.KeygenType(types.KeygenType_value[*query.KeygenBlock.Keygens[i].Type]),
-			Members: query.KeygenBlock.Keygens[i].Members,
-		}
-	}
-	keygenBlock := types.KeygenBlock{
-		Height:  *query.KeygenBlock.Height,
-		Keygens: keygens,
+	return &structure.KeyGen{
+		Epoch: epoch,
+		Ms:    ret,
+	}, nil
+}
+
+// SendKeyGenStdTx get keygen tx from params
+func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature []byte, blames []ecommon.Address,
+	members []ecommon.Address) (string, error) {
+	idAbi, _ := newIdABi()
+	id, err := idAbi.Methods["idPack"].Inputs.Pack(poolPubKey, members, epoch, blames)
+	if err != nil {
+		return "", errors.Wrap(err, "id pack input failed")
 	}
 
-	return keygenBlock, nil
+	id32 := ecommon.BytesToHash(crypto.Keccak256(id))
+	method := "voteUpdateTssPool"
+	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
+		Id:        id32,
+		Epoch:     epoch,
+		Pubkey:    ecommon.Hex2Bytes(poolPubKey.String()),
+		Members:   members,
+		Blames:    blames,
+		Signature: signature,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "fail to pack input")
+	}
+
+	fromAddr := "0x2b7588165556aB2fA1d30c520491C385BAa424d8"
+	nonce, err := b.ethRpc.GetNonce(fromAddr)
+	if err != nil {
+		return "", fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)
+	}
+
+	// abort signing if the pending nonce is too far in the future
+	var finalizedNonce uint64
+	finalizedNonce, err = b.ethRpc.GetNonceFinalized(fromAddr)
+	if err != nil {
+		return "", fmt.Errorf("fail to fetch account(%s) finalized nonce: %w", fromAddr, err)
+	}
+	// todo handler add cfg
+	if (nonce - finalizedNonce) > 3 {
+		b.logger.Warn().
+			Uint64("nonce", nonce).
+			Uint64("finalizedNonce", finalizedNonce).
+			Msg("pending nonce too far in future")
+		return "", fmt.Errorf("pending nonce too far in future")
+	}
+
+	gasFeeCap := b.gasPrice
+	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	createdTx := ethereum.CallMsg{
+		From:     ecommon.HexToAddress(fromAddr),
+		To:       &to,
+		GasPrice: gasFeeCap,
+		Value:    nil,
+		Data:     input,
+	}
+
+	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
+	if err != nil {
+		b.logger.Err(err).Msgf("fail to estimate gas")
+		return "", nil
+	}
+
+	// tip cap at configured percentage of max fee
+	tipCap := new(big.Int).Mul(gasFeeCap, big.NewInt(10))
+	tipCap.Div(tipCap, big.NewInt(100))
+	td := types.NewTx(&types.DynamicFeeTx{
+		Nonce:     nonce,
+		Value:     nil,
+		To:        &to,
+		Gas:       gasLimit,
+		GasTipCap: tipCap,
+		GasFeeCap: gasFeeCap,
+		Data:      input,
+	})
+
+	sign, err := b.kw.LocalSign(td)
+	if err != nil {
+		return "", err
+	}
+	txID, err := b.Broadcast(&stypes.TxOutItem{}, sign)
+	if err != nil {
+		return "", err
+	}
+	return txID, nil
 }

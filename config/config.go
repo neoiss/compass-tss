@@ -504,7 +504,7 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 		//common.AVAXChain: b.Chains.AVAX,
 		//common.BCHChain:  b.Chains.BCH,
 		//common.BSCChain:  b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
+		//common.BTCChain: b.Chains.BTC,
 		//common.DOGEChain: b.Chains.DOGE,
 		common.ETHChain: b.Chains.ETH,
 		//common.GAIAChain: b.Chains.GAIA,
@@ -815,6 +815,7 @@ type BifrostClientConfiguration struct {
 	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
 	SignerName      string       `mapstructure:"signer_name"`
 	PrivateKey      string       `mapstructure:"private_key"`
+	Maintainer      string       `mapstructure:"maintainer"`
 	SignerPasswd    string
 }
 
@@ -858,6 +859,7 @@ type WhitelistCosmosAsset struct {
 func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) {
 	var addrs []maddr.Multiaddr
 
+	// todo handler p2p get addr： prot 6040
 	for _, ip := range resolveAddrs(c.BootstrapPeers) {
 		if len(ip) == 0 {
 			continue

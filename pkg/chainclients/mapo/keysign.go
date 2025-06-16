@@ -23,12 +23,12 @@ type QueryKeysign struct {
 	Signature string      `json:"signature"`
 }
 
-func (b *Bridge) getContext() (context.Context, context.CancelFunc) {
+func (b *Bridge) getContextWithTimeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)
 }
 
 func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {
-	ctx, cancel := b.getContext()
+	ctx, cancel := b.getContextWithTimeout()
 	defer cancel()
 	return b.ethClient.FilterLogs(ctx, query)
 }
@@ -40,8 +40,6 @@ func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) 
 		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")
 	}
 
-	// process all transactions in the block
-	//e.currentBlockHeight = height
 	block, err := b.ethRpc.GetBlock(blockHeight)
 	if err != nil {
 		return types.TxOut{}, err
@@ -51,11 +49,11 @@ func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) 
 		b.logger.Error().Err(err).Int64("height", blockHeight).Msg("failed to search tx in block")
 		return types.TxOut{}, fmt.Errorf("failed to process block: %d, err:%w", blockHeight, err)
 	}
-	// todo handler
+	// done
 	logs, err := b.getFilterLogs(ethereum.FilterQuery{
 		FromBlock: big.NewInt(blockHeight),
 		ToBlock:   big.NewInt(blockHeight),
-		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // todo handler add cfg
+		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // done
 		Topics:    [][]ecommon.Hash{{ecommon.HexToHash(constants.EventOfMapRelay)}},
 	})
 	if len(logs) == 0 {
@@ -66,6 +64,7 @@ func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) 
 		Height:  blockHeight,
 		TxArray: make([]types.TxArrayItem, 0, len(logs)),
 	}
+	// todo handler parse coins & gas
 	for _, ele := range logs {
 		inHash, _ := common.NewTxID(ele.TxHash.Hex())
 		ret.TxArray = append(ret.TxArray, types.TxArrayItem{

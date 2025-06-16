@@ -98,11 +98,6 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to start pubkey manager")
 	}
 
-	//// automatically attempt to recover TSS keyshares if they are missing
-	//if err = btss.RecoverKeyShares(cfg, mapBridge); err != nil {
-	//	log.Error().Err(err).Msg("fail to recover key shares")
-	//}
-
 	// setup TSS signing
 	priKey, err := k.GetPrivateKey()
 	if err != nil {
