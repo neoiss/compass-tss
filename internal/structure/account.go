@@ -16,8 +16,8 @@ type MaintainerInfo struct {
 }
 
 type KeyGen struct {
-	Epoch *big.Int          `json:"epoch"`
-	Ms    []*MaintainerInfo `json:"ms"`
+	Epoch *big.Int         `json:"epoch"`
+	Ms    []MaintainerInfo `json:"ms"`
 }
 
 type TssPoolParam struct {

@@ -80,7 +80,7 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
+	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, cfg.Thorchain.PrivateKey)
 	// map bridge
 	mapBridge, err := mapo.NewBridge(cfg.Thorchain, m, k)
 	if err != nil {

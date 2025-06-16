@@ -372,7 +372,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	members := make(common.PubKeys, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
-		if ele == nil {
+		if ele.Addr.String() == "" {
 			continue
 		}
 		members = append(members, common.PubKey(ecommon.Bytes2Hex(ele.Secp256Pubkey)))

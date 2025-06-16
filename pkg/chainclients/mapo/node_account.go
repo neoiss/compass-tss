@@ -29,16 +29,13 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 
 // FetchNodeStatus get current node status from mapBridge
 func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
+	addr, err := b.keys.GetEthAddress()
 	if err != nil {
-		return stypes.NodeStatus_Unknown, fmt.Errorf("fail to get signer address: %w", err)
+		return stypes.NodeStatus_Unknown, nil
 	}
-	bepAddr := signerAddr.String()
-	if len(bepAddr) == 0 {
-		return stypes.NodeStatus_Unknown, errors.New("bep address is empty")
-	}
+	fmt.Println("addr ---------------- ", addr)
 	// todo handler
-	na, err := b.GetNodeAccount("0x2b7588165556aB2fA1d30c520491C385BAa424d8")
+	na, err := b.GetNodeAccount(addr)
 	if err != nil {
 		return stypes.NodeStatus_Unknown, fmt.Errorf("failed to get node status: %w", err)
 	}
@@ -73,18 +70,19 @@ func (b *Bridge) GetNodeAccount(thorAddr string) (*structure.MaintainerInfo, err
 	}
 
 	type Back struct {
-		Info *structure.MaintainerInfo `json:"info"`
+		Info structure.MaintainerInfo `json:"info"`
 	}
 	ret := Back{}
+	fmt.Println("GetNodeAccount unpack ----------- ", unpack)
 	if err = outputs.Copy(&ret, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
-	fmt.Println("GetNodeAccount ret ----------- ", ret)
-	return ret.Info, nil
+	b.logger.Info().Interface("ret", ret).Msg("GetNodeAccount back")
+	return &ret.Info, nil
 }
 
 // GetNodeAccounts retrieves all node accounts from mapBridge
-func (b *Bridge) GetNodeAccounts() ([]*structure.MaintainerInfo, error) {
+func (b *Bridge) GetNodeAccounts() ([]structure.MaintainerInfo, error) {
 	method := "getMaitainers"
 	input, err := b.mainAbi.Pack(method)
 	if err != nil {
@@ -105,7 +103,7 @@ func (b *Bridge) GetNodeAccounts() ([]*structure.MaintainerInfo, error) {
 	}
 
 	type Back struct {
-		Info []*structure.MaintainerInfo `json:"info"`
+		Info []structure.MaintainerInfo `json:"info"`
 	}
 	var ret Back
 	if err = outputs.Copy(&ret, unpack); err != nil {

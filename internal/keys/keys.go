@@ -1,19 +1,21 @@
 package keys
 
 import (
+	"crypto/ecdsa"
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"io"
-	"os/user"
-	"path/filepath"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	ckeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -26,25 +28,24 @@ type Keys struct {
 	signerName string
 	password   string // TODO this is a bad way , need to fix it
 	kb         ckeys.Keyring
+	priKeyStr  string
 }
 
 // NewKeysWithKeybase create a new instance of Keys
-func NewKeysWithKeybase(kb ckeys.Keyring, name, password string) *Keys {
+func NewKeysWithKeybase(kb ckeys.Keyring, name, password, priKeyStr string) *Keys {
 	return &Keys{
 		signerName: name,
 		password:   password,
 		kb:         kb,
+		priKeyStr:  priKeyStr,
 	}
 }
 
 // GetKeyringKeybase return keyring and key info
 func GetKeyringKeybase(priKeyStr, signerName string) (ckeys.Keyring, *ckeys.Record, error) {
-	//if len(signerName) == 0 {
-	//	return nil, nil, fmt.Errorf("signer name is empty")
-	//}
-	//if len(password) == 0 {
-	//	return nil, nil, fmt.Errorf("password is empty")
-	//}
+	if len(signerName) == 0 {
+		return nil, nil, fmt.Errorf("signer name is empty")
+	}
 	if len(priKeyStr) == 0 {
 		return nil, nil, fmt.Errorf("priKey is empty")
 	}
@@ -56,45 +57,7 @@ func GetKeyringKeybase(priKeyStr, signerName string) (ckeys.Keyring, *ckeys.Reco
 	if err != nil {
 		return nil, nil, err
 	}
-	//
-	//buf := bytes.NewBufferString(password)
-	//// the library used by keyring is using ReadLine , which expect a new line
-	//buf.WriteByte('\n')
-	//kb, err := getKeybase(chainHomeFolder, buf)
-	//if err != nil {
-	//	return nil, nil, fmt.Errorf("fail to get keybase,err:%w", err)
-	//}
-	//// the keyring library which used by cosmos sdk , will use interactive terminal if it detect it has one
-	//// this will temporary trick it think there is no interactive terminal, thus will read the password from the buffer provided
-	//oldStdIn := os.Stdin
-	//defer func() {
-	//	os.Stdin = oldStdIn
-	//}()
-	//os.Stdin = nil
-	// keyring
-	// name -> key  private-> value
-	//si, err := kb.Key(signerName) // first-cosmos ｜ second-gen
-	//if err != nil {
-	//	return nil, nil, fmt.Errorf("fail to get signer info(%s): %w", signerName, err)
-	//}
 	return kb, nil, nil
-}
-
-// getKeybase will create an instance of Keybase
-func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
-	cliDir := thorchainHome
-	if len(thorchainHome) == 0 {
-		usr, err := user.Current()
-		if err != nil {
-			return nil, fmt.Errorf("fail to get current user,err:%w", err)
-		}
-		cliDir = filepath.Join(usr.HomeDir, thorchainCliFolderName)
-	}
-
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-	cdc := codec.NewProtoCodec(registry)
-	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendFile, cliDir, reader, cdc)
 }
 
 // GetSignerInfo return signer info
@@ -106,13 +69,16 @@ func (k *Keys) GetSignerInfo() *ckeys.Record {
 	return record
 }
 
+func (k *Keys) GetEthAddress() (string, error) {
+	addr, err := AddressFromPrivateKey(k.priKeyStr)
+	if err != nil {
+		return "", err
+	}
+	return addr.String(), nil
+}
+
 // GetPrivateKey return the private key
 func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
-	//addr, err := sdk.AccAddressFromHexUnsafe("2b7588165556aB2fA1d30c520491C385BAa424d8")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//privKeyArmor, err := k.kb.ExportPrivKeyArmorByAddress(addr, k.password)
 	privKeyArmor, err := k.kb.ExportPrivKeyArmor(k.signerName, k.password)
 	if err != nil {
 		return nil, err
@@ -127,4 +93,69 @@ func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
 // GetKeybase return the keybase
 func (k *Keys) GetKeybase() ckeys.Keyring {
 	return k.kb
+}
+
+func AddressFromPrivateKey(privateKeyHex string) (common.Address, error) {
+	privateKey, err := PrivateKeyFromHex(privateKeyHex)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	publicKey, err := PublicKeyFromPrivate(privateKey)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return AddressFromPublicKey(publicKey)
+}
+
+func PrivateKeyFromHex(hexKey string) (*ecdsa.PrivateKey, error) {
+	cleaned := strings.TrimSpace(hexKey)
+	//cleaned = strings.TrimPrefix(cleaned, "0x")
+
+	if len(cleaned) != 64 {
+		return nil, errors.New("invalid hex key")
+	}
+
+	privateKeyBytes, err := hex.DecodeString(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("decodeString failed: %v", err)
+	}
+
+	privateKey, err := ecrypto.ToECDSA(privateKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("ToECDSA failed: %v", err)
+	}
+
+	return privateKey, nil
+}
+
+func PublicKeyFromPrivate(privateKey *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
+	if privateKey == nil {
+		return nil, errors.New("invalid private key")
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, errors.New("invalid public key")
+	}
+
+	return publicKeyECDSA, nil
+}
+
+func AddressFromPublicKey(publicKey *ecdsa.PublicKey) (common.Address, error) {
+	if publicKey == nil {
+		return common.Address{}, errors.New("invalid public key")
+	}
+
+	publicKeyBytes := ecrypto.FromECDSAPub(publicKey)
+
+	// 计算Keccak-256哈希（跳过04前缀）
+	hash := ecrypto.Keccak256(publicKeyBytes[1:])
+
+	// 取最后20个字节作为地址
+	address := common.BytesToAddress(hash[12:])
+
+	return address, nil
 }
