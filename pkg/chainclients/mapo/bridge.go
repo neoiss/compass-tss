@@ -432,7 +432,10 @@ func (b *Bridge) IsSyncing() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get sync progress: %w", err)
 	}
-	return progress.CurrentBlock != progress.HighestBlock, nil
+	if progress == nil {
+		return false, nil
+	}
+	return progress.CurrentBlock < progress.HighestBlock, nil
 }
 
 // HasNetworkFee checks whether the given chain has set a network fee - determined by
