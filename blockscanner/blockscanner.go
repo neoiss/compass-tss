@@ -346,8 +346,8 @@ func (b *BlockScanner) FetchLastHeight() (int64, error) {
 		return b.cfg.StartBlockHeight, nil
 	}
 
-	// wait for thorchain to be caught up first
-	if err := b.bridge.WaitToCatchUp(); err != nil {
+	// wait for map relay chain to be caught up first
+	if err := b.bridge.WaitSync(); err != nil {
 		return 0, err
 	}
 

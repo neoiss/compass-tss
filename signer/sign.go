@@ -186,8 +186,8 @@ func (s *Signer) signTransactions() {
 		case <-s.stopChan:
 			return
 		default:
-			// When THORChain is catching up , bifrost might get stale data from thornode , thus it shall pause signing
-			catchingUp, err := s.thorchainBridge.IsCatchingUp()
+			// When map relay chain is catching up , bifrost might get stale data from compass-tss , thus it shall pause signing
+			catchingUp, err := s.thorchainBridge.IsSyncing()
 			if err != nil {
 				s.logger.Error().Err(err).Msg("fail to get thorchain sync status")
 				time.Sleep(constants.MAPRelayChainBlockTime)

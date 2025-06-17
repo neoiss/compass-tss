@@ -1,6 +1,7 @@
 package mapo
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
@@ -424,33 +425,14 @@ func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, err
 	return keys, nil
 }
 
-// IsCatchingUp returns bool for if mapBridge is catching up to the rest of the
+// IsSyncing returns bool for if map relay is catching up to the rest of the
 // nodes. Returns yes, if it is, false if it is caught up.
-func (b *Bridge) IsCatchingUp() (bool, error) {
-	//uri := url.URL{
-	//	Scheme: "http",
-	//	Host:   b.cfg.ChainRPC,
-	//	Path:   StatusEndpoint,
-	//}
-	//
-	//body, _, err := b.get(uri.String())
-	//if err != nil {
-	//	return false, fmt.Errorf("failed to get status data: %w", err)
-	//}
-	//
-	//var resp struct {
-	//	Result struct {
-	//		SyncInfo struct {
-	//			CatchingUp bool `json:"catching_up"`
-	//		} `json:"sync_info"`
-	//	} `json:"result"`
-	//}
-	//
-	//if err = json.Unmarshal(body, &resp); err != nil {
-	//	return false, fmt.Errorf("failed to unmarshal tendermint status: %w", err)
-	//}
-	//return resp.Result.SyncInfo.CatchingUp, nil
-	return false, nil
+func (b *Bridge) IsSyncing() (bool, error) {
+	progress, err := b.ethClient.SyncProgress(context.Background())
+	if err != nil {
+		return false, fmt.Errorf("failed to get sync progress: %w", err)
+	}
+	return progress.CurrentBlock != progress.HighestBlock, nil
 }
 
 // HasNetworkFee checks whether the given chain has set a network fee - determined by
@@ -519,17 +501,17 @@ func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transaction
 	return
 }
 
-// WaitToCatchUp wait for mapBridge to catch up
-func (b *Bridge) WaitToCatchUp() error {
+// WaitSync wait for map relay chain to catch up
+func (b *Bridge) WaitSync() error {
 	for {
-		yes, err := b.IsCatchingUp()
+		yes, err := b.IsSyncing()
 		if err != nil {
 			return err
 		}
 		if !yes {
 			break
 		}
-		b.logger.Info().Msg("mapBridge is not caught up... waiting...")
+		b.logger.Info().Msg("map relay chain is syncing... waiting...")
 		time.Sleep(constants.MAPRelayChainBlockTime)
 	}
 	return nil

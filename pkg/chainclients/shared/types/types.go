@@ -103,8 +103,8 @@ type Bridge interface {
 
 	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
 	// rpc 节点
-	IsCatchingUp() (bool, error)
-	WaitToCatchUp() error
+	IsSyncing() (bool, error)
+	WaitSync() error
 	//
 	GetBlockHeight() (int64, error)
 	Broadcast(txOutItem *types.TxOutItem, hexTx []byte) (string, error)
