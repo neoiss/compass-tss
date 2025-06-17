@@ -207,6 +207,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
+		c.logger.Info().Str("data", string(dataBuf)).Msgf("handleStreamTss read stream from peer: %s", peerID)
 		var wrappedMsg messages.WrappedMessage
 		if err := json.Unmarshal(dataBuf, &wrappedMsg); nil != err {
 			c.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")
@@ -491,6 +492,7 @@ func (c *Communication) ProcessBroadcast() {
 				c.logger.Error().Err(err).Msg("fail to marshal a wrapped message to json bytes")
 				continue
 			}
+			c.logger.Info().Str("data", string(wrappedMsgBytes)).Msg("ProcessBroadcast writer stream ")
 			c.logger.Debug().Msgf("broadcast message %s to %+v", msg.WrappedMessage, msg.PeersID)
 			c.Broadcast(msg.PeersID, wrappedMsgBytes, msg.WrappedMessage.MsgID)
 

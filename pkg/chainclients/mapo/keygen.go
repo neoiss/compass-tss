@@ -44,6 +44,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err = outputs.Copy(&epoch, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
+	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
