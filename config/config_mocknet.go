@@ -4,9 +4,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/mapprotocol/compass-tss/constants"
 )
 
 const (
@@ -20,8 +23,8 @@ func getSeedAddrs() []string {
 }
 
 func assertBifrostHasSeeds() {
-	// fail if seed file is missing or empty since bifrost will hang
-	seedPath := os.ExpandEnv("$HOME/.thornode/address_book.seed")
+	// fail if seed file is missing or empty since compass-tss will hang
+	seedPath := os.ExpandEnv(fmt.Sprintf("$HOME/%s/address_book.seed", constants.DefaultHome))
 	fi, err := os.Stat(seedPath)
 	if os.IsNotExist(err) {
 		log.Warn().Msg("no seed file found")

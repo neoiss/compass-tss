@@ -874,7 +874,7 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 
 		// skip peers with a bad response status
 		if res.StatusCode != http.StatusOK {
-			log.Warn().Msgf("failed to get p2p id, status code: %d", res.StatusCode)
+			log.Warn().Msgf("failed to get p2p id, ip: %s, status code: %d", ip, res.StatusCode)
 			continue
 		}
 
