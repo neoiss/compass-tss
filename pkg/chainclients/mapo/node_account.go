@@ -10,10 +10,12 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
-	na, err := b.GetNodeAccounts()
+	// todo handler
+	na, err := b.GetNodeAccounts(big.NewInt(1))
 	if err != nil {
 		return nil, fmt.Errorf("fail to get node accounts: %w", err)
 	}
@@ -81,9 +83,9 @@ func (b *Bridge) GetNodeAccount(thorAddr string) (*structure.MaintainerInfo, err
 }
 
 // GetNodeAccounts retrieves all node accounts from mapBridge
-func (b *Bridge) GetNodeAccounts() ([]structure.MaintainerInfo, error) {
+func (b *Bridge) GetNodeAccounts(epoch *big.Int) ([]structure.MaintainerInfo, error) {
 	method := "getMaitainers"
-	input, err := b.mainAbi.Pack(method)
+	input, err := b.mainAbi.Pack(method, epoch)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +110,5 @@ func (b *Bridge) GetNodeAccounts() ([]structure.MaintainerInfo, error) {
 	if err = outputs.Copy(&ret, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
-	fmt.Println("GetNodeAccounts ret ----------- ", ret)
 	return ret.Info, nil
 }

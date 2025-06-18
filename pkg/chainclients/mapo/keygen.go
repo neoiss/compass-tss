@@ -49,7 +49,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, nil
 	}
 	// done
-	ret, err := b.GetNodeAccounts()
+	ret, err := b.GetNodeAccounts(epoch)
 	if err != nil {
 		return nil, err
 	}
