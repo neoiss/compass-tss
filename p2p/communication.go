@@ -385,7 +385,7 @@ func (c *Communication) connectToBootstrapPeers() error {
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	if len(bootstrapPeers) == 0 {
-		c.logger.Info().Msg("no bootstrap node set, we skip the connection")
+		c.logger.Info().Msg("connectToBootstrapPeers no bootstrap node set, we skip the connection")
 		return nil
 	}
 	var wg sync.WaitGroup
@@ -393,20 +393,22 @@ func (c *Communication) connectToBootstrapPeers() error {
 	for _, peerAddr := range bootstrapPeers {
 		pi, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
-			return fmt.Errorf("fail to add peer: %w", err)
+			return fmt.Errorf("connectToBootstrapPeers fail to add peer: %w", err)
 		}
+		fmt.Println("connectToBootstrapPeers 1111 pi ", pi)
 		wg.Add(1)
 		go func(connRet chan bool) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), TimeoutConnecting)
 			defer cancel()
+			fmt.Println("connectToBootstrapPeers 2222 pi ", pi)
 			if err := c.host.Connect(ctx, *pi); err != nil {
-				c.logger.Error().Err(err).Msgf("fail to connect to %s", pi.String())
+				c.logger.Error().Err(err).Msgf("connectToBootstrapPeers fail to connect to %s", pi.String())
 				connRet <- false
 				return
 			}
 			connRet <- true
-			c.logger.Info().Msgf("Connection established with bootstrap node: %s", *pi)
+			c.logger.Info().Msgf("connectToBootstrapPeers Connection established with bootstrap node: %s", *pi)
 		}(connRet)
 	}
 	wg.Wait()
