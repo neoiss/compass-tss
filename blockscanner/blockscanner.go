@@ -2,7 +2,6 @@ package blockscanner
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"

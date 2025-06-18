@@ -380,6 +380,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	//for _, keygenReq := range keygenBlock.Keygens {
 	keygenStart := time.Now()
 	// todo debug
+	fmt.Println("processKeygenBlock start to process keygen block GenerateNewKey -------------- ")
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
 		s.logger.Error().
@@ -403,7 +404,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.logger.Error().Interface("keygenBlock", keygenBlock).Msg("done with keygen retries")
 	}
 
-	s.logger.Info().Int64("keygenTime", keygenTime).Msg("keyGen time")
+	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
 	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
@@ -411,6 +412,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.logger.Error().Err(err).Msg("fail to broadcast keygen")
 	}
 
+	fmt.Println("processKeygenBlock  GenerateNewKey 111111 -------------- ")
 	// monitor the new pubkey and any new members
 	if !pubKey.Secp256k1.IsEmpty() {
 		s.pubkeyMgr.AddPubKey(pubKey.Secp256k1, true)

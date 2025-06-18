@@ -83,7 +83,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", errors.Wrap(err, "fail to pack input")
 	}
 
-	fromAddr := "0x2b7588165556aB2fA1d30c520491C385BAa424d8"
+	fromAddr := "0x00000000000000000000000000000000"
 	nonce, err := b.ethRpc.GetNonce(fromAddr)
 	if err != nil {
 		return "", fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)
