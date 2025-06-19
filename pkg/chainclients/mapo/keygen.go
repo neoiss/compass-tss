@@ -48,6 +48,10 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
+	//if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
+	//	return nil, nil
+	//}
+	b.epoch = epoch
 	// done
 	ret, err := b.GetNodeAccounts(epoch)
 	if err != nil {
@@ -64,7 +68,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
 	idAbi, _ := newIdABi()
-	id, err := idAbi.Methods["idPack"].Inputs.Pack(poolPubKey, members, epoch, blames)
+	id, err := idAbi.Methods["idPack"].Inputs.Pack(ecommon.Hex2Bytes(poolPubKey.String()), members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")
 	}

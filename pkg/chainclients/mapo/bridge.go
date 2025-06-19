@@ -82,6 +82,7 @@ type Bridge struct {
 	kw            *evm.KeySignWrapper
 	ethRpc        *evm.EthRPC
 	mainAbi       *abi.ABI
+	epoch         *big.Int
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -168,6 +169,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		epoch:         big.NewInt(0),
 	}, nil
 }
 

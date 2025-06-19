@@ -15,7 +15,7 @@ import (
 
 func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 	// todo handler
-	na, err := b.GetNodeAccounts(big.NewInt(1))
+	na, err := b.GetNodeAccounts(b.epoch)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get node accounts: %w", err)
 	}
