@@ -143,16 +143,17 @@ func (o *Observer) getChain(chainID common.Chain) (chainclients.ChainClient, err
 }
 
 func (o *Observer) Start(ctx context.Context) error {
-	o.restoreDeck()
-	for _, chain := range o.chains {
-		chain.Start(o.globalTxsQueue, o.globalErrataQueue, o.globalSolvencyQueue, o.globalNetworkFeeQueue)
-	}
-	go o.processTxIns() //  o.globalTxsQueue --> txIn, txIn --> o.onDeck, txIn --> o.storage
-	go o.processErrataTx(ctx)
-	go o.processSolvencyQueue(ctx)
-	go o.processNetworkFeeQueue(ctx)
-	go o.deck(ctx) // o.onDeck --> txIn, txIn --> ObservedTxs,
-	go o.attestationGossip.Start(ctx)
+	// todo handler annotate
+	//o.restoreDeck()
+	//for _, chain := range o.chains {
+	//	chain.Start(o.globalTxsQueue, o.globalErrataQueue, o.globalSolvencyQueue, o.globalNetworkFeeQueue)
+	//}
+	//go o.processTxIns() //  o.globalTxsQueue --> txIn, txIn --> o.onDeck, txIn --> o.storage
+	//go o.processErrataTx(ctx)
+	//go o.processSolvencyQueue(ctx)
+	//go o.processNetworkFeeQueue(ctx)
+	//go o.deck(ctx) // o.onDeck --> txIn, txIn --> ObservedTxs,
+	//go o.attestationGossip.Start(ctx)
 	return nil
 }
 

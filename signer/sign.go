@@ -158,14 +158,15 @@ func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error
 
 // Start signer process
 func (s *Signer) Start() error {
-	s.wg.Add(1)
-	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
+	//  todo handler annotate
+	//s.wg.Add(1)
+	//go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
 
 	s.wg.Add(1)
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
 
-	s.wg.Add(1)
-	go s.signTransactions()
+	//s.wg.Add(1)
+	//go s.signTransactions()
 
 	s.blockScanner.Start(nil, nil)
 	return nil
