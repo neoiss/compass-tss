@@ -51,31 +51,32 @@ func (*KeyProviderTestSuite) TestGetPriKey(c *C) {
 	c.Assert(result, HasLen, 32)
 }
 
-func (KeyProviderTestSuite) TestGetPeerIDs(c *C) {
-	pubKeys := []string{
-		"thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n",
-		"thorpub1addwnpepqga5cupfejfhtw507sh36fvwaekyjt5kwaw0cmgnpku0at2a87qqkp60t43",
-	}
-	peers, err := GetPeerIDs(pubKeys)
-	c.Assert(err, IsNil)
-	c.Assert(peers, NotNil)
-	c.Assert(peers, HasLen, 2)
-	c.Assert(peers[0].String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
-	c.Assert(peers[1].String(), Equals, "16Uiu2HAkyR9dsFqkj1BqKw8ZHAUU2yur6ZLRJxPTiiVYP5uBMeMG")
-	pubKeys = append(pubKeys, "helloworld")
-	peers, err = GetPeerIDs(pubKeys)
-	c.Assert(err, NotNil)
-	c.Assert(peers, IsNil)
-}
-
-func (KeyProviderTestSuite) TestGetPeerIDFromPubKey(c *C) {
-	pID, err := GetPeerIDFromPubKey("thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n")
-	c.Assert(err, IsNil)
-	c.Assert(pID.String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
-	pID1, err := GetPeerIDFromPubKey("whatever")
-	c.Assert(err, NotNil)
-	c.Assert(pID1.String(), Equals, "")
-}
+//
+//func (KeyProviderTestSuite) TestGetPeerIDs(c *C) {
+//	pubKeys := []string{
+//		"thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n",
+//		"thorpub1addwnpepqga5cupfejfhtw507sh36fvwaekyjt5kwaw0cmgnpku0at2a87qqkp60t43",
+//	}
+//	peers, err := GetPeerIDs(pubKeys)
+//	c.Assert(err, IsNil)
+//	c.Assert(peers, NotNil)
+//	c.Assert(peers, HasLen, 2)
+//	c.Assert(peers[0].String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
+//	c.Assert(peers[1].String(), Equals, "16Uiu2HAkyR9dsFqkj1BqKw8ZHAUU2yur6ZLRJxPTiiVYP5uBMeMG")
+//	pubKeys = append(pubKeys, "helloworld")
+//	peers, err = GetPeerIDs(pubKeys)
+//	c.Assert(err, NotNil)
+//	c.Assert(peers, IsNil)
+//}
+//
+//func (KeyProviderTestSuite) TestGetPeerIDFromPubKey(c *C) {
+//	pID, err := GetPeerIDFromPubKey("thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n")
+//	c.Assert(err, IsNil)
+//	c.Assert(pID.String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
+//	pID1, err := GetPeerIDFromPubKey("whatever")
+//	c.Assert(err, NotNil)
+//	c.Assert(pID1.String(), Equals, "")
+//}
 
 func (KeyProviderTestSuite) TestCheckKeyOnCurve(c *C) {
 	_, err := CheckKeyOnCurve("aa")

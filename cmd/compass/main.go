@@ -45,6 +45,7 @@ func printVersion() {
 }
 
 func main() {
+
 	showVersion := flag.Bool("version", false, "Shows version")
 	logLevel := flag.StringP("log-level", "l", "info", "Log Level")
 	pretty := flag.BoolP("pretty-log", "p", false, "Enables unstructured prettified logging. This is useful for local debugging")
@@ -233,7 +234,10 @@ func main() {
 }
 
 func initPrefix() {
-	// todo
+	//// todo
+	//cosmosSDKConfg := cosmos.GetConfig()
+	//cosmosSDKConfg.SetBech32PrefixForAccount(cmd.Bech32PrefixAccAddr, cmd.Bech32PrefixAccPub)
+	//cosmosSDKConfg.Seal()
 }
 
 func initLog(level string, pretty bool) {

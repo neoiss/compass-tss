@@ -341,7 +341,7 @@ func (pc *PartyCoordinator) joinPartyMember(msgID string, peerGroup *peerStatus,
 	wg.Wait()
 
 	if peerGroup.getLeaderResponse() == nil {
-		leaderPk, err := conversion.GetPubKeyFromPeerID(leaderID.String())
+		leaderPk, err := conversion.GetPubKeyFromPeerIDByEth(leaderID.String())
 		if err != nil {
 			pc.logger.Error().Msg("received no response from the leader")
 		} else {

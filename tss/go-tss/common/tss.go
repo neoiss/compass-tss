@@ -335,7 +335,7 @@ func (t *TssCommon) checkDupAndUpdateVerMsg(bMsg *messages.BroadcastConfirmMessa
 }
 
 func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerID string) error {
-	t.logger.Debug().Msg("start process one message")
+	t.logger.Info().Msg("ProcessOneMessage start process one message")
 	defer t.logger.Debug().Msg("finish processing one message")
 	if nil == wrappedMsg {
 		return errors.New("invalid wireMessage")
@@ -849,7 +849,7 @@ func (t *TssCommon) removeKey(key string) {
 }
 
 func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.WaitGroup) {
-	t.logger.Debug().Msg("start processing inbound messages")
+	t.logger.Info().Msg("ProcessInboundMessages start processing inbound messages")
 	defer wg.Done()
 	defer t.logger.Debug().Msg("stop processing inbound messages")
 	for {
@@ -860,6 +860,7 @@ func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.Wa
 			if !ok {
 				return
 			}
+			t.logger.Info().Str("msg", string(m.Payload)).Msg("ProcessInboundMessages start processing inbound messages")
 			var wrappedMsg messages.WrappedMessage
 			if err := json.Unmarshal(m.Payload, &wrappedMsg); nil != err {
 				t.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")

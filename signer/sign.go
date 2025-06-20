@@ -288,7 +288,7 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 			if !more {
 				return
 			}
-			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from thorchain")
+			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
 		}
 	}

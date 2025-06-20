@@ -55,7 +55,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 	// we use the old join party
 	if oldJoinParty {
 		allParticipants = req.SignerPubKeys
-		myPk, err := conversion.GetPubKeyFromPeerID(t.p2pCommunication.GetHost().ID().String())
+		myPk, err := conversion.GetPubKeyFromPeerIDByEth(t.p2pCommunication.GetHost().ID().String())
 		if err != nil {
 			t.logger.Info().Msgf("fail to convert the p2p id(%s) to pubkey, turn to wait for signature", t.p2pCommunication.GetHost().ID().String())
 			return keysign.Response{}, p2p.ErrNotActiveSigner
@@ -108,7 +108,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		}
 
 		var blameLeader blame.Blame
-		leaderPubKey, err := conversion.GetPubKeyFromPeerID(leader)
+		leaderPubKey, err := conversion.GetPubKeyFromPeerIDByEth(leader)
 		if err != nil {
 			t.logger.Error().Err(errJoinParty).Msgf("fail to convert the peerID to public key %s", leader)
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{})
