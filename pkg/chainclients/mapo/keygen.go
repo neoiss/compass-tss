@@ -120,8 +120,9 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
+		b.logger.Error().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas failed")
 		b.logger.Err(err).Msgf("fail to estimate gas")
-		return "", nil
+		return "", err
 	}
 
 	// tip cap at configured percentage of max fee
