@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keygen"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/rs/zerolog"
@@ -17,8 +16,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/constants"
-
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
@@ -29,7 +26,7 @@ type KeyGen struct {
 	client         *http.Client
 	server         *tss.TssServer
 	bridge         shareTypes.Bridge
-	currentVersion semver.Version
+	currentVersion string
 	lastCheck      time.Time
 }
 
@@ -49,11 +46,11 @@ func NewTssKeyGen(keys *keys.Keys, server *tss.TssServer, bridge shareTypes.Brid
 	}, nil
 }
 
-func (kg *KeyGen) getVersion() semver.Version {
+func (kg *KeyGen) getVersion() string {
 	requestTime := time.Now()
-	if !kg.currentVersion.Equals(semver.Version{}) && requestTime.Sub(kg.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
-		return kg.currentVersion
-	}
+	//if !kg.currentVersion.Equals(semver.Version{}) && requestTime.Sub(kg.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
+	//	return kg.currentVersion
+	//}
 	version, err := kg.bridge.GetThorchainVersion()
 	if err != nil {
 		kg.logger.Err(err).Msg("fail to get current thorchain version")
@@ -103,8 +100,8 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	keyGenReq := keygen.Request{
 		Keys: keys,
 	}
-	currentVersion := kg.getVersion()
-	keyGenReq.Version = currentVersion.String()
+	//currentVersion := kg.getVersion()
+	keyGenReq.Version = kg.getVersion()
 
 	// Use the churn try's block to choose the same leader for every node in an Asgard,
 	// since a successful keygen requires every node in the Asgard to take part.

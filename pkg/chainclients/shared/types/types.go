@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/blang/semver"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ecommon "github.com/ethereum/go-ethereum/common"
@@ -95,7 +94,7 @@ type Bridge interface {
 	GetMimirWithRef(template, ref string) (int64, error)
 
 	GetTHORName(name string) (stypes.THORName, error)
-	GetThorchainVersion() (semver.Version, error)
+	GetThorchainVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error)
 	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error)

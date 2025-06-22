@@ -51,7 +51,7 @@ func (m *Manager) NodeSyncBlame(keys []string, onlinePeers []peer.ID) (Blame, er
 		found := false
 		peerID, err := conversion.GetPeerIDFromPubKeyByEth(item)
 		if err != nil {
-			return blame, fmt.Errorf("fail to get peer id from pub key")
+			return blame, fmt.Errorf("fail to get peer id from pub key, item:%v, err:%v", item, err)
 		}
 		for _, p := range onlinePeers {
 			if p == peerID {
