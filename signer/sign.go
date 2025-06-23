@@ -368,7 +368,7 @@ func (s *Signer) scheduleKeygenRetry(keygenBlock *structure.KeyGen) bool {
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
-	members := make(common.PubKeys, len(keygenBlock.Ms))
+	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
 		if ele.Addr.String() == "" {
