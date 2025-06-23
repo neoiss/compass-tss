@@ -45,7 +45,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		}, nil
 	}
 
-	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.NEWJOINPARTYVERSION)
+	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.VERSIONOFLATEST)
 	if err != nil {
 		return keysign.Response{
 			Status: common.Fail,
@@ -251,7 +251,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		return true
 	})
 
-	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.NEWJOINPARTYVERSION)
+	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.VERSIONOFLATEST)
 	if err != nil {
 		return keysign.Response{
 			Status: common.Fail,

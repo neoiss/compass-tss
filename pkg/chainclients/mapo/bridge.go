@@ -657,17 +657,6 @@ func (b *Bridge) RagnarokInProgress() (bool, error) {
 // func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
 func (b *Bridge) GetThorchainVersion() (string, error) {
 	// todo handler
-	//buf, s, err := b.getWithPath(ChainVersionEndpoint)
-	//if err != nil {
-	//	return semver.Version{}, fmt.Errorf("fail to get THORChain version: %w", err)
-	//}
-	//if s != http.StatusOK {
-	//	return semver.Version{}, fmt.Errorf("unexpected status code: %d", s)
-	//}
-	//var version openapi.VersionResponse
-	//if err = json.Unmarshal(buf, &version); err != nil {
-	//	return semver.Version{}, fmt.Errorf("fail to unmarshal THORChain version : %w", err)
-	//}
 	return "1", nil
 }
 

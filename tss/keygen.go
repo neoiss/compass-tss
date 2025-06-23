@@ -48,9 +48,6 @@ func NewTssKeyGen(keys *keys.Keys, server *tss.TssServer, bridge shareTypes.Brid
 
 func (kg *KeyGen) getVersion() string {
 	requestTime := time.Now()
-	//if !kg.currentVersion.Equals(semver.Version{}) && requestTime.Sub(kg.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
-	//	return kg.currentVersion
-	//}
 	version, err := kg.bridge.GetThorchainVersion()
 	if err != nil {
 		kg.logger.Err(err).Msg("fail to get current thorchain version")
@@ -138,7 +135,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		blame.BlameNodes[i].BlameData = n.BlameData
 		blame.BlameNodes[i].BlameSignature = n.BlameSignature
 	}
-	fmt.Println("processKeygenBlock GenerateNewKey 333333 -------------- ")
+	//fmt.Println("processKeygenBlock GenerateNewKey 333333 -------------- ")
 	if err != nil {
 		// the resp from kg.server.Keygen will not be nil
 		if blame.IsEmpty() {
@@ -147,7 +144,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to keygen,err:%w", err)
 	}
 
-	fmt.Println("processKeygenBlock GenerateNewKey 444444 -------------- ", resp.PubKey)
+	//fmt.Println("processKeygenBlock GenerateNewKey 444444 -------------- ", resp.PubKey)
 	cpk, err := common.NewPubKey(resp.PubKey)
 	if err != nil {
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to create common.PubKey,%w", err)

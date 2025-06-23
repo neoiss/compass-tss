@@ -1,5 +1,5 @@
 package messages
 
 const (
-	NEWJOINPARTYVERSION = "1"
+	VERSIONOFLATEST = "1"
 )
