@@ -41,7 +41,6 @@ func GetPubKeyFromPeerIDByEth(pID string) (string, error) {
 		return "", fmt.Errorf("failed to get raw public key: %w", err)
 	}
 
-	fmt.Println("rawPubKey ---------------- ", rawPubKey)
 	ethPubKey, err := ecrypto.DecompressPubkey(rawPubKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)

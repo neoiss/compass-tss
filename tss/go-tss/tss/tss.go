@@ -9,8 +9,7 @@ import (
 
 	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
 	tcrypto "github.com/cometbft/cometbft/crypto"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog"
@@ -56,14 +55,8 @@ func NewTss(
 	conf common.TssConfig,
 	preParams *bkeygen.LocalPreParams,
 ) (*TssServer, error) {
-	pk := coskey.PubKey{
-		Key: priKey.PubKey().Bytes()[:],
-	}
-
-	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &pk)
-	if err != nil {
-		return nil, fmt.Errorf("fail to genearte the key: %w", err)
-	}
+	var err error
+	pk := priKey.PubKey().Bytes()
 
 	// When using the keygen party it is recommended that you pre-compute the
 	// "safe primes" and Paillier secret beforehand because this can take some
@@ -90,7 +83,7 @@ func NewTss(
 		conf:              conf,
 		logger:            log.With().Str("module", "tss").Logger(),
 		p2pCommunication:  comm,
-		localNodePubKey:   pubKey,
+		localNodePubKey:   ecommon.Bytes2Hex(pk),
 		preParams:         preParams,
 		tssKeyGenLocker:   &sync.Mutex{},
 		stopChan:          make(chan struct{}),

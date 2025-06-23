@@ -222,7 +222,7 @@ func (pc *PartyCoordinator) sendResponseToAll(msg *messages.JoinPartyLeaderComm,
 				return
 			}
 			if err := pc.sendMsgToPeer(msgSend, msg.ID, peer, joinPartyProtocolWithLeader, true); err != nil {
-				pc.logger.Error().Err(err).Msg("error in send the join party request to peer")
+				pc.logger.Error().Err(err).Msg("error in send the join party response to peer")
 			}
 		}(el)
 	}

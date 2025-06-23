@@ -72,6 +72,7 @@ func (tKeyGen *TssKeyGen) GenerateNewKey(keygenReq Request) (*bcrypto.ECPoint, e
 	if err != nil {
 		return nil, fmt.Errorf("fail to get keygen parties: %w", err)
 	}
+	fmt.Println("GenerateNewKey partiesID : ", partiesID)
 
 	keyGenLocalStateItem := storage.KeygenLocalState{
 		ParticipantKeys: keygenReq.Keys,
@@ -207,7 +208,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			return nil, blame.ErrTssTimeOut
 
 		case msg := <-outCh:
-			tKeyGen.logger.Debug().Msgf(">>>>>>>>>>msg: %s", msg.String())
+			tKeyGen.logger.Info().Msgf(">>>>>>>>>>msg: %s", msg.String())
 			blameMgr.SetLastMsg(msg)
 			err := tKeyGen.tssCommonStruct.ProcessOutCh(msg, messages.TSSKeyGenMsg)
 			if err != nil {
@@ -216,7 +217,8 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			}
 
 		case msg := <-endCh:
-			tKeyGen.logger.Debug().Msgf("keygen finished successfully: %s", msg.ECDSAPub.Y().String())
+			tKeyGen.logger.Info().Msgf("keygen finished successfully: %s", msg.ECDSAPub.Y().String())
+			fmt.Println("msg ----------------------- ", msg)
 			err := tKeyGen.tssCommonStruct.NotifyTaskDone()
 			if err != nil {
 				tKeyGen.logger.Error().Err(err).Msg("fail to broadcast the keysign done")

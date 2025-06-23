@@ -16,6 +16,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // nolint:staticcheck
+	ecommon "github.com/ethereum/go-ethereum/common"
 	crypto2 "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
@@ -48,14 +49,7 @@ func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
 		return "", errors.New("invalid party")
 	}
 	partyKeyBytes := party.GetKey()
-	pk := coskey.PubKey{
-		Key: partyKeyBytes,
-	}
-	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &pk) // nolint:staticcheck
-	if err != nil {
-		return "", err
-	}
-	return pubKey, nil
+	return ecommon.Bytes2Hex(partyKeyBytes), nil
 }
 
 func AccPubKeysFromPartyIDs(partyIDs []string, partyIDMap map[string]*btss.PartyID) ([]string, error) {
@@ -112,11 +106,7 @@ func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.Par
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)
 	for idx, item := range keys {
-		pk, err := sdk.UnmarshalPubKey(sdk.AccPK, item) // nolint:staticcheck
-		if err != nil {
-			return nil, nil, fmt.Errorf("fail to get account pub key address(%s): %w", item, err)
-		}
-		key := new(big.Int).SetBytes(pk.Bytes())
+		key := new(big.Int).SetBytes(ecommon.Hex2Bytes(item))
 		// Set up the parameters
 		// Note: The `id` and `moniker` fields are for convenience to allow you to easily track participants.
 		// The `id` should be a unique string representing this party in the network and `moniker` can be anything (even left blank).
