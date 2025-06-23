@@ -860,7 +860,7 @@ func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.Wa
 			if !ok {
 				return
 			}
-			t.logger.Info().Str("msg", string(m.Payload)).Msg("ProcessInboundMessages start processing inbound messages")
+			t.logger.Info().Msg("ProcessInboundMessages start processing inbound messages")
 			var wrappedMsg messages.WrappedMessage
 			if err := json.Unmarshal(m.Payload, &wrappedMsg); nil != err {
 				t.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")

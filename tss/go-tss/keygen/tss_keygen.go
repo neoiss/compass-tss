@@ -125,6 +125,7 @@ func (tKeyGen *TssKeyGen) GenerateNewKey(keygenReq Request) (*bcrypto.ECPoint, e
 			close(errChan)
 		}
 	}()
+	fmt.Println("GenerateNewKey start goroutine handler msg")
 	go tKeyGen.tssCommonStruct.ProcessInboundMessages(tKeyGen.commStopChan, &keyGenWg)
 
 	r, err := tKeyGen.processKeyGen(errChan, outCh, endCh, keyGenLocalStateItem)
@@ -150,7 +151,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 	keyGenLocalStateItem storage.KeygenLocalState,
 ) (*bcrypto.ECPoint, error) {
 	defer tKeyGen.logger.Debug().Msg("finished keygen process")
-	tKeyGen.logger.Debug().Msg("start to read messages from local party")
+	tKeyGen.logger.Info().Msg("start to read messages from local party")
 	tssConf := tKeyGen.tssCommonStruct.GetConf()
 	blameMgr := tKeyGen.tssCommonStruct.GetBlameMgr()
 	for {

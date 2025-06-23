@@ -207,14 +207,14 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
-		c.logger.Info().Str("data", string(dataBuf)).Msgf("handleStreamTss read stream from peer: %s", peerID)
+		c.logger.Info().Msgf("handleStreamTss read stream from peer: %s", peerID)
 		var wrappedMsg messages.WrappedMessage
 		if err := json.Unmarshal(dataBuf, &wrappedMsg); nil != err {
 			c.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
-		c.logger.Debug().Msgf(">>>>>>>[%s] %s", wrappedMsg.MessageType, string(wrappedMsg.Payload))
+		c.logger.Info().Msgf(">>>>>>>[%s] %s", wrappedMsg.MessageType, string(wrappedMsg.Payload))
 		c.streamMgr.AddStream(wrappedMsg.MsgID, stream)
 		channel := c.getSubscriber(wrappedMsg.MessageType, wrappedMsg.MsgID)
 		if nil == channel {
@@ -222,6 +222,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.logger.Debug().Msgf("no MsgID %s found for this message", wrappedMsg.MessageType)
 			return
 		}
+		fmt.Println("insert tss message")
 		channel <- &Message{
 			PeerID:  stream.Conn().RemotePeer(),
 			Payload: dataBuf,
