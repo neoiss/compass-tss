@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"math"
 	"math/big"
 	"sort"
@@ -14,13 +15,9 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // nolint:staticcheck
 	ecommon "github.com/ethereum/go-ethereum/common"
 	crypto2 "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
-
 	"github.com/mapprotocol/compass-tss/p2p/messages"
 )
 
@@ -137,24 +134,32 @@ func isOnCurve(x, y *big.Int) bool {
 	return curve.IsOnCurve(x, y)
 }
 
-func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, cosmos.AccAddress, error) {
+func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, ecommon.Address, error) {
 	// we check whether the point is on curve according to Kudelski report
 	if pubKeyPoint == nil || !isOnCurve(pubKeyPoint.X(), pubKeyPoint.Y()) {
-		return "", cosmos.AccAddress{}, errors.New("invalid points")
+		return "", ecommon.Address{}, errors.New("invalid points")
 	}
 	tssPubKey := btcec.PublicKey{
 		Curve: btcec.S256(),
 		X:     pubKeyPoint.X(),
 		Y:     pubKeyPoint.Y(),
 	}
+	ethPk := tssPubKey.ToECDSA()
+	pkBytes := ecrypto.CompressPubkey(ethPk)
 
-	compressedPubkey := coskey.PubKey{
-		Key: tssPubKey.SerializeCompressed(),
-	}
+	//ecdsa.PublicKey{Curve: nil, X: pubKeyPoint.X(), Y: pubKeyPoint.Y()}
+	//compressedPubkey := coskey.PubKey{
+	//	Key: tssPubKey.SerializeCompressed(),
+	//}
 
-	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &compressedPubkey) // nolint:staticcheck
-	addr := cosmos.AccAddress(compressedPubkey.Address().Bytes())
-	return pubKey, addr, err
+	//pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &compressedPubkey) // nolint:staticcheck
+	//addr := cosmos.AccAddress(compressedPubkey.Address().Bytes())
+
+	// get address
+	publicKeyBytes := ecrypto.FromECDSAPub(ethPk)
+	hash := ecrypto.Keccak256(publicKeyBytes[1:])
+	address := ecommon.BytesToAddress(hash[12:])
+	return ecommon.Bytes2Hex(pkBytes), address, nil
 }
 
 func BytesToHashString(msg []byte) (string, error) {

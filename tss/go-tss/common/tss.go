@@ -397,6 +397,8 @@ func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerI
 		}
 		t.logger.Debug().Msg("we got the missing share from the peer")
 		return t.processTSSMsg(wireMsg.Msg, wireMsg.RequestType, true)
+	default:
+
 	}
 
 	return nil
@@ -860,7 +862,6 @@ func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.Wa
 			if !ok {
 				return
 			}
-			t.logger.Info().Msg("ProcessInboundMessages start processing inbound messages")
 			var wrappedMsg messages.WrappedMessage
 			if err := json.Unmarshal(m.Payload, &wrappedMsg); nil != err {
 				t.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")

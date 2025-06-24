@@ -67,6 +67,11 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
+	fmt.Println("epoch ", epoch)
+	fmt.Println("poolPubKey ", poolPubKey.String())
+	fmt.Println("signature ", signature)
+	fmt.Println("blames ", blames)
+	fmt.Println("members ", members)
 	idAbi, _ := newIdABi()
 	id, err := idAbi.Methods["idPack"].Inputs.Pack(ecommon.Hex2Bytes(poolPubKey.String()), members, epoch, blames)
 	if err != nil {

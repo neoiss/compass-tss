@@ -48,6 +48,16 @@ var (
 // PubKey
 ////////////////////////////////////////////////////////////////////////////////////////
 
+// NewPubKeyByEth create a new instance of PubKey
+// key is bech32 encoded string
+func NewPubKeyByEth(key string) (PubKey, error) {
+	if len(key) == 0 {
+		return EmptyPubKey, nil
+	}
+
+	return PubKey(key), nil
+}
+
 // NewPubKey create a new instance of PubKey
 // key is bech32 encoded string
 func NewPubKey(key string) (PubKey, error) {

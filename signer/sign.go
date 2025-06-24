@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
@@ -367,7 +368,7 @@ func (s *Signer) scheduleKeygenRetry(keygenBlock *structure.KeyGen) bool {
 }
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
-	s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
+	s.logger.Debug().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
 	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
@@ -381,7 +382,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	//for _, keygenReq := range keygenBlock.Keygens {
 	keygenStart := time.Now()
 	// todo debug
-	fmt.Println("processKeygenBlock start to process keygen block GenerateNewKey -------------- ")
+	//fmt.Println("processKeygenBlock start to process keygen block GenerateNewKey -------------- ")
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
 		s.logger.Error().
@@ -397,13 +398,13 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	}
 
 	// re-enqueue the keygen block to retry if we failed to generate a key
-	if pubKey.Secp256k1.IsEmpty() {
-		// todo handler
-		//if s.scheduleKeygenRetry(keygenBlock) {
-		//	return
-		//}
-		s.logger.Error().Interface("keygenBlock", keygenBlock).Msg("done with keygen retries")
-	}
+	//if pubKey.Secp256k1.IsEmpty() {
+	//	// todo handler
+	//	//if s.scheduleKeygenRetry(keygenBlock) {
+	//	//	return
+	//	//}
+	//	s.logger.Error().Interface("keygenBlock", keygenBlock).Msg("done with keygen retries")
+	//}
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
@@ -457,10 +458,22 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	signature := &btcec.Signature{R: r, S: ss}
 
 	// verify the signature (thornode will also verify and reject if invalid)
-	spk, err := pk.Secp256K1()
+
+	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk.String()))
 	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get secp256k1 pubkey")
+		s.logger.Error().Str("pk", pk.String()).Err(err).Msg("fail to decompress pubkey")
+		return nil
 	}
+	spk := &btcec.PublicKey{
+		Curve: ethPubKey.Curve,
+		X:     ethPubKey.X,
+		Y:     ethPubKey.Y,
+	}
+	//
+	//spk, err := pk.Secp256K1()
+	//if err != nil {
+	//	s.logger.Error().Err(err).Msg("fail to get secp256k1 pubkey")
+	//}
 	if !signature.Verify(data, spk) {
 		s.logger.Error().Msg("secp256k1 check signature verification failed")
 	} else {

@@ -109,7 +109,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	timer := time.NewTimer(30 * time.Minute)
 	defer timer.Stop()
 
-	fmt.Println("processKeygenBlock GenerateNewKey 222222 -------------- ")
+	//fmt.Println("processKeygenBlock GenerateNewKey 222222 -------------- ")
 	var resp keygen.Response
 	go func() {
 		resp, err = kg.server.Keygen(keyGenReq)
@@ -144,8 +144,8 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to keygen,err:%w", err)
 	}
 
-	//fmt.Println("processKeygenBlock GenerateNewKey 444444 -------------- ", resp.PubKey)
-	cpk, err := common.NewPubKey(resp.PubKey)
+	fmt.Println("processKeygenBlock GenerateNewKey 444444 -------------- ", resp.PubKey)
+	cpk, err := common.NewPubKeyByEth(resp.PubKey)
 	if err != nil {
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to create common.PubKey,%w", err)
 	}

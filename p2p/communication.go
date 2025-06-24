@@ -269,7 +269,6 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 			c.logger.Error().Err(err).Msg("error in decode the bootstrap node, skip it")
 			continue
 		}
-		fmt.Println("bootStrapConnectivityCheck 2222 ---------------- ", peer)
 		wg.Add(1)
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
