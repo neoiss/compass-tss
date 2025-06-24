@@ -8,7 +8,6 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	tcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // nolint:staticcheck
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -100,13 +99,26 @@ func GetPriKeyRawBytes(priKey tcrypto.PrivKey) ([]byte, error) {
 }
 
 func CheckKeyOnCurve(pk string) (bool, error) {
-	pubKey, err := sdk.UnmarshalPubKey(sdk.AccPK, pk) // nolint:staticcheck
+	//pubKey, err := sdk.UnmarshalPubKey(sdk.AccPK, pk) // nolint:staticcheck
+	//if err != nil {
+	//	return false, fmt.Errorf("fail to parse pub key(%s): %w", pk, err)
+	//}
+
+	fmt.Println("CheckKeyOnCurve pk ----------------------- ", pk)
+	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk))
 	if err != nil {
-		return false, fmt.Errorf("fail to parse pub key(%s): %w", pk, err)
+		return false, fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 	}
-	bPk, err := btcec.ParsePubKey(pubKey.Bytes(), btcec.S256())
-	if err != nil {
-		return false, err
+
+	bPk := &btcec.PublicKey{
+		Curve: btcec.S256(),
+		X:     ethPubKey.X,
+		Y:     ethPubKey.Y,
 	}
+
+	//bPk, err := btcec.ParsePubKey(pubKey.Bytes(), btcec.S256())
+	//if err != nil {
+	//	return false, err
+	//}
 	return isOnCurve(bPk.X, bPk.Y), nil
 }

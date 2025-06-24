@@ -151,5 +151,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", err
 	}
+	// todo handler tx online
+	b.epoch = epoch
 	return txID, nil
 }
