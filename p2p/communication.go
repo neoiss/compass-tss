@@ -214,7 +214,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
-		c.logger.Info().Msgf(">>>>>>>[%s] %s", wrappedMsg.MessageType, string(wrappedMsg.Payload))
+		c.logger.Info().Msgf(">>>>>>>[%s]", wrappedMsg.MessageType)
 		c.streamMgr.AddStream(wrappedMsg.MsgID, stream)
 		channel := c.getSubscriber(wrappedMsg.MessageType, wrappedMsg.MsgID)
 		if nil == channel {
