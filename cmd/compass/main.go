@@ -45,7 +45,6 @@ func printVersion() {
 }
 
 func main() {
-
 	showVersion := flag.Bool("version", false, "Shows version")
 	logLevel := flag.StringP("log-level", "l", "info", "Log Level")
 	pretty := flag.BoolP("pretty-log", "p", false, "Enables unstructured prettified logging. This is useful for local debugging")

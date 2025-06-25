@@ -100,6 +100,7 @@ func (s *KeySign) RemoteSign(msg []byte, poolPubKey string) ([]byte, []byte, err
 		Msg:        encodedMsg,
 		Resp:       make(chan tssKeySignResult, 1),
 	}
+	fmt.Println("RemoteSign --------------------- task ", task)
 	s.taskQueue <- &task
 	select {
 	case resp := <-task.Resp:
@@ -139,6 +140,7 @@ type tssKeySignResult struct {
 	Err        error
 }
 
+// todo key sign
 func (s *KeySign) processKeySignTasks() {
 	defer s.wg.Done()
 	tasks := make(map[string][]*tssKeySignTask)
@@ -183,6 +185,7 @@ func (s *KeySign) processKeySignTasks() {
 				s.wg.Add(1)
 				signingTask := v[:totalTasks]
 				tasks[k] = v[totalTasks:]
+				fmt.Println("processKeySignTasks --------------------- k ", k, " signingTask ", signingTask)
 				go s.toLocalTSSSigner(k, signingTask)
 			}
 			taskLock.Unlock()

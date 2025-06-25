@@ -259,6 +259,9 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		}, errors.New("fail to parse the version")
 	}
 
+	fmt.Println("req.Version ----------------- ", req.Version)
+	fmt.Println("oldJoinParty ----------------- ", oldJoinParty)
+	fmt.Println("len(req.SignerPubKeys) ----------------- ", len(req.SignerPubKeys))
 	if len(req.SignerPubKeys) == 0 && oldJoinParty {
 		return emptyResp, errors.New("empty signer pub keys")
 	}

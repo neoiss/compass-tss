@@ -381,7 +381,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	// NOTE: in practice there is only one keygen in the keygen block
 	//for _, keygenReq := range keygenBlock.Keygens {
 	keygenStart := time.Now()
-	// todo debug
+	// todo debug blame
 	//fmt.Println("processKeygenBlock start to process keygen block GenerateNewKey -------------- ")
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
@@ -396,15 +396,6 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
 	}
-
-	// re-enqueue the keygen block to retry if we failed to generate a key
-	//if pubKey.Secp256k1.IsEmpty() {
-	//	// todo handler
-	//	//if s.scheduleKeygenRetry(keygenBlock) {
-	//	//	return
-	//	//}
-	//	s.logger.Error().Interface("keygenBlock", keygenBlock).Msg("done with keygen retries")
-	//}
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
@@ -440,6 +431,7 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 
 	// sign the public key with its own private key
 	data := []byte(pk.String())
+	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", pk.String(), "msg", string(data))
 	sigBytes, _, err := ks.RemoteSign(data, pk.String())
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
