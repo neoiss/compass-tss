@@ -20,7 +20,7 @@ func newMaintainerABi() (*abi.ABI, error) {
 	return &maintainer, nil
 }
 
-func newIdABi() (*abi.ABI, error) {
+func NewIdABi() (*abi.ABI, error) {
 	maintainer, err := abi.JSON(strings.NewReader(idPackAbi))
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal maintainer abi: %w", err)

@@ -229,7 +229,6 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			}
 			keyGenLocalStateItem.LocalData = msg
 			keyGenLocalStateItem.PubKey = pubKey
-			fmt.Printf("processKeyGen keyGenLocalStateItem ---------------- %+v \n", keyGenLocalStateItem)
 			if err := tKeyGen.stateManager.SaveLocalState(keyGenLocalStateItem); err != nil {
 				return nil, fmt.Errorf("fail to save keygen result to storage: %w", err)
 			}

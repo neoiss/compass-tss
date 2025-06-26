@@ -72,7 +72,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	fmt.Println("signature ", signature)
 	fmt.Println("blames ", blames)
 	fmt.Println("members ", members)
-	idAbi, _ := newIdABi()
+	idAbi, _ := NewIdABi()
 	id, err := idAbi.Methods["idPack"].Inputs.Pack(ecommon.Hex2Bytes(poolPubKey.String()), members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")

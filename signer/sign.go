@@ -448,7 +448,8 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	// sign the public key with its own private key
 	data := []byte(pk.String())
 	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", pk.String(), "msg", string(data))
-	sigBytes, _, err := ks.RemoteSign(data, pk.String())
+	sigBytes, v, err := ks.RemoteSign(data, pk.String())
+	fmt.Println("v ------------------ ", v)
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
 		s.logger.Info().Err(err).Msg("fail secp256k1 check signing")
