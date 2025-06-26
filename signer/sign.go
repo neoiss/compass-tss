@@ -401,6 +401,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
+		return
 	}
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
