@@ -219,7 +219,6 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 
 		case msg := <-endCh:
 			tKeyGen.logger.Info().Msgf("keygen finished successfully: %s", msg.ECDSAPub.Y().String())
-			fmt.Println("msg ----------------------- ", msg)
 			err := tKeyGen.tssCommonStruct.NotifyTaskDone()
 			if err != nil {
 				tKeyGen.logger.Error().Err(err).Msg("fail to broadcast the keysign done")
