@@ -230,10 +230,12 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			}
 			keyGenLocalStateItem.LocalData = msg
 			keyGenLocalStateItem.PubKey = pubKey
+			fmt.Printf("processKeyGen keyGenLocalStateItem ---------------- %+v \n", keyGenLocalStateItem)
 			if err := tKeyGen.stateManager.SaveLocalState(keyGenLocalStateItem); err != nil {
 				return nil, fmt.Errorf("fail to save keygen result to storage: %w", err)
 			}
 			address := tKeyGen.p2pComm.ExportPeerAddress()
+			fmt.Printf("processKeyGen address ---------------- %+v \n", address)
 			if err := tKeyGen.stateManager.SaveAddressBook(address); err != nil {
 				tKeyGen.logger.Error().Err(err).Msg("fail to save the peer addresses")
 			}

@@ -102,6 +102,8 @@ func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.Par
 	var localPartyID *btss.PartyID
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)
+	fmt.Println("GetParties keys ------------------ ", keys)
+	fmt.Println("GetParties localPartyKey ------------------ ", localPartyKey)
 	for idx, item := range keys {
 		key := new(big.Int).SetBytes(ecommon.Hex2Bytes(item))
 		// Set up the parameters
