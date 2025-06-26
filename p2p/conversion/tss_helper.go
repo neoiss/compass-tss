@@ -1,8 +1,10 @@
 package conversion
 
 import (
+	"errors"
 	"math/rand"
 
+	"github.com/blang/semver"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // nolint:staticcheck
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -43,5 +45,16 @@ func RandStringBytesMask(n int) string {
 }
 
 func VersionLTCheck(currentVer, expectedVer string) (bool, error) {
-	return currentVer == expectedVer, nil
+	if currentVer == "1" {
+		currentVer = "1.0.0"
+	}
+	c, err := semver.Make(expectedVer)
+	if err != nil {
+		return false, errors.New("fail to parse the expected version")
+	}
+	v, err := semver.Make(currentVer)
+	if err != nil {
+		return false, errors.New("fail to parse the current version")
+	}
+	return v.LT(c), nil
 }

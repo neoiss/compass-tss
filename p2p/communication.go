@@ -495,7 +495,7 @@ func (c *Communication) ProcessBroadcast() {
 				c.logger.Error().Err(err).Msg("fail to marshal a wrapped message to json bytes")
 				continue
 			}
-			c.logger.Info().Str("data", string(wrappedMsgBytes)).Msg("ProcessBroadcast writer stream ")
+			c.logger.Info().Msg("ProcessBroadcast writer stream ")
 			c.logger.Debug().Msgf("broadcast message %s to %+v", msg.WrappedMessage, msg.PeersID)
 			c.Broadcast(msg.PeersID, wrappedMsgBytes, msg.WrappedMessage.MsgID)
 
