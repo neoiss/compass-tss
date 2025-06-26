@@ -398,7 +398,6 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 			Msg("keygen blame")
 	}
 	keygenTime := time.Since(keygenStart).Milliseconds()
-
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
@@ -406,6 +405,10 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
+	if len(pubKey.Secp256k1.String()) == 0 {
+		fmt.Println("pk is empty ------------------ ")
+		return
+	}
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
 	if len(secp256k1Sig) == 0 {
 		fmt.Println("secp256k1Sig ------------------ ", len(secp256k1Sig))
