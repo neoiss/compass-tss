@@ -449,10 +449,12 @@ func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64,
 
 	if pc.host.ID() == leaderID {
 		onlines, err := pc.joinPartyLeader(msgID, peerGroup, sigChan)
+		fmt.Println("JoinPartyWithLeader onlines ", onlines)
 		return onlines, leader, err
 	}
 	// now we are just the normal peer
 	onlines, err := pc.joinPartyMember(msgID, peerGroup, sigChan)
+	fmt.Println("JoinPartyWithLeader joinPartyMember onlines ", onlines)
 	return onlines, leader, err
 }
 

@@ -153,7 +153,7 @@ func (t *TssServer) requestToMsgId(request interface{}) (string, error) {
 }
 
 func (t *TssServer) joinParty(msgID, version string, blockHeight int64, participants []string, threshold int, sigChan chan string) ([]peer.ID, string, error) {
-	fmt.Println("joinParty msgID ----------- ", msgID)
+	//fmt.Println("joinParty msgID ----------- ", msgID)
 	//fmt.Printf("joinParty version -----------(%v)-----\n", version)
 	oldJoinParty, err := conversion.VersionLTCheck(version, messages.VERSIONOFLATEST)
 	if err != nil {
@@ -184,6 +184,7 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 		}
 		var peersIDStr []string
 		for _, el := range peersID {
+			fmt.Println("joinParty peersID -------------- ", el.String())
 			peersIDStr = append(peersIDStr, el.String())
 		}
 

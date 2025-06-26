@@ -138,8 +138,10 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		t.logger.Info().Msgf("we(%s) are not the active signer", t.p2pCommunication.GetHost().ID().String())
 		return keysign.Response{}, p2p.ErrNotActiveSigner
 	}
+
 	parsedPeers := make([]string, len(onlinePeers))
 	for i, el := range onlinePeers {
+		fmt.Println("onlinePeers ------------------- ", el.String())
 		parsedPeers[i] = el.String()
 	}
 
@@ -228,7 +230,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	if err != nil {
 		return emptyResp, fmt.Errorf("fail to get local keygen state: %w", err)
 	}
-	fmt.Printf("localStateItem --------------------- %+v \n", localStateItem)
+	fmt.Printf("localStateItem --------------------- %+v \n", localStateItem.ParticipantKeys)
 
 	var msgsToSign [][]byte
 	for _, val := range req.Messages {

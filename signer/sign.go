@@ -56,6 +56,7 @@ type Signer struct {
 	tssKeysignMetricMgr  *metrics.TssKeysignMetricMgr
 	observer             *observer.Observer
 	pipeline             *pipeline
+	isKeyGen             bool
 }
 
 // NewSigner create a new instance of signer
@@ -145,6 +146,7 @@ func NewSigner(cfg config.Bifrost,
 		localPubKey:          selfKey,
 		tssKeysignMetricMgr:  tssKeysignMetricMgr,
 		observer:             obs,
+		isKeyGen:             false,
 	}, nil
 }
 
@@ -289,8 +291,14 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 			if !more {
 				return
 			}
+			if s.isKeyGen {
+				fmt.Println("ignore keyGen msg, because it is already a keygen, epoch=", keygenBlock.Epoch)
+				continue
+			}
+			s.isKeyGen = true
 			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
+			s.isKeyGen = false
 		}
 	}
 }
@@ -382,7 +390,6 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	//for _, keygenReq := range keygenBlock.Keygens {
 	keygenStart := time.Now()
 	// todo debug blame
-	//fmt.Println("processKeygenBlock start to process keygen block GenerateNewKey -------------- ")
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
 		s.logger.Error().
@@ -400,6 +407,10 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
+	if len(secp256k1Sig) == 0 {
+		fmt.Println("secp256k1Sig ------------------ ", len(secp256k1Sig))
+		return
+	}
 	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to broadcast keygen")
