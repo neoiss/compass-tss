@@ -44,7 +44,7 @@ func GetPubKeyFromPeerIDByEth(pID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 	}
-	pubBytes := ecrypto.FromECDSAPub(ethPubKey)
+	pubBytes := ecrypto.CompressPubkey(ethPubKey)
 
 	return hex.EncodeToString(pubBytes), nil
 }
@@ -99,11 +99,6 @@ func GetPriKeyRawBytes(priKey tcrypto.PrivKey) ([]byte, error) {
 }
 
 func CheckKeyOnCurve(pk string) (bool, error) {
-	//pubKey, err := sdk.UnmarshalPubKey(sdk.AccPK, pk) // nolint:staticcheck
-	//if err != nil {
-	//	return false, fmt.Errorf("fail to parse pub key(%s): %w", pk, err)
-	//}
-
 	fmt.Println("CheckKeyOnCurve pk ----------------------- ", pk)
 	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk))
 	if err != nil {
@@ -116,9 +111,5 @@ func CheckKeyOnCurve(pk string) (bool, error) {
 		Y:     ethPubKey.Y,
 	}
 
-	//bPk, err := btcec.ParsePubKey(pubKey.Bytes(), btcec.S256())
-	//if err != nil {
-	//	return false, err
-	//}
 	return isOnCurve(bPk.X, bPk.Y), nil
 }

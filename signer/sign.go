@@ -409,6 +409,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
 	if len(secp256k1Sig) == 0 {
 		fmt.Println("secp256k1Sig ------------------ ", len(secp256k1Sig))
+		time.Sleep(time.Minute)
 		return
 	}
 	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
