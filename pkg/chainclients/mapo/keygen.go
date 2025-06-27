@@ -52,7 +52,6 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		fmt.Println("KeyGen Block ignore ----------------- ", epoch, " b.epoch ", b.epoch)
 		return nil, nil
 	}
-	b.epoch = epoch
 	// done
 	ret, err := b.GetNodeAccounts(epoch)
 	if err != nil {
