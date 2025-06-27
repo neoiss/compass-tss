@@ -49,7 +49,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, nil
 	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		fmt.Println("KeyGen Block ignore ----------------- ")
+		fmt.Println("KeyGen Block ignore ----------------- ", epoch, " b.epoch ", b.epoch)
 		return nil, nil
 	}
 	b.epoch = epoch
