@@ -82,13 +82,14 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")
 	}
+	fmt.Println("pubBytes ", pubBytes[1:])
 
 	id32 := ecommon.BytesToHash(crypto.Keccak256(id))
 	method := "voteUpdateTssPool"
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
 		Id:        id32,
 		Epoch:     epoch,
-		Pubkey:    pubBytes,
+		Pubkey:    pubBytes[1:],
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,
