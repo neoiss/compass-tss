@@ -478,8 +478,9 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 		Y:     ethPubKey.Y,
 	}
 
-	if !signature.Verify(data, spk) {
+	if !signature.Verify(dataHash[:], spk) {
 		s.logger.Error().Msg("secp256k1 check signature verification failed")
+		return nil
 	} else {
 		s.logger.Info().Msg("secp256k1 check signature verified")
 	}
