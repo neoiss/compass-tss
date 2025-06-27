@@ -478,18 +478,14 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 		X:     ethPubKey.X,
 		Y:     ethPubKey.Y,
 	}
-	//
-	//spk, err := pk.Secp256K1()
-	//if err != nil {
-	//	s.logger.Error().Err(err).Msg("fail to get secp256k1 pubkey")
-	//}
+
 	if !signature.Verify(data, spk) {
 		s.logger.Error().Msg("secp256k1 check signature verification failed")
 	} else {
 		s.logger.Info().Msg("secp256k1 check signature verified")
 	}
 
-	return sigBytes
+	return append(sigBytes, v[0]+27)
 }
 
 func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame, members []ecommon.Address, signature []byte) error {
