@@ -169,6 +169,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
 		epoch:         big.NewInt(0),
+		gasPrice:      big.NewInt(0),
 	}, nil
 }
 
