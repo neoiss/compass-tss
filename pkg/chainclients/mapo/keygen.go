@@ -48,9 +48,10 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
-	//if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-	//	return nil, nil
-	//}
+	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
+		fmt.Println("KeyGen Block ignore ----------------- ")
+		return nil, nil
+	}
 	b.epoch = epoch
 	// done
 	ret, err := b.GetNodeAccounts(epoch)
@@ -131,11 +132,18 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
-		b.logger.Error().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas failed")
 		b.logger.Err(err).Msgf("fail to estimate gas")
 		return "", err
 	}
+	b.logger.Error().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas will")
 
+	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
+		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return "", err
+		}
+		gasFeeCap = head.BaseFee
+	}
 	// tip cap at configured percentage of max fee
 	tipCap := new(big.Int).Mul(gasFeeCap, big.NewInt(10))
 	tipCap.Div(tipCap, big.NewInt(100))
@@ -159,5 +167,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	}
 	// todo handler tx online
 	b.epoch = epoch
+	fmt.Println("SendKeyGenStdTx txID is ------------------ ", txID)
 	return txID, nil
 }
