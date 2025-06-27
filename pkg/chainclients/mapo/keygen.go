@@ -72,8 +72,13 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	fmt.Println("signature ", signature)
 	fmt.Println("blames ", blames)
 	fmt.Println("members ", members)
+	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+	}
+	pubBytes := crypto.FromECDSAPub(ethPubKey)
 	idAbi, _ := NewIdABi()
-	id, err := idAbi.Methods["idPack"].Inputs.Pack(ecommon.Hex2Bytes(poolPubKey.String()), members, epoch, blames)
+	id, err := idAbi.Methods["idPack"].Inputs.Pack(pubBytes, members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")
 	}
@@ -83,7 +88,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
 		Id:        id32,
 		Epoch:     epoch,
-		Pubkey:    ecommon.Hex2Bytes(poolPubKey.String()),
+		Pubkey:    pubBytes,
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,

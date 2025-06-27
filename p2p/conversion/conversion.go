@@ -149,14 +149,6 @@ func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, ecommon.Address, error) 
 	ethPk := tssPubKey.ToECDSA()
 	pkBytes := ecrypto.CompressPubkey(ethPk)
 
-	//ecdsa.PublicKey{Curve: nil, X: pubKeyPoint.X(), Y: pubKeyPoint.Y()}
-	//compressedPubkey := coskey.PubKey{
-	//	Key: tssPubKey.SerializeCompressed(),
-	//}
-
-	//pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &compressedPubkey) // nolint:staticcheck
-	//addr := cosmos.AccAddress(compressedPubkey.Address().Bytes())
-
 	// get address
 	publicKeyBytes := ecrypto.FromECDSAPub(ethPk)
 	hash := ecrypto.Keccak256(publicKeyBytes[1:])
