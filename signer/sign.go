@@ -452,9 +452,8 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	}
 	pubBytes := ecrypto.FromECDSAPub(ethPubKey)
 
-	//data := []byte(pk.String())
 	data := pubBytes[1:]
-	dataHash := ecommon.BytesToHash(data)
+	dataHash := ecrypto.Keccak256(data)
 	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:])
 	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
 	fmt.Println("v ------------------ ", v)
