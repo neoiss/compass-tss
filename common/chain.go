@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/cosmos/cosmos-sdk/types"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/hashicorp/go-multierror"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -240,26 +239,26 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		return "0x"
 	}
 	switch cn {
-	case MockNet:
+	case TestNet:
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		case THORChain:
-			// TODO update this to use mocknet address prefix
-			return types.GetConfig().GetBech32AccountAddrPrefix()
+		//case THORChain:
+		//	// TODO update this to use mocknet address prefix
+		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
-			return chaincfg.RegressionNetParams.Bech32HRPSegwit
+			return chaincfg.TestNet3Params.Bech32HRPSegwit
 		case LTCChain:
-			return ltcchaincfg.RegressionNetParams.Bech32HRPSegwit
+			return ltcchaincfg.TestNet4Params.Bech32HRPSegwit
 		case DOGEChain:
-			return dogchaincfg.RegressionNetParams.Bech32HRPSegwit
+			return dogchaincfg.TestNet3Params.Bech32HRPSegwit
 		}
-	case MainNet, StageNet:
+	case MainNet:
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		case THORChain:
-			return types.GetConfig().GetBech32AccountAddrPrefix()
+		//case THORChain:
+		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.MainNetParams.Bech32HRPSegwit
 		case LTCChain:

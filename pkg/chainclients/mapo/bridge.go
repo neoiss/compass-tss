@@ -432,6 +432,7 @@ func (b *Bridge) IsSyncing() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get sync progress: %w", err)
 	}
+	//return progress == nil, nil
 	if progress == nil {
 		return false, nil
 	}

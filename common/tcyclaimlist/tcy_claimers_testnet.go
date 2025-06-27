@@ -1,5 +1,5 @@
-//go:build mocknet
-// +build mocknet
+//go:build testnet
+// +build testnet
 
 package tcyclaimlist
 
@@ -7,5 +7,5 @@ import (
 	_ "embed"
 )
 
-//go:embed tcy_claimers_mocknet.json
+//go:embed tcy_claimers_testnet.json
 var TCYClaimsListRaw []byte

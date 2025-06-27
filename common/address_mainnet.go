@@ -1,5 +1,5 @@
-//go:build !mocknet
-// +build !mocknet
+//go:build !testnet
+// +build !testnet
 
 package common
 
@@ -16,7 +16,7 @@ import (
 	"github.com/ltcsuite/ltcutil"
 )
 
-// newAddress in this file with build tags checks Mainnet(/Stagenet)-specific addresses.
+// newAddress in this file with build tags checks mainnet-specific addresses.
 func newAddress(address string) (Address, error) {
 	var outputAddr interface{}
 

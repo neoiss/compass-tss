@@ -109,6 +109,8 @@ func main() {
 	consts := constants.NewConstantValue()
 	jailTimeKeygen := time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)) * constants.MAPRelayChainBlockTime
 	jailTimeKeysign := time.Duration(consts.GetInt64Value(constants.JailTimeKeysign)) * constants.MAPRelayChainBlockTime
+	fmt.Println("============================== 1 ", consts.GetInt64Value(constants.JailTimeKeygen))
+	fmt.Println("============================== 2 ", time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)))
 	if cfg.Signer.KeygenTimeout >= jailTimeKeygen {
 		log.Fatal().
 			Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).

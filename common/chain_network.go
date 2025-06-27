@@ -4,15 +4,10 @@ package common
 type ChainNetwork uint8
 
 const (
-	// TestNet network for test - DO NOT USE
-	// TODO: remove on hard fork
-	TestNet ChainNetwork = iota
 	// MainNet network for mainnet
-	MainNet
-	// MockNet network for mocknet
-	MockNet
-	// Stagenet network for stagenet
-	StageNet
+	MainNet ChainNetwork = iota + 1
+	// TestNet network for mocknet
+	TestNet
 )
 
 // Soft Equals check is mainnet == mainet, or mocknet == mocknet

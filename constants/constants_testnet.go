@@ -1,5 +1,5 @@
-//go:build mocknet
-// +build mocknet
+//go:build testnet
+// +build testnet
 
 // For internal testing and mockneting
 package constants

@@ -965,3 +965,9 @@ func (c *Client) getBlockRequiredConfirmation(txIn types.TxIn, height int64) (in
 
 	return int64(confirm), nil
 }
+
+const errDatabaseAlreadyExists = "database already exists"
+
+func databaseAlreadyExists(e error) bool {
+	return strings.Contains(strings.ToLower(e.Error()), errDatabaseAlreadyExists)
+}

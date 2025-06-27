@@ -285,12 +285,12 @@ func (c *Client) RegisterPublicKey(pubkey common.PubKey) error {
 	switch c.cfg.ChainID {
 	case common.LTCChain, common.BTCChain:
 		err = c.rpc.CreateWallet("")
-		if err != nil {
+		if err != nil && !databaseAlreadyExists(err) {
 			c.log.Info().Err(err).Msg("fail to create wallet")
 			return err
 		}
 	}
-
+	fmt.Println("============================== btc address: ", addr)
 	err = c.rpc.ImportAddress(addr.String())
 	if err != nil {
 		c.log.Error().Err(err).
