@@ -454,8 +454,9 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 
 	//data := []byte(pk.String())
 	data := pubBytes[1:]
-	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", data)
-	sigBytes, v, err := ks.RemoteSign(data, pk.String())
+	dataHash := ecommon.BytesToHash(data)
+	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:])
+	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
 	fmt.Println("v ------------------ ", v)
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
@@ -463,8 +464,6 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 		return nil
 
 	} else if sigBytes == nil {
-		// This is expected in other cases when not in the signing party,
-		// when RemoteSign's len(resp.R) and len(resp.S) are both nil.
 		return nil
 	}
 
@@ -473,12 +472,6 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	ss := new(big.Int).SetBytes(sigBytes[32:])
 	signature := &btcec.Signature{R: r, S: ss}
 
-	// verify the signature (thornode will also verify and reject if invalid)
-	//ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk.String()))
-	//if err != nil {
-	//	s.logger.Error().Str("pk", pk.String()).Err(err).Msg("fail to decompress pubkey")
-	//	return nil
-	//}
 	spk := &btcec.PublicKey{
 		Curve: ethPubKey.Curve,
 		X:     ethPubKey.X,
