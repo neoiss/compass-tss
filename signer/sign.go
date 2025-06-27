@@ -2,6 +2,7 @@ package signer
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	ecommon "github.com/ethereum/go-ethereum/common"
@@ -454,7 +455,8 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 
 	data := pubBytes[1:]
 	dataHash := ecrypto.Keccak256(data)
-	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:])
+	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:], "hex",
+		hex.EncodeToString(dataHash))
 	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
 	fmt.Println("v ------------------ ", v)
 	if err != nil {
