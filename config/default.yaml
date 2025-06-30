@@ -70,7 +70,7 @@ bifrost:
   tss:
     rendezvous: asgard
     p2p_port: 5040
-    info_address: :6040
+    info_address: 0.0.0.0:6040
     bootstrap_peers:
       - 10.0.3.51
       - 10.0.3.39

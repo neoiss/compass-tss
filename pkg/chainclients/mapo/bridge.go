@@ -28,7 +28,6 @@ import (
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 
-	"github.com/blang/semver"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -82,6 +81,7 @@ type Bridge struct {
 	kw            *evm.KeySignWrapper
 	ethRpc        *evm.EthRPC
 	mainAbi       *abi.ABI
+	epoch         *big.Int
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -168,6 +168,8 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		epoch:         big.NewInt(0),
+		gasPrice:      big.NewInt(0),
 	}, nil
 }
 
@@ -654,19 +656,10 @@ func (b *Bridge) RagnarokInProgress() (bool, error) {
 }
 
 // GetThorchainVersion retrieve mapBridge version
-func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
-	buf, s, err := b.getWithPath(ChainVersionEndpoint)
-	if err != nil {
-		return semver.Version{}, fmt.Errorf("fail to get THORChain version: %w", err)
-	}
-	if s != http.StatusOK {
-		return semver.Version{}, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var version openapi.VersionResponse
-	if err = json.Unmarshal(buf, &version); err != nil {
-		return semver.Version{}, fmt.Errorf("fail to unmarshal THORChain version : %w", err)
-	}
-	return semver.MustParse(version.Current), nil
+// func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
+func (b *Bridge) GetThorchainVersion() (string, error) {
+	// todo handler
+	return "1", nil
 }
 
 // GetMimir - get mimir settings

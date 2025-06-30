@@ -48,20 +48,26 @@ var (
 // PubKey
 ////////////////////////////////////////////////////////////////////////////////////////
 
+// NewPubKeyByEth create a new instance of PubKey
+// key is bech32 encoded string
+func NewPubKeyByEth(key string) (PubKey, error) {
+	if len(key) == 0 {
+		return EmptyPubKey, nil
+	}
+
+	return PubKey(key), nil
+}
+
 // NewPubKey create a new instance of PubKey
 // key is bech32 encoded string
 func NewPubKey(key string) (PubKey, error) {
 	if len(key) == 0 {
 		return EmptyPubKey, nil
 	}
-	_, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, key)
-	if err != nil {
-		return EmptyPubKey, fmt.Errorf("%s is not bech32 encoded pub key,err : %w", key, err)
-	}
+
 	return PubKey(key), nil
 }
 
-// NewPubKeyFromCrypto
 func NewPubKeyFromCrypto(pk crypto.PubKey) (PubKey, error) {
 	tmp, err := codec.FromCmtPubKeyInterface(pk)
 	if err != nil {
@@ -90,6 +96,7 @@ func (p PubKey) String() string {
 }
 
 func (p PubKey) Secp256K1() (*btcec.PublicKey, error) {
+	// todo handler
 	pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 	if err != nil {
 		return nil, err

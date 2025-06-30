@@ -207,13 +207,14 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
+		c.logger.Info().Msgf("handleStreamTss read stream from peer: %s", peerID)
 		var wrappedMsg messages.WrappedMessage
 		if err := json.Unmarshal(dataBuf, &wrappedMsg); nil != err {
 			c.logger.Error().Err(err).Msg("fail to unmarshal wrapped message bytes")
 			c.streamMgr.AddStream(StreamUnknown, stream)
 			return
 		}
-		c.logger.Debug().Msgf(">>>>>>>[%s] %s", wrappedMsg.MessageType, string(wrappedMsg.Payload))
+		c.logger.Info().Msgf(">>>>>>>[%s]", wrappedMsg.MessageType)
 		c.streamMgr.AddStream(wrappedMsg.MsgID, stream)
 		channel := c.getSubscriber(wrappedMsg.MessageType, wrappedMsg.MsgID)
 		if nil == channel {
@@ -221,6 +222,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.logger.Debug().Msgf("no MsgID %s found for this message", wrappedMsg.MessageType)
 			return
 		}
+		fmt.Println("insert tss message")
 		channel <- &Message{
 			PeerID:  stream.Conn().RemotePeer(),
 			Payload: dataBuf,
@@ -253,7 +255,7 @@ func (c *Communication) getPeers() addr.AddrList {
 
 func (c *Communication) bootStrapConnectivityCheck() error {
 	bootstrapPeers := c.getPeers()
-
+	fmt.Println("bootStrapConnectivityCheck 11111 ---------------- ", bootstrapPeers)
 	if len(bootstrapPeers) == 0 {
 		c.logger.Error().Msg("we do not have the bootstrap node set, quit the connectivity check")
 		return nil
@@ -279,21 +281,21 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 					return
 				}
 				if ret.Error == nil {
-					c.logger.Debug().Msgf("connect to peer %v with RTT %v\n", peer.ID, ret.RTT)
+					c.logger.Debug().Msgf("bootStrapConnectivityCheck connect to peer %v with RTT %v\n", peer.ID, ret.RTT)
 					atomic.AddUint32(&onlineNodes, 1)
 				}
 			case <-ctx.Done():
-				c.logger.Error().Msgf("fail to ping the node %s within 2 seconds", peer.ID)
+				c.logger.Error().Msgf("bootStrapConnectivityCheck fail to ping the node %s within 2 seconds", peer.ID)
 			}
 		}()
 	}
 	wg.Wait()
 
 	if onlineNodes > 0 {
-		c.logger.Info().Msgf("we have successfully ping pong %d nodes", onlineNodes)
+		c.logger.Info().Msgf("bootStrapConnectivityCheck we have successfully ping pong %d nodes", onlineNodes)
 		return nil
 	}
-	c.logger.Error().Msg("fail to ping any bootstrap node")
+	c.logger.Error().Msg("bootStrapConnectivityCheck fail to ping any bootstrap node")
 	return errors.New("the node cannot ping any bootstrap node")
 }
 
@@ -301,7 +303,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	ctx := context.Background()
 	p2pPriKey, err := crypto.UnmarshalSecp256k1PrivateKey(privKeyBytes)
 	if err != nil {
-		c.logger.Error().Msgf("error is %f", err)
+		c.logger.Error().Msgf("startChannel error is %f", err)
 		return err
 	}
 
@@ -318,10 +320,10 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		libp2p.AddrsFactory(addressFactory),
 	)
 	if err != nil {
-		return fmt.Errorf("fail to create p2p host: %w", err)
+		return fmt.Errorf("startChannel fail to create p2p host: %w", err)
 	}
 	c.host = h
-	c.logger.Info().Msgf("Host created, we are: %s, at: %s", h.ID(), h.Addrs())
+	c.logger.Info().Msgf("startChannel Host created, we are: %s, at: %s", h.ID(), h.Addrs())
 	h.SetStreamHandler(TSSProtocolID, c.handleStreamTss)
 	// Start a DHT, for use in peer discovery. We can't just make a new DHT
 	// client because we want each peer to maintain its own local copy of the
@@ -331,7 +333,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	if err != nil {
 		return fmt.Errorf("fail to create DHT: %w", err)
 	}
-	c.logger.Debug().Msg("Bootstrapping the DHT")
+	c.logger.Debug().Msg("startChannel Bootstrapping the DHT")
 	if err = kademliaDHT.Bootstrap(ctx); err != nil {
 		return fmt.Errorf("fail to bootstrap DHT: %w", err)
 	}
@@ -342,7 +344,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		if connectionErr == nil {
 			break
 		}
-		c.logger.Error().Msg("cannot connect to any bootstrap node, retry in 5 seconds")
+		c.logger.Error().Msg("startChannel cannot connect to any bootstrap node, retry in 5 seconds")
 		time.Sleep(time.Second * 5)
 	}
 	if connectionErr != nil {
@@ -358,7 +360,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		return err
 	}
 
-	c.logger.Info().Msg("Successfully announced!")
+	c.logger.Info().Msg("startChannel Successfully announced!")
 	return nil
 }
 
@@ -383,7 +385,7 @@ func (c *Communication) connectToBootstrapPeers() error {
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	if len(bootstrapPeers) == 0 {
-		c.logger.Info().Msg("no bootstrap node set, we skip the connection")
+		c.logger.Info().Msg("connectToBootstrapPeers no bootstrap node set, we skip the connection")
 		return nil
 	}
 	var wg sync.WaitGroup
@@ -391,20 +393,22 @@ func (c *Communication) connectToBootstrapPeers() error {
 	for _, peerAddr := range bootstrapPeers {
 		pi, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
-			return fmt.Errorf("fail to add peer: %w", err)
+			return fmt.Errorf("connectToBootstrapPeers fail to add peer: %w", err)
 		}
+		fmt.Println("connectToBootstrapPeers 1111 pi ", pi)
 		wg.Add(1)
 		go func(connRet chan bool) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), TimeoutConnecting)
 			defer cancel()
+			fmt.Println("connectToBootstrapPeers 2222 pi ", pi)
 			if err := c.host.Connect(ctx, *pi); err != nil {
-				c.logger.Error().Err(err).Msgf("fail to connect to %s", pi.String())
+				c.logger.Error().Err(err).Msgf("connectToBootstrapPeers fail to connect to %s", pi.String())
 				connRet <- false
 				return
 			}
 			connRet <- true
-			c.logger.Info().Msgf("Connection established with bootstrap node: %s", *pi)
+			c.logger.Info().Msgf("connectToBootstrapPeers Connection established with bootstrap node: %s", *pi)
 		}(connRet)
 	}
 	wg.Wait()
@@ -491,6 +495,7 @@ func (c *Communication) ProcessBroadcast() {
 				c.logger.Error().Err(err).Msg("fail to marshal a wrapped message to json bytes")
 				continue
 			}
+			c.logger.Info().Msg("ProcessBroadcast writer stream ")
 			c.logger.Debug().Msgf("broadcast message %s to %+v", msg.WrappedMessage, msg.PeersID)
 			c.Broadcast(msg.PeersID, wrappedMsgBytes, msg.WrappedMessage.MsgID)
 

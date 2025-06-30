@@ -44,11 +44,16 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err = outputs.Copy(&epoch, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
+	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
+	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
+		fmt.Println("KeyGen Block ignore ----------------- ", epoch, " b.epoch ", b.epoch)
+		return nil, nil
+	}
 	// done
-	ret, err := b.GetNodeAccounts()
+	ret, err := b.GetNodeAccounts(epoch)
 	if err != nil {
 		return nil, err
 	}
@@ -62,18 +67,29 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
-	idAbi, _ := newIdABi()
-	id, err := idAbi.Methods["idPack"].Inputs.Pack(poolPubKey, members, epoch, blames)
+	fmt.Println("epoch ", epoch)
+	fmt.Println("poolPubKey ", poolPubKey.String())
+	fmt.Println("signature ", signature)
+	fmt.Println("blames ", blames)
+	fmt.Println("members ", members)
+	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+	}
+	pubBytes := crypto.FromECDSAPub(ethPubKey)
+	idAbi, _ := NewIdABi()
+	id, err := idAbi.Methods["idPack"].Inputs.Pack(pubBytes, members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")
 	}
+	fmt.Println("pubBytes ", pubBytes[1:])
 
 	id32 := ecommon.BytesToHash(crypto.Keccak256(id))
 	method := "voteUpdateTssPool"
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
 		Id:        id32,
 		Epoch:     epoch,
-		Pubkey:    ecommon.Hex2Bytes(poolPubKey.String()),
+		Pubkey:    pubBytes[1:],
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,
@@ -82,7 +98,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", errors.Wrap(err, "fail to pack input")
 	}
 
-	fromAddr := "0x2b7588165556aB2fA1d30c520491C385BAa424d8"
+	fromAddr, _ := b.keys.GetEthAddress()
 	nonce, err := b.ethRpc.GetNonce(fromAddr)
 	if err != nil {
 		return "", fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)
@@ -116,9 +132,17 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
 		b.logger.Err(err).Msgf("fail to estimate gas")
-		return "", nil
+		return "", err
 	}
+	b.logger.Error().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas will")
 
+	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
+		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return "", err
+		}
+		gasFeeCap = head.BaseFee
+	}
 	// tip cap at configured percentage of max fee
 	tipCap := new(big.Int).Mul(gasFeeCap, big.NewInt(10))
 	tipCap.Div(tipCap, big.NewInt(100))
@@ -140,5 +164,8 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", err
 	}
+	// todo handler tx online
+	b.epoch = epoch
+	fmt.Println("SendKeyGenStdTx txID is ------------------ ", txID)
 	return txID, nil
 }

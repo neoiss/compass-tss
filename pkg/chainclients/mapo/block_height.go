@@ -9,6 +9,7 @@ import (
 
 // GetLastObservedInHeight returns the lastobservedin value for the chain past in
 func (b *Bridge) GetLastObservedInHeight(chain common.Chain) (int64, error) {
+	// todo handler
 	lastblock, err := b.getLastBlock(chain)
 	if err != nil {
 		return 0, fmt.Errorf("failed to GetLastObservedInHeight: %w", err)
@@ -23,6 +24,7 @@ func (b *Bridge) GetLastObservedInHeight(chain common.Chain) (int64, error) {
 
 // GetLastSignedOutHeight returns the lastsignedout value for mapBridge
 func (b *Bridge) GetLastSignedOutHeight(chain common.Chain) (int64, error) {
+	// todo handler
 	lastblock, err := b.getLastBlock(chain)
 	if err != nil {
 		return 0, fmt.Errorf("failed to GetLastSignedOutHeight: %w", err)
@@ -37,15 +39,8 @@ func (b *Bridge) GetLastSignedOutHeight(chain common.Chain) (int64, error) {
 
 // GetBlockHeight returns the current height for mapBridge blocks
 func (b *Bridge) GetBlockHeight() (int64, error) {
-	// todo handler
-	latestBlocks, err := b.getLastBlock(common.MAPChain)
-	if err != nil {
-		return 0, fmt.Errorf("failed to GetThorchainHeight: %w", err)
-	}
-	for _, item := range latestBlocks {
-		return item.Thorchain, nil
-	}
-	return 0, fmt.Errorf("failed to GetThorchainHeight")
+	// done
+	return b.ethRpc.GetBlockHeight()
 }
 
 // getLastBlock calls the /lastblock/{chain} endpoint and Unmarshal's into the QueryResLastBlockHeights type

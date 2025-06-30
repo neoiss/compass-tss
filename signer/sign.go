@@ -2,9 +2,11 @@ package signer
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
@@ -55,6 +57,7 @@ type Signer struct {
 	tssKeysignMetricMgr  *metrics.TssKeysignMetricMgr
 	observer             *observer.Observer
 	pipeline             *pipeline
+	isKeyGen             bool
 }
 
 // NewSigner create a new instance of signer
@@ -144,6 +147,7 @@ func NewSigner(cfg config.Bifrost,
 		localPubKey:          selfKey,
 		tssKeysignMetricMgr:  tssKeysignMetricMgr,
 		observer:             obs,
+		isKeyGen:             false,
 	}, nil
 }
 
@@ -158,14 +162,15 @@ func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error
 
 // Start signer process
 func (s *Signer) Start() error {
-	s.wg.Add(1)
-	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
+	//  todo handler annotate
+	//s.wg.Add(1)
+	//go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
 
 	s.wg.Add(1)
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
 
-	s.wg.Add(1)
-	go s.signTransactions()
+	//s.wg.Add(1)
+	//go s.signTransactions()
 
 	s.blockScanner.Start(nil, nil)
 	return nil
@@ -287,8 +292,14 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 			if !more {
 				return
 			}
-			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from thorchain")
+			if s.isKeyGen {
+				fmt.Println("ignore keyGen msg, because it is already a keygen, epoch=", keygenBlock.Epoch)
+				continue
+			}
+			s.isKeyGen = true
+			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
+			s.isKeyGen = false
 		}
 	}
 }
@@ -366,8 +377,8 @@ func (s *Signer) scheduleKeygenRetry(keygenBlock *structure.KeyGen) bool {
 }
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
-	s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
-	members := make(common.PubKeys, len(keygenBlock.Ms))
+	s.logger.Debug().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
+	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
 		if ele.Addr.String() == "" {
@@ -379,7 +390,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	// NOTE: in practice there is only one keygen in the keygen block
 	//for _, keygenReq := range keygenBlock.Keygens {
 	keygenStart := time.Now()
-	// todo debug
+	// todo debug blame
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
 		s.logger.Error().
@@ -388,29 +399,30 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 			Msg("keygen blame")
 	}
 	keygenTime := time.Since(keygenStart).Milliseconds()
-
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
+		return
 	}
 
-	// re-enqueue the keygen block to retry if we failed to generate a key
-	if pubKey.Secp256k1.IsEmpty() {
-		// todo handler
-		//if s.scheduleKeygenRetry(keygenBlock) {
-		//	return
-		//}
-		s.logger.Error().Interface("keygenBlock", keygenBlock).Msg("done with keygen retries")
-	}
-
-	s.logger.Info().Int64("keygenTime", keygenTime).Msg("keyGen time")
+	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
+	if len(pubKey.Secp256k1.String()) == 0 {
+		fmt.Println("pk is empty ------------------ ")
+		return
+	}
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
+	if len(secp256k1Sig) == 0 {
+		fmt.Println("secp256k1Sig ------------------ ", len(secp256k1Sig))
+		time.Sleep(time.Minute)
+		return
+	}
 	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
 		s.logger.Error().Err(err).Msg("fail to broadcast keygen")
 	}
 
+	fmt.Println("processKeygenBlock  GenerateNewKey 111111 -------------- ")
 	// monitor the new pubkey and any new members
 	if !pubKey.Secp256k1.IsEmpty() {
 		s.pubkeyMgr.AddPubKey(pubKey.Secp256k1, true)
@@ -428,23 +440,31 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	// create keysign instance
 	ks, err := tss.NewKeySign(s.tssServer, s.thorchainBridge)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to create keysign for secp256k1 check signing")
+		s.logger.Error().Err(err).Msg("fail to create keySign for secp256k1 check signing")
 		return nil
 	}
 	ks.Start()
 	defer ks.Stop()
 
 	// sign the public key with its own private key
-	data := []byte(pk.String())
-	sigBytes, _, err := ks.RemoteSign(data, pk.String())
+	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk.String()))
+	if err != nil {
+		return nil
+	}
+	pubBytes := ecrypto.FromECDSAPub(ethPubKey)
+
+	data := pubBytes[1:]
+	dataHash := ecrypto.Keccak256(data)
+	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:], "hex",
+		hex.EncodeToString(dataHash))
+	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
+	fmt.Println("v ------------------ ", v)
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
 		s.logger.Info().Err(err).Msg("fail secp256k1 check signing")
 		return nil
 
 	} else if sigBytes == nil {
-		// This is expected in other cases when not in the signing party,
-		// when RemoteSign's len(resp.R) and len(resp.S) are both nil.
 		return nil
 	}
 
@@ -453,18 +473,22 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	ss := new(big.Int).SetBytes(sigBytes[32:])
 	signature := &btcec.Signature{R: r, S: ss}
 
-	// verify the signature (thornode will also verify and reject if invalid)
-	spk, err := pk.Secp256K1()
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get secp256k1 pubkey")
+	spk := &btcec.PublicKey{
+		Curve: ethPubKey.Curve,
+		X:     ethPubKey.X,
+		Y:     ethPubKey.Y,
 	}
-	if !signature.Verify(data, spk) {
+
+	if !signature.Verify(dataHash[:], spk) {
 		s.logger.Error().Msg("secp256k1 check signature verification failed")
+		return nil
 	} else {
+		fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:], "hex",
+			hex.EncodeToString(dataHash))
 		s.logger.Info().Msg("secp256k1 check signature verified")
 	}
 
-	return sigBytes
+	return append(sigBytes, v[0]+27)
 }
 
 func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame, members []ecommon.Address, signature []byte) error {

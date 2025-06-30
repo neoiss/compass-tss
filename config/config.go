@@ -865,36 +865,41 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 		if len(ip) == 0 {
 			continue
 		}
+		fmt.Println("GetBootstrapPeers 1111 ", ip)
 
 		// fetch the p2pid
 		res, err := httpClient.Get(fmt.Sprintf("http://%s:6040/p2pid", ip))
 		if err != nil {
-			log.Error().Err(err).Msg("failed to get p2p id")
+			log.Error().Err(err).Msg("GetBootstrapPeers failed to get p2p id")
 			continue
 		}
 
+		fmt.Println("GetBootstrapPeers 2222 ", res.StatusCode)
 		// skip peers with a bad response status
 		if res.StatusCode != http.StatusOK {
-			log.Warn().Msgf("failed to get p2p id, ip: %s, status code: %d", ip, res.StatusCode)
+			log.Warn().Msgf("GetBootstrapPeers failed to get p2p id, ip: %s, status code: %d", ip, res.StatusCode)
 			continue
 		}
 
 		// read the response
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to read p2p id response")
+			log.Error().Err(err).Msg("GetBootstrapPeers failed to read p2p id response")
 			continue
 		}
 		res.Body.Close()
+		fmt.Println("GetBootstrapPeers 3333 ", string(body))
 
 		// format the multiaddr
 		peerMultiAddr := fmt.Sprintf("/ip4/%s/tcp/5040/ipfs/%s", ip, string(body))
 
 		addr, err := maddr.NewMultiaddr(peerMultiAddr)
 		if err != nil {
-			log.Error().Err(err).Str("addr", peerMultiAddr).Msg("failed to parse multiaddr")
+			log.Error().Err(err).Str("addr", peerMultiAddr).Msg("GetBootstrapPeers failed to parse multiaddr")
 			continue
 		}
+
+		fmt.Println("GetBootstrapPeers add 4444  ", addr)
 		addrs = append(addrs, addr)
 	}
 

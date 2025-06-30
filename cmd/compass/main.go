@@ -235,7 +235,10 @@ func main() {
 }
 
 func initPrefix() {
-	// todo
+	//// todo
+	//cosmosSDKConfg := cosmos.GetConfig()
+	//cosmosSDKConfg.SetBech32PrefixForAccount(cmd.Bech32PrefixAccAddr, cmd.Bech32PrefixAccPub)
+	//cosmosSDKConfg.Seal()
 }
 
 func initLog(level string, pretty bool) {

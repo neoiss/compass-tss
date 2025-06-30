@@ -150,11 +150,7 @@ func AddressFromPublicKey(publicKey *ecdsa.PublicKey) (common.Address, error) {
 	}
 
 	publicKeyBytes := ecrypto.FromECDSAPub(publicKey)
-
-	// 计算Keccak-256哈希（跳过04前缀）
 	hash := ecrypto.Keccak256(publicKeyBytes[1:])
-
-	// 取最后20个字节作为地址
 	address := common.BytesToAddress(hash[12:])
 
 	return address, nil
