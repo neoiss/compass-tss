@@ -35,8 +35,8 @@ const (
 	SaltChaCha = 3
 )
 
-// EncryptKeyshares encrypts the keyshares at the provided path using the passphrase.
-func EncryptKeyshares(path, passphrase string) ([]byte, error) {
+// EncryptKeyShares encrypts the keyShares at the provided path using the passphrase.
+func EncryptKeyShares(path, passphrase string) ([]byte, error) {
 	// verify the passphrase is provided and a mnemonic
 	if passphrase == "" {
 		return nil, errors.New("failed keyshare encrypt: signer seed phrase is not set")
@@ -157,7 +157,7 @@ func EncryptKeyshares(path, passphrase string) ([]byte, error) {
 	}
 
 	// verify decrypted equals compressed
-	decrypted, err := DecryptKeyshares(tripleEncrypted, passphrase)
+	decrypted, err := DecryptKeyShares(tripleEncrypted, passphrase)
 	if err != nil {
 		return nil, fmt.Errorf("failed keyshare encrypt - cannot read decrypted: %w", err)
 	}
@@ -178,8 +178,8 @@ func EncryptKeyshares(path, passphrase string) ([]byte, error) {
 	return tripleEncrypted, nil
 }
 
-// EncryptKeyshares decrypts the provided encrypted keyshares using the passphrase.
-func DecryptKeyshares(encrypted []byte, passphrase string) ([]byte, error) {
+// DecryptKeyShares decrypts the provided encrypted keyShares using the passphrase.
+func DecryptKeyShares(encrypted []byte, passphrase string) ([]byte, error) {
 	// decrypt third pass (twofish)
 	chaCha, err := chacha20poly1305.NewX(saltAndHash(passphrase, SaltChaCha))
 	if err != nil {

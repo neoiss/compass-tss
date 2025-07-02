@@ -626,7 +626,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// been signed already, and we can skip. This helps us not get stuck on
 	// a task that we'll never sign, because 2/3rds already has and will
 	// never be available to sign again.
-	txOut, err := s.thorchainBridge.GetKeySign(height, tx.VaultPubKey.String())
+	txOut, err := s.thorchainBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get keysign items")
 		return nil, nil, err

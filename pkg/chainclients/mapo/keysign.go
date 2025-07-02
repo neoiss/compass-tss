@@ -33,8 +33,8 @@ func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error)
 	return b.ethClient.FilterLogs(ctx, query)
 }
 
-// GetKeySign retrieves txout from this block height from mapBridge
-func (b *Bridge) GetKeySign(blockHeight int64, mos string) (types.TxOut, error) {
+// GetTxByBlockNumber retrieves txout from this block height from mapBridge
+func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut, error) {
 	// get block
 	if blockHeight%100 == 0 {
 		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")

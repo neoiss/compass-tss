@@ -123,7 +123,7 @@ func (b *MapChainBlockScan) processKeygenBlock() error {
 // todo handler
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	//fmt.Println("mapChain blockHeight ------------------------ ", blockHeight)
-	tx, err := b.mapBridge.GetKeySign(blockHeight, b.cfg.Mos)
+	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight, b.cfg.Mos)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {
 			// custom error (to be dropped and not logged) because the block is
