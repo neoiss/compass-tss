@@ -100,6 +100,9 @@ func NewSigner(cfg config.Bifrost,
 		log.Info().Msg("Waiting for node account to be registered...")
 	}
 
+	if na == nil {
+		return nil, fmt.Errorf("fail to get node account from map relay chain")
+	}
 	if len(na.Secp256Pubkey) == 0 {
 		return nil, fmt.Errorf("unable to find pubkey for this node account. exiting... ")
 	}
