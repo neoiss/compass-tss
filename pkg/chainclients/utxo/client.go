@@ -290,7 +290,7 @@ func (c *Client) RegisterPublicKey(pubkey common.PubKey) error {
 			return err
 		}
 	}
-	fmt.Println("============================== btc address: ", addr)
+
 	err = c.rpc.ImportAddress(addr.String())
 	if err != nil {
 		c.log.Error().Err(err).

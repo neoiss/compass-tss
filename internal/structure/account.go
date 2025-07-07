@@ -8,7 +8,6 @@ import (
 
 type MaintainerInfo struct {
 	Status        uint8          `json:"status"`
-	Version       *big.Int       `json:"version"`
 	Addr          common.Address `json:"addr"`
 	Secp256Pubkey []byte         `json:"secp256Pubkey"`
 	Ed25519Pubkey []byte         `json:"ed25519Pubkey"`
@@ -28,4 +27,13 @@ type TssPoolParam struct {
 	Blames    []common.Address //
 	Signature []byte           //
 	KeyShares []byte           //
+}
+
+type EpochInfo struct {
+	Status     uint8
+	StartBlock *big.Int
+	EndBlock   *big.Int
+	Pubkey     []byte
+	KeyShare   []byte
+	Maitainers []common.Address
 }

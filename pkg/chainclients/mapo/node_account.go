@@ -112,3 +112,37 @@ func (b *Bridge) GetNodeAccounts(epoch *big.Int) ([]structure.MaintainerInfo, er
 	}
 	return ret.Info, nil
 }
+
+func (b *Bridge) GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error) {
+	method := "getEpochInfo"
+	input, err := b.mainAbi.Pack(method, epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	output, err := b.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			From: constants.ZeroAddress,
+			To:   &to,
+			Data: input,
+		},
+		nil,
+	)
+
+	outputs := b.mainAbi.Methods[method].Outputs
+	unpack, err := outputs.Unpack(output)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to unpack output of %s", method)
+	}
+
+	ret := struct {
+		Info structure.EpochInfo
+	}{}
+
+	if err = outputs.Copy(&ret, unpack); err != nil {
+		return nil, errors.Wrapf(err, "unable to copy output of %s", method)
+	}
+	return &ret.Info, nil
+}

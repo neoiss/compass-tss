@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -13,19 +10,24 @@ import (
 	"time"
 
 	golog "github.com/ipfs/go-log"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	flag "github.com/spf13/pflag"
+	"io"
 
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/signer"
+	ctss "github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/common"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 )
@@ -37,7 +39,7 @@ var (
 )
 
 const (
-	serverIdentity = "bifrost"
+	serverIdentity = "compass-tss"
 )
 
 func printVersion() {
@@ -98,6 +100,11 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to start pubkey manager")
 	}
 
+	// automatically attempt to recover TSS key shares if they are missing
+	if err = ctss.RecoverKeyShares(mapBridge); err != nil {
+		log.Error().Err(err).Msg("fail to recover key shares")
+	}
+
 	// setup TSS signing
 	priKey, err := k.GetPrivateKey()
 	if err != nil {
@@ -109,8 +116,6 @@ func main() {
 	consts := constants.NewConstantValue()
 	jailTimeKeygen := time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)) * constants.MAPRelayChainBlockTime
 	jailTimeKeysign := time.Duration(consts.GetInt64Value(constants.JailTimeKeysign)) * constants.MAPRelayChainBlockTime
-	fmt.Println("============================== 1 ", consts.GetInt64Value(constants.JailTimeKeygen))
-	fmt.Println("============================== 2 ", time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)))
 	if cfg.Signer.KeygenTimeout >= jailTimeKeygen {
 		log.Fatal().
 			Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).

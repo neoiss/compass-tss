@@ -63,8 +63,8 @@ bifrost:
       max_http_request_retry: "10"
     leveldb: *default-leveldb
     auto_observe: true
-    keygen_timeout: 40s
-    keysign_timeout: 40s
+    keygen_timeout: 5m
+    keysign_timeout: 45s
     party_timeout: 45s
     pre_param_timeout: 5m
   tss:
@@ -81,8 +81,8 @@ bifrost:
     btc: &default-chain
       disabled: false
       chain_id: BTC
-      username: "map-signet"
-      password: "TXC6c~Vl7Ln^@PQG"
+      username:
+      password:
       http_post_mode: 1
       disable_tls: 1
       parallel_mempool_scan: 5
@@ -144,7 +144,7 @@ bifrost:
       # the following defaults must be defined to override with environment
       chain_host: ""
       chain_network: ""
-      rpc_host: "http://129.226.149.150:38332"
+      rpc_host: "https://rpc.bitlayer.org"
       cosmos_grpc_host: ""
       cosmos_grpc_tls: false
       opt_to_retire: false

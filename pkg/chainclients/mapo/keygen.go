@@ -2,6 +2,7 @@ package mapo
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -52,6 +53,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		fmt.Println("KeyGen Block ignore ----------------- ", epoch, " b.epoch ", b.epoch)
 		return nil, nil
 	}
+	fmt.Println("============================== in election period")
 	// done
 	ret, err := b.GetNodeAccounts(epoch)
 	if err != nil {
@@ -72,6 +74,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	fmt.Println("signature ", signature)
 	fmt.Println("blames ", blames)
 	fmt.Println("members ", members)
+	fmt.Println("keyShares ", hex.EncodeToString(keyShares))
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)

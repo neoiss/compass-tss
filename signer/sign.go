@@ -499,7 +499,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 	var err error
 	if s.cfg.Signer.BackupKeyshares && !poolPubKey.IsEmpty() {
 		keyShares, err = tss.EncryptKeyShares(
-			filepath.Join("./", fmt.Sprintf("localstate-%s.json", poolPubKey.String())), // todo handler
+			filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", poolPubKey.String())), // todo handler
 			os.Getenv("SIGNER_SEED_PHRASE"),
 		)
 		if err != nil {

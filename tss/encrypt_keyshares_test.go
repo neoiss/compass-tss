@@ -3,6 +3,7 @@ package tss
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"os"
 	"strings"
 
@@ -15,9 +16,9 @@ import (
 // Setup
 // -------------------------------------------------------------------------------------
 
-type EncryptKeysharesSuite struct{}
+type EncryptKeySharesSuite struct{}
 
-var _ = Suite(&EncryptKeysharesSuite{})
+var _ = Suite(&EncryptKeySharesSuite{})
 
 const (
 	LocalStateTestFile = "localstate-test.json"
@@ -28,42 +29,42 @@ const (
 // Tests
 // -------------------------------------------------------------------------------------
 
-func (s *EncryptKeysharesSuite) TestEncryptKeysharesEmptyPassphrase(c *C) {
-	ks, err := EncryptKeyshares("", "")
+func (s *EncryptKeySharesSuite) TestEncryptKeySharesEmptyPassphrase(c *C) {
+	ks, err := EncryptKeyShares("", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "failed keyshare encrypt: signer seed phrase is not set")
 	c.Assert(ks, IsNil)
 }
 
-func (s *EncryptKeysharesSuite) TestEncryptKeysharesBadMnemonic(c *C) {
-	ks, err := EncryptKeyshares("", Mnemonic+" dog")
+func (s *EncryptKeySharesSuite) TestEncryptKeySharesBadMnemonic(c *C) {
+	ks, err := EncryptKeyShares("", Mnemonic+" dog")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "failed keyshare encrypt: signer seed phrase is not 24 words")
 	c.Assert(ks, IsNil)
 
-	ks, err = EncryptKeyshares("", "a b c d e f g h i j k l m n o p q r s t u v w x")
+	ks, err = EncryptKeyShares("", "a b c d e f g h i j k l m n o p q r s t u v w x")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "failed keyshare encrypt: signer seed phrase is not valid bip39 mnemonic")
 	c.Assert(ks, IsNil)
 }
 
-func (s *EncryptKeysharesSuite) TestEncryptKeysharesBadMnemonicEntropy(c *C) {
-	ks, err := EncryptKeyshares("", "dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog")
+func (s *EncryptKeySharesSuite) TestEncryptKeySharesBadMnemonicEntropy(c *C) {
+	ks, err := EncryptKeyShares("", "dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog dog")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "failed keyshare encrypt: signer seed phrase failed entropy check")
 	c.Assert(ks, IsNil)
 }
 
-func (s *EncryptKeysharesSuite) TestEncryptKeysharesMissingFile(c *C) {
-	ks, err := EncryptKeyshares("foo.json", Mnemonic)
+func (s *EncryptKeySharesSuite) TestEncryptKeySharesMissingFile(c *C) {
+	ks, err := EncryptKeyShares("foo.json", Mnemonic)
 	c.Assert(err, NotNil)
 	c.Assert(strings.HasPrefix(err.Error(), "failed keyshare encrypt - cannot open key file"), Equals, true)
 	c.Assert(ks, IsNil)
 }
 
-func (s *EncryptKeysharesSuite) TestEncryptKeysharesCompression(c *C) {
+func (s *EncryptKeySharesSuite) TestEncryptKeySharesCompression(c *C) {
 	// encrypt
-	ks, err := EncryptKeyshares(LocalStateTestFile, Mnemonic)
+	ks, err := EncryptKeyShares(LocalStateTestFile, Mnemonic)
 	c.Assert(err, IsNil)
 	c.Assert(ks, NotNil)
 
@@ -75,19 +76,19 @@ func (s *EncryptKeysharesSuite) TestEncryptKeysharesCompression(c *C) {
 	}
 }
 
-func (s *EncryptKeysharesSuite) TestEncryptKeyshares(c *C) {
+func (s *EncryptKeySharesSuite) TestEncryptKeyShares(c *C) {
 	// encrypt
-	ks, err := EncryptKeyshares(LocalStateTestFile, Mnemonic)
+	ks, err := EncryptKeyShares(LocalStateTestFile, Mnemonic)
 	c.Assert(err, IsNil)
 	c.Assert(ks, NotNil)
 
 	// decrypt with bad passphrase should fail
-	dec, err := DecryptKeyshares(ks, Mnemonic+" y")
+	dec, err := DecryptKeyShares(ks, Mnemonic+" y")
 	c.Assert(err, NotNil)
 	c.Assert(dec, IsNil)
 
 	// decrypt with good passphrase should succeed
-	dec, err = DecryptKeyshares(ks, Mnemonic)
+	dec, err = DecryptKeyShares(ks, Mnemonic)
 	c.Assert(err, IsNil)
 	cmpOut := bytes.NewBuffer(dec)
 	out := lzma.NewReader(cmpOut)
@@ -104,7 +105,15 @@ func (s *EncryptKeysharesSuite) TestEncryptKeyshares(c *C) {
 	c.Assert(decrypted, DeepEquals, original)
 }
 
-func (s *EncryptKeysharesSuite) TestSaltAndHash(c *C) {
+func (s *EncryptKeySharesSuite) TestEncryptKeyShares2(c *C) {
+	// encrypt
+	ks, err := EncryptKeyShares("localstate-test-2.json", Mnemonic)
+	c.Assert(err, IsNil)
+	c.Assert(ks, NotNil)
+	c.Log("encrypted key shares: ", common.Bytes2Hex(ks))
+}
+
+func (s *EncryptKeySharesSuite) TestSaltAndHash(c *C) {
 	hash := saltAndHash("foo", 1)
 	c.Assert(len(hash), Equals, 32)
 

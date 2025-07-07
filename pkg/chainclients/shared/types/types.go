@@ -118,6 +118,8 @@ type Bridge interface {
 	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
 	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
+
+	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 }
 
 type BridgeOption func(Bridge) error
