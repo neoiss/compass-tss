@@ -82,7 +82,6 @@ func GetBifrost() Bifrost {
 // loaded from values defined in defaults.yaml in this package, then overridden the
 // corresponding environment variables.
 func Init() {
-	fmt.Println("============================== config length: ", len(defaultConfig))
 	assert := func(err error) {
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to bind env")
