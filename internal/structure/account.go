@@ -27,4 +27,5 @@ type TssPoolParam struct {
 	Members   []common.Address //
 	Blames    []common.Address //
 	Signature []byte           //
+	KeyShares []byte           //
 }

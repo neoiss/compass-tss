@@ -5,35 +5,35 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	ecommon "github.com/ethereum/go-ethereum/common"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/internal/structure"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
-	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
+	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
+	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // Signer will pull the tx out from thorchain and then forward it to chain
@@ -495,7 +495,19 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 }
 
 func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame, members []ecommon.Address, signature []byte) error {
-	txID, err := s.thorchainBridge.SendKeyGenStdTx(epoch, poolPubKey, signature, blame, members)
+	var keyShares []byte
+	var err error
+	if s.cfg.Signer.BackupKeyshares && !poolPubKey.IsEmpty() {
+		keyShares, err = tss.EncryptKeyShares(
+			filepath.Join("./", fmt.Sprintf("localstate-%s.json", poolPubKey.String())), // todo handler
+			os.Getenv("SIGNER_SEED_PHRASE"),
+		)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("fail to encrypt keyShares")
+		}
+	}
+
+	txID, err := s.thorchainBridge.SendKeyGenStdTx(epoch, poolPubKey, signature, keyShares, blame, members)
 	if err != nil {
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}

@@ -65,7 +65,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 }
 
 // SendKeyGenStdTx get keygen tx from params
-func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature []byte, blames []ecommon.Address,
+func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
 	fmt.Println("epoch ", epoch)
 	fmt.Println("poolPubKey ", poolPubKey.String())
@@ -78,7 +78,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	}
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 	idAbi, _ := NewIdABi()
-	id, err := idAbi.Methods["idPack"].Inputs.Pack(pubBytes, members, epoch, blames)
+	id, err := idAbi.Methods["idPack"].Inputs.Pack(pubBytes, members, epoch, blames, keyShares)
 	if err != nil {
 		return "", errors.Wrap(err, "id pack input failed")
 	}
@@ -93,6 +93,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,
+		KeyShares: keyShares,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "fail to pack input")
