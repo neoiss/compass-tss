@@ -701,12 +701,13 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	}
 
 	// create the observation to be sent by the signer before broadcast
-	chainHeight, err := c.GetHeight()
-	if err != nil { // fall back to the scanner height, thornode voter does not use height
-		chainHeight = c.ethScanner.currentBlockHeight
-	}
-	coin := tx.Coins[0]
-	gas := common.MakeEVMGas(c.GetChain(), createdTx.GasPrice(), createdTx.Gas(), nil)
+	// todo
+	//chainHeight, err := c.GetHeight()
+	//if err != nil { // fall back to the scanner height, thornode voter does not use height
+	//	chainHeight = c.ethScanner.currentBlockHeight
+	//}
+	//coin := tx.Coins[0]
+	//gas := common.MakeEVMGas(c.GetChain(), createdTx.GasPrice(), createdTx.Gas(), nil)
 	// This is the maximum gas, using the gas limit for instant-observation
 	// rather than the GasUsed which can only be gotten from the receipt when scanning.
 
@@ -717,23 +718,23 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 
 	var txIn *stypes.TxInItem
 
-	if err == nil {
-		txIn = stypes.NewTxInItem(
-			chainHeight,
-			signedTx.Hash().Hex()[2:],
-			tx.Memo,
-			fromAddr.String(),
-			tx.ToAddress.String(),
-			common.NewCoins(
-				coin,
-			),
-			gas,
-			tx.VaultPubKey,
-			"",
-			"",
-			nil,
-		)
-	}
+	//if err == nil {
+	//	txIn = stypes.NewTxInItem(
+	//		chainHeight,
+	//		signedTx.Hash().Hex()[2:],
+	//		tx.Memo,
+	//		fromAddr.String(),
+	//		tx.ToAddress.String(),
+	//		common.NewCoins(
+	//			coin,
+	//		),
+	//		gas,
+	//		tx.VaultPubKey,
+	//		"",
+	//		"",
+	//		nil,
+	//	)
+	//}
 
 	return rawTx, nil, txIn, nil
 }
@@ -894,10 +895,10 @@ func (c *Client) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	if txIn.MemPool {
 		return true
 	}
-	blockHeight := txIn.TxArray[0].BlockHeight
+	blockHeight := txIn.TxArray[0].Height.Int64()
 	confirm := txIn.ConfirmationRequired
 	c.logger.Info().
-		Int64("height", txIn.TxArray[0].BlockHeight).
+		Int64("height", txIn.TxArray[0].Height.Int64()).
 		Int64("required", confirm).
 		Int("transactions", len(txIn.TxArray)).
 		Msg("pending confirmations")
@@ -912,37 +913,37 @@ func (c *Client) getBlockReward(height int64) (*big.Int, error) {
 
 func (c *Client) getTotalTransactionValue(txIn stypes.TxIn, excludeFrom []common.Address) cosmos.Uint {
 	total := cosmos.ZeroUint()
-	if len(txIn.TxArray) == 0 {
-		return total
-	}
-	for _, item := range txIn.TxArray {
-		fromAsgard := false
-		for _, fromAddress := range excludeFrom {
-			if strings.EqualFold(fromAddress.String(), item.Sender) {
-				fromAsgard = true
-				break
-			}
-		}
-		if fromAsgard {
-			continue
-		}
-		for _, coin := range item.Coins {
-			if coin.IsEmpty() {
-				continue
-			}
-			amount := coin.Amount
-			if !coin.Asset.Equals(common.ETHAsset) {
-				var err error
-				amount, err = c.poolMgr.GetValue(coin.Asset, common.ETHAsset, coin.Amount)
-				if err != nil {
-					c.logger.Err(err).Msgf("fail to get value for %s", coin.Asset)
-					continue
-				}
-
-			}
-			total = total.Add(amount)
-		}
-	}
+	//if len(txIn.TxArray) == 0 {
+	//	return total
+	//}
+	//for _, item := range txIn.TxArray {
+	//	fromAsgard := false
+	//	for _, fromAddress := range excludeFrom {
+	//		if strings.EqualFold(fromAddress.String(), item.Sender) {
+	//			fromAsgard = true
+	//			break
+	//		}
+	//	}
+	//	if fromAsgard {
+	//		continue
+	//	}
+	//	for _, coin := range item.Coins {
+	//		if coin.IsEmpty() {
+	//			continue
+	//		}
+	//		amount := coin.Amount
+	//		if !coin.Asset.Equals(common.ETHAsset) {
+	//			var err error
+	//			amount, err = c.poolMgr.GetValue(coin.Asset, common.ETHAsset, coin.Amount)
+	//			if err != nil {
+	//				c.logger.Err(err).Msgf("fail to get value for %s", coin.Asset)
+	//				continue
+	//			}
+	//
+	//		}
+	//		total = total.Add(amount)
+	//	}
+	//}
 	return total
 }
 
@@ -993,7 +994,7 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	if txIn.MemPool {
 		return 0
 	}
-	blockHeight := txIn.TxArray[0].BlockHeight
+	blockHeight := txIn.TxArray[0].Height.Int64()
 	confirm, err := c.getBlockRequiredConfirmation(txIn, blockHeight)
 	c.logger.Debug().Msgf("confirmation required: %d", confirm)
 	if err != nil {
@@ -1021,19 +1022,20 @@ func (c *Client) getAsgardAddress() ([]common.Address, error) {
 // OnObservedTxIn gets called from observer when we have a valid observation
 func (c *Client) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 	c.ethScanner.onObservedTxIn(txIn, blockHeight)
-	m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
-	if err != nil {
-		// Debug log only as ParseMemo error is expected for THORName inbounds.
-		c.logger.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
-		return
-	}
-	if !m.IsOutbound() {
-		return
-	}
-	if m.GetTxID().IsEmpty() {
-		return
-	}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxID().String()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+	//m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
+	//if err != nil {
+	// //	Debug log only as ParseMemo error is expected for THORName inbounds.
+	//c.logger.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
+	//return
+	//}
+	//if !m.IsOutbound() {
+	//	return
+	//}
+	//if m.GetTxID().IsEmpty() {
+	//	return
+	//}
+	if err := c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), txIn.Tx),
+		txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")
 	}
 }

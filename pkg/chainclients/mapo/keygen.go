@@ -13,7 +13,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
-	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/pkg/errors"
 )
 
@@ -164,7 +163,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", err
 	}
-	txID, err := b.Broadcast(&stypes.TxOutItem{}, sign)
+	txID, err := b.Broadcast(sign) // todo  &stypes.TxOutItem{},
 	if err != nil {
 		return "", err
 	}

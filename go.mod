@@ -112,7 +112,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-require gitlab.com/thorchain/thornode/v3 v3.5.5
+require (
+	github.com/cenkalti/backoff v2.2.1+incompatible
+	gitlab.com/thorchain/thornode/v3 v3.5.5
+)
 
 require (
 	cosmossdk.io/collections v0.4.0 // indirect

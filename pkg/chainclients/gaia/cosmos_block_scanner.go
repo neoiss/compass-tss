@@ -372,13 +372,13 @@ func (c *CosmosBlockScanner) processTxs(height int64, rawTxs []tmtypes.Tx) ([]*t
 					gasFees = append(gasFees, common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1)))
 				}
 				txIn = append(txIn, &types.TxInItem{
-					Tx:          hash,
-					BlockHeight: height,
-					Memo:        memo,
-					Sender:      msg.FromAddress,
-					To:          msg.ToAddress,
-					Coins:       coins,
-					Gas:         gasFees,
+					Tx: hash,
+					//BlockHeight: height,
+					Memo: memo,
+					//Sender:      msg.FromAddress,
+					//To: msg.ToAddress,
+					//Coins:       coins,
+					//Gas:         gasFees,
 				})
 
 				// If there are more than one TxIn item per transaction hash,

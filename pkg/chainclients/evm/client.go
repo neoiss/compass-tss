@@ -189,7 +189,7 @@ func NewEVMClient(
 	}
 
 	// load vault abi
-	vaultABI, _, err := evm.GetContractABI(routerContractABI, erc20ContractABI)
+	vaultABI, _, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get contract abi: %w", err)
 	}
@@ -767,14 +767,15 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nonceBytes, nil, fmt.Errorf("fail to sign message: %w", err)
 	}
 
-	// create the observation to be sent by the signer before broadcast
-	chainHeight, err := c.GetHeight()
-	if err != nil { // fall back to the scanner height, thornode voter does not use height
-		chainHeight = c.evmScanner.currentBlockHeight
-	}
-
-	coin := tx.Coins[0]
-	gas := common.MakeEVMGas(c.GetChain(), outboundTx.GasPrice(), outboundTx.Gas(), nil)
+	// todo
+	//// create the observation to be sent by the signer before broadcast
+	//chainHeight, err := c.GetHeight()
+	//if err != nil { // fall back to the scanner height, thornode voter does not use height
+	//	chainHeight = c.evmScanner.currentBlockHeight
+	//}
+	//
+	//coin := tx.Coins[0]
+	//gas := common.MakeEVMGas(c.GetChain(), outboundTx.GasPrice(), outboundTx.Gas(), nil)
 	// This is the maximum gas, using the gas limit for instant-observation
 	// rather than the GasUsed which can only be gotten from the receipt when scanning.
 
@@ -791,23 +792,23 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 
 	var txIn *stypes.TxInItem
 
-	if err == nil {
-		txIn = stypes.NewTxInItem(
-			chainHeight,
-			signedTx.Hash().Hex()[2:],
-			tx.Memo,
-			fromAddr.String(),
-			tx.ToAddress.String(),
-			common.NewCoins(
-				coin,
-			),
-			gas,
-			tx.VaultPubKey,
-			"",
-			"",
-			nil,
-		)
-	}
+	//if err == nil {
+	//	txIn = stypes.NewTxInItem(
+	//		chainHeight,
+	//		signedTx.Hash().Hex()[2:],
+	//		tx.Memo,
+	//		fromAddr.String(),
+	//		tx.ToAddress.String(),
+	//		common.NewCoins(
+	//			coin,
+	//		),
+	//		gas,
+	//		tx.VaultPubKey,
+	//		"",
+	//		"",
+	//		nil,
+	//	)
+	//}
 
 	return rawTx, nil, txIn, nil
 }
@@ -877,19 +878,19 @@ func (c *EVMClient) BroadcastTx(txOutItem stypes.TxOutItem, hexTx []byte) (strin
 
 // OnObservedTxIn is called when a new observed tx is received.
 func (c *EVMClient) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
-	m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
-	if err != nil {
-		// Debug log only as ParseMemo error is expected for THORName inbounds.
-		c.logger.Debug().Err(err).Str("memo", txIn.Memo).Msg("fail to parse memo")
-		return
-	}
-	if !m.IsOutbound() {
-		return
-	}
-	if m.GetTxID().IsEmpty() {
-		return
-	}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxID().String()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+	//m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
+	//if err != nil {
+	//	// Debug log only as ParseMemo error is expected for THORName inbounds.
+	//	c.logger.Debug().Err(err).Str("memo", txIn.Memo).Msg("fail to parse memo")
+	//	return
+	//}
+	//if !m.IsOutbound() {
+	//	return
+	//}
+	//if m.GetTxID().IsEmpty() {
+	//	return
+	//}
+	if err := c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), txIn.Tx), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")
 	}
 }
@@ -918,7 +919,7 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 		if len(txIn.TxArray) == 0 {
 			return true
 		}
-		blockHeight := txIn.TxArray[0].BlockHeight
+		blockHeight := txIn.TxArray[0].Height.Int64()
 		confirm := txIn.ConfirmationRequired
 		c.logger.Info().Msgf("confirmation required: %d", confirm)
 		return (c.evmScanner.currentBlockHeight - blockHeight) >= confirm

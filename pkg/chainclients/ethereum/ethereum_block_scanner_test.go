@@ -3,7 +3,6 @@ package ethereum
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"math/big"
 	"net/http"

@@ -370,13 +370,13 @@ func (c *Client) OnObservedTxIn(txIn types.TxInItem, blockHeight int64) {
 	if _, err = c.temporalStorage.TrackObservedTx(txIn.Tx); err != nil {
 		c.log.Err(err).Msgf("fail to add hash (%s) to observed tx cache", txIn.Tx)
 	}
-	if c.isAsgardAddress(txIn.Sender) {
-		c.log.Debug().Int64("height", blockHeight).Msgf("add hash %s as self transaction", txIn.Tx)
-		blockMeta.AddSelfTransaction(txIn.Tx)
-	} else {
-		// add the transaction to block meta
-		blockMeta.AddCustomerTransaction(txIn.Tx)
-	}
+	//if c.isAsgardAddress(txIn.Sender) {
+	//	c.log.Debug().Int64("height", blockHeight).Msgf("add hash %s as self transaction", txIn.Tx)
+	//	blockMeta.AddSelfTransaction(txIn.Tx)
+	//} else {
+	//	// add the transaction to block meta
+	//	blockMeta.AddCustomerTransaction(txIn.Tx)
+	//}
 	if err = c.temporalStorage.SaveBlockMeta(blockHeight, blockMeta); err != nil {
 		c.log.Err(err).Int64("height", blockHeight).Msgf("fail to save block meta to storage")
 	}
@@ -593,9 +593,9 @@ func (c *Client) FetchMemPool(height int64) (types.TxIn, error) {
 			if txInItem.IsEmpty() {
 				continue
 			}
-			if txInItem.Coins.IsEmpty() {
-				continue
-			}
+			//if txInItem.Coins.IsEmpty() {
+			//	continue
+			//}
 
 			txIn.TxArray = append(txIn.TxArray, &txInItem)
 		}
@@ -631,7 +631,7 @@ func (c *Client) GetConfirmationCount(txIn types.TxIn) int64 {
 	}
 
 	// get the block height and confirmation required
-	height := txIn.TxArray[0].BlockHeight
+	height := txIn.TxArray[0].Height.Int64()
 	confirm, err := c.getBlockRequiredConfirmation(txIn, height)
 	if err != nil {
 		c.log.Err(err).Int64("height", height).Msg("fail to get required confirmation")
@@ -658,7 +658,7 @@ func (c *Client) ConfirmationCountReady(txIn types.TxIn) bool {
 	}
 
 	// check if we have the necessary number of confirmations
-	height := txIn.TxArray[0].BlockHeight
+	height := txIn.TxArray[0].Height.Int64()
 	confirm := txIn.ConfirmationRequired
 	ready := (c.currentBlockHeight.Load() - height) >= confirm // every tx already has 1
 	c.log.Info().

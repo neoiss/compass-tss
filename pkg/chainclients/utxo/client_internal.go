@@ -506,26 +506,27 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			return types.TxInItem{}, fmt.Errorf("invalid utxo")
 		}
 	}
-	amount, err := btcutil.NewAmount(output.Value)
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
-	}
-	amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
+	//amount, err := btcutil.NewAmount(output.Value)
+	//if err != nil {
+	//	return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
+	//}
+	//amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
 
-	gas, err := c.getGas(tx)
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
-	}
+	//gas, err := c.getGas(tx)
+	//if err != nil {
+	//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
+	//}
 	return types.TxInItem{
-		BlockHeight: height,
-		Tx:          tx.Txid,
-		Sender:      sender,
-		To:          toAddr,
-		Coins: common.Coins{
-			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(amt)),
-		},
-		Memo: memo,
-		Gas:  gas,
+		// todo
+		//BlockHeight: height,
+		//Tx:          tx.Txid,
+		//Sender:      sender,
+		//To:          toAddr,
+		//Coins: common.Coins{
+		//	common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(amt)),
+		//},
+		//Memo: memo,
+		//Gas:  gas,
 	}, nil
 }
 
@@ -662,12 +663,12 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		if txInItem.IsEmpty() {
 			continue
 		}
-		if txInItem.Coins.IsEmpty() {
-			continue
-		}
-		if txInItem.Coins[0].Amount.LT(c.cfg.ChainID.DustThreshold()) {
-			continue
-		}
+		//if txInItem.Coins.IsEmpty() {
+		//	continue
+		//}
+		//if txInItem.Coins[0].Amount.LT(c.cfg.ChainID.DustThreshold()) {
+		//	continue
+		//}
 		var added bool
 		added, err = c.temporalStorage.TrackObservedTx(txInItem.Tx)
 		if err != nil {

@@ -21,7 +21,6 @@ import (
 	"github.com/eager7/dogutil"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 )
@@ -235,36 +234,36 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 
 	// create the observation to be sent by the signer before broadcast
-	chainHeight, err := c.rpc.GetBlockCount()
-	if err != nil { // fall back to the scanner height, thornode voter does not use height
-		chainHeight = c.currentBlockHeight.Load()
-	}
-	amt := redeemTx.TxOut[0].Value // the first output is the outbound amount
+	//chainHeight, err := c.rpc.GetBlockCount()
+	//if err != nil { // fall back to the scanner height, thornode voter does not use height
+	//	chainHeight = c.currentBlockHeight.Load()
+	//}
+	//amt := redeemTx.TxOut[0].Value // the first output is the outbound amount
 	gas := totalAmount
 	for _, txOut := range redeemTx.TxOut { // subtract all vouts to from vins to get the gas
 		gas -= txOut.Value
 	}
 	var txIn *stypes.TxInItem
-	sender, err := tx.VaultPubKey.GetAddress(tx.Chain)
-	if err == nil {
-		txIn = stypes.NewTxInItem(
-			chainHeight,
-			redeemTx.TxHash().String(),
-			tx.Memo,
-			sender.String(),
-			tx.ToAddress.String(),
-			common.NewCoins(
-				common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
-			),
-			common.Gas(common.NewCoins(
-				common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(gas))),
-			)),
-			tx.VaultPubKey,
-			"",
-			"",
-			nil,
-		)
-	}
+	//sender, err := tx.VaultPubKey.GetAddress(tx.Chain)
+	//if err == nil {
+	//	txIn = stypes.NewTxInItem(
+	//		chainHeight,
+	//		redeemTx.TxHash().String(),
+	//		tx.Memo,
+	//		sender.String(),
+	//		tx.ToAddress.String(),
+	//		common.NewCoins(
+	//			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
+	//		),
+	//		common.Gas(common.NewCoins(
+	//			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(gas))),
+	//		)),
+	//		tx.VaultPubKey,
+	//		"",
+	//		"",
+	//		nil,
+	//	)
+	//}
 
 	return signedTx.Bytes(), nil, txIn, nil
 }

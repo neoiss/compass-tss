@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -34,7 +33,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	memo "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 // SolvencyReporter is to report solvency info to THORNode
@@ -66,9 +64,9 @@ type ETHScanner struct {
 	blockMetaAccessor     evm.BlockMetaAccessor
 	globalErrataQueue     chan<- stypes.ErrataBlock
 	globalNetworkFeeQueue chan<- common.NetworkFee
-	vaultABI              *abi.ABI
-	erc20ABI              *abi.ABI
-	tokens                *evm.LevelDBTokenMeta
+	gatewayABI            *abi.ABI
+	erc20ABI              *abi.ABI              // todo
+	tokens                *evm.LevelDBTokenMeta // todo
 	bridge                shareTypes.Bridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
@@ -114,7 +112,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 	if err != nil {
 		return nil, err
 	}
-	vaultABI, erc20ABI, err := evm.GetContractABI(routerContractABI, erc20ContractABI)
+	vaultABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create contract abi: %w", err)
 	}
@@ -132,7 +130,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 		blockMetaAccessor:    blockMetaAccessor,
 		tokens:               tokens,
 		bridge:               bridge,
-		vaultABI:             vaultABI,
+		gatewayABI:           vaultABI,
 		erc20ABI:             erc20ABI,
 		eipSigner:            etypes.NewLondonSigner(chainID),
 		pubkeyMgr:            pubkeyMgr,
@@ -191,12 +189,17 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 		FromBlock: big.NewInt(height),
 		ToBlock:   big.NewInt(height),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
-		Topics:    [][]ecommon.Hash{{ecommon.HexToHash(constants.EventOfMessageOut)}},
+		Topics: [][]ecommon.Hash{{
+			constants.EventOfDeposit.GetTopic(),
+			constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
+			constants.EventOfTransferOut.GetTopic(),
+			constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+		}},
 	})
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	// todo empty handle
+	// empty handle done
 	if len(logs) == 0 {
 		return stypes.TxIn{}, nil
 	}
@@ -409,10 +412,10 @@ func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.
 		if len(txInItem.To) == 0 {
 			return
 		}
-		if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
-			return
-		}
-		txInItem.BlockHeight = block.Number().Int64()
+		//if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
+		//	return
+		//}
+		//txInItem.BlockHeight = block.Number().Int64()
 		mu.Lock()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
 		mu.Unlock()
@@ -822,31 +825,33 @@ func (e *ETHScanner) getAssetFromTokenAddress(token string) (common.Asset, error
 }
 
 // getTxInFromSmartContract returns txInItem
-func (e *ETHScanner) getTxInFromSmartContract(tx *etypes.Transaction, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
+func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
 	e.logger.Debug().Msg("parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
-		Tx: tx.Hash().Hex()[2:],
+		Tx:     ll.TxHash.Hex()[2:],
+		Height: big.NewInt(0).SetUint64(ll.BlockNumber),
 	}
-	sender, err := e.eipSigner.Sender(tx)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get sender: %w", err)
-	}
-	txInItem.Sender = strings.ToLower(sender.String())
+	//// todo
+	//sender, err := e.eipSigner.Sender(tx)
+	//if err != nil {
+	//	return nil, fmt.Errorf("fail to get sender: %w", err)
+	//}
+	//txInItem.Sender = strings.ToLower(sender.String())
 	// 1 is Transaction success state
-	if receipt.Status != 1 {
-		e.logger.Info().Msgf("tx(%s) state: %d means failed , ignore", tx.Hash().String(), receipt.Status)
+	if receipt.Status != etypes.ReceiptStatusSuccessful {
+		e.logger.Info().Msgf("tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
 		return nil, nil
 	}
 	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
 		e.getAssetFromTokenAddress,
 		e.getTokenDecimalsForTHORChain,
 		e.convertAmount,
-		e.vaultABI,
+		e.gatewayABI,
 		common.ETHAsset,
 		maxLogs)
 	// txInItem will be changed in p.GetTxInItem function, so if the function return an error
 	// txInItem should be abandoned
-	if _, err = p.GetTxInItem(receipt.Logs, txInItem); err != nil {
+	if _, err := p.GetTxInItem(ll, txInItem); err != nil {
 		return nil, fmt.Errorf("fail to parse logs, err: %w", err)
 	}
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
@@ -854,199 +859,48 @@ func (e *ETHScanner) getTxInFromSmartContract(tx *etypes.Transaction, receipt *e
 
 	e.logger.Debug().Msgf("tx: %s, gas price: %s, gas used: %d,receipt status:%d", txInItem.Tx, txGasPrice.String(), receipt.GasUsed, receipt.Status)
 
-	txInItem.Gas = common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil)
-	if txInItem.Coins.IsEmpty() {
-		e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
-		return nil, nil
-	}
+	//txInItem.Gas = common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil)
+	//if txInItem.Coins.IsEmpty() {
+	//	e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
+	//	return nil, nil
+	//}
 	e.logger.Debug().Msgf("tx in item: %+v", txInItem)
 	return txInItem, nil
 }
 
-func (e *ETHScanner) getTxInFromTransaction(tx *etypes.Transaction, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
-	txInItem := &stypes.TxInItem{
-		Tx: tx.Hash().Hex()[2:],
-	}
-	asset := common.ETHAsset
-	sender, err := e.eipSigner.Sender(tx)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get sender: %w", err)
-	}
-	txInItem.Sender = strings.ToLower(sender.String())
-	txInItem.To = strings.ToLower(tx.To().String())
-	// this is native , thus memo is data field
-	data := tx.Data()
-	if len(data) > 0 {
-		var memo []byte
-		memo, err = hex.DecodeString(string(data))
-		if err != nil {
-			txInItem.Memo = string(data)
-		} else {
-			txInItem.Memo = string(memo)
-		}
-	}
-	ethValue := e.convertAmount(ethToken, tx.Value())
-	txInItem.Coins = append(txInItem.Coins, common.NewCoin(asset, ethValue))
-	txGasPrice := receipt.EffectiveGasPrice
-
-	txInItem.Gas = common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil)
-	if txInItem.Coins.IsEmpty() {
-		if txInItem.Sender == txInItem.To {
-			// When the Sender and To is the same then there's no balance chance whatever the Coins,
-			// and for Tx-received Valid() a non-zero Amount is needed to observe
-			// the transaction fees (THORChain gas cost) of unstuck.go's cancel transactions.
-			observableAmount := common.ETHChain.DustThreshold()
-			txInItem.Coins = common.NewCoins(common.NewCoin(common.ETHAsset, observableAmount))
-
-			// remove the outbound from signer cache so it can be re-attempted
-			e.signerCacheManager.RemoveSigned(tx.Hash().Hex())
-		} else {
-			e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
-			return nil, nil
-		}
-	}
-	return txInItem, nil
-}
-
-func (e *ETHScanner) fromTxToTxIn(tx *etypes.Transaction) (*stypes.TxInItem, error) {
-	if tx == nil || tx.To() == nil {
+func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
+	if ll == nil {
 		return nil, nil
 	}
-	receipt, err := e.getReceipt(tx.Hash().Hex())
+	receipt, err := e.getReceipt(ll.TxHash.Hex())
 	if err != nil {
 		if errors.Is(err, ethereum.NotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("fail to get transaction receipt: %w", err)
 	}
-	if receipt.Status != 1 {
+	if receipt.Status != etypes.ReceiptStatusSuccessful {
 		// a transaction that is failed
 		// remove the Signer cache , so the tx out item can be retried
 		if e.signerCacheManager != nil {
-			e.signerCacheManager.RemoveSigned(tx.Hash().String())
+			e.signerCacheManager.RemoveSigned(ll.TxHash.String())
 		}
-		e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", tx.Hash().String(), receipt.Status)
-		return e.getTxInFromFailedTransaction(tx, receipt), nil
+		e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
+		return nil, nil
+		//return e.getTxInFromFailedTransaction(tx, receipt), nil
 	}
 
 	// todo replace
-	disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
-	if err != nil {
-		e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
-		disableWhitelist = 0
-	}
-
-	if disableWhitelist == 1 {
-		// parse tx without whitelist
-		destination := tx.To()
-		isToVault, _ := e.pubkeyMgr.IsValidPoolAddress(destination.String(), e.cfg.ChainID)
-
-		switch {
-		case isToVault:
-			// Tx to a vault
-			return e.getTxInFromTransaction(tx, receipt)
-		case e.isToValidContractAddress(destination, true):
-			// Deposit directly to router
-			return e.getTxInFromSmartContract(tx, receipt, 0)
-		case evm.IsSmartContractCall(tx, receipt):
-			// Tx to a different contract, attempt to parse with max allowable logs
-			return e.getTxInFromSmartContract(tx, receipt, int64(e.cfg.MaxContractTxLogs))
-		default:
-			// Tx to a non-contract or vault address
-			return e.getTxInFromTransaction(tx, receipt)
-		}
-	} else {
-		// parse tx with whitelist
-		if e.isToValidContractAddress(tx.To(), true) {
-			return e.getTxInFromSmartContract(tx, receipt, 0)
-		}
-		return e.getTxInFromTransaction(tx, receipt)
-	}
-}
-
-func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
-	//if tx == nil || tx.To() == nil {
-	//	return nil, nil
-	//}
-	//receipt, err := e.getReceipt(tx.Hash().Hex())
-	//if err != nil {
-	//	if errors.Is(err, ethereum.NotFound) {
-	//		return nil, nil
-	//	}
-	//	return nil, fmt.Errorf("fail to get transaction receipt: %w", err)
-	//}
-	//if receipt.Status != 1 {
-	//	// a transaction that is failed
-	//	// remove the Signer cache , so the tx out item can be retried
-	//	if e.signerCacheManager != nil {
-	//		e.signerCacheManager.RemoveSigned(tx.Hash().String())
-	//	}
-	//	e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", tx.Hash().String(), receipt.Status)
-	//	return e.getTxInFromFailedTransaction(tx, receipt), nil
-	//}
-	//
-	//// todo replace
 	//disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
 	//if err != nil {
 	//	e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
 	//	disableWhitelist = 0
 	//}
-	//
-	//if disableWhitelist == 1 {
-	//	// parse tx without whitelist
-	//	destination := tx.To()
-	//	isToVault, _ := e.pubkeyMgr.IsValidPoolAddress(destination.String(), e.cfg.ChainID)
-	//
-	//	switch {
-	//	case isToVault:
-	//		// Tx to a vault
-	//		return e.getTxInFromTransaction(tx, receipt)
-	//	case e.isToValidContractAddress(destination, true):
-	//		// Deposit directly to router
-	//		return e.getTxInFromSmartContract(tx, receipt, 0)
-	//	case evm.IsSmartContractCall(tx, receipt):
-	//		// Tx to a different contract, attempt to parse with max allowable logs
-	//		return e.getTxInFromSmartContract(tx, receipt, int64(e.cfg.MaxContractTxLogs))
-	//	default:
-	//		// Tx to a non-contract or vault address
-	//		return e.getTxInFromTransaction(tx, receipt)
-	//	}
-	//} else {
-	//	// parse tx with whitelist
-	//	if e.isToValidContractAddress(tx.To(), true) {
-	//		return e.getTxInFromSmartContract(tx, receipt, 0)
-	//	}
-	//	return e.getTxInFromTransaction(tx, receipt)
-	//}
-	return nil, nil
-}
 
-// getTxInFromFailedTransaction when a transaction failed due to out of gas, this method will check whether the transaction is an outbound
-// it fake a txInItem if the failed transaction is an outbound , and report it back to THORNode , thus the gas fee can be subsidised
-// need to know that this will also cause the vault that send out the outbound to be slashed 1.5x gas
-// it is for security purpose
-func (e *ETHScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receipt *etypes.Receipt) *stypes.TxInItem {
-	if receipt.Status == 1 {
-		e.logger.Info().Str("hash", tx.Hash().String()).Msg("success transaction should not get into getTxInFromFailedTransaction")
-		return nil
-	}
-	fromAddr, err := e.eipSigner.Sender(tx)
+	ret, err := e.getTxInFromSmartContract(ll, receipt, 0)
 	if err != nil {
-		e.logger.Err(err).Msg("fail to get from address")
-		return nil
+		return nil, err
 	}
-	ok, cif := e.pubkeyMgr.IsValidPoolAddress(fromAddr.String(), common.ETHChain)
-	if !ok || cif.IsEmpty() {
-		return nil
-	}
-	txGasPrice := receipt.EffectiveGasPrice
-	txHash := tx.Hash().Hex()[2:]
-	return &stypes.TxInItem{
-		Tx:     txHash,
-		Memo:   memo.NewOutboundMemo(common.TxID(txHash)).String(),
-		Sender: strings.ToLower(fromAddr.String()),
-		To:     strings.ToLower(tx.To().String()),
-		Coins:  common.NewCoins(common.NewCoin(common.ETHAsset, cosmos.NewUint(1))),
-		Gas:    common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil),
-	}
+
+	return ret, nil
 }

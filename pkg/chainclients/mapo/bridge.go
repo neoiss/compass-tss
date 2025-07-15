@@ -296,7 +296,7 @@ func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 
 // PostKeysignFailure generate and  post a keysign fail tx to thorchan
 func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
-	return b.Broadcast(&types.TxOutItem{}, []byte{})
+	return b.Broadcast([]byte{})
 }
 
 // GetErrataMsg get errata tx from params
@@ -618,7 +618,7 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 
 // PostNetworkFee send network fee message to THORNode
 func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error) {
-	return b.Broadcast(&types.TxOutItem{}, []byte{})
+	return b.Broadcast([]byte{})
 }
 
 // GetConstants from thornode
@@ -789,4 +789,10 @@ func (b *Bridge) InitBlockScanner(ops ...shareTypes.BridgeOption) error {
 		}
 	}
 	return nil
+}
+
+func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
+	// todo check
+	// Here we construct tx according to method， and return hex tx2bytes
+	return nil, nil
 }

@@ -74,7 +74,6 @@ type SolvencyReporter func(height int64) error
 
 // Bridge is compass 2 map
 type Bridge interface {
-	// account related
 	EnsureNodeWhitelisted() error
 	EnsureNodeWhitelistedWithTimeout() error
 	FetchNodeStatus() (stypes.NodeStatus, error)
@@ -92,21 +91,17 @@ type Bridge interface {
 	GetConstants() (map[string]int64, error)
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
-
 	GetTHORName(name string) (stypes.THORName, error)
 	GetThorchainVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error)
 	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error)
 	RagnarokInProgress() (bool, error)
-
 	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
-	// rpc 节点
 	IsSyncing() (bool, error)
 	WaitSync() error
-	//
 	GetBlockHeight() (int64, error)
-	Broadcast(txOutItem *types.TxOutItem, hexTx []byte) (string, error)
+	Broadcast(hexTx []byte) (string, error)
 	InitBlockScanner(...BridgeOption) error
 	GetConfig() config.BifrostClientConfiguration
 	GetContext() client.Context
@@ -118,8 +113,8 @@ type Bridge interface {
 	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
 	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
-
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
+	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
 }
 
 type BridgeOption func(Bridge) error

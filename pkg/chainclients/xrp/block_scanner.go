@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"math/big"
 	"sync"
 
 	sdkmath "cosmossdk.io/math"
@@ -254,21 +255,21 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		if amount.Kind() != txtypes.XRP {
 			continue
 		}
-		coin, err := fromXrpToThorchain(amount)
-		if err != nil {
-			ctxLog.AnErr("error", err).Msg("skipping tx, cannot convert xrp amount to thorchain amount")
-			continue
-		}
-		coins := common.Coins{coin}
+		//coin, err := fromXrpToThorchain(amount)
+		//if err != nil {
+		//	ctxLog.AnErr("error", err).Msg("skipping tx, cannot convert xrp amount to thorchain amount")
+		//	continue
+		//}
+		//coins := common.Coins{coin}
 
 		txIn = append(txIn, &types.TxInItem{
-			Tx:          hash,
-			BlockHeight: height,
-			Memo:        memo,
-			Sender:      payment.Account.String(),
-			To:          payment.Destination.String(),
-			Coins:       coins,
-			Gas:         []common.Coin{fee},
+			Tx:     hash,
+			Height: big.NewInt(height),
+			Memo:   memo,
+			Sender: payment.Account.String(),
+			//To:     payment.Destination.String(),
+			//Coins:  coins,
+			//Gas:    []common.Coin{fee},
 		})
 	}
 
