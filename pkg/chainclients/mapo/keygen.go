@@ -91,8 +91,8 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
 		Id:        id32,
 		Epoch:     epoch,
-		Pubkey:    pubBytes[1:],
-		KeyShares: keyShares,
+		PubKey:    pubBytes[1:],
+		KeyShare:  keyShares,
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,
