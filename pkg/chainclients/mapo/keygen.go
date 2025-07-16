@@ -2,8 +2,10 @@ package mapo
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
@@ -67,12 +69,12 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
-	//fmt.Println("epoch ", epoch)
-	//fmt.Println("poolPubKey ", poolPubKey.String())
-	//fmt.Println("signature ", signature)
-	//fmt.Println("blames ", blames)
-	//fmt.Println("members ", members)
-	//fmt.Println("keyShares ", hex.EncodeToString(keyShares))
+	fmt.Println("epoch ", epoch)
+	fmt.Println("poolPubKey ", poolPubKey.String())
+	fmt.Println("signature ", signature)
+	fmt.Println("blames ", blames)
+	fmt.Println("members ", members)
+	fmt.Println("keyShares ", hex.EncodeToString(keyShares))
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
@@ -99,6 +101,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", errors.Wrap(err, "fail to pack input")
 	}
 
+	fmt.Println("id32 ------------------- ", id32.String())
 	fmt.Println("input ---------------- ", ecommon.Bytes2Hex(input))
 	fromAddr, _ := b.keys.GetEthAddress()
 	nonce, err := b.ethRpc.GetNonce(fromAddr)
@@ -169,5 +172,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	// todo handler tx online
 	b.epoch = epoch
 	fmt.Println("SendKeyGenStdTx txID is ------------------ ", txID)
+	time.Sleep(time.Second * 60)
 	return txID, nil
 }

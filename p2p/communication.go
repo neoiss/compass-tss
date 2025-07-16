@@ -255,7 +255,6 @@ func (c *Communication) getPeers() addr.AddrList {
 
 func (c *Communication) bootStrapConnectivityCheck() error {
 	bootstrapPeers := c.getPeers()
-	fmt.Println("bootStrapConnectivityCheck 11111 ---------------- ", bootstrapPeers)
 	if len(bootstrapPeers) == 0 {
 		c.logger.Error().Msg("we do not have the bootstrap node set, quit the connectivity check")
 		return nil
@@ -395,13 +394,11 @@ func (c *Communication) connectToBootstrapPeers() error {
 		if err != nil {
 			return fmt.Errorf("connectToBootstrapPeers fail to add peer: %w", err)
 		}
-		fmt.Println("connectToBootstrapPeers 1111 pi ", pi)
 		wg.Add(1)
 		go func(connRet chan bool) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), TimeoutConnecting)
 			defer cancel()
-			fmt.Println("connectToBootstrapPeers 2222 pi ", pi)
 			if err := c.host.Connect(ctx, *pi); err != nil {
 				c.logger.Error().Err(err).Msgf("connectToBootstrapPeers fail to connect to %s", pi.String())
 				connRet <- false
