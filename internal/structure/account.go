@@ -22,7 +22,7 @@ type KeyGen struct {
 type TssPoolParam struct {
 	Id        [32]byte
 	Epoch     *big.Int
-	PubKey    []byte
+	Pubkey    []byte
 	KeyShare  []byte
 	Members   []common.Address
 	Blames    []common.Address
