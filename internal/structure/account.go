@@ -20,13 +20,13 @@ type KeyGen struct {
 }
 
 type TssPoolParam struct {
-	Id        [32]byte         //
-	Epoch     *big.Int         //
-	Pubkey    []byte           //
-	Members   []common.Address //
-	Blames    []common.Address //
-	Signature []byte           //
-	KeyShares []byte           //
+	Id        [32]byte
+	Epoch     *big.Int
+	Pubkey    []byte
+	KeyShares []byte
+	Members   []common.Address
+	Blames    []common.Address
+	Signature []byte
 }
 
 type EpochInfo struct {

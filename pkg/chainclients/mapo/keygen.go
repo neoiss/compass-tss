@@ -92,10 +92,10 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		Id:        id32,
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
+		KeyShares: keyShares,
 		Members:   members,
 		Blames:    blames,
 		Signature: signature,
-		KeyShares: keyShares,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "fail to pack input")
