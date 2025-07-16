@@ -161,6 +161,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
+        mos: 0xC98E2C3BD2bd3B37934F94A53075e9aa8f86Dd8a
         max_reorg_rescan_blocks: 96 # 3 epochs
         gas_cache_blocks: 40
         concurrency: 1
@@ -182,6 +183,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
+        mos: 0xCD9Fc97860755cD6630E5172dbad9454a1e029a9
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
         chain_id: BSC

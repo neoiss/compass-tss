@@ -57,7 +57,6 @@ func main() {
 		return
 	}
 
-	initPrefix()
 	initLog(*logLevel, *pretty)
 	config.Init()
 	config.InitBifrost()
@@ -237,13 +236,6 @@ func main() {
 	if err = healthServer.Stop(); err != nil {
 		log.Fatal().Err(err).Msg("fail to stop health server")
 	}
-}
-
-func initPrefix() {
-	//// todo
-	//cosmosSDKConfg := cosmos.GetConfig()
-	//cosmosSDKConfg.SetBech32PrefixForAccount(cmd.Bech32PrefixAccAddr, cmd.Bech32PrefixAccPub)
-	//cosmosSDKConfg.Seal()
 }
 
 func initLog(level string, pretty bool) {

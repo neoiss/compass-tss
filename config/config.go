@@ -482,16 +482,9 @@ type Bifrost struct {
 	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
 	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
 	Chains            struct {
-		AVAX BifrostChainConfiguration `mapstructure:"avax"`
-		BCH  BifrostChainConfiguration `mapstructure:"bch"`
-		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
-		BTC  BifrostChainConfiguration `mapstructure:"btc"`
-		DOGE BifrostChainConfiguration `mapstructure:"doge"`
-		ETH  BifrostChainConfiguration `mapstructure:"eth"`
-		GAIA BifrostChainConfiguration `mapstructure:"gaia"`
-		LTC  BifrostChainConfiguration `mapstructure:"ltc"`
-		BASE BifrostChainConfiguration `mapstructure:"base"`
-		XRP  BifrostChainConfiguration `mapstructure:"xrp"`
+		BSC BifrostChainConfiguration `mapstructure:"bsc"`
+		BTC BifrostChainConfiguration `mapstructure:"btc"`
+		ETH BifrostChainConfiguration `mapstructure:"eth"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
@@ -499,18 +492,12 @@ type Bifrost struct {
 }
 
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
-	// todo add chain
+	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		//common.AVAXChain: b.Chains.AVAX,
 		//common.BCHChain:  b.Chains.BCH,
-		//common.BSCChain:  b.Chains.BSC,
-		//common.BTCChain: b.Chains.BTC,
-		//common.DOGEChain: b.Chains.DOGE,
+		common.BSCChain: b.Chains.BSC,
+		common.BTCChain: b.Chains.BTC,
 		common.ETHChain: b.Chains.ETH,
-		//common.GAIAChain: b.Chains.GAIA,
-		//common.LTCChain:  b.Chains.LTC,
-		common.BASEChain: b.Chains.BASE,
-		//common.XRPChain:  b.Chains.XRP,
 	}
 }
 
@@ -864,7 +851,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 		if len(ip) == 0 {
 			continue
 		}
-		fmt.Println("GetBootstrapPeers 1111 ", ip)
 
 		// fetch the p2pid
 		res, err := httpClient.Get(fmt.Sprintf("http://%s:6040/p2pid", ip))
@@ -873,7 +859,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 			continue
 		}
 
-		fmt.Println("GetBootstrapPeers 2222 ", res.StatusCode)
 		// skip peers with a bad response status
 		if res.StatusCode != http.StatusOK {
 			log.Warn().Msgf("GetBootstrapPeers failed to get p2p id, ip: %s, status code: %d", ip, res.StatusCode)
