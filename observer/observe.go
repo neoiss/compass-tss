@@ -31,7 +31,7 @@ import (
 const signedTxOutCacheSize = 10_000
 
 // deckRefreshTime is the time to wait before reconciling txIn status.
-const deckRefreshTime = 1 * time.Second
+const deckRefreshTime = 60 * time.Second
 
 type txInKey struct {
 	chain  common.Chain
