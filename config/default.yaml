@@ -32,7 +32,7 @@ bifrost:
     chain_home_folder: ""
     signer_name: "first_cosmos"
     private_key: "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
-    maintainer: "0x109902C43E5Ca33d1bc0fAC08Ba6aBA3DD48561C"
+    maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m
