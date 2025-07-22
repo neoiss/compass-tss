@@ -139,7 +139,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		b.logger.Err(err).Msgf("fail to estimate gas")
 		return "", err
 	}
-	b.logger.Error().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas will")
+	//b.logger.Info().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas will")
 
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
 		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
@@ -148,6 +148,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		}
 		gasFeeCap = head.BaseFee
 	}
+	gasLimit = gasLimit * 2 // todo add cfg
 	// tip cap at configured percentage of max fee
 	tipCap := new(big.Int).Mul(gasFeeCap, big.NewInt(10))
 	tipCap.Div(tipCap, big.NewInt(100))
