@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"io"
 	"math/big"
 	"net/http"
@@ -17,6 +17,13 @@ import (
 	"sync"
 	"time"
 
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
@@ -24,16 +31,11 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
+	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/pkg/contract"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
-
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -81,6 +83,7 @@ type Bridge struct {
 	kw            *evm.KeySignWrapper
 	ethRpc        *evm.EthRPC
 	mainAbi       *abi.ABI
+	mainCall      *contract.Call
 	epoch         *big.Int
 }
 
@@ -141,6 +144,12 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, err
 	}
 
+	ai, err := selfAbi.New(maintainerAbi)
+	if err != nil {
+		return nil, err
+	}
+
+	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.Maintainer)}, ai)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	if err != nil {
 		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
@@ -168,6 +177,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		mainCall:      mainCall,
 		epoch:         big.NewInt(0),
 		gasPrice:      big.NewInt(0),
 	}, nil

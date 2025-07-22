@@ -42,6 +42,10 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 
 	var epoch *big.Int
+	//err = b.mainCall.Call(constants.GetElectionEpochOfMaintainer, epoch, 0)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "fail to call contract")
+	//}
 	if err = outputs.Copy(&epoch, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
@@ -69,27 +73,28 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
-	fmt.Println("epoch ", epoch)
-	fmt.Println("poolPubKey ", poolPubKey.String())
-	fmt.Println("signature ", signature)
-	fmt.Println("blames ", blames)
-	fmt.Println("members ", members)
+	//fmt.Println("epoch ", epoch)
+	//fmt.Println("poolPubKey ", poolPubKey.String())
+	//fmt.Println("signature ", signature)
+	//fmt.Println("blames ", blames)
+	//fmt.Println("members ", members)
 	fmt.Println("keyShares ", hex.EncodeToString(keyShares))
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 	}
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
-	idAbi, _ := NewIdABi()
-	id, err := idAbi.Methods["idPack"].Inputs.Pack(pubBytes, members, epoch, blames, keyShares)
-	if err != nil {
-		return "", errors.Wrap(err, "id pack input failed")
-	}
 
-	id32 := ecommon.BytesToHash(crypto.Keccak256(id))
-	method := "voteUpdateTssPool"
+	var tssPoolId ecommon.Hash
+	err = b.mainCall.Call(constants.GetTSSPoolIdOfMaintainer, &tssPoolId, 0)
+	if err != nil {
+		return "", errors.Wrap(err, "fail to call contract")
+	}
+	fmt.Println("tssPoolId ----------------- ", tssPoolId)
+
+	method := constants.VoteUpdateTssPoolOfMaintainer
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
-		Id:        id32,
+		Id:        tssPoolId,
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
 		KeyShare:  keyShares,
@@ -101,8 +106,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", errors.Wrap(err, "fail to pack input")
 	}
 
-	fmt.Println("id32 ------------------- ", id32.String())
-	fmt.Println("input ---------------- ", ecommon.Bytes2Hex(input))
 	fromAddr, _ := b.keys.GetEthAddress()
 	nonce, err := b.ethRpc.GetNonce(fromAddr)
 	if err != nil {
@@ -139,7 +142,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		b.logger.Err(err).Msgf("fail to estimate gas")
 		return "", err
 	}
-	//b.logger.Info().Interface("input", ecommon.Bytes2Hex(input)).Msg("EstimateGas will")
 
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
 		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)

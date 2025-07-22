@@ -889,7 +889,7 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 
 	if len(addrs) == 0 {
 		log.Error().Msg("no bootstrap peers found")
-		assertBifrostHasSeeds()
+		//assertBifrostHasSeeds()
 	} else {
 		log.Info().Interface("peers", addrs).Msg("bootstrap peers")
 	}

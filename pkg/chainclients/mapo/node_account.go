@@ -47,9 +47,9 @@ func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 // todo handler address to string
 
 // GetNodeAccount retrieves node account for this address from mapBridge
-func (b *Bridge) GetNodeAccount(thorAddr string) (*structure.MaintainerInfo, error) {
+func (b *Bridge) GetNodeAccount(addr string) (*structure.MaintainerInfo, error) {
 	method := "getMaitainer"
-	input, err := b.mainAbi.Pack(method, ecommon.HexToAddress(thorAddr))
+	input, err := b.mainAbi.Pack(method, ecommon.HexToAddress(addr))
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to pack input")
 	}
@@ -74,7 +74,7 @@ func (b *Bridge) GetNodeAccount(thorAddr string) (*structure.MaintainerInfo, err
 		Info structure.MaintainerInfo `json:"info"`
 	}
 	ret := Back{}
-	b.logger.Info().Str("addr", thorAddr).Interface("unpack", unpack).Msg("GetNodeAccount unpack")
+
 	if err = outputs.Copy(&ret, unpack); err != nil {
 		return nil, errors.Wrap(err, "copy output")
 	}
