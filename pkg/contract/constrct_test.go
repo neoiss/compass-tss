@@ -1,13 +1,13 @@
 package contract
 
 import (
-	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/pkg/abi"
 	"math/big"
 	"testing"
 
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/stretchr/testify/assert"
 )
 

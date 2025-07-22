@@ -11,21 +11,19 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/bech32"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/eager7/dogutil"
-	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
-	"github.com/ltcsuite/ltcutil"
-
+	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	eth "github.com/ethereum/go-ethereum/crypto"
 	bchchaincfg "github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-
-	"github.com/cometbft/cometbft/crypto"
-	eth "github.com/ethereum/go-ethereum/crypto"
-
-	xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
-
+	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcutil"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
+	xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
 )
 
 // PubKey used in thorchain, it should be bech32 encoded string
@@ -132,12 +130,13 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	var addressString string
 	switch chain {
 	case XRPChain:
+		// todo  will next 50
 		pk, err := p.Secp256K1()
 		if err != nil {
 			return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
 		}
 		addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
-	case GAIAChain, THORChain:
+	case GAIAChain:
 		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 		if err != nil {
 			return NoAddress, err
@@ -148,10 +147,12 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		addressString = str
 	case BTCChain:
-		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
+		ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(p.String()))
 		if err != nil {
 			return NoAddress, err
 		}
+		pubBytes := ecrypto.FromECDSAPub(ethPubKey)
+
 		var net *chaincfg.Params
 		switch chainNetwork {
 		case TestNet:
@@ -159,7 +160,8 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		case MainNet:
 			net = &chaincfg.MainNetParams
 		}
-		addr, err := btcutil.NewAddressWitnessPubKeyHash(pk.Address().Bytes(), net)
+
+		addr, err := btcutil.NewAddressWitnessPubKeyHash(pubBytes, net)
 		if err != nil {
 			return NoAddress, fmt.Errorf("fail to bech32 encode the address, err: %w", err)
 		}

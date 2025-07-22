@@ -458,8 +458,6 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 
 	data := pubBytes[1:]
 	dataHash := ecrypto.Keccak256(data)
-	fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:], "hex",
-		hex.EncodeToString(dataHash))
 	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
 	fmt.Println("v ------------------ ", v)
 	if err != nil {
@@ -753,6 +751,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	checkpoint, obs, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
+		// todo will next 400
 		return s.signAndBroadcast(item)
 	})
 	if err != nil {

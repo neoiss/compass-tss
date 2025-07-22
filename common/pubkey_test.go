@@ -3,6 +3,12 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
+	"testing"
 
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	. "gopkg.in/check.v1"
@@ -240,4 +246,26 @@ func (s *PubKeyTestSuite) TestEquals(c *C) {
 	}.Equals(PubKeys{
 		pk1, pk2, pk3, pk4,
 	}), Equals, true)
+}
+
+func Test_BtcAddress(t *testing.T) {
+	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes("029038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754"))
+	assert.Nil(t, err, "Failed to decompress pubkey")
+	pubBytes := ecrypto.FromECDSAPub(ethPubKey)
+	t.Log("pubBytes length ------------ ", len(pubBytes))
+	t.Log("pubBytes hex ------------ ", ecommon.Bytes2Hex(pubBytes))
+	t.Log("pubBytes pubBytes ------------ ", pubBytes)
+
+	hash := ecrypto.Keccak256(pubBytes[1:]) // rm prefix
+	// last 20
+	address := ecommon.BytesToAddress(hash[12:])
+	t.Log("address is ----------- ", address.String())
+
+	// convert btc add
+	// use unCompress
+	hash160 := btcutil.Hash160(pubBytes[1:])
+
+	addr, err := btcutil.NewAddressWitnessPubKeyHash(hash160, &chaincfg.MainNetParams)
+	assert.Nil(t, err, "Failed to create btc address")
+	t.Log("btcAddr ------------ ", addr.String())
 }

@@ -283,23 +283,24 @@ func (o *Observer) sendDeck(ctx context.Context) {
 	//}
 	//o.attestationGossip.setActiveValidators(activeVals)
 
-	// check if node is active
-	nodeStatus, err := o.bridge.FetchNodeStatus()
-	if err != nil {
-		o.logger.Error().Err(err).Msg("failed to get node status")
-		return
-	}
-	if nodeStatus != o.lastNodeStatus {
-		if nodeStatus == stypes.NodeStatus_Active {
-			o.logger.Info().Msg("node is now active, will begin observation and gossip")
-			o.attestationGossip.askForAttestationState(ctx)
-		}
-		o.lastNodeStatus = nodeStatus
-	}
-	if nodeStatus != stypes.NodeStatus_Active {
-		o.logger.Warn().Msg("node is not active, will not handle tx in")
-		return
-	}
+	// todo will next2
+	//// check if node is active
+	//nodeStatus, err := o.bridge.FetchNodeStatus()
+	//if err != nil {
+	//	o.logger.Error().Err(err).Msg("failed to get node status")
+	//	return
+	//}
+	//if nodeStatus != o.lastNodeStatus {
+	//	if nodeStatus == stypes.NodeStatus_Active {
+	//		o.logger.Info().Msg("node is now active, will begin observation and gossip")
+	//		o.attestationGossip.askForAttestationState(ctx)
+	//	}
+	//	o.lastNodeStatus = nodeStatus
+	//}
+	//if nodeStatus != stypes.NodeStatus_Active {
+	//	o.logger.Warn().Msg("node is not active, will not handle tx in")
+	//	return
+	//}
 
 	o.lock.Lock()
 	defer o.lock.Unlock()
@@ -313,8 +314,6 @@ func (o *Observer) sendDeck(ctx context.Context) {
 		}
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
-		//final := chainClient.ConfirmationCountReady(*deck)
-		//o.sendToQuorumChecker(deck, final)
 
 		result := o.chunkifyAndSendToThorchain(*deck, chainClient, false)
 		o.logger.Info().Any("result", result).Msg("sending success")
@@ -337,14 +336,15 @@ func (o *Observer) chunkifyAndSendToThorchain(deck types.TxIn, chainClient chain
 			continue
 		}
 
-		i, ok := chainClient.(interface {
-			OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
-		})
-		if ok {
-			for _, item := range txIn.TxArray {
-				i.OnObservedTxIn(*item, item.Height.Int64())
-			}
-		}
+		// todo will next 3
+		//i, ok := chainClient.(interface {
+		//	OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
+		//})
+		//if ok {
+		//	for _, item := range txIn.TxArray {
+		//		i.OnObservedTxIn(*item, item.Height.Int64())
+		//	}
+		//}
 	}
 	return newTxIn
 }

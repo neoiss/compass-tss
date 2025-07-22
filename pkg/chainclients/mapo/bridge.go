@@ -566,14 +566,15 @@ func (b *Bridge) GetVault(pubkey string) (stypes.Vault, error) {
 }
 
 func (b *Bridge) getVaultPubkeys() ([]byte, error) {
-	buf, s, err := b.getWithPath(PubKeysEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code %d", s)
-	}
-	return buf, nil
+	return nil, nil
+	//buf, s, err := b.getWithPath(PubKeysEndpoint)
+	//if err != nil {
+	//	return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
+	//}
+	//if s != http.StatusOK {
+	//	return nil, fmt.Errorf("unexpected status code %d", s)
+	//}
+	//return buf, nil
 }
 
 // GetPubKeys retrieve vault pub keys and their relevant smart contracts
@@ -604,30 +605,47 @@ func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 
 // GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
 func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	buf, err := b.getVaultPubkeys()
-	if err != nil {
-		return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
-	}
-	var result openapi.VaultPubkeysResponse
-	if err = json.Unmarshal(buf, &result); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
-	}
-	var addressPairs []shareTypes.PubKeyContractAddressPair
-	for _, v := range append(result.Asgard, result.Inactive...) {
-		kp := shareTypes.PubKeyContractAddressPair{
-			PubKey:    common.PubKey(v.PubKey),
-			Contracts: make(map[common.Chain]common.Address),
-		}
-		for _, item := range v.Routers {
-			kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
-		}
-		addressPairs = append(addressPairs, kp)
-	}
-	return addressPairs, nil
+	// todo temp code, will next 200
+	return []shareTypes.PubKeyContractAddressPair{
+		{
+			PubKey: "029038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754",
+		},
+	}, nil
+
+	//buf, err := b.getVaultPubkeys()
+	//if err != nil {
+	//	return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
+	//}
+	//var result openapi.VaultPubkeysResponse
+	//if err = json.Unmarshal(buf, &result); err != nil {
+	//	return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
+	//}
+	//var addressPairs []shareTypes.PubKeyContractAddressPair
+	//for _, v := range append(result.Asgard, result.Inactive...) {
+	//	kp := shareTypes.PubKeyContractAddressPair{
+	//		PubKey:    common.PubKey(v.PubKey),
+	//		Contracts: make(map[common.Chain]common.Address),
+	//	}
+	//	for _, item := range v.Routers {
+	//		kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
+	//	}
+	//	addressPairs = append(addressPairs, kp)
+	//}
+	//return addressPairs, nil
 }
 
 // PostNetworkFee send network fee message to THORNode
-func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error) {
+func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate, transactionSizeWithCall uint64) (string, error) {
+	// todo next 1
+	cId, err := chain.ChainID()
+	if err != nil {
+		return "", fmt.Errorf("fail to get chain id: %w", err)
+	}
+	b.mainAbi.Pack(constants.VoteNetworkFeeOfMaintainer, big.NewInt(1), cId, big.NewInt(height),
+		big.NewInt(0).SetUint64(transactionSize),
+		big.NewInt(0).SetUint64(transactionRate),
+		big.NewInt(0).SetUint64(transactionSizeWithCall))
+
 	return b.Broadcast([]byte{})
 }
 

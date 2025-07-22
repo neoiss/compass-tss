@@ -95,7 +95,7 @@ type Bridge interface {
 	GetThorchainVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error)
-	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate uint64) (string, error)
+	PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate, transactionSizeWithCall uint64) (string, error)
 	RagnarokInProgress() (bool, error)
 	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
 	IsSyncing() (bool, error)
@@ -121,5 +121,5 @@ type BridgeOption func(Bridge) error
 
 type PubKeyContractAddressPair struct {
 	PubKey    common.PubKey
-	Contracts map[common.Chain]common.Address
+	Contracts map[common.Chain]common.Address // todo will next 100
 }

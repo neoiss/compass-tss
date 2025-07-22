@@ -19,7 +19,7 @@ import (
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
-	method := "getElectionEpoch"
+	method := constants.GetElectionEpochOfMaintainer
 	input, err := b.mainAbi.Pack(method)
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to pack input")
@@ -73,11 +73,6 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
-	//fmt.Println("epoch ", epoch)
-	//fmt.Println("poolPubKey ", poolPubKey.String())
-	//fmt.Println("signature ", signature)
-	//fmt.Println("blames ", blames)
-	//fmt.Println("members ", members)
 	fmt.Println("keyShares ", hex.EncodeToString(keyShares))
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
