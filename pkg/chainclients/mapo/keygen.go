@@ -86,7 +86,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	var tssPoolId ecommon.Hash
-	err = b.mainCall.Call(constants.GetTSSPoolIdOfMaintainer, &tssPoolId, 0)
+	err = b.mainCall.Call(constants.GetTSSPoolIdOfMaintainer, &tssPoolId, 0, pubBytes, members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "fail to call contract")
 	}
