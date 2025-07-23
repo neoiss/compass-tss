@@ -178,7 +178,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
 		mainCall:      mainCall,
-		epoch:         big.NewInt(0),
+		epoch:         big.NewInt(1), // todo
 		gasPrice:      big.NewInt(0),
 	}, nil
 }
@@ -482,17 +482,17 @@ func (b *Bridge) HasNetworkFee(chain common.Chain) (bool, error) {
 }
 
 // GetNetworkFee get chain's network fee from THORNode.
-func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transactionFeeRate uint64, err error) {
+func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error) {
 	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
 	if err != nil {
-		return 0, 0, fmt.Errorf("fail to get inbound addresses: %w", err)
+		return 0, 0, 0, fmt.Errorf("fail to get inbound addresses: %w", err)
 	}
 	if s != http.StatusOK {
-		return 0, 0, fmt.Errorf("unexpected status code: %d", s)
+		return 0, 0, 0, fmt.Errorf("unexpected status code: %d", s)
 	}
 	var resp []openapi.InboundAddress
 	if err = json.Unmarshal(buf, &resp); err != nil {
-		return 0, 0, fmt.Errorf("fail to unmarshal to json: %w", err)
+		return 0, 0, 0, fmt.Errorf("fail to unmarshal to json: %w", err)
 	}
 
 	for _, addr := range resp {
@@ -501,13 +501,13 @@ func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transaction
 			if addr.OutboundTxSize != nil {
 				transactionSize, err = strconv.ParseUint(*addr.OutboundTxSize, 10, 64)
 				if err != nil {
-					return 0, 0, fmt.Errorf("fail to parse outbound_tx_size: %w", err)
+					return 0, 0, 0, fmt.Errorf("fail to parse outbound_tx_size: %w", err)
 				}
 			}
 			if addr.ObservedFeeRate != nil {
 				transactionFeeRate, err = strconv.ParseUint(*addr.ObservedFeeRate, 10, 64)
 				if err != nil {
-					return 0, 0, fmt.Errorf("fail to parse observed_fee_rate: %w", err)
+					return 0, 0, 0, fmt.Errorf("fail to parse observed_fee_rate: %w", err)
 				}
 			}
 			// Having found the chain, do not continue through the remaining chains.
@@ -634,19 +634,24 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 	//return addressPairs, nil
 }
 
-// PostNetworkFee send network fee message to THORNode
-func (b *Bridge) PostNetworkFee(height int64, chain common.Chain, transactionSize, transactionRate, transactionSizeWithCall uint64) (string, error) {
-	// todo next 1
-	cId, err := chain.ChainID()
-	if err != nil {
-		return "", fmt.Errorf("fail to get chain id: %w", err)
-	}
-	b.mainAbi.Pack(constants.VoteNetworkFeeOfMaintainer, big.NewInt(1), cId, big.NewInt(height),
+// PostNetworkFee send network fee message to MAP
+func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionRate,
+	transactionSizeWithCall uint64) (string, error) {
+	// done next 1
+	input, err := b.mainAbi.Pack(constants.VoteNetworkFeeOfMaintainer, b.epoch, chainId, big.NewInt(height),
 		big.NewInt(0).SetUint64(transactionSize),
 		big.NewInt(0).SetUint64(transactionRate),
 		big.NewInt(0).SetUint64(transactionSizeWithCall))
+	if err != nil {
+		return "", fmt.Errorf("fail to pack input: %w", err)
+	}
 
-	return b.Broadcast([]byte{})
+	tx, err := b.assemblyInternalTx(ctx, input, 2000000)
+	if err != nil {
+		return "", fmt.Errorf("fail to assembly tx: %w", err)
+	}
+
+	return b.Broadcast(tx)
 }
 
 // GetConstants from thornode

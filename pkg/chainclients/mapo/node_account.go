@@ -36,7 +36,7 @@ func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 		return stypes.NodeStatus_Unknown, nil
 	}
 	// done
-	na, err := b.GetNodeAccount(addr)
+	na, err := b.GetNodeAccount(addr.String())
 	if err != nil {
 		return stypes.NodeStatus_Unknown, fmt.Errorf("failed to get node status: %w", err)
 	}

@@ -3,4 +3,4 @@
 
 package common
 
-const CurrentChainNetwork = MainNet
+const CurrentChainNetwork = TestNet // todo switch network

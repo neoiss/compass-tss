@@ -9,12 +9,12 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/ethereum"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/gaia"
+	//"github.com/mapprotocol/compass-tss/pkg/chainclients/gaia"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp"
+	//"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/rs/zerolog/log"
@@ -42,14 +42,14 @@ func LoadChains(thorKeys *keys.Keys,
 		switch chain.ChainID {
 		case common.ETHChain:
 			return ethereum.NewClient(thorKeys, chain, server, thorchainBridge, m, pubKeyValidator, poolMgr)
-		case common.AVAXChain, common.BSCChain, common.BASEChain:
+		case common.BSCChain: // ,common.BASEChain:
 			return evm.NewEVMClient(thorKeys, chain, server, thorchainBridge, m, pubKeyValidator, poolMgr)
-		case common.GAIAChain:
-			return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)
-		case common.BTCChain, common.BCHChain, common.LTCChain, common.DOGEChain:
+		//case common.GAIAChain:
+		//	return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)
+		case common.BTCChain, common.DOGEChain:
 			return utxo.NewClient(thorKeys, chain, server, thorchainBridge, m)
-		case common.XRPChain:
-			return xrp.NewClient(thorKeys, chain, server, thorchainBridge, m)
+		//case common.XRPChain:
+		//	return xrp.NewClient(thorKeys, chain, server, thorchainBridge, m)
 		default:
 			log.Fatal().Msgf("chain %s is not supported", chain.ChainID)
 			return nil, nil

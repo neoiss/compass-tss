@@ -677,6 +677,9 @@ type BifrostChainConfiguration struct {
 		// EstimatedAverageTxSize is the estimated average transaction size in bytes.
 		EstimatedAverageTxSize uint64 `mapstructure:"estimated_average_tx_size"`
 
+		// EstimatedAverageTxSwapSize is the estimated average transaction size in bytes.
+		EstimatedAverageTxSwapSize uint64 `mapstructure:"estimated_average_tx_swap_size"`
+
 		// DefaultMinRelayFee is the default minimum relay fee in sats.
 		DefaultMinRelayFeeSats uint64 `mapstructure:"default_min_relay_fee_sats"`
 
@@ -757,6 +760,11 @@ type BifrostBlockScannerConfiguration struct {
 	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the
 	// final outbound.
 	MaxGasLimit uint64 `mapstructure:"max_gas_limit"`
+
+	// MaxSwapGasLimit is the maximum swap gas allowed for non-aggregator outbounds. This is used
+	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the
+	// final outbound.
+	MaxSwapGasLimit uint64 `mapstructure:"max_swap_gas_limit"`
 
 	// MaxContractTxLogs is the maximum logs allowed for an inbound EVM tx. This is used to prevent
 	// bifrost being bogged down during smart contract log parsing down by large txs.

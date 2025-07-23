@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/constants"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -69,12 +70,12 @@ func (k *Keys) GetSignerInfo() *ckeys.Record {
 	return record
 }
 
-func (k *Keys) GetEthAddress() (string, error) {
+func (k *Keys) GetEthAddress() (common.Address, error) {
 	addr, err := AddressFromPrivateKey(k.priKeyStr)
 	if err != nil {
-		return "", err
+		return constants.ZeroAddress, err
 	}
-	return addr.String(), nil
+	return addr, nil
 }
 
 // GetPrivateKey return the private key

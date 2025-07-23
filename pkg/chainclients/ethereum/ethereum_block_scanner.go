@@ -63,7 +63,7 @@ type ETHScanner struct {
 	client                *ethclient.Client
 	blockMetaAccessor     evm.BlockMetaAccessor
 	globalErrataQueue     chan<- stypes.ErrataBlock
-	globalNetworkFeeQueue chan<- common.NetworkFee
+	globalNetworkFeeQueue chan<- stypes.NetworkFee
 	gatewayABI            *abi.ABI
 	erc20ABI              *abi.ABI              // todo
 	tokens                *evm.LevelDBTokenMeta // todo
@@ -165,8 +165,8 @@ func (e *ETHScanner) GetHeight() (int64, error) {
 }
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
-func (e *ETHScanner) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	return e.cfg.MaxGasLimit, e.lastReportedGasPrice
+func (e *ETHScanner) GetNetworkFee() (transactionSize, transactionSwapSize, transactionFeeRate uint64) {
+	return e.cfg.MaxGasLimit, e.cfg.MaxSwapGasLimit, e.lastReportedGasPrice
 }
 
 // FetchMemPool get tx from mempool
@@ -239,11 +239,13 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 
 	// post to thorchain if there is a fee and it has changed
 	if gasPrice.Cmp(big.NewInt(0)) != 0 && tcGasPrice != e.lastReportedGasPrice {
-		e.globalNetworkFeeQueue <- common.NetworkFee{
-			Chain:           common.ETHChain,
-			Height:          height,
-			TransactionSize: e.cfg.MaxGasLimit,
-			TransactionRate: tcGasPrice,
+		cId, _ := common.ETHChain.ChainID()
+		e.globalNetworkFeeQueue <- stypes.NetworkFee{
+			ChainId:             cId,
+			Height:              height,
+			TransactionSize:     e.cfg.MaxGasLimit,
+			TransactionSwapSize: e.cfg.MaxSwapGasLimit,
+			TransactionRate:     tcGasPrice,
 		}
 
 		e.lastReportedGasPrice = tcGasPrice

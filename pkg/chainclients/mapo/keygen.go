@@ -102,14 +102,14 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	}
 
 	fromAddr, _ := b.keys.GetEthAddress()
-	nonce, err := b.ethRpc.GetNonce(fromAddr)
+	nonce, err := b.ethRpc.GetNonce(fromAddr.Hex())
 	if err != nil {
 		return "", fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)
 	}
 
 	// abort signing if the pending nonce is too far in the future
 	var finalizedNonce uint64
-	finalizedNonce, err = b.ethRpc.GetNonceFinalized(fromAddr)
+	finalizedNonce, err = b.ethRpc.GetNonceFinalized(fromAddr.Hex())
 	if err != nil {
 		return "", fmt.Errorf("fail to fetch account(%s) finalized nonce: %w", fromAddr, err)
 	}
@@ -125,7 +125,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	gasFeeCap := b.gasPrice
 	to := ecommon.HexToAddress(b.cfg.Maintainer)
 	createdTx := ethereum.CallMsg{
-		From:     ecommon.HexToAddress(fromAddr),
+		From:     fromAddr,
 		To:       &to,
 		GasPrice: gasFeeCap,
 		Value:    nil,

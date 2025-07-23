@@ -23,7 +23,7 @@ import (
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcutil"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
+	//xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
 )
 
 // PubKey used in thorchain, it should be bech32 encoded string
@@ -130,12 +130,12 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	var addressString string
 	switch chain {
 	case XRPChain:
-		// todo  will next 50
-		pk, err := p.Secp256K1()
-		if err != nil {
-			return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
-		}
-		addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
+	//	// todo  will next 50
+	//	pk, err := p.Secp256K1()
+	//	if err != nil {
+	//		return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
+	//	}
+	//	addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
 	case GAIAChain:
 		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 		if err != nil {

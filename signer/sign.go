@@ -80,12 +80,11 @@ func NewSigner(cfg config.Bifrost,
 	}
 	var na *structure.MaintainerInfo
 	for i := 0; i < 300; i++ { // wait for 5 min before timing out
-
 		signerAddr, err := thorKeys.GetEthAddress()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get address from thorKeys signer: %w", err)
 		}
-		na, err = bridge.GetNodeAccount(signerAddr)
+		na, err = bridge.GetNodeAccount(signerAddr.String())
 		if err != nil {
 			return nil, fmt.Errorf("fail to get node account from thorchain,err:%w", err)
 		}

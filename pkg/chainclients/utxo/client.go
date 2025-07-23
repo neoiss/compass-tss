@@ -74,7 +74,7 @@ type Client struct {
 	// ---------- control ----------
 	globalErrataQueue     chan<- types.ErrataBlock
 	globalSolvencyQueue   chan<- types.Solvency
-	globalNetworkFeeQueue chan<- common.NetworkFee
+	globalNetworkFeeQueue chan<- types.NetworkFee
 	stopchan              chan struct{}
 	currentBlockHeight    *atomic.Int64
 
@@ -212,8 +212,8 @@ func (c *Client) GetHeight() (int64, error) {
 }
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
-func (c *Client) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	return c.cfg.UTXO.EstimatedAverageTxSize, c.lastFeeRate
+func (c *Client) GetNetworkFee() (transactionSize, transactionSwapSize, transactionFeeRate uint64) {
+	return c.cfg.UTXO.EstimatedAverageTxSize, c.cfg.UTXO.EstimatedAverageTxSwapSize, c.lastFeeRate
 }
 
 // GetBlockScannerHeight returns blockscanner height
@@ -249,7 +249,7 @@ func (c *Client) Start(
 	globalTxsQueue chan types.TxIn,
 	globalErrataQueue chan types.ErrataBlock,
 	globalSolvencyQueue chan types.Solvency,
-	globalNetworkFeeQueue chan common.NetworkFee,
+	globalNetworkFeeQueue chan types.NetworkFee,
 ) {
 	c.globalErrataQueue = globalErrataQueue
 	c.globalSolvencyQueue = globalSolvencyQueue

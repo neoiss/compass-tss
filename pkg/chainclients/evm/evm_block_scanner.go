@@ -57,7 +57,7 @@ type EVMScanner struct {
 	ethRpc                *evm.EthRPC
 	blockMetaAccessor     evm.BlockMetaAccessor
 	globalErrataQueue     chan<- stypes.ErrataBlock
-	globalNetworkFeeQueue chan<- common.NetworkFee
+	globalNetworkFeeQueue chan<- stypes.NetworkFee
 	bridge                shareTypes.Bridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
@@ -207,8 +207,8 @@ func (e *EVMScanner) GetGasPrice() *big.Int {
 }
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
-func (e *EVMScanner) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	return e.cfg.MaxGasLimit, e.lastReportedGasPrice / 1e10 // 1e18 -> 1e8
+func (e *EVMScanner) GetNetworkFee() (transactionSize, txSwapGasLimit, transactionFeeRate uint64) {
+	return e.cfg.MaxGasLimit, e.cfg.MaxSwapGasLimit, e.lastReportedGasPrice / 1e10 // 1e18 -> 1e8
 }
 
 // GetNonce returns the nonce (including pending) for the given address.
@@ -790,11 +790,13 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 	tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10))
 
 	// post to thorchain
-	e.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           e.cfg.ChainID,
-		Height:          height,
-		TransactionSize: e.cfg.MaxGasLimit,
-		TransactionRate: tcGasPrice.Uint64(),
+	cId, _ := e.cfg.ChainID.ChainID()
+	e.globalNetworkFeeQueue <- stypes.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     e.cfg.MaxGasLimit,
+		TransactionSwapSize: e.cfg.MaxSwapGasLimit,
+		TransactionRate:     tcGasPrice.Uint64(),
 	}
 
 	e.lastReportedGasPrice = gasPrice.Uint64()

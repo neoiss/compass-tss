@@ -305,11 +305,13 @@ func (c *Client) sendNetworkFee(height int64) error {
 	}
 
 	c.lastFeeRate = feeRate
-	c.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           c.cfg.ChainID,
-		Height:          height,
-		TransactionSize: c.cfg.UTXO.EstimatedAverageTxSize,
-		TransactionRate: feeRate,
+	cId, _ := c.cfg.ChainID.ChainID()
+	c.globalNetworkFeeQueue <- types.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     c.cfg.UTXO.EstimatedAverageTxSize,
+		TransactionSwapSize: c.cfg.UTXO.EstimatedAverageTxSwapSize,
+		TransactionRate:     feeRate,
 	}
 
 	c.log.Debug().Msg("send network fee to THORNode successfully")
@@ -364,11 +366,13 @@ func (c *Client) sendNetworkFeeFromBlock(blockResult *btcjson.GetBlockVerboseTxR
 		Uint64("feeRateSats", feeRateSats).
 		Msg("sendNetworkFee")
 
-	c.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           c.cfg.ChainID,
-		Height:          height,
-		TransactionSize: c.cfg.UTXO.EstimatedAverageTxSize,
-		TransactionRate: feeRateSats,
+	cId, _ := c.cfg.ChainID.ChainID()
+	c.globalNetworkFeeQueue <- types.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     c.cfg.UTXO.EstimatedAverageTxSize,
+		TransactionSwapSize: c.cfg.UTXO.EstimatedAverageTxSwapSize,
+		TransactionRate:     feeRateSats,
 	}
 
 	c.lastFeeRate = feeRateSats

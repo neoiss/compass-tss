@@ -56,7 +56,7 @@ type Observer struct {
 	globalTxsQueue        chan types.TxIn
 	globalErrataQueue     chan types.ErrataBlock
 	globalSolvencyQueue   chan types.Solvency
-	globalNetworkFeeQueue chan common.NetworkFee
+	globalNetworkFeeQueue chan types.NetworkFee
 	m                     *metrics.Metrics
 	errCounter            *prometheus.CounterVec
 	bridge                shareTypes.Bridge
@@ -119,7 +119,7 @@ func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 		globalTxsQueue:        make(chan types.TxIn),
 		globalErrataQueue:     make(chan types.ErrataBlock),
 		globalSolvencyQueue:   make(chan types.Solvency),
-		globalNetworkFeeQueue: make(chan common.NetworkFee),
+		globalNetworkFeeQueue: make(chan types.NetworkFee),
 		errCounter:            m.GetCounterVec(metrics.ObserverError),
 		bridge:                bridge,
 		storage:               storage,
@@ -148,7 +148,7 @@ func (o *Observer) Start(ctx context.Context) error {
 	go o.processTxIns() //  o.globalTxsQueue --> txIn, txIn --> o.onDeck, txIn --> o.storage
 	//go o.processErrataTx(ctx)
 	//go o.processSolvencyQueue(ctx)
-	//go o.processNetworkFeeQueue(ctx)
+	go o.processNetworkFeeQueue(ctx)
 	go o.deck(ctx) // o.onDeck --> txIn, txIn --> ObservedTxs,
 	//go o.attestationGossip.Start(ctx)
 	return nil
@@ -730,14 +730,22 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 		select {
 		case <-o.stopChan:
 			return
-		case networkFee := <-o.globalNetworkFeeQueue:
-			if err := networkFee.Valid(); err != nil {
-				o.logger.Error().Err(err).Msgf("invalid network fee - %s", networkFee.String())
+		case ele := <-o.globalNetworkFeeQueue:
+			if err := ele.Valid(); err != nil {
+				o.logger.Error().Err(err).Msgf("Invalid network fee - %s", ele.String())
 				continue
 			}
-			if err := o.attestationGossip.AttestNetworkFee(ctx, networkFee); err != nil {
-				o.logger.Err(err).Msg("fail to send network fee to thorchain")
+
+			txId, err := o.bridge.PostNetworkFee(ctx, ele.Height, ele.ChainId, ele.TransactionSize, ele.TransactionSwapSize, ele.TransactionRate)
+			if err != nil {
+				o.logger.Err(err).Msg("Fail to send network fee to map")
+				continue
 			}
+			o.logger.Info().Msg(fmt.Sprintf("Successfully sent network fee to map, txHash=%s", txId))
+
+			//if err := o.attestationGossip.AttestNetworkFee(ctx, ele); err != nil {
+			//	o.logger.Err(err).Msg("fail to send network fee to thorchain")
+			//}
 		}
 	}
 }

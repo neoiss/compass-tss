@@ -267,7 +267,7 @@ func (c *EVMClient) Start(
 	globalTxsQueue chan stypes.TxIn,
 	globalErrataQueue chan stypes.ErrataBlock,
 	globalSolvencyQueue chan stypes.Solvency,
-	globalNetworkFeeQueue chan common.NetworkFee,
+	globalNetworkFeeQueue chan stypes.NetworkFee,
 ) {
 	c.evmScanner.globalErrataQueue = globalErrataQueue
 	c.evmScanner.globalNetworkFeeQueue = globalNetworkFeeQueue
