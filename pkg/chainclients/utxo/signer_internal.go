@@ -2,7 +2,6 @@ package utxo
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 
@@ -26,7 +25,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	mem "github.com/mapprotocol/compass-tss/x/memo"
-	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -273,6 +271,9 @@ func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
 }
 
 func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx, map[string]int64, error) {
+	// build memo
+	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.InHash.String()).String()
+
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to get unspent UTXO")
@@ -364,56 +365,57 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		gasAmtSats = c.minRelayFeeSats
 	}
 
-	var memo mem.Memo
-	if err == nil {
-		// Parse the memo to be able to identify Migrate or Consolidate outbounds.
-		memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
-		if err != nil {
-			return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
-		}
-
-		// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
-		if !tx.MaxGas.IsEmpty() {
-			maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
-			if gasAmtSats > maxGasCoin.Amount.Uint64() {
-				c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
-				gasAmtSats = maxGasCoin.Amount.Uint64()
-			} else if gasAmtSats < maxGasCoin.Amount.Uint64() && memo.GetType() == mem.TxMigrate {
-				// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
-				gap := maxGasCoin.Amount.Uint64() - gasAmtSats
-				c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to the vault migrated to", tx.MaxGas, gasAmtSats, gap)
-				coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
-			}
-		} else if memo.GetType() == mem.TxConsolidate {
-			gap := gasAmtSats
-			c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
-			coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
-		}
-	} else {
-		// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
-		if !tx.MaxGas.IsEmpty() {
-			maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
-			if gasAmtSats > maxGasCoin.Amount.Uint64() {
-				c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
-				gasAmtSats = maxGasCoin.Amount.Uint64()
-			} else if gasAmtSats < maxGasCoin.Amount.Uint64() {
-				// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
-				gap := maxGasCoin.Amount.Uint64() - gasAmtSats
-				c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to customer", tx.MaxGas, gasAmtSats, gap)
-				coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
-			}
-		} else {
-			memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
-			if err != nil {
-				return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
-			}
-			if memo.GetType() == mem.TxConsolidate {
-				gap := gasAmtSats
-				c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
-				coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
-			}
-		}
-	}
+	// todo memo
+	//var memo mem.Memo
+	//if err == nil {
+	//	// Parse the memo to be able to identify Migrate or Consolidate outbounds.
+	//	memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
+	//	if err != nil {
+	//		return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
+	//	}
+	//
+	//	// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
+	//	if !tx.MaxGas.IsEmpty() {
+	//		maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
+	//		if gasAmtSats > maxGasCoin.Amount.Uint64() {
+	//			c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
+	//			gasAmtSats = maxGasCoin.Amount.Uint64()
+	//		} else if gasAmtSats < maxGasCoin.Amount.Uint64() && memo.GetType() == mem.TxMigrate {
+	//			// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
+	//			gap := maxGasCoin.Amount.Uint64() - gasAmtSats
+	//			c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to the vault migrated to", tx.MaxGas, gasAmtSats, gap)
+	//			coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
+	//		}
+	//	} else if memo.GetType() == mem.TxConsolidate {
+	//		gap := gasAmtSats
+	//		c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
+	//		coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
+	//	}
+	//} else {
+	//	// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
+	//	if !tx.MaxGas.IsEmpty() {
+	//		maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
+	//		if gasAmtSats > maxGasCoin.Amount.Uint64() {
+	//			c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
+	//			gasAmtSats = maxGasCoin.Amount.Uint64()
+	//		} else if gasAmtSats < maxGasCoin.Amount.Uint64() {
+	//			// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
+	//			gap := maxGasCoin.Amount.Uint64() - gasAmtSats
+	//			c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to customer", tx.MaxGas, gasAmtSats, gap)
+	//			coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
+	//		}
+	//	} else {
+	//		memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
+	//		}
+	//		if memo.GetType() == mem.TxConsolidate {
+	//			gap := gasAmtSats
+	//			c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
+	//			coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
+	//		}
+	//	}
+	//}
 
 	gasAmt := btcutil.Amount(gasAmtSats)
 	if err = c.temporalStorage.UpsertTransactionFee(gasAmt.ToBTC(), int32(totalSize)); err != nil {
@@ -466,98 +468,99 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 
 // consolidateUTXOs only required when there is a new block
 func (c *Client) consolidateUTXOs() {
-	defer func() {
-		c.wg.Done()
-		c.consolidateInProgress.Store(false)
-	}()
-
-	nodeStatus, err := c.bridge.FetchNodeStatus()
-	if err != nil {
-		c.log.Err(err).Msg("fail to get node status")
-		return
-	}
-	if nodeStatus != types.NodeStatus_Active {
-		c.log.Info().Msgf("node is not active , doesn't need to consolidate utxos")
-		return
-	}
-	vaults, err := c.bridge.GetAsgards()
-	if err != nil {
-		c.log.Err(err).Msg("fail to get current asgards")
-		return
-	}
-	utxosToSpend := c.getMaximumUtxosToSpend()
-	for _, vault := range vaults {
-		if !vault.Contains(c.nodePubKey) {
-			// Not part of this vault , don't need to consolidate UTXOs for this Vault
-			continue
-		}
-		// the amount used here doesn't matter , just to see whether there are more than 15 UTXO available or not
-		var utxos []btcjson.ListUnspentResult
-		utxos, err = c.getUtxoToSpend(vault.PubKey, 0.01)
-		if err != nil {
-			c.log.Err(err).Msg("fail to get utxos to spend")
-			continue
-		}
-		// doesn't have enough UTXOs , don't need to consolidate
-		if int64(len(utxos)) < utxosToSpend {
-			continue
-		}
-		total := 0.0
-		for _, item := range utxos {
-			total += item.Amount
-		}
-		var addr common.Address
-		addr, err = vault.PubKey.GetAddress(c.cfg.ChainID)
-		if err != nil {
-			c.log.Err(err).Msgf("fail to get address for pubkey: %s", vault.PubKey)
-			continue
-		}
-		// THORChain usually pay 1.5 of the last observed fee rate
-		feeRate := math.Ceil(float64(c.lastFeeRate) * 3 / 2)
-		var amt btcutil.Amount
-		amt, err = btcutil.NewAmount(total)
-		if err != nil {
-			c.log.Err(err).Msgf("fail to convert to amount: %f", total)
-			continue
-		}
-
-		txOutItem := stypes.TxOutItem{
-			Chain:       c.cfg.ChainID,
-			ToAddress:   addr,
-			VaultPubKey: vault.PubKey,
-			Coins: common.Coins{
-				common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
-			},
-			Memo:    mem.NewConsolidateMemo().String(),
-			MaxGas:  nil,
-			GasRate: int64(feeRate),
-		}
-		var height int64
-		height, err = c.bridge.GetBlockHeight()
-		if err != nil {
-			c.log.Err(err).Msg("fail to get THORChain block height")
-			continue
-		}
-		var rawTx []byte
-
-		signAndBroadcast := func() {
-			lock := c.GetVaultLock(vault.PubKey.String())
-			lock.Lock()
-			defer lock.Unlock()
-
-			rawTx, _, _, err = c.SignTx(txOutItem, height)
-			if err != nil {
-				c.log.Err(err).Msg("fail to sign consolidate txout item")
-			}
-			var txID string
-			txID, err = c.BroadcastTx(txOutItem, rawTx)
-			if err != nil {
-				c.log.Err(err).Str("signed", string(rawTx)).Msg("fail to broadcast consolidate tx")
-			} else {
-				c.log.Info().Msgf("broadcast consolidate tx successfully, hash:%s", txID)
-			}
-		}
-
-		signAndBroadcast()
-	}
+	// todo memo
+	//defer func() {
+	//	c.wg.Done()
+	//	c.consolidateInProgress.Store(false)
+	//}()
+	//
+	//nodeStatus, err := c.bridge.FetchNodeStatus()
+	//if err != nil {
+	//	c.log.Err(err).Msg("fail to get node status")
+	//	return
+	//}
+	//if nodeStatus != types.NodeStatus_Active {
+	//	c.log.Info().Msgf("node is not active , doesn't need to consolidate utxos")
+	//	return
+	//}
+	//vaults, err := c.bridge.GetAsgards()
+	//if err != nil {
+	//	c.log.Err(err).Msg("fail to get current asgards")
+	//	return
+	//}
+	//utxosToSpend := c.getMaximumUtxosToSpend()
+	//for _, vault := range vaults {
+	//	if !vault.Contains(c.nodePubKey) {
+	//		// Not part of this vault , don't need to consolidate UTXOs for this Vault
+	//		continue
+	//	}
+	//	// the amount used here doesn't matter , just to see whether there are more than 15 UTXO available or not
+	//	var utxos []btcjson.ListUnspentResult
+	//	utxos, err = c.getUtxoToSpend(vault.PubKey, 0.01)
+	//	if err != nil {
+	//		c.log.Err(err).Msg("fail to get utxos to spend")
+	//		continue
+	//	}
+	//	// doesn't have enough UTXOs , don't need to consolidate
+	//	if int64(len(utxos)) < utxosToSpend {
+	//		continue
+	//	}
+	//	total := 0.0
+	//	for _, item := range utxos {
+	//		total += item.Amount
+	//	}
+	//	var addr common.Address
+	//	addr, err = vault.PubKey.GetAddress(c.cfg.ChainID)
+	//	if err != nil {
+	//		c.log.Err(err).Msgf("fail to get address for pubkey: %s", vault.PubKey)
+	//		continue
+	//	}
+	//	// THORChain usually pay 1.5 of the last observed fee rate
+	//	feeRate := math.Ceil(float64(c.lastFeeRate) * 3 / 2)
+	//	var amt btcutil.Amount
+	//	amt, err = btcutil.NewAmount(total)
+	//	if err != nil {
+	//		c.log.Err(err).Msgf("fail to convert to amount: %f", total)
+	//		continue
+	//	}
+	//
+	//	txOutItem := stypes.TxOutItem{
+	//		Chain:       c.cfg.ChainID,
+	//		ToAddress:   addr,
+	//		VaultPubKey: vault.PubKey,
+	//		Coins: common.Coins{
+	//			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
+	//		},
+	//		Memo:    mem.NewConsolidateMemo().String(),
+	//		MaxGas:  nil,
+	//		GasRate: int64(feeRate),
+	//	}
+	//	var height int64
+	//	height, err = c.bridge.GetBlockHeight()
+	//	if err != nil {
+	//		c.log.Err(err).Msg("fail to get THORChain block height")
+	//		continue
+	//	}
+	//	var rawTx []byte
+	//
+	//	signAndBroadcast := func() {
+	//		lock := c.GetVaultLock(vault.PubKey.String())
+	//		lock.Lock()
+	//		defer lock.Unlock()
+	//
+	//		rawTx, _, _, err = c.SignTx(txOutItem, height)
+	//		if err != nil {
+	//			c.log.Err(err).Msg("fail to sign consolidate txout item")
+	//		}
+	//		var txID string
+	//		txID, err = c.BroadcastTx(txOutItem, rawTx)
+	//		if err != nil {
+	//			c.log.Err(err).Str("signed", string(rawTx)).Msg("fail to broadcast consolidate tx")
+	//		} else {
+	//			c.log.Info().Msgf("broadcast consolidate tx successfully, hash:%s", txID)
+	//		}
+	//	}
+	//
+	//	signAndBroadcast()
+	//}
 }

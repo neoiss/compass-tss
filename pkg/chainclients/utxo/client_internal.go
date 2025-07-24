@@ -2,18 +2,18 @@ package utxo
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcutil"
-	bchtxscript "github.com/mapprotocol/compass-tss/txscript/bchd-txscript"
-	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
-	ltctxscript "github.com/mapprotocol/compass-tss/txscript/ltcd-txscript"
-	btctxscript "github.com/mapprotocol/compass-tss/txscript/txscript"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
 	"github.com/mapprotocol/compass-tss/common"
@@ -22,7 +22,10 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-	mem "github.com/mapprotocol/compass-tss/x/memo"
+	bchtxscript "github.com/mapprotocol/compass-tss/txscript/bchd-txscript"
+	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
+	ltctxscript "github.com/mapprotocol/compass-tss/txscript/ltcd-txscript"
+	btctxscript "github.com/mapprotocol/compass-tss/txscript/txscript"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -483,11 +486,18 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
-	m, err := mem.ParseMemo(common.LatestVersion, memo)
+	m, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("memo", memo).Msg("fail to parse memo")
+		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
 	}
-	output, err := c.getOutput(sender, tx, m.IsType(mem.TxConsolidate))
+	if !m.IsValid() {
+		c.log.Debug().Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
+		return types.TxInItem{}, fmt.Errorf("invalid memo")
+	}
+
+	//output, err := c.getOutput(sender, tx, m.IsType(mem.TxConsolidate))
+	output, err := c.getOutput(sender, tx, false)
 	if err != nil {
 		if errors.Is(err, btypes.ErrFailOutputMatchCriteria) {
 			c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx not matching format")
@@ -510,28 +520,54 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			return types.TxInItem{}, fmt.Errorf("invalid utxo")
 		}
 	}
-	//amount, err := btcutil.NewAmount(output.Value)
-	//if err != nil {
-	//	return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
-	//}
-	//amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
+	amount, err := btcutil.NewAmount(output.Value)
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
+	}
+	amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
 
 	//gas, err := c.getGas(tx)
 	//if err != nil {
 	//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
 	//}
-	return types.TxInItem{
-		// todo
-		//BlockHeight: height,
-		//Tx:          tx.Txid,
-		//Sender:      sender,
-		//To:          toAddr,
-		//Coins: common.Coins{
-		//	common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(amt)),
-		//},
-		//Memo: memo,
-		//Gas:  gas,
-	}, nil
+	// todo utxo get chain id from map chain ???
+	destChainID, err := common.Chain(m.GetChain()).ChainID()
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, m.GetChain())
+	}
+
+	chainID, err := c.GetChain().ChainID()
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, c.GetChain())
+	}
+
+	tokenAddress, err := c.bridge.GetTokenAddress(destChainID, m.GetToken())
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, destChainID, m.GetToken())
+	}
+
+	txIn := types.TxInItem{
+		Memo:     memo,
+		TxInType: constants.SWAP,
+		ToChain:  destChainID,
+		Height:   big.NewInt(height),
+		Amount:   new(big.Int).SetUint64(amt),
+		OrderId:  generateOrderID(chainID.String(), tx.Txid),
+		GasUsed:  nil,
+		Token:    tokenAddress,
+		Vault:    nil,
+		To:       ethcommon.Hex2Bytes(m.GetDestination()),
+		Method:   "",
+	}
+	marshal, _ := json.Marshal(txIn)
+	fmt.Println("============================== tx in: ", string(marshal))
+
+	return txIn, nil
+
+}
+
+func generateOrderID(chainID, txHash string) ethcommon.Hash {
+	return crypto.Keccak256Hash([]byte(fmt.Sprintf("%s%s", chainID, txHash)))
 }
 
 // stripBCHAddress removes prefix on bch addresses.

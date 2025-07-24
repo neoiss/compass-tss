@@ -83,6 +83,7 @@ type Bridge struct {
 	kw            *evm.KeySignWrapper
 	ethRpc        *evm.EthRPC
 	mainAbi       *abi.ABI
+	tokenRegistry *abi.ABI
 	mainCall      *contract.Call
 	epoch         *big.Int
 }
@@ -143,6 +144,10 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	if err != nil {
 		return nil, err
 	}
+	tokenRegistry, err := NewTokenRegistry()
+	if err != nil {
+		return nil, err
+	}
 
 	ai, err := selfAbi.New(maintainerAbi)
 	if err != nil {
@@ -177,6 +182,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		tokenRegistry: tokenRegistry,
 		mainCall:      mainCall,
 		epoch:         big.NewInt(1), // todo
 		gasPrice:      big.NewInt(0),

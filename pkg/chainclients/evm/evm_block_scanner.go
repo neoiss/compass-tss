@@ -37,7 +37,6 @@ import (
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/x/aggregators"
-	memo "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -943,8 +942,8 @@ func (e *EVMScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receip
 	//txGasPrice := tx.GasPrice()
 	txHash := tx.Hash().Hex()[2:]
 	return &stypes.TxInItem{
-		Tx:     txHash,
-		Memo:   memo.NewOutboundMemo(common.TxID(txHash)).String(),
+		Tx: txHash,
+		//Memo:   memo.NewOutboundMemo(common.TxID(txHash)).String(), todo memo
 		Sender: strings.ToLower(fromAddr.String()),
 		//To:     strings.ToLower(tx.To().String()),
 		//Coins:  common.NewCoins(common.NewCoin(e.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1))),

@@ -44,7 +44,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/aggregators"
-	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 const (
@@ -392,14 +391,15 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		return nil, nil, nil, fmt.Errorf("can't sign tx when it doesn't have memo")
 	}
 
-	memo, err := mem.ParseMemo(common.LatestVersion, tx.Memo)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("fail to parse memo(%s):%w", tx.Memo, err)
-	}
-
-	if memo.IsInbound() {
-		return nil, nil, nil, fmt.Errorf("inbound memo should not be used for outbound tx")
-	}
+	// todo memo
+	//memo, err := mem.ParseMemo(common.LatestVersion, tx.Memo)
+	//if err != nil {
+	//	return nil, nil, nil, fmt.Errorf("fail to parse memo(%s):%w", tx.Memo, err)
+	//}
+	//
+	//if memo.IsInbound() {
+	//	return nil, nil, nil, fmt.Errorf("inbound memo should not be used for outbound tx")
+	//}
 
 	contractAddr := c.getSmartContractAddr(tx.VaultPubKey)
 	if contractAddr.IsEmpty() {
@@ -424,66 +424,67 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		return nil, nil, nil, fmt.Errorf("fail to get ETH address for pub key(%s): %w", tx.VaultPubKey, err)
 	}
 
-	dest := ecommon.HexToAddress(tx.ToAddress.String())
+	// todo memo
+	//dest := ecommon.HexToAddress(tx.ToAddress.String())
 	var data []byte
-
-	switch memo.GetType() {
-	case mem.TxOutbound, mem.TxRefund, mem.TxRagnarok:
-		if tx.Aggregator == "" {
-			data, err = c.vaultABI.Pack("transferOut", dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOut): %w", err)
-			}
-		} else {
-			memoType := memo.GetType()
-			if memoType == mem.TxRefund || memoType == mem.TxRagnarok {
-				return nil, nil, nil, fmt.Errorf("%s can't use transferOutAndCall", memoType)
-			}
-			c.logger.Info().Msgf("aggregator target address: %s", tx.AggregatorTargetAsset)
-			if ethValue.Uint64() == 0 {
-				return nil, nil, nil, fmt.Errorf("transferOutAndCall can only be used when outbound asset is ETH")
-			}
-			targetLimit := tx.AggregatorTargetLimit
-			if targetLimit == nil {
-				zeroLimit := cosmos.ZeroUint()
-				targetLimit = &zeroLimit
-			}
-			aggAddr := ecommon.HexToAddress(tx.Aggregator)
-			targetAddr := ecommon.HexToAddress(tx.AggregatorTargetAsset)
-			// when address can't be round trip , the tx out item will be dropped
-			if !strings.EqualFold(aggAddr.String(), tx.Aggregator) {
-				c.logger.Error().Msgf("aggregator address can't roundtrip , ignore tx (%s != %s)", tx.Aggregator, aggAddr.String())
-				return nil, nil, nil, nil
-			}
-			if !strings.EqualFold(targetAddr.String(), tx.AggregatorTargetAsset) {
-				c.logger.Error().Msgf("aggregator target asset address can't roundtrip , ignore tx (%s != %s)", tx.AggregatorTargetAsset, targetAddr.String())
-				return nil, nil, nil, nil
-			}
-			data, err = c.vaultABI.Pack("transferOutAndCall", aggAddr, targetAddr, dest, targetLimit.BigInt(), tx.Memo)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOutAndCall): %w", err)
-			}
-		}
-	case mem.TxMigrate:
-		if tx.Aggregator != "" || tx.AggregatorTargetAsset != "" {
-			return nil, nil, nil, fmt.Errorf("migration can't use aggregator")
-		}
-		if IsETH(tokenAddr) {
-			data, err = c.vaultABI.Pack("transferOut", dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOut): %w", err)
-			}
-		} else {
-			newSmartContractAddr := c.getSmartContractByAddress(tx.ToAddress)
-			if newSmartContractAddr.IsEmpty() {
-				return nil, nil, nil, fmt.Errorf("fail to get new smart contract address")
-			}
-			data, err = c.vaultABI.Pack("transferAllowance", ecommon.HexToAddress(newSmartContractAddr.String()), dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferAllowance): %w", err)
-			}
-		}
-	}
+	//
+	//switch memo.GetType() {
+	//case mem.TxOutbound, mem.TxRefund, mem.TxRagnarok:
+	//	if tx.Aggregator == "" {
+	//		data, err = c.vaultABI.Pack("transferOut", dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOut): %w", err)
+	//		}
+	//	} else {
+	//		memoType := memo.GetType()
+	//		if memoType == mem.TxRefund || memoType == mem.TxRagnarok {
+	//			return nil, nil, nil, fmt.Errorf("%s can't use transferOutAndCall", memoType)
+	//		}
+	//		c.logger.Info().Msgf("aggregator target address: %s", tx.AggregatorTargetAsset)
+	//		if ethValue.Uint64() == 0 {
+	//			return nil, nil, nil, fmt.Errorf("transferOutAndCall can only be used when outbound asset is ETH")
+	//		}
+	//		targetLimit := tx.AggregatorTargetLimit
+	//		if targetLimit == nil {
+	//			zeroLimit := cosmos.ZeroUint()
+	//			targetLimit = &zeroLimit
+	//		}
+	//		aggAddr := ecommon.HexToAddress(tx.Aggregator)
+	//		targetAddr := ecommon.HexToAddress(tx.AggregatorTargetAsset)
+	//		// when address can't be round trip , the tx out item will be dropped
+	//		if !strings.EqualFold(aggAddr.String(), tx.Aggregator) {
+	//			c.logger.Error().Msgf("aggregator address can't roundtrip , ignore tx (%s != %s)", tx.Aggregator, aggAddr.String())
+	//			return nil, nil, nil, nil
+	//		}
+	//		if !strings.EqualFold(targetAddr.String(), tx.AggregatorTargetAsset) {
+	//			c.logger.Error().Msgf("aggregator target asset address can't roundtrip , ignore tx (%s != %s)", tx.AggregatorTargetAsset, targetAddr.String())
+	//			return nil, nil, nil, nil
+	//		}
+	//		data, err = c.vaultABI.Pack("transferOutAndCall", aggAddr, targetAddr, dest, targetLimit.BigInt(), tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOutAndCall): %w", err)
+	//		}
+	//	}
+	//case mem.TxMigrate:
+	//	if tx.Aggregator != "" || tx.AggregatorTargetAsset != "" {
+	//		return nil, nil, nil, fmt.Errorf("migration can't use aggregator")
+	//	}
+	//	if IsETH(tokenAddr) {
+	//		data, err = c.vaultABI.Pack("transferOut", dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferOut): %w", err)
+	//		}
+	//	} else {
+	//		newSmartContractAddr := c.getSmartContractByAddress(tx.ToAddress)
+	//		if newSmartContractAddr.IsEmpty() {
+	//			return nil, nil, nil, fmt.Errorf("fail to get new smart contract address")
+	//		}
+	//		data, err = c.vaultABI.Pack("transferAllowance", ecommon.HexToAddress(newSmartContractAddr.String()), dest, ecommon.HexToAddress(tokenAddr), value, tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, nil, fmt.Errorf("fail to create data to call smart contract(transferAllowance): %w", err)
+	//		}
+	//	}
+	//}
 
 	// the nonce is stored as the transaction checkpoint, if it is set deserialize it
 	// so we only retry with the same nonce to avoid double spend

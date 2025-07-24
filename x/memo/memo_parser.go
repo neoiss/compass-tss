@@ -7,43 +7,35 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/x/keeper"
-	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 type parser struct {
 	memo           string
 	txType         TxType
-	ctx            cosmos.Context
-	keeper         keeper.Keeper
 	parts          []string
 	errs           []error
-	version        semver.Version
 	requiredFields int
 }
 
-func newParser(ctx cosmos.Context, keeper keeper.Keeper, version semver.Version, memo string) (parser, error) {
+// func newParser(ctx cosmos.Context, keeper keeper.Keeper, version semver.Version, memo string) (parser, error) {
+func newParser(memo string) (parser, error) {
 	if len(memo) == 0 {
 		return parser{}, fmt.Errorf("memo can't be empty")
 	}
-	memo = strings.Split(memo, "|")[0]
-	parts := strings.Split(memo, ":")
+
+	parts := strings.Split(memo, "|")
 	memoType, err := StringToTxType(parts[0])
 	if err != nil {
 		return parser{}, err
 	}
 
 	return parser{
-		memo:    memo,
-		txType:  memoType,
-		ctx:     ctx,
-		keeper:  keeper,
-		version: version,
-		parts:   parts,
-		errs:    make([]error, 0),
+		memo:   memo,
+		txType: memoType,
+		parts:  parts,
+		errs:   make([]error, 0),
 	}, nil
 }
 
@@ -64,56 +56,14 @@ func (p *parser) parse() (mem Memo, err error) {
 		}
 	}()
 	switch p.getType() {
-	case TxLeave:
-		return p.ParseLeaveMemo()
-	case TxDonate:
-		return p.ParseDonateMemo()
 	case TxAdd:
 		return p.ParseAddLiquidityMemo()
-	case TxWithdraw:
-		return p.ParseWithdrawLiquidityMemo()
-	case TxRunePoolDeposit:
-		return p.ParseRunePoolDepositMemo()
-	case TxRunePoolWithdraw:
-		return p.ParseRunePoolWithdrawMemo()
-	case TxSwap, TxLimitOrder:
-		return p.ParseSwapMemo()
+	case TxInbound:
+		return p.ParseInboundMemo()
 	case TxOutbound:
 		return p.ParseOutboundMemo()
 	case TxRefund:
 		return p.ParseRefundMemo()
-	case TxBond:
-		return p.ParseBondMemo()
-	case TxUnbond:
-		return p.ParseUnbondMemo()
-	case TxReserve:
-		return p.ParseReserveMemo()
-	case TxMigrate:
-		return p.ParseMigrateMemo()
-	case TxRagnarok:
-		return p.ParseRagnarokMemo()
-	case TxNoOp:
-		return p.ParseNoOpMemo()
-	case TxConsolidate:
-		return p.ParseConsolidateMemo()
-	case TxTHORName:
-		return p.ParseManageTHORNameMemo()
-	case TxLoanOpen:
-		return p.ParseLoanOpenMemo()
-	case TxLoanRepayment:
-		return p.ParseLoanRepaymentMemo()
-	case TxTradeAccountDeposit:
-		return p.ParseTradeAccountDeposit()
-	case TxTradeAccountWithdrawal:
-		return p.ParseTradeAccountWithdrawal()
-	case TxSecuredAssetDeposit:
-		return p.ParseSecuredAssetDeposit()
-	case TxSecuredAssetWithdraw:
-		return p.ParseSecuredAssetWithdraw()
-	case TxExec:
-		return p.ParseExecMemo()
-	case TxSwitch:
-		return p.ParseSwitch()
 	default:
 		return EmptyMemo, fmt.Errorf("TxType not supported: %s", p.getType().String())
 	}
@@ -239,19 +189,19 @@ func (p *parser) getAddress(idx int, required bool, def common.Address) common.A
 	return value
 }
 
-func (p *parser) getAddressWithKeeper(idx int, required bool, def common.Address, chain common.Chain) common.Address {
-	p.incRequired(required)
-	if p.keeper == nil {
-		return p.getAddress(2, required, common.NoAddress)
-	}
-	addr, err := FetchAddress(p.ctx, p.keeper, p.get(idx), chain)
-	if err != nil {
-		if required || p.get(idx) != "" {
-			p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", p.get(idx), err))
-		}
-	}
-	return addr
-}
+//func (p *parser) getAddressWithKeeper(idx int, required bool, def common.Address, chain common.Chain) common.Address {
+//	p.incRequired(required)
+//	if p.keeper == nil {
+//		return p.getAddress(2, required, common.NoAddress)
+//	}
+//	addr, err := FetchAddress(p.ctx, p.keeper, p.get(idx), chain)
+//	if err != nil {
+//		if required || p.get(idx) != "" {
+//			p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", p.get(idx), err))
+//		}
+//	}
+//	return addr
+//}
 
 func (p *parser) getStringArrayBySeparator(idx int, required bool, separator string) []string {
 	p.incRequired(required)
@@ -283,50 +233,50 @@ func (p *parser) getUintArrayBySeparator(idx int, required bool, separator strin
 	return result
 }
 
-func (p *parser) getAddressAndRefundAddressWithKeeper(idx int, required bool, def common.Address, chain common.Chain) (common.Address, common.Address) {
-	p.incRequired(required)
+//func (p *parser) getAddressAndRefundAddressWithKeeper(idx int, required bool, def common.Address, chain common.Chain) (common.Address, common.Address) {
+//	p.incRequired(required)
+//
+//	//nolint:ineffassign
+//	destination := common.NoAddress
+//	refundAddress := common.NoAddress
+//	addresses := p.get(idx)
+//
+//	if strings.Contains(addresses, "/") {
+//		parts := strings.SplitN(addresses, "/", 2)
+//		if p.keeper == nil {
+//			dest, err := common.NewAddress(parts[0])
+//			if err != nil {
+//				if required || parts[0] != "" {
+//					p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", parts[0], err))
+//				}
+//			}
+//			destination = dest
+//		} else {
+//			destination = p.getAddressFromString(parts[0], chain, required)
+//		}
+//		if len(parts) > 1 {
+//			refundAddress, _ = common.NewAddress(parts[1])
+//		}
+//	} else {
+//		destination = p.getAddressWithKeeper(idx, false, common.NoAddress, chain)
+//	}
+//
+//	if destination.IsEmpty() && !refundAddress.IsEmpty() {
+//		p.addErr(fmt.Errorf("refund address is set but destination address is empty"))
+//	}
+//
+//	return destination, refundAddress
+//}
 
-	//nolint:ineffassign
-	destination := common.NoAddress
-	refundAddress := common.NoAddress
-	addresses := p.get(idx)
-
-	if strings.Contains(addresses, "/") {
-		parts := strings.SplitN(addresses, "/", 2)
-		if p.keeper == nil {
-			dest, err := common.NewAddress(parts[0])
-			if err != nil {
-				if required || parts[0] != "" {
-					p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", parts[0], err))
-				}
-			}
-			destination = dest
-		} else {
-			destination = p.getAddressFromString(parts[0], chain, required)
-		}
-		if len(parts) > 1 {
-			refundAddress, _ = common.NewAddress(parts[1])
-		}
-	} else {
-		destination = p.getAddressWithKeeper(idx, false, common.NoAddress, chain)
-	}
-
-	if destination.IsEmpty() && !refundAddress.IsEmpty() {
-		p.addErr(fmt.Errorf("refund address is set but destination address is empty"))
-	}
-
-	return destination, refundAddress
-}
-
-func (p *parser) getAddressFromString(val string, chain common.Chain, required bool) common.Address {
-	addr, err := FetchAddress(p.ctx, p.keeper, val, chain)
-	if err != nil {
-		if required || val != "" {
-			p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", val, err))
-		}
-	}
-	return addr
-}
+//func (p *parser) getAddressFromString(val string, chain common.Chain, required bool) common.Address {
+//	addr, err := FetchAddress(p.ctx, p.keeper, val, chain)
+//	if err != nil {
+//		if required || val != "" {
+//			p.addErr(fmt.Errorf("cannot parse '%s' as an Address: %w", val, err))
+//		}
+//	}
+//	return addr
+//}
 
 func (p *parser) getChain(idx int, required bool, def common.Chain) common.Chain {
 	p.incRequired(required)
@@ -340,15 +290,15 @@ func (p *parser) getChain(idx int, required bool, def common.Chain) common.Chain
 	return value
 }
 
-func (p *parser) getAsset(idx int, required bool, def common.Asset) common.Asset {
-	p.incRequired(required)
-	value, err := common.NewAssetWithShortCodes(p.version, p.get(idx))
-	if err != nil && (required || p.get(idx) != "") {
-		p.addErr(fmt.Errorf("cannot parse '%s' as an asset: %w", p.get(idx), err))
-		return def
-	}
-	return value
-}
+//func (p *parser) getAsset(idx int, required bool, def common.Asset) common.Asset {
+//	p.incRequired(required)
+//	value, err := common.NewAssetWithShortCodes(p.version, p.get(idx))
+//	if err != nil && (required || p.get(idx) != "") {
+//		p.addErr(fmt.Errorf("cannot parse '%s' as an asset: %w", p.get(idx), err))
+//		return def
+//	}
+//	return value
+//}
 
 func (p *parser) getTxID(idx int, required bool, def common.TxID) common.TxID {
 	p.incRequired(required)
@@ -360,27 +310,6 @@ func (p *parser) getTxID(idx int, required bool, def common.TxID) common.TxID {
 		return def
 	}
 	return value
-}
-
-func (p *parser) getTHORName(idx int, required bool, def types.THORName, subIndex int) types.THORName {
-	p.incRequired(required)
-	name := p.get(idx)
-	if subIndex >= 0 {
-		name = p.getSubIndex(idx, subIndex)
-	}
-	if p.keeper == nil {
-		return def
-	}
-	if p.keeper.THORNameExists(p.ctx, name) {
-		tn, err := p.keeper.GetTHORName(p.ctx, name)
-		if err != nil {
-			if required || p.get(idx) != "" {
-				p.addErr(fmt.Errorf("cannot parse '%s' as a THORName: %w", p.get(idx), err))
-			}
-		}
-		return tn
-	}
-	return def
 }
 
 func (p *parser) getBase64Bytes(idx int, required bool, def []byte) []byte {

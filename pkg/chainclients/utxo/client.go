@@ -382,19 +382,24 @@ func (c *Client) OnObservedTxIn(txIn types.TxInItem, blockHeight int64) {
 	}
 	// update the signer cache
 	var m mem.Memo
-	m, err = mem.ParseMemo(common.LatestVersion, txIn.Memo)
+	m, err = mem.ParseMemo(txIn.Memo)
 	if err != nil {
 		// Debug log only as ParseMemo error is expected for THORName inbounds.
 		c.log.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
 		return
 	}
-	if !m.IsOutbound() {
+	if !m.IsValid() {
+		c.log.Debug().Str("memo", txIn.Memo).Str("type", m.GetType().String()).Msg("invalid memo")
 		return
 	}
-	if m.GetTxID().IsEmpty() {
-		return
-	}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxID().String()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+
+	//if !m.IsOutbound() {
+	//	return
+	//}
+	//if m.GetTxHash().IsEmpty() { todo utxo
+	//	return
+	//}
+	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxHash()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.log.Err(err).Msg("fail to update signer cache")
 	}
 }

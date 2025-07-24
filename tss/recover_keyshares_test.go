@@ -2,6 +2,7 @@ package tss
 
 import (
 	"fmt"
+	"github.com/cosmos/go-bip39"
 	"github.com/ethereum/go-ethereum/common"
 	"testing"
 	"time"
@@ -37,4 +38,17 @@ func Test_recoverKeyShares(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewMnemonic(t *testing.T) {
+
+	entropy, err := bip39.NewEntropy(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(mnemonic)
 }

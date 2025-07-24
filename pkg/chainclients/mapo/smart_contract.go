@@ -12,8 +12,12 @@ const (
 	idPackAbi = `[{"inputs":[{"internalType":"bytes","name":"pubkey","type":"bytes"},{"internalType":"address[]","name":"members","type":"address[]"},{"internalType":"uint256","name":"epoch","type":"uint256"},{"internalType":"address[]","name":"blames","type":"address[]"},{"internalType":"bytes","name":"keyShares","type":"bytes"}],"name":"idPack","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
 )
 
-//go:embed abi/maintainer.json
-var maintainerAbi string
+var (
+	//go:embed abi/maintainer.json
+	maintainerAbi string
+	//go:embed abi/tokenRegister.json
+	tokenRegistryABI string
+)
 
 func newMaintainerABi() (*abi.ABI, error) {
 	maintainer, err := abi.JSON(strings.NewReader(maintainerAbi))
@@ -31,4 +35,13 @@ func NewIdABi() (*abi.ABI, error) {
 	}
 
 	return &maintainer, nil
+}
+
+func NewTokenRegistry() (*abi.ABI, error) {
+	registry, err := abi.JSON(strings.NewReader(tokenRegistryABI))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token registry abi: %w", err)
+	}
+
+	return &registry, nil
 }

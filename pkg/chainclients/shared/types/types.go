@@ -115,6 +115,8 @@ type Bridge interface {
 	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
+	GetChainID(name string) (*big.Int, error)
+	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
 	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
 }
 

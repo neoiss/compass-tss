@@ -2,31 +2,32 @@ package thorchain
 
 import (
 	"fmt"
-
-	"github.com/mapprotocol/compass-tss/common"
 )
 
 type RefundMemo struct {
 	MemoBase
-	TxID common.TxID
+	Chain  string
+	TxHash string
 }
 
-func (m RefundMemo) GetTxID() common.TxID { return m.TxID }
+func (m RefundMemo) GetTxHash() string { return m.TxHash }
 
 // String implement fmt.Stringer
 func (m RefundMemo) String() string {
-	return fmt.Sprintf("REFUND:%s", m.TxID.String())
+	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.TxHash)
 }
 
 // NewRefundMemo create a new RefundMemo
-func NewRefundMemo(txID common.TxID) RefundMemo {
+func NewRefundMemo(chain, txHash string) RefundMemo {
 	return RefundMemo{
 		MemoBase: MemoBase{TxType: TxRefund},
-		TxID:     txID,
+		Chain:    chain,
+		TxHash:   txHash,
 	}
 }
 
 func (p *parser) ParseRefundMemo() (RefundMemo, error) {
-	txID := p.getTxID(1, true, common.BlankTxID)
-	return NewRefundMemo(txID), p.Error()
+	chain := p.get(1)
+	txHash := p.get(2)
+	return NewRefundMemo(chain, txHash), p.Error()
 }
