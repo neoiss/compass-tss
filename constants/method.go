@@ -1,8 +1,13 @@
 package constants
 
+// -----------------------------------------------------------------
+// Maintainer
+// -----------------------------------------------------------------
 const (
-	VoteUpdateTssPoolOfMaintainer = "voteUpdateTssPool"
-	GetElectionEpochOfMaintainer  = "getElectionEpoch"
-	GetTSSPoolIdOfMaintainer      = "getTSSPoolId"
-	VoteNetworkFeeOfMaintainer    = "voteNetworkFee"
+	VoteUpdateTssPool = "voteUpdateTssPool"
+	GetElectionEpoch  = "getElectionEpoch"
+	GetTSSPoolId      = "getTSSPoolId"
+	VoteNetworkFee    = "voteNetworkFee"
+	VoteTxIn          = "voteTxIn"
+	VoteTxOut         = "voteTxOut"
 )

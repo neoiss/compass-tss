@@ -7,13 +7,57 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	"github.com/mapprotocol/compass-tss/metrics"
 	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"os"
 	"testing"
+	"time"
 )
+
+func GetMetricForTest() (*metrics.Metrics, error) {
+	return metrics.NewMetrics(config.BifrostMetricsConfiguration{
+		Enabled:      false,
+		ListenPort:   9000,
+		ReadTimeout:  time.Second,
+		WriteTimeout: time.Second,
+		Chains:       common.Chains{common.ETHChain},
+	})
+}
+
+func getBridgeForTest(t *testing.T) shareTypes.Bridge {
+	m, err := GetMetricForTest()
+	assert.Nil(t, err)
+
+	bridgeCfg := config.BifrostClientConfiguration{
+		ChainID:         "map",
+		ChainHost:       "https://testnet-rpc.maplabs.io",
+		SignerPasswd:    "password",
+		ChainHomeFolder: "./",
+	}
+
+	//registry := codectypes.NewInterfaceRegistry()
+	//cryptocodec.RegisterInterfaces(registry)
+	//cdc := codec.NewProtoCodec(registry)
+	//kb := cKeys.NewInMemory(cdc)
+
+	name := "test-eth"
+	//  dont push
+	priStr := os.Getenv("pri")
+	kb, _, err := keys.GetKeyringKeybase(priStr, name)
+	assert.Nil(t, err)
+
+	k := keys.NewKeysWithKeybase(kb, name, "123456", priStr)
+	bridge, err := NewBridge(bridgeCfg, m, k)
+	assert.Nil(t, err)
+	return bridge
+}
 
 func Test_Bridge_PostNetworkFee(t *testing.T) {
 	ethClient, err := ethclient.Dial("https://testnet-rpc.maplabs.io")
@@ -28,7 +72,7 @@ func Test_Bridge_PostNetworkFee(t *testing.T) {
 
 	to := ecommon.HexToAddress("0x0EdA5e4015448A2283662174DD7def3C3d262D38")
 
-	input, err := ai.PackInput(constants.VoteNetworkFeeOfMaintainer,
+	input, err := ai.PackInput(constants.VoteNetworkFee,
 		big.NewInt(1),
 		big.NewInt(1360095883558914),
 		big.NewInt(882082),

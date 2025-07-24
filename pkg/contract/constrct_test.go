@@ -22,7 +22,7 @@ func Test_NewCall(t *testing.T) {
 
 	call := New(ethClient, []ecommon.Address{ecommon.HexToAddress("0x0EdA5e4015448A2283662174DD7def3C3d262D38")}, testAbi)
 	var tssPoolId ecommon.Hash
-	err = call.Call(constants.GetTSSPoolIdOfMaintainer, &tssPoolId, 0,
+	err = call.Call(constants.GetTSSPoolId, &tssPoolId, 0,
 		ecommon.Hex2Bytes("3ea5c282cb98f83c1d7e87e696c9c2c9a51a029ab3805d66d5392fdb45dc104e"),
 		[]ecommon.Address{ecommon.HexToAddress("0x25fa71d4f689f4b65eb6d020a414090828281d51"),
 			ecommon.HexToAddress("0xad76db9c043fb5386d8d5c4634f55bbada559b29"),
@@ -30,6 +30,6 @@ func Test_NewCall(t *testing.T) {
 		big.NewInt(1),
 		[]ecommon.Address{},
 	)
-	assert.Nil(t, err, "Failed to call GetTSSPoolIdOfMaintainer")
+	assert.Nil(t, err, "Failed to call GetTSSPoolId")
 	t.Log("tssPoolId ", tssPoolId)
 }

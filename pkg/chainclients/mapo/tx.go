@@ -6,8 +6,49 @@ import (
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo/abi"
 	"math/big"
 )
+
+func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
+	//  check
+	if len(txIn.TxArray) == 0 {
+		return nil, nil
+	}
+	// Here we construct tx according to method， and return hex tx2bytes
+	var (
+		err   error
+		input []byte
+	)
+	ele := txIn.TxArray[0]
+	switch ele.Method {
+	case constants.VoteTxIn:
+		input, err = b.mainAbi.Pack(constants.VoteTxIn, &abi.VoteTxIn{
+			TxInType:  ele.TxInType,
+			ToChain:   big.NewInt(0),
+			Height:    ele.Height,
+			FromChain: ele.FromChain,
+			Amount:    ele.Amount,
+			OrderId:   ele.OrderId,
+			Vault:     ele.Vault,
+			Token:     ele.Token,
+			From:      nil,
+			To:        ele.To,
+			Payload:   nil,
+		})
+
+	case constants.VoteTxOut:
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("fail to method(%s) pack input: %w",
+			txIn.TxArray[0].Method, err)
+	}
+
+	return b.assemblyInternalTx(context.Background(), input, 0)
+}
 
 func (b *Bridge) assemblyInternalTx(ctx context.Context, input []byte, recommendLimit uint64) ([]byte, error) {
 	// estimate gas

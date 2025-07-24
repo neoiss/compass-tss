@@ -186,11 +186,6 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		return false, nil
 	}
 	isVaultTransfer := false
-	// only events produced by THORChain router is processed
-	//// todo
-	//if !scp.addressValidator(&ll.Address, false) {
-	//	return false, nil
-	//}
 
 	// todo
 	//earlyExit := false

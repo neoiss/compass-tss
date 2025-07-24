@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -52,29 +53,29 @@ const (
 
 // ETHScanner is a scanner that understand how to interact with ETH chain ,and scan block , parse smart contract etc
 type ETHScanner struct {
-	cfg                   config.BifrostBlockScannerConfiguration
-	logger                zerolog.Logger
-	db                    blockscanner.ScannerStorage
-	m                     *metrics.Metrics
-	errCounter            *prometheus.CounterVec
-	gasPriceChanged       bool
-	gasPrice              *big.Int
-	lastReportedGasPrice  uint64
-	client                *ethclient.Client
-	blockMetaAccessor     evm.BlockMetaAccessor
-	globalErrataQueue     chan<- stypes.ErrataBlock
-	globalNetworkFeeQueue chan<- stypes.NetworkFee
-	gatewayABI            *abi.ABI
-	erc20ABI              *abi.ABI              // todo
-	tokens                *evm.LevelDBTokenMeta // todo
-	bridge                shareTypes.Bridge
-	pubkeyMgr             pubkeymanager.PubKeyValidator
-	eipSigner             etypes.Signer
-	currentBlockHeight    int64
-	gasCache              []*big.Int
-	solvencyReporter      SolvencyReporter
-	whitelistTokens       []tokenlist.ERC20Token
-	signerCacheManager    *signercache.CacheManager
+	cfg                                            config.BifrostBlockScannerConfiguration
+	logger                                         zerolog.Logger
+	db                                             blockscanner.ScannerStorage
+	m                                              *metrics.Metrics
+	errCounter                                     *prometheus.CounterVec
+	gasPriceChanged                                bool
+	gasPrice                                       *big.Int
+	lastReportedGasPrice                           uint64
+	client                                         *ethclient.Client
+	blockMetaAccessor                              evm.BlockMetaAccessor
+	globalErrataQueue                              chan<- stypes.ErrataBlock
+	globalNetworkFeeQueue                          chan<- stypes.NetworkFee
+	gatewayABI                                     *abi.ABI
+	erc20ABI                                       *abi.ABI              // todo
+	tokens                                         *evm.LevelDBTokenMeta // todo
+	bridge                                         shareTypes.Bridge
+	pubkeyMgr                                      pubkeymanager.PubKeyValidator
+	eipSigner                                      etypes.Signer
+	currentBlockHeight, reqTime, cacheLatestHeight int64
+	gasCache                                       []*big.Int
+	solvencyReporter                               SolvencyReporter
+	whitelistTokens                                []tokenlist.ERC20Token
+	signerCacheManager                             *signercache.CacheManager
 }
 
 // NewETHScanner create a new instance of ETHScanner
@@ -155,12 +156,18 @@ func (e *ETHScanner) getContext() (context.Context, context.CancelFunc) {
 
 // GetHeight return latest block height
 func (e *ETHScanner) GetHeight() (int64, error) {
+	// add cache
+	if time.Now().Unix()-e.reqTime < 5 { // request every 5 seconds
+		return e.cacheLatestHeight, nil
+	}
 	ctx, cancel := e.getContext()
 	defer cancel()
 	height, err := e.client.BlockNumber(ctx)
 	if err != nil {
 		return -1, fmt.Errorf("fail to get block height: %w", err)
 	}
+	e.cacheLatestHeight = int64(height)
+	e.reqTime = time.Now().Unix()
 	return int64(height), nil
 }
 
@@ -180,14 +187,14 @@ func (e *ETHScanner) GetTokens() ([]*types.TokenMeta, error) {
 }
 
 // FetchTxs query the ETH chain to get txs in the given block height
-func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
-	block, err := e.getRPCBlock(height)
+func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, error) {
+	block, err := e.getRPCBlock(currentHeight)
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
 	logs, err := e.getRPCFilterLogs(ethereum.FilterQuery{
-		FromBlock: big.NewInt(height),
-		ToBlock:   big.NewInt(height),
+		FromBlock: big.NewInt(currentHeight),
+		ToBlock:   big.NewInt(currentHeight),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
 		Topics: [][]ecommon.Hash{{
 			constants.EventOfDeposit.GetTopic(),
@@ -199,34 +206,31 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	// empty handle done
-	if len(logs) == 0 {
-		return stypes.TxIn{}, nil
-	}
+
 	txIn, err := e.processBlock(block, logs)
 	if err != nil {
-		e.logger.Error().Err(err).Int64("height", height).Msg("fail to search tx in block")
-		return stypes.TxIn{}, fmt.Errorf("fail to process block: %d, err:%w", height, err)
+		e.logger.Error().Err(err).Int64("currentHeight", currentHeight).Msg("fail to search tx in block")
+		return stypes.TxIn{}, fmt.Errorf("fail to process block: %d, err:%w", currentHeight, err)
 	}
 	// blockMeta need to be saved , even there is no transactions found on this block at the time of scan
 	// because at the time of scan , so the block hash will be stored, and it can be used to detect re-org
 	blockMeta := types.NewBlockMeta(block.Header(), txIn)
 	if err = e.blockMetaAccessor.SaveBlockMeta(blockMeta.Height, blockMeta); err != nil {
-		e.logger.Err(err).Msgf("fail to save block meta of height: %d ", blockMeta.Height)
+		e.logger.Err(err).Msgf("fail to save block meta of currentHeight: %d ", blockMeta.Height)
 	}
 
-	e.currentBlockHeight = height
-	pruneHeight := height - e.cfg.MaxReorgRescanBlocks
+	e.currentBlockHeight = currentHeight
+	pruneHeight := currentHeight - e.cfg.MaxReorgRescanBlocks
 	if pruneHeight > 0 {
 		defer func() {
 			if err := e.blockMetaAccessor.PruneBlockMeta(pruneHeight); err != nil {
-				e.logger.Err(err).Msgf("fail to prune block meta, height(%d)", pruneHeight)
+				e.logger.Err(err).Msgf("fail to prune block meta, currentHeight(%d)", pruneHeight)
 			}
 		}()
 	}
 
 	// skip reporting network fee and solvency if block more than flexibility blocks from tip
-	if chainHeight-height > e.cfg.ObservationFlexibilityBlocks {
+	if latestHeight-currentHeight > e.cfg.ObservationFlexibilityBlocks {
 		return txIn, nil
 	}
 
@@ -242,7 +246,7 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 		cId, _ := common.ETHChain.ChainID()
 		e.globalNetworkFeeQueue <- stypes.NetworkFee{
 			ChainId:             cId,
-			Height:              height,
+			Height:              currentHeight,
 			TransactionSize:     e.cfg.MaxGasLimit,
 			TransactionSwapSize: e.cfg.MaxSwapGasLimit,
 			TransactionRate:     tcGasPrice,
@@ -252,7 +256,7 @@ func (e *ETHScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 	}
 
 	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(height); err != nil {
+		if err = e.solvencyReporter(currentHeight); err != nil {
 			e.logger.Err(err).Msg("fail to report Solvency info to THORNode")
 		}
 	}
@@ -267,7 +271,7 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 	}
 
 	// find the 25th percentile priority fee in the block
-	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 }) // 从小到大
+	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 }) //
 	priorityFee := priorityFees[len(priorityFees)/4]                                                    //
 
 	// consider gas price as base fee + 25th percentile priority fee
@@ -358,7 +362,7 @@ func (e *ETHScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 		}
 	}
 
-	if block.Transactions().Len() == 0 {
+	if len(logs) == 0 {
 		return txIn, nil
 	}
 
@@ -391,10 +395,6 @@ func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.
 		}
 		defer sem.Release(1)
 
-		//if ll.To() == nil {
-		//	return
-		//}
-
 		// just try to remove the transaction hash from key value store
 		// it doesn't matter whether the transaction is ours or not , success or failure
 		// as long as the transaction id matches
@@ -414,9 +414,7 @@ func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.
 		if len(txInItem.To) == 0 {
 			return
 		}
-		//if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
-		//	return
-		//}
+
 		//txInItem.BlockHeight = block.Number().Int64()
 		mu.Lock()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
@@ -429,24 +427,15 @@ func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.
 		tmp := ll
 		go processTx(&tmp)
 	}
-	//// process txs in parallel
-	//for _, tx := range block.Transactions() {
-	//	// skip blob transactions
-	//	if tx.Type() == etypes.BlobTxType {
-	//		continue
-	//	}
-	//
-	//	wg.Add(1)
-	//	go processTx(tx)
-	//}
+
 	wg.Wait()
 
 	count := len(txInbound.TxArray)
 	if count == 0 {
-		e.logger.Info().Int64("block", int64(block.NumberU64())).Msg("no tx need to be processed in this block")
+		e.logger.Info().Int64("block", int64(block.NumberU64())).Msg("No tx need to be processed in this block")
 		return stypes.TxIn{}, nil
 	}
-	e.logger.Debug().Int64("block", int64(block.NumberU64())).Msgf("there are %d tx in this block need to process", count)
+	e.logger.Debug().Int64("block", int64(block.NumberU64())).Msgf("There are %d tx in this block need to process", count)
 	return txInbound, nil
 }
 
@@ -828,20 +817,17 @@ func (e *ETHScanner) getAssetFromTokenAddress(token string) (common.Asset, error
 
 // getTxInFromSmartContract returns txInItem
 func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
-	e.logger.Debug().Msg("parse tx from smart contract")
+	e.logger.Debug().Msg("Parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
 		Tx:     ll.TxHash.Hex()[2:],
 		Height: big.NewInt(0).SetUint64(ll.BlockNumber),
 	}
-	//// todo
-	//sender, err := e.eipSigner.Sender(tx)
-	//if err != nil {
-	//	return nil, fmt.Errorf("fail to get sender: %w", err)
-	//}
-	//txInItem.Sender = strings.ToLower(sender.String())
+	cId, _ := e.cfg.ChainID.ChainID()
+	txInItem.FromChain = cId
+
 	// 1 is Transaction success state
 	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Info().Msgf("tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
+		e.logger.Info().Msgf("Find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
 		return nil, nil
 	}
 	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
@@ -859,14 +845,14 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
 	txGasPrice := receipt.EffectiveGasPrice
 
-	e.logger.Debug().Msgf("tx: %s, gas price: %s, gas used: %d,receipt status:%d", txInItem.Tx, txGasPrice.String(), receipt.GasUsed, receipt.Status)
+	e.logger.Debug().Msgf("Find tx: %s, gas price: %s, gas used: %d,receipt status:%d", txInItem.Tx, txGasPrice.String(), receipt.GasUsed, receipt.Status)
 
 	//txInItem.Gas = common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil)
 	//if txInItem.Coins.IsEmpty() {
 	//	e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
 	//	return nil, nil
 	//}
-	e.logger.Debug().Msgf("tx in item: %+v", txInItem)
+	e.logger.Debug().Msgf("Tx in item: %+v", txInItem)
 	return txInItem, nil
 }
 
@@ -882,12 +868,11 @@ func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
 		return nil, fmt.Errorf("fail to get transaction receipt: %w", err)
 	}
 	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		// a transaction that is failed
-		// remove the Signer cache , so the tx out item can be retried
 		if e.signerCacheManager != nil {
 			e.signerCacheManager.RemoveSigned(ll.TxHash.String())
 		}
 		e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
+		// todo will next 100
 		return nil, nil
 		//return e.getTxInFromFailedTransaction(tx, receipt), nil
 	}

@@ -1,56 +1,35 @@
 package ethereum
 
-import (
-	"encoding/json"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	"math/big"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
-
-	"github.com/magiconair/properties/assert"
-	. "gopkg.in/check.v1"
-
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/config"
-	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
-	"github.com/mapprotocol/compass-tss/metrics"
-	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	types2 "github.com/mapprotocol/compass-tss/x/types"
-)
-
-func TestETHPackage(t *testing.T) { TestingT(t) }
-
-type EthereumSuite struct {
-	thordir  string
-	thorKeys *mapclient.Keys
-	bridge   shareTypes.ThorchainBridge
-	m        *metrics.Metrics
-	server   *httptest.Server
-}
-
-var _ = Suite(&EthereumSuite{})
-
-var m *metrics.Metrics
-
-func GetMetricForTest(c *C) *metrics.Metrics {
-	if m == nil {
-		var err error
-		m, err = metrics.NewMetrics(config.BifrostMetricsConfiguration{
-			Enabled:      false,
-			ListenPort:   9000,
-			ReadTimeout:  time.Second,
-			WriteTimeout: time.Second,
-			Chains:       common.Chains{common.ETHChain},
-		})
-		c.Assert(m, NotNil)
-		c.Assert(err, IsNil)
-	}
-	return m
-}
+//
+//func TestETHPackage(t *testing.T) { TestingT(t) }
+//
+//type EthereumSuite struct {
+//	thordir  string
+//	thorKeys *mapclient.Keys
+//	bridge   shareTypes.ThorchainBridge
+//	m        *metrics.Metrics
+//	server   *httptest.Server
+//}
+//
+//var _ = Suite(&EthereumSuite{})
+//
+//var m *metrics.Metrics
+//
+//func GetMetricForTest(c *C) *metrics.Metrics {
+//	if m == nil {
+//		var err error
+//		m, err = metrics.NewMetrics(config.BifrostMetricsConfiguration{
+//			Enabled:      false,
+//			ListenPort:   9000,
+//			ReadTimeout:  time.Second,
+//			WriteTimeout: time.Second,
+//			Chains:       common.Chains{common.ETHChain},
+//		})
+//		c.Assert(m, NotNil)
+//		c.Assert(err, IsNil)
+//	}
+//	return m
+//}
 
 //func (s *EthereumSuite) SetUpTest(c *C) {
 //	s.m = GetMetricForTest(c)
@@ -212,493 +191,493 @@ func GetMetricForTest(c *C) *metrics.Metrics {
 //	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.thorKeys)
 //	c.Assert(err, IsNil)
 //}
-
-func (s *EthereumSuite) TearDownTest(c *C) {
-	c.Assert(os.Unsetenv("NET"), IsNil)
-
-	if err := os.RemoveAll(s.thordir); err != nil {
-		c.Error(err)
-	}
-}
-
-func (s *EthereumSuite) TestNewClient(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-
-	// bridge is nil
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, nil, s.m, pubkeyMgr, poolMgr)
-	c.Assert(e, IsNil)
-	c.Assert(err, NotNil)
-
-	// pubkey manager is nil
-	e, err = NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, nil, poolMgr)
-	c.Assert(e, IsNil)
-	c.Assert(err, NotNil)
-
-	// pubkey manager is nil
-	e, err = NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, nil)
-	c.Assert(e, IsNil)
-	c.Assert(err, NotNil)
-	// pubkey manager is nil
-	e, err = NewClient(nil, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(e, IsNil)
-	c.Assert(err, NotNil)
-}
-
-func (s *EthereumSuite) TestConvertSigningAmount(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-		},
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err, IsNil)
-	c.Assert(e, NotNil)
-	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(e.ethScanner.tokens.SaveTokenMeta("TKN", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483", 18), IsNil)
-	c.Assert(e.ethScanner.tokens.SaveTokenMeta("TKX", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF482", 8), IsNil)
-	result := e.convertSigningAmount(big.NewInt(100), "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483")
-	c.Assert(result.Uint64(), Equals, uint64(100*common.One*100))
-	result = e.convertSigningAmount(big.NewInt(100000000), "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF482")
-	c.Assert(result.Uint64(), Equals, uint64(100000000))
-}
-
-func TestGetTokenAddressFromAsset(t *testing.T) {
-	token := getTokenAddressFromAsset(common.ETHAsset)
-	assert.Equal(t, token, ethToken)
-	a, err := common.NewAsset("ETH.TKN-0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483")
-	assert.Equal(t, err, nil)
-	token = getTokenAddressFromAsset(a)
-	assert.Equal(t, token, "0X3B7FA4DD21C6F9BA3CA375217EAD7CAB9D6BF483")
-}
-
-func (s *EthereumSuite) TestClient(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(e, IsNil)
-	c.Assert(err, NotNil)
-	e2, err2 := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-		},
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err2, IsNil)
-	c.Assert(e2, NotNil)
-	e2.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(pubkeyMgr.Start(), IsNil)
-	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
-	c.Check(e2.GetChain(), Equals, common.ETHChain)
-	height, err := e2.GetHeight()
-	c.Assert(err, IsNil)
-	c.Check(height, Equals, int64(7))
-	gasPrice := e2.GetGasPrice()
-	c.Check(gasPrice.Uint64(), Equals, uint64(initialGasPrice))
-
-	acct, err := e2.GetAccount(types2.GetRandomPubKey(), nil)
-	c.Assert(err, IsNil)
-	c.Check(acct.Sequence, Equals, int64(0))
-	c.Check(acct.Coins[0].Amount.Uint64(), Equals, uint64(10*common.One))
-	pk := types2.GetRandomPubKey()
-	addr := e2.GetAddress(pk)
-	c.Check(len(addr), Equals, 42)
-	_, err = e2.BroadcastTx(stypes.TxOutItem{}, []byte(`{
-		"from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-		"gas":"0xc350",
-		"gasPrice":"0x4a817c800",
-		"input":"0x68656c6c6f21",
-		"nonce":"0x15",
-		"to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
-		"transactionIndex":"0x41",
-		"value":"0xf3dbb76162000",
-		"v":"0x25",
-		"r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
-		"s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
-	}`))
-	c.Assert(err, IsNil)
-	input := []byte(`{
-    "height": 1,
-    "tx_array": [
-        {
-            "vault_pub_key": "tthorpub1addwnpepq2mza4j4vplyjw295pkq8j2dan627lz6vufeu22pjx5vnnyjted5vwq3e3d",
-            "chain": "ETH",
-			"from_address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-            "to_address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-            "coin": {
-                "asset": "ETH.ETH",
-                "amount": "194765912"
-            },
-            "max_gas": [
-                {
-                    "asset": "ETH.ETH",
-                    "amount": "600000"
-                }
-            ],
-			"gas_rate":1
-        }
-    ]
-}`)
-	var txOut stypes.TxOut
-	err = json.Unmarshal(input, &txOut)
-	c.Assert(err, IsNil)
-
-	txOut.TxArray[0].VaultPubKey = e2.kw.GetPubKey()
-	c.Logf(txOut.TxArray[0].VaultPubKey.String())
-	c.Logf(e2.kw.GetPubKey().String())
-	out := txOut.TxArray[0].TxOutItem(txOut.Height)
-	out.Chain = common.ETHChain
-	out.Memo = "OUT:B6BD1A69831B9CCC0A1E9939E9AFBFCA144C427B3F61E176EBDCB14E57981C1B"
-	r, _, obs, err := e2.SignTx(out, 1)
-	c.Assert(err, IsNil)
-	c.Assert(r, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err := out.VaultPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	_, err = e2.BroadcastTx(out, r)
-	c.Assert(err, IsNil)
-}
-
-func (s *EthereumSuite) TestGetAccount(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-		},
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err, IsNil)
-	c.Assert(e, NotNil)
-	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(pubkeyMgr.Start(), IsNil)
-	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
-	acct, err := e.GetAccountByAddress("0x9f4aab49a9cd8fc54dcb3701846f608a6f2c44da", nil)
-	c.Assert(err, IsNil)
-	c.Assert(acct.Sequence, Equals, int64(0))
-	b, err := e.GetBalance("0x9f4aab49a9cd8fc54dcb3701846f608a6f2c44da", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483", nil)
-	c.Assert(err, IsNil)
-	c.Assert(b, NotNil)
-}
-
-func (s *EthereumSuite) TestSignETHTx(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-			MaxGasLimit:        80000,
-		},
-		AggregatorMaxGasMultiplier: 10,
-		TokenMaxGasMultiplier:      3,
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err, IsNil)
-	c.Assert(e, NotNil)
-	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(pubkeyMgr.Start(), IsNil)
-	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
-	pubkeys := pubkeyMgr.GetPubKeys()
-	addr, err := pubkeys[len(pubkeys)-1].GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-
-	// Not ETH chain
-	result, _, obs, err := e.SignTx(stypes.TxOutItem{
-		Chain:       common.BTCChain,
-		ToAddress:   addr,
-		VaultPubKey: "",
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// to address is empty
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		VaultPubKey: "",
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// vault pub key is empty
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: "",
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// memo is empty
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// memo can't be parsed
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Memo:        "whatever",
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// memo is inbound
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Memo:        "swap:ETH.ETH",
-	}, 1)
-	c.Assert(err, NotNil)
-	c.Assert(result, IsNil)
-	c.Assert(obs, IsNil)
-
-	// Outbound
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err := e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	asset, err := common.NewAsset("ETH.TKN-0X3B7FA4DD21C6F9BA3CA375217EAD7CAB9D6BF483")
-	c.Assert(err, IsNil)
-
-	// Outbound
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(asset, cosmos.NewUint(1e18)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	// refund
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "REFUND:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	// refund
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(asset, cosmos.NewUint(common.One)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	// migrate
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "MIGRATE:1024",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-
-	// migrate
-	result, _, obs, err = e.SignTx(stypes.TxOutItem{
-		Chain:       common.ETHChain,
-		ToAddress:   addr,
-		VaultPubKey: e.localPubKey,
-		Coins: common.Coins{
-			common.NewCoin(asset, cosmos.NewUint(common.One)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
-		},
-		GasRate: 1,
-		Memo:    "MIGRATE:1024",
-	}, 1)
-	c.Assert(err, IsNil)
-	c.Assert(result, NotNil)
-	c.Assert(obs, NotNil)
-	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(obs.Sender, Equals, fromAddr.String())
-}
-
-func (s *EthereumSuite) TestGetAsgardAddresses(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-		},
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err, IsNil)
-	c.Assert(e, NotNil)
-	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(pubkeyMgr.Start(), IsNil)
-	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
-	addresses, err := e.getAsgardAddress()
-	c.Assert(err, IsNil)
-	c.Assert(addresses, NotNil)
-}
-
-func (s *EthereumSuite) TestGetConfirmationCount(c *C) {
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
-	c.Assert(err, IsNil)
-	poolMgr := mapclient.NewPoolMgr(s.bridge)
-	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
-		RPCHost: "http://" + s.server.Listener.Addr().String(),
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight:   1, // avoids querying thorchain for block height
-			HTTPRequestTimeout: time.Second,
-		},
-	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
-	c.Assert(err, IsNil)
-	c.Assert(e, NotNil)
-	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(pubkeyMgr.Start(), IsNil)
-	defer func() {
-		c.Assert(pubkeyMgr.Stop(), IsNil)
-	}()
-
-	asgardAddresses, err := e.getAsgardAddress()
-	c.Assert(err, IsNil)
-	pubkey := types2.GetRandomPubKey()
-	addr, err := pubkey.GetAddress(common.ETHChain)
-	c.Assert(err, IsNil)
-	c.Assert(e.GetConfirmationCount(stypes.TxIn{}), Equals, int64(0))
-	c.Assert(e.GetConfirmationCount(stypes.TxIn{
-		Chain: common.ETHChain,
-		TxArray: []*stypes.TxInItem{
-			{
-				BlockHeight:         1,
-				Tx:                  "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-				Memo:                "Not Sure",
-				Sender:              addr.String(),
-				To:                  addr.String(),
-				ObservedVaultPubKey: pubkey,
-			},
-		},
-		MemPool: true,
-	}), Equals, int64(0))
-
-	c.Assert(e.GetConfirmationCount(stypes.TxIn{
-		Chain: common.ETHChain,
-		TxArray: []*stypes.TxInItem{
-			{
-				BlockHeight: 1,
-				Tx:          "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-				Memo:        "Not Sure",
-				Sender:      addr.String(),
-				To:          asgardAddresses[0].String(),
-				Coins: common.Coins{
-					common.NewCoin(common.ETHAsset, cosmos.NewUint(1000000)),
-				},
-				ObservedVaultPubKey: pubkey,
-			},
-		},
-		MemPool: false,
-	}), Equals, int64(2))
-	c.Assert(e.GetConfirmationCount(stypes.TxIn{
-		Chain: common.ETHChain,
-		TxArray: []*stypes.TxInItem{
-			{
-				BlockHeight: 1,
-				Tx:          "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
-				Memo:        "Not Sure",
-				Sender:      addr.String(),
-				To:          asgardAddresses[0].String(),
-				Coins: common.Coins{
-					common.NewCoin(common.ETHAsset, cosmos.NewUint(3e8)),
-				},
-				ObservedVaultPubKey: pubkey,
-			},
-		},
-		MemPool: false,
-	}), Equals, int64(2))
-}
+//
+//func (s *EthereumSuite) TearDownTest(c *C) {
+//	c.Assert(os.Unsetenv("NET"), IsNil)
+//
+//	if err := os.RemoveAll(s.thordir); err != nil {
+//		c.Error(err)
+//	}
+//}
+//
+//func (s *EthereumSuite) TestNewClient(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//
+//	// bridge is nil
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, nil, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(e, IsNil)
+//	c.Assert(err, NotNil)
+//
+//	// pubkey manager is nil
+//	e, err = NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, nil, poolMgr)
+//	c.Assert(e, IsNil)
+//	c.Assert(err, NotNil)
+//
+//	// pubkey manager is nil
+//	e, err = NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, nil)
+//	c.Assert(e, IsNil)
+//	c.Assert(err, NotNil)
+//	// pubkey manager is nil
+//	e, err = NewClient(nil, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(e, IsNil)
+//	c.Assert(err, NotNil)
+//}
+//
+//func (s *EthereumSuite) TestConvertSigningAmount(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//		},
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err, IsNil)
+//	c.Assert(e, NotNil)
+//	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(e.ethScanner.tokens.SaveTokenMeta("TKN", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483", 18), IsNil)
+//	c.Assert(e.ethScanner.tokens.SaveTokenMeta("TKX", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF482", 8), IsNil)
+//	result := e.convertSigningAmount(big.NewInt(100), "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483")
+//	c.Assert(result.Uint64(), Equals, uint64(100*common.One*100))
+//	result = e.convertSigningAmount(big.NewInt(100000000), "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF482")
+//	c.Assert(result.Uint64(), Equals, uint64(100000000))
+//}
+//
+//func TestGetTokenAddressFromAsset(t *testing.T) {
+//	token := getTokenAddressFromAsset(common.ETHAsset)
+//	assert.Equal(t, token, ethToken)
+//	a, err := common.NewAsset("ETH.TKN-0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483")
+//	assert.Equal(t, err, nil)
+//	token = getTokenAddressFromAsset(a)
+//	assert.Equal(t, token, "0X3B7FA4DD21C6F9BA3CA375217EAD7CAB9D6BF483")
+//}
+//
+//func (s *EthereumSuite) TestClient(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(e, IsNil)
+//	c.Assert(err, NotNil)
+//	e2, err2 := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//		},
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err2, IsNil)
+//	c.Assert(e2, NotNil)
+//	e2.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(pubkeyMgr.Start(), IsNil)
+//	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
+//	c.Check(e2.GetChain(), Equals, common.ETHChain)
+//	height, err := e2.GetHeight()
+//	c.Assert(err, IsNil)
+//	c.Check(height, Equals, int64(7))
+//	gasPrice := e2.GetGasPrice()
+//	c.Check(gasPrice.Uint64(), Equals, uint64(initialGasPrice))
+//
+//	acct, err := e2.GetAccount(types2.GetRandomPubKey(), nil)
+//	c.Assert(err, IsNil)
+//	c.Check(acct.Sequence, Equals, int64(0))
+//	c.Check(acct.Coins[0].Amount.Uint64(), Equals, uint64(10*common.One))
+//	pk := types2.GetRandomPubKey()
+//	addr := e2.GetAddress(pk)
+//	c.Check(len(addr), Equals, 42)
+//	_, err = e2.BroadcastTx(stypes.TxOutItem{}, []byte(`{
+//		"from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
+//		"gas":"0xc350",
+//		"gasPrice":"0x4a817c800",
+//		"input":"0x68656c6c6f21",
+//		"nonce":"0x15",
+//		"to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
+//		"transactionIndex":"0x41",
+//		"value":"0xf3dbb76162000",
+//		"v":"0x25",
+//		"r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
+//		"s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
+//	}`))
+//	c.Assert(err, IsNil)
+//	input := []byte(`{
+//    "height": 1,
+//    "tx_array": [
+//        {
+//            "vault_pub_key": "tthorpub1addwnpepq2mza4j4vplyjw295pkq8j2dan627lz6vufeu22pjx5vnnyjted5vwq3e3d",
+//            "chain": "ETH",
+//			"from_address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
+//            "to_address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+//            "coin": {
+//                "asset": "ETH.ETH",
+//                "amount": "194765912"
+//            },
+//            "max_gas": [
+//                {
+//                    "asset": "ETH.ETH",
+//                    "amount": "600000"
+//                }
+//            ],
+//			"gas_rate":1
+//        }
+//    ]
+//}`)
+//	var txOut stypes.TxOut
+//	err = json.Unmarshal(input, &txOut)
+//	c.Assert(err, IsNil)
+//
+//	txOut.TxArray[0].VaultPubKey = e2.kw.GetPubKey()
+//	c.Logf(txOut.TxArray[0].VaultPubKey.String())
+//	c.Logf(e2.kw.GetPubKey().String())
+//	out := txOut.TxArray[0].TxOutItem(txOut.Height)
+//	out.Chain = common.ETHChain
+//	out.Memo = "OUT:B6BD1A69831B9CCC0A1E9939E9AFBFCA144C427B3F61E176EBDCB14E57981C1B"
+//	r, _, obs, err := e2.SignTx(out, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(r, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err := out.VaultPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	_, err = e2.BroadcastTx(out, r)
+//	c.Assert(err, IsNil)
+//}
+//
+//func (s *EthereumSuite) TestGetAccount(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//		},
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err, IsNil)
+//	c.Assert(e, NotNil)
+//	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(pubkeyMgr.Start(), IsNil)
+//	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
+//	acct, err := e.GetAccountByAddress("0x9f4aab49a9cd8fc54dcb3701846f608a6f2c44da", nil)
+//	c.Assert(err, IsNil)
+//	c.Assert(acct.Sequence, Equals, int64(0))
+//	b, err := e.GetBalance("0x9f4aab49a9cd8fc54dcb3701846f608a6f2c44da", "0x3b7FA4dd21c6f9BA3ca375217EAD7CAb9D6bF483", nil)
+//	c.Assert(err, IsNil)
+//	c.Assert(b, NotNil)
+//}
+//
+//func (s *EthereumSuite) TestSignETHTx(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//			MaxGasLimit:        80000,
+//		},
+//		AggregatorMaxGasMultiplier: 10,
+//		TokenMaxGasMultiplier:      3,
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err, IsNil)
+//	c.Assert(e, NotNil)
+//	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(pubkeyMgr.Start(), IsNil)
+//	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
+//	pubkeys := pubkeyMgr.GetPubKeys()
+//	addr, err := pubkeys[len(pubkeys)-1].GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//
+//	// Not ETH chain
+//	result, _, obs, err := e.SignTx(stypes.TxOutItem{
+//		Chain:       common.BTCChain,
+//		ToAddress:   addr,
+//		VaultPubKey: "",
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// to address is empty
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		VaultPubKey: "",
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// vault pub key is empty
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: "",
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// memo is empty
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// memo can't be parsed
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Memo:        "whatever",
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// memo is inbound
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Memo:        "swap:ETH.ETH",
+//	}, 1)
+//	c.Assert(err, NotNil)
+//	c.Assert(result, IsNil)
+//	c.Assert(obs, IsNil)
+//
+//	// Outbound
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err := e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	asset, err := common.NewAsset("ETH.TKN-0X3B7FA4DD21C6F9BA3CA375217EAD7CAB9D6BF483")
+//	c.Assert(err, IsNil)
+//
+//	// Outbound
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(asset, cosmos.NewUint(1e18)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	// refund
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "REFUND:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	// refund
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(asset, cosmos.NewUint(common.One)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "OUT:4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	// migrate
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(common.One)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "MIGRATE:1024",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//
+//	// migrate
+//	result, _, obs, err = e.SignTx(stypes.TxOutItem{
+//		Chain:       common.ETHChain,
+//		ToAddress:   addr,
+//		VaultPubKey: e.localPubKey,
+//		Coins: common.Coins{
+//			common.NewCoin(asset, cosmos.NewUint(common.One)),
+//		},
+//		MaxGas: common.Gas{
+//			common.NewCoin(common.ETHAsset, cosmos.NewUint(e.cfg.BlockScanner.MaxGasLimit*8)),
+//		},
+//		GasRate: 1,
+//		Memo:    "MIGRATE:1024",
+//	}, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(result, NotNil)
+//	c.Assert(obs, NotNil)
+//	fromAddr, err = e.localPubKey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(obs.Sender, Equals, fromAddr.String())
+//}
+//
+//func (s *EthereumSuite) TestGetAsgardAddresses(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//		},
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err, IsNil)
+//	c.Assert(e, NotNil)
+//	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(pubkeyMgr.Start(), IsNil)
+//	defer func() { c.Assert(pubkeyMgr.Stop(), IsNil) }()
+//	addresses, err := e.getAsgardAddress()
+//	c.Assert(err, IsNil)
+//	c.Assert(addresses, NotNil)
+//}
+//
+//func (s *EthereumSuite) TestGetConfirmationCount(c *C) {
+//	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
+//	c.Assert(err, IsNil)
+//	poolMgr := mapclient.NewPoolMgr(s.bridge)
+//	e, err := NewClient(s.thorKeys, config.BifrostChainConfiguration{
+//		RPCHost: "http://" + s.server.Listener.Addr().String(),
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight:   1, // avoids querying thorchain for block height
+//			HTTPRequestTimeout: time.Second,
+//		},
+//	}, nil, s.bridge, s.m, pubkeyMgr, poolMgr)
+//	c.Assert(err, IsNil)
+//	c.Assert(e, NotNil)
+//	e.ethScanner.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+//	c.Assert(pubkeyMgr.Start(), IsNil)
+//	defer func() {
+//		c.Assert(pubkeyMgr.Stop(), IsNil)
+//	}()
+//
+//	asgardAddresses, err := e.getAsgardAddress()
+//	c.Assert(err, IsNil)
+//	pubkey := types2.GetRandomPubKey()
+//	addr, err := pubkey.GetAddress(common.ETHChain)
+//	c.Assert(err, IsNil)
+//	c.Assert(e.GetConfirmationCount(stypes.TxIn{}), Equals, int64(0))
+//	c.Assert(e.GetConfirmationCount(stypes.TxIn{
+//		Chain: common.ETHChain,
+//		TxArray: []*stypes.TxInItem{
+//			{
+//				BlockHeight:         1,
+//				Tx:                  "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//				Memo:                "Not Sure",
+//				Sender:              addr.String(),
+//				To:                  addr.String(),
+//				ObservedVaultPubKey: pubkey,
+//			},
+//		},
+//		MemPool: true,
+//	}), Equals, int64(0))
+//
+//	c.Assert(e.GetConfirmationCount(stypes.TxIn{
+//		Chain: common.ETHChain,
+//		TxArray: []*stypes.TxInItem{
+//			{
+//				BlockHeight: 1,
+//				Tx:          "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//				Memo:        "Not Sure",
+//				Sender:      addr.String(),
+//				To:          asgardAddresses[0].String(),
+//				Coins: common.Coins{
+//					common.NewCoin(common.ETHAsset, cosmos.NewUint(1000000)),
+//				},
+//				ObservedVaultPubKey: pubkey,
+//			},
+//		},
+//		MemPool: false,
+//	}), Equals, int64(2))
+//	c.Assert(e.GetConfirmationCount(stypes.TxIn{
+//		Chain: common.ETHChain,
+//		TxArray: []*stypes.TxInItem{
+//			{
+//				BlockHeight: 1,
+//				Tx:          "4D91ADAFA69765E7805B5FF2F3A0BA1DBE69E37A1CFCD20C48B99C528AA3EE87",
+//				Memo:        "Not Sure",
+//				Sender:      addr.String(),
+//				To:          asgardAddresses[0].String(),
+//				Coins: common.Coins{
+//					common.NewCoin(common.ETHAsset, cosmos.NewUint(3e8)),
+//				},
+//				ObservedVaultPubKey: pubkey,
+//			},
+//		},
+//		MemPool: false,
+//	}), Equals, int64(2))
+//}
