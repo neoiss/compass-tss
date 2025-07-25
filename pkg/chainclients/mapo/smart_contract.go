@@ -8,16 +8,26 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-
 var (
 	//go:embed abi/maintainer.json
 	maintainerAbi string
 	//go:embed abi/tokenRegister.json
 	tokenRegistryABI string
+	//go:embed abi/view.json
+	viewABI string
 )
 
 func newMaintainerABi() (*abi.ABI, error) {
 	maintainer, err := abi.JSON(strings.NewReader(maintainerAbi))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal maintainer abi: %w", err)
+	}
+
+	return &maintainer, nil
+}
+
+func newViewABI() (*abi.ABI, error) {
+	maintainer, err := abi.JSON(strings.NewReader(viewABI))
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal maintainer abi: %w", err)
 	}

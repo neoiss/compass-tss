@@ -1,6 +1,11 @@
 package ethereum
 
 import (
+	"math/big"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -16,10 +21,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"os"
-	"testing"
-	"time"
 )
 
 // const Mainnet = 1

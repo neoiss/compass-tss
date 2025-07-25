@@ -22,3 +22,12 @@ type VoteTxIn struct {
 	To        []byte
 	Payload   []byte
 }
+
+type Gas struct {
+	Chain          *big.Int
+	Pubkey         []byte
+	Router         []byte
+	GasRate        *big.Int
+	TxSize         *big.Int
+	TxSizeWithCall *big.Int
+}

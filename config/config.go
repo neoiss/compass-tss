@@ -810,6 +810,7 @@ type BifrostClientConfiguration struct {
 	SignerName      string       `mapstructure:"signer_name"`
 	PrivateKey      string       `mapstructure:"private_key"`
 	Maintainer      string       `mapstructure:"maintainer"`
+	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
 	SignerPasswd    string
 }

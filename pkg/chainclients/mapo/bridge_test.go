@@ -40,6 +40,8 @@ func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 		ChainHost:       "https://testnet-rpc.maplabs.io",
 		SignerPasswd:    "password",
 		ChainHomeFolder: "./",
+		Maintainer:      "0x0EdA5e4015448A2283662174DD7def3C3d262D38",
+		ViewController:  "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6",
 	}
 
 	//registry := codectypes.NewInterfaceRegistry()
@@ -57,6 +59,27 @@ func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 	bridge, err := NewBridge(bridgeCfg, m, k)
 	assert.Nil(t, err)
 	return bridge
+}
+
+func Test_Bridge_GetNetworkFee(t *testing.T) {
+	bri := getBridgeForTest(t)
+	size, swapSize, rate, err := bri.GetNetworkFee(common.ETHChain)
+	assert.Nil(t, err)
+	t.Log("ETH GAS size: ", size)
+	t.Log("ETH GAS swapSize: ", swapSize)
+	t.Log("ETH GAS rate: ", rate)
+
+	exist, err := bri.HasNetworkFee(common.ETHChain)
+	assert.Nil(t, err)
+	assert.Equal(t, true, exist, "check eth gas")
+
+	exist, err = bri.HasNetworkFee(common.BSCChain)
+	assert.Nil(t, err)
+	assert.Equal(t, true, exist, "check bsc gas")
+
+	exist, err = bri.HasNetworkFee(common.DOGEChain)
+	assert.NotNil(t, err)
+	assert.Equal(t, false, exist, "check DOGE gas")
 }
 
 func Test_Bridge_PostNetworkFee(t *testing.T) {

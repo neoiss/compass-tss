@@ -8,6 +8,7 @@ const (
 	GetElectionEpoch  = "getElectionEpoch"
 	GetTSSPoolId      = "getTSSPoolId"
 	VoteNetworkFee    = "voteNetworkFee"
+	GetNetworkFee     = "getInboundAddress"
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
 )
