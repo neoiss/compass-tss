@@ -388,7 +388,7 @@ func (o *Observer) signAndSendToThorchain(txIn types.TxIn) error {
 
 	txBytes, err := o.bridge.GetObservationsStdTx(&txIn)
 	if err != nil {
-		return fmt.Errorf("fail to sign the tx: %w", err)
+		return fmt.Errorf("fail to get the tx: %w", err)
 	}
 	if len(txBytes) == 0 {
 		return nil

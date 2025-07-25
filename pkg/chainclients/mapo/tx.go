@@ -63,6 +63,7 @@ func (b *Bridge) assemblyInternalTx(ctx context.Context, input []byte, recommend
 		Data:     input,
 	})
 	if err != nil {
+		b.logger.Error().Str("input", ecommon.Bytes2Hex(input)).Msg("Estimate failed")
 		return nil, fmt.Errorf("fail to estimate gas limit: %w", err)
 	}
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
