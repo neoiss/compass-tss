@@ -170,6 +170,7 @@ bifrost:
         observation_flexibility_blocks: 20
         max_gas_limit: 100000
         max_contract_tx_logs: 50
+        start_block_height: 8817014
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 

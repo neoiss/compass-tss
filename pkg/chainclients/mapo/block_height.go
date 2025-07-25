@@ -61,21 +61,21 @@ func (b *Bridge) getLastBlock(chain common.Chain) ([]openapi.LastBlock, error) {
 	return []openapi.LastBlock{
 		{
 			Chain:          "ETH",
-			LastObservedIn: 22622246,
-			LastSignedOut:  22622246,
-			Thorchain:      22622246,
+			LastObservedIn: 8836449,
+			LastSignedOut:  8836449,
+			Thorchain:      17135583,
 		},
 		{
-			Chain:          "BASE",
-			LastObservedIn: 31070793,
-			LastSignedOut:  31070793,
-			Thorchain:      31070793,
+			Chain:          "BSC",
+			LastObservedIn: 59439531,
+			LastSignedOut:  59439531,
+			Thorchain:      17135583,
 		},
 		{
 			Chain:          "MAP",
-			LastObservedIn: 18229656,
-			LastSignedOut:  18229656,
-			Thorchain:      18229656,
+			LastObservedIn: 17135583,
+			LastSignedOut:  17135583,
+			Thorchain:      17135583,
 		},
 	}, nil
 }
