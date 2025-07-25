@@ -36,6 +36,7 @@ type TxInItem struct {
 	GasUsed             *big.Int
 	Token               []byte
 	Vault               []byte
+	From                []byte
 	To                  []byte
 	Method              string
 }

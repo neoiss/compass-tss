@@ -205,6 +205,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Token = depositEvt.Token.Bytes()
 		txInItem.Vault = depositEvt.Vault.Bytes()
 		txInItem.ToChain = big.NewInt(0) // todo
+		txInItem.From = depositEvt.From.Bytes()
 		//GasUsed  *big.Int
 
 	case constants.EventOfSwap.GetTopic().Hex():
