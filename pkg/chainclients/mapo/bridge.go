@@ -644,7 +644,7 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionRate,
 	transactionSizeWithCall uint64) (string, error) {
 	// done next 1
-	input, err := b.mainAbi.Pack(constants.VoteNetworkFeeOfMaintainer, b.epoch, chainId, big.NewInt(height),
+	input, err := b.mainAbi.Pack(constants.VoteNetworkFee, b.epoch, chainId, big.NewInt(height),
 		big.NewInt(0).SetUint64(transactionSize),
 		big.NewInt(0).SetUint64(transactionRate),
 		big.NewInt(0).SetUint64(transactionSizeWithCall))
@@ -716,6 +716,10 @@ func (b *Bridge) GetMimir(key string) (int64, error) {
 	//}
 	//return value, nil
 	// todo handler
+	switch key {
+	case "MaxConfirmations-ETH":
+		return 14, nil
+	}
 	return 0, nil
 }
 
@@ -828,10 +832,4 @@ func (b *Bridge) InitBlockScanner(ops ...shareTypes.BridgeOption) error {
 		}
 	}
 	return nil
-}
-
-func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
-	// todo check
-	// Here we construct tx according to method， and return hex tx2bytes
-	return nil, nil
 }

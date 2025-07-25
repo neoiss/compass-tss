@@ -19,7 +19,7 @@ import (
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
-	method := constants.GetElectionEpochOfMaintainer
+	method := constants.GetElectionEpoch
 	input, err := b.mainAbi.Pack(method)
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to pack input")
@@ -42,7 +42,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 
 	var epoch *big.Int
-	//err = b.mainCall.Call(constants.GetElectionEpochOfMaintainer, epoch, 0)
+	//err = b.mainCall.Call(constants.GetElectionEpoch, epoch, 0)
 	//if err != nil {
 	//	return nil, errors.Wrap(err, "fail to call contract")
 	//}
@@ -81,13 +81,13 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	var tssPoolId ecommon.Hash
-	err = b.mainCall.Call(constants.GetTSSPoolIdOfMaintainer, &tssPoolId, 0, pubBytes, members, epoch, blames)
+	err = b.mainCall.Call(constants.GetTSSPoolId, &tssPoolId, 0, pubBytes, members, epoch, blames)
 	if err != nil {
 		return "", errors.Wrap(err, "fail to call contract")
 	}
 	fmt.Println("tssPoolId ----------------- ", tssPoolId)
 
-	method := constants.VoteUpdateTssPoolOfMaintainer
+	method := constants.VoteUpdateTssPool
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
 		Id:        tssPoolId,
 		Epoch:     epoch,

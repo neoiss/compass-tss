@@ -39,3 +39,13 @@ const (
 	DEPOSIT TxInType = iota
 	SWAP
 )
+
+func (tx TxInType) String() string {
+	switch tx {
+	case DEPOSIT:
+		return "DEPOSIT"
+	case SWAP:
+		return "SWAP"
+	}
+	return "UNKNOWN"
+}

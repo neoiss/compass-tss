@@ -225,17 +225,17 @@ func (b *BlockScanner) scanBlocks() {
 				continue
 			}
 
-			chainHeight, err := b.chainScanner.GetHeight()
+			latestHeight, err := b.chainScanner.GetHeight()
 			if err != nil {
 				b.logger.Error().Err(err).Msg("Fail to get chain block height")
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			if chainHeight < currentBlock {
+			if latestHeight < currentBlock {
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			txIn, err := b.chainScanner.FetchTxs(currentBlock, chainHeight)
+			txIn, err := b.chainScanner.FetchTxs(currentBlock, latestHeight)
 			if err != nil {
 				// don't log an error if its because the block doesn't exist yet
 				if !errors.Is(err, btypes.ErrUnavailableBlock) {
@@ -261,19 +261,19 @@ func (b *BlockScanner) scanBlocks() {
 			// enable this one , so we could see how far it is behind
 			if currentBlock%mod == 0 || !b.healthy.Load() {
 				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
-					Int64("gap", chainHeight-currentBlock).Bool("healthy", b.healthy.Load()).
+					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
 					Msg("Scan block progressing")
 			}
 			atomic.AddInt64(&b.previousBlock, 1)
 
 			// consider 3 blocks or the configured lag time behind tip as healthy
-			lagDuration := time.Duration((chainHeight-currentBlock)*ms) * time.Millisecond
-			if chainHeight-currentBlock <= 3 || lagDuration < b.cfg.MaxHealthyLag {
+			lagDuration := time.Duration((latestHeight-currentBlock)*ms) * time.Millisecond
+			if latestHeight-currentBlock <= 3 || lagDuration < b.cfg.MaxHealthyLag {
 				b.healthy.Store(true)
 			} else {
 				b.healthy.Store(false)
 			}
-			b.logger.Debug().Msgf("The gap is %d , healthy: %+v", chainHeight-currentBlock, b.healthy.Load())
+			b.logger.Debug().Msgf("The gap is %d , healthy: %+v", latestHeight-currentBlock, b.healthy.Load())
 
 			b.metrics.GetCounter(metrics.TotalBlockScanned).Inc()
 			if len(txIn.TxArray) > 0 {

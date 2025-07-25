@@ -488,13 +488,12 @@ type Bifrost struct {
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
-	ObserverWorkers int                     `mapstructure:"observer_workers"`
+	ObserverWorkers int                     `mapstructure:"observer_workers"` // start how much goroutine to handler other2map tx save in storage
 }
 
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		//common.BCHChain:  b.Chains.BCH,
 		common.BSCChain: b.Chains.BSC,
 		common.BTCChain: b.Chains.BTC,
 		common.ETHChain: b.Chains.ETH,
@@ -754,7 +753,7 @@ type BifrostBlockScannerConfiguration struct {
 
 	// ObservationFlexibilityBlocks is the number of blocks behind the current tip we will
 	// submit network fee and solvency observations.
-	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"`
+	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"` // 类似 blockConfirm
 
 	// MaxGasLimit is the maximum gas allowed for non-aggregator outbounds. This is used
 	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the

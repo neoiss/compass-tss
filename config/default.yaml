@@ -155,7 +155,7 @@ bifrost:
     eth:
       <<: *default-chain
       chain_id: ETH
-      rpc_host: "https://eth.llamarpc.com"
+      rpc_host: "https://ethereum-sepolia-rpc.publicnode.com"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
       token_max_gas_multiplier: 3

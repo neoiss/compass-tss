@@ -912,51 +912,26 @@ func (c *Client) getBlockReward(height int64) (*big.Int, error) {
 	return big.NewInt(ethBlockRewardAndFee), nil
 }
 
-func (c *Client) getTotalTransactionValue(txIn stypes.TxIn, excludeFrom []common.Address) cosmos.Uint {
+func (c *Client) getTotalTransactionValue(txIn stypes.TxIn) cosmos.Uint {
 	total := cosmos.ZeroUint()
-	//if len(txIn.TxArray) == 0 {
-	//	return total
-	//}
-	//for _, item := range txIn.TxArray {
-	//	fromAsgard := false
-	//	for _, fromAddress := range excludeFrom {
-	//		if strings.EqualFold(fromAddress.String(), item.Sender) {
-	//			fromAsgard = true
-	//			break
-	//		}
-	//	}
-	//	if fromAsgard {
-	//		continue
-	//	}
-	//	for _, coin := range item.Coins {
-	//		if coin.IsEmpty() {
-	//			continue
-	//		}
-	//		amount := coin.Amount
-	//		if !coin.Asset.Equals(common.ETHAsset) {
-	//			var err error
-	//			amount, err = c.poolMgr.GetValue(coin.Asset, common.ETHAsset, coin.Amount)
-	//			if err != nil {
-	//				c.logger.Err(err).Msgf("fail to get value for %s", coin.Asset)
-	//				continue
-	//			}
-	//
-	//		}
-	//		total = total.Add(amount)
-	//	}
-	//}
+	if len(txIn.TxArray) == 0 {
+		return total
+	}
+	for _, item := range txIn.TxArray {
+		total = total.Add(cosmos.NewUint(item.Amount.Uint64()))
+	}
 	return total
 }
 
-// getBlockRequiredConfirmation find out how many confirmation the given txIn need to have before it can be send to THORChain
+// getBlockRequiredConfirmation find out how many confirmation the given txIn need to have before it can be send to MAP
 func (c *Client) getBlockRequiredConfirmation(txIn stypes.TxIn, height int64) (int64, error) {
-	asgards, err := c.getAsgardAddress()
-	if err != nil {
-		c.logger.Err(err).Msg("fail to get asgard addresses")
-		asgards = c.asgardAddresses
-	}
-	c.logger.Debug().Msgf("asgards: %+v", asgards)
-	totalTxValue := c.getTotalTransactionValue(txIn, asgards)
+	//asgards, err := c.getAsgardAddress()
+	//if err != nil {
+	//	c.logger.Err(err).Msg("fail to get asgard addresses")
+	//	asgards = c.asgardAddresses
+	//}
+	//c.logger.Debug().Msgf("asgards: %+v", asgards)
+	totalTxValue := c.getTotalTransactionValue(txIn)
 	totalTxValueInWei := c.convertThorchainAmountToWei(totalTxValue.BigInt())
 	confMul, err := utxo.GetConfMulBasisPoint(c.GetChain().String(), c.bridge)
 	if err != nil {

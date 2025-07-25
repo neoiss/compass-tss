@@ -23,39 +23,21 @@ type TxIn struct {
 }
 
 type TxInItem struct {
-	//BlockHeight int64  `json:"block_height"`
-	Tx     string `json:"tx"`
-	Memo   string `json:"memo"`
-	Sender string `json:"sender"`
-	//To                    string        `json:"to"` // to address
-	//Coins                 common.Coins  `json:"coins"`
-	//Gas                   common.Gas    `json:"gas"`
+	Tx                  string        `json:"tx"`
+	Memo                string        `json:"memo"`
+	Sender              string        `json:"sender"`
 	ObservedVaultPubKey common.PubKey `json:"observed_vault_pub_key"`
-	//Aggregator            string        `json:"aggregator"`
-	//AggregatorTarget      string        `json:"aggregator_target"`
-	//AggregatorTargetLimit *cosmos.Uint  `json:"aggregator_target_limit"`
-	//CommittedUnFinalised  bool          `json:"committed_pre_final"`
-
-	TxInType constants.TxInType
-	ToChain  *big.Int
-	Height   *big.Int
-	Amount   *big.Int
-	OrderId  ecommon.Hash
-	GasUsed  *big.Int
-	Token    []byte
-	Vault    []byte
-	To       []byte
-	Method   string
-
-	// txOutItem
-	//uint128 height;
-	//uint128 toChain;
-	//uint128 amount;
-	//bytes32 orderId;
-	//uint128 gasUsed;
-	//bytes token;
-	//bytes vault;
-	//bytes to;
+	TxInType            constants.TxInType
+	FromChain           *big.Int
+	ToChain             *big.Int
+	Height              *big.Int
+	Amount              *big.Int
+	OrderId             ecommon.Hash
+	GasUsed             *big.Int
+	Token               []byte
+	Vault               []byte
+	To                  []byte
+	Method              string
 }
 
 type TxInStatus byte

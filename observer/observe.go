@@ -378,13 +378,13 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 }
 
 func (o *Observer) signAndSendToThorchain(txIn types.TxIn) error {
-	nodeStatus, err := o.bridge.FetchNodeStatus()
-	if err != nil {
-		return fmt.Errorf("failed to get node status: %w", err)
-	}
-	if nodeStatus != stypes.NodeStatus_Active {
-		return nil
-	}
+	//nodeStatus, err := o.bridge.FetchNodeStatus()
+	//if err != nil {
+	//	return fmt.Errorf("failed to get node status: %w", err)
+	//}
+	//if nodeStatus != stypes.NodeStatus_Active {
+	//	return nil
+	//}
 
 	txBytes, err := o.bridge.GetObservationsStdTx(&txIn)
 	if err != nil {
@@ -396,12 +396,11 @@ func (o *Observer) signAndSendToThorchain(txIn types.TxIn) error {
 	bf := backoff.NewExponentialBackOff()
 	bf.MaxElapsedTime = 5 * time.Second
 	return backoff.Retry(func() error {
-		// trunk-ignore(golangci-lint/govet): shadow
 		txID, err := o.bridge.Broadcast(txBytes)
 		if err != nil {
 			return fmt.Errorf("fail to send the tx to thorchain: %w", err)
 		}
-		o.logger.Info().Str("thorchain hash", txID).Msg("sign and send to thorchain successfully")
+		o.logger.Info().Str("mapHash", txID).Msg("Sign and send to map relay successfully")
 		return nil
 	}, bf)
 }
