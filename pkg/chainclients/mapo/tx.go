@@ -27,7 +27,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	case constants.VoteTxIn:
 		input, err = b.mainAbi.Pack(constants.VoteTxIn, &abi.VoteTxIn{
 			TxInType:  ele.TxInType,
-			ToChain:   big.NewInt(0),
+			ToChain:   ele.ToChain,
 			Height:    ele.Height,
 			FromChain: ele.FromChain,
 			Amount:    ele.Amount,
@@ -37,7 +37,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			Token:   ele.Token,
 			From:    ele.From,
 			To:      ele.To,
-			Payload: nil,
+			Payload: ele.Payload,
 		})
 
 	case constants.VoteTxOut:

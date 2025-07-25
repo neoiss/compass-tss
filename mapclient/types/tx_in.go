@@ -38,6 +38,7 @@ type TxInItem struct {
 	Vault               []byte
 	From                []byte
 	To                  []byte
+	Payload             []byte
 	Method              string
 }
 

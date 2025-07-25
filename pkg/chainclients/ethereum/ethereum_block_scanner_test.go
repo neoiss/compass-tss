@@ -798,4 +798,8 @@ func Test_Scanner(t *testing.T) {
 	t.Log("EventOfSwap ", constants.EventOfSwap.GetTopic())
 	t.Log("EventOfTransferOut ", constants.EventOfTransferOut.GetTopic())
 	t.Log("EventOfTransferAllowance ", constants.EventOfTransferAllowance.GetTopic())
+
+	txIn, err = scanner.FetchTxs(8817025, 8817025)
+	assert.Nil(t, err)
+	assert.Equal(t, len(txIn.TxArray), 1)
 }

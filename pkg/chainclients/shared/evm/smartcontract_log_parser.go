@@ -106,8 +106,8 @@ type swapEvent struct {
 	Vault   ecommon.Address
 	Token   ecommon.Address
 	Amount  *big.Int
-	ToChain *big.Int
-	To      ecommon.Address
+	Tochain *big.Int
+	To      []byte
 	Payload []byte
 }
 
@@ -204,9 +204,8 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Amount = depositEvt.Amount
 		txInItem.Token = depositEvt.Token.Bytes()
 		txInItem.Vault = depositEvt.Vault.Bytes()
-		txInItem.ToChain = big.NewInt(0) // todo
+		txInItem.ToChain = big.NewInt(0) // deposit default zero
 		txInItem.From = depositEvt.From.Bytes()
-		//GasUsed  *big.Int
 
 	case constants.EventOfSwap.GetTopic().Hex():
 		// it is not legal to have multiple transferOut event , transferOut event should be final
@@ -216,13 +215,15 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 			return false, err
 		}
 		txInItem.OrderId = swapEvt.OrderId
-		txInItem.To = swapEvt.To.Bytes()
+		txInItem.From = swapEvt.From.Bytes()
+		txInItem.To = swapEvt.To
 		txInItem.Method = VoteInMethod
 		txInItem.TxInType = constants.SWAP
 		txInItem.Amount = swapEvt.Amount
 		txInItem.Token = swapEvt.Token.Bytes()
 		txInItem.Vault = swapEvt.Vault.Bytes()
-		txInItem.ToChain = swapEvt.ToChain
+		txInItem.ToChain = swapEvt.Tochain
+		txInItem.Payload = swapEvt.Payload
 
 	case constants.EventOfTransferOut.GetTopic().Hex():
 		// todo convert txOutItem
