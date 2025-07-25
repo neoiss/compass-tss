@@ -33,6 +33,7 @@ bifrost:
     signer_name: "first_cosmos"
     private_key: "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
     maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
+    token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m

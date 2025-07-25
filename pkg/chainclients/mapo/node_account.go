@@ -149,12 +149,12 @@ func (b *Bridge) GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error) {
 
 func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	method := "getChainByName"
-	input, err := b.tokenRegistryAbi.Pack(method, name)
+	input, err := b.tokenRegistry.Pack(method, name)
 	if err != nil {
 		return nil, err
 	}
 
-	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
 	output, err := b.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
@@ -165,7 +165,7 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 		nil,
 	)
 
-	outputs := b.tokenRegistryAbi.Methods[method].Outputs
+	outputs := b.tokenRegistry.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to unpack output of %s", method)
@@ -181,12 +181,12 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 
 func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) {
 	method := "getTokenAddressByNickname"
-	input, err := b.tokenRegistryAbi.Pack(method, chainID, name)
+	input, err := b.tokenRegistry.Pack(method, chainID, name)
 	if err != nil {
 		return nil, err
 	}
 
-	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
 	output, err := b.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
@@ -197,7 +197,7 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 		nil,
 	)
 
-	outputs := b.tokenRegistryAbi.Methods[method].Outputs
+	outputs := b.tokenRegistry.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to unpack output of %s", method)
