@@ -110,6 +110,7 @@ type Bridge interface {
 	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
 		members []ecommon.Address) (string, error)
+	GetKeyShare() ([]byte, error)
 	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
 	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
 	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency

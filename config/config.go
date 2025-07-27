@@ -495,7 +495,7 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
 		common.BSCChain: b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
+		//common.BTCChain: b.Chains.BTC,
 		common.ETHChain: b.Chains.ETH,
 	}
 }

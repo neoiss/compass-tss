@@ -26,15 +26,6 @@ func newMaintainerABi() (*abi.ABI, error) {
 	return &maintainer, nil
 }
 
-func newViewABI() (*abi.ABI, error) {
-	maintainer, err := abi.JSON(strings.NewReader(viewABI))
-	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal maintainer abi: %w", err)
-	}
-
-	return &maintainer, nil
-}
-
 func NewTokenRegistry() (*abi.ABI, error) {
 	registry, err := abi.JSON(strings.NewReader(tokenRegistryABI))
 	if err != nil {

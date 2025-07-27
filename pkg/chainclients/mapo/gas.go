@@ -3,16 +3,17 @@ package mapo
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo/abi"
-	"math/big"
+	"github.com/mapprotocol/compass-tss/internal/structure"
 )
 
 // HasNetworkFee checks whether the given chain has set a network fee - determined by
 // whether the `outbound_tx_size` for the inbound address response is non-zero.
 func (b *Bridge) HasNetworkFee(chain common.Chain) (bool, error) {
-	var gasList []abi.Gas
+	var gasList []structure.Gas
 	err := b.viewCall.Call(constants.GetNetworkFee, &gasList, 0)
 	if err != nil {
 		fmt.Println("err ------", err)
@@ -35,7 +36,7 @@ func (b *Bridge) HasNetworkFee(chain common.Chain) (bool, error) {
 
 // GetNetworkFee get chain's network fee from THORNode.
 func (b *Bridge) GetNetworkFee(chain common.Chain) (uint64, uint64, uint64, error) {
-	var gasList []abi.Gas
+	var gasList []structure.Gas
 	err := b.viewCall.Call(constants.GetNetworkFee, &gasList, 0)
 	if err != nil {
 		return 0, 0, 0, err

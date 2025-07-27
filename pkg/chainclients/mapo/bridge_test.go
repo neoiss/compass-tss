@@ -7,11 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/metrics"
 	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +16,12 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	. "gopkg.in/check.v1"
+
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/config"
+	"github.com/mapprotocol/compass-tss/metrics"
 )
 
 func GetMetricForTest() (*metrics.Metrics, error) {
@@ -147,4 +150,40 @@ func Test_Bridge_PostNetworkFee(t *testing.T) {
 
 	t.Log("postGasFee tx successfully, tx ================= ", signedTx.Hash().Hex())
 
+}
+
+func Test(t *testing.T) {
+	TestingT(t)
+}
+
+type MySuite struct {
+}
+
+var _ = Suite(&MySuite{})
+
+func (s *MySuite) SetUpSuite(c *C) {
+	c.Log("SetUpSuite -------- ")
+} // run once on tests running
+
+func (s *MySuite) TearDownSuite(c *C) {
+	c.Log("TearDownSuite -------- ")
+}
+
+func (s *MySuite) SetUpTest(c *C) {
+	c.Log("SetUpTest ------- ")
+}
+
+func (s *MySuite) TearDownTest(c *C) {
+	c.Log("TearDownTest --------- ")
+}
+
+func (s *MySuite) Benchmark_GetNetworkFee(c *C) {
+	for i := 0; i < c.N; i++ {
+		// logic to
+	}
+	c.Log("Benchmark_GetNetworkFee -------- ")
+}
+
+func (s *MySuite) Test_Check(c *C) {
+	c.Log("Test_Check -------- ")
 }

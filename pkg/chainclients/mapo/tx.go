@@ -3,13 +3,14 @@ package mapo
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo/abi"
-	"math/big"
 )
 
 func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
@@ -25,7 +26,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	ele := txIn.TxArray[0]
 	switch ele.Method {
 	case constants.VoteTxIn:
-		input, err = b.mainAbi.Pack(constants.VoteTxIn, &abi.VoteTxIn{
+		input, err = b.mainAbi.Pack(constants.VoteTxIn, &structure.VoteTxIn{
 			TxInType:  ele.TxInType,
 			ToChain:   ele.ToChain,
 			Height:    ele.Height,
