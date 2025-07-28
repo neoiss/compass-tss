@@ -11,19 +11,24 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/pkg/errors"
 )
+
+var ErrOfOrderExist = errors.New("order already exist")
 
 func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	//  check
 	if len(txIn.TxArray) == 0 {
 		return nil, nil
 	}
-	// Here we construct tx according to method， and return hex tx2bytes
+	// Here we construct tx according to method， and return tx hex bytes
 	var (
-		err   error
-		input []byte
+		err    error
+		input  []byte
+		isTxIn bool
+		ele    = txIn.TxArray[0] // todo will next add mul
 	)
-	ele := txIn.TxArray[0]
+
 	switch ele.Method {
 	case constants.VoteTxIn:
 		input, err = b.mainAbi.Pack(constants.VoteTxIn, &structure.VoteTxIn{
@@ -40,19 +45,38 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			To:      ele.To,
 			Payload: ele.Payload,
 		})
-
+		isTxIn = true
 	case constants.VoteTxOut:
+		input, err = b.mainAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{
+			ToChain: ele.ToChain,
+			Height:  ele.Height,
+			Amount:  ele.Amount,
+			GasUsed: ele.GasUsed,
+			OrderId: ele.OrderId,
+			Vault:   ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
+			Token:   ele.Token,
+			To:      ele.To,
+		})
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("fail to method(%s) pack input: %w",
 			txIn.TxArray[0].Method, err)
 	}
+	//
+	var exist bool
+	err = b.mainCall.Call(constants.IsOrderExecuted, &exist, 0, ele.OrderId, isTxIn)
+	if err != nil {
+		return nil, fmt.Errorf("fail to call IsOrderExecuted: %w", err)
+	}
+	if exist {
+		return nil, ErrOfOrderExist
+	}
 
-	return b.assemblyInternalTx(context.Background(), input, 0)
+	return b.assemblyTx(context.Background(), input, 0)
 }
 
-func (b *Bridge) assemblyInternalTx(ctx context.Context, input []byte, recommendLimit uint64) ([]byte, error) {
+func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64) ([]byte, error) {
 	// estimate gas
 	gasFeeCap := b.gasPrice
 	fromAddr, _ := b.keys.GetEthAddress()

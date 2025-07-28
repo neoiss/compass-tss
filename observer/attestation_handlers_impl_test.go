@@ -210,7 +210,7 @@ func TestProcessAttestation(t *testing.T) {
 	})
 }
 
-// TestSendAttestationsToThornode tests sending attestations to Thornode
+// TestSendAttestationsToThornode tests sending attestations to MAPO
 func TestSendAttestationsToThornode(t *testing.T) {
 	// Create test instances
 	ag, _, _, grpcClient, _, _ := setupTestGossip(t)
@@ -252,7 +252,7 @@ func TestSendAttestationsToThornode(t *testing.T) {
 		return &ebifrost.SendQuorumTxResult{}, nil
 	}
 
-	// Send attestations to Thornode
+	// Send attestations to MAPO
 	ag.sendObservedTxAttestationsToThornode(context.Background(), *obsTx, state, true, false, true)
 
 	// Verify the tx was sent with the correct data

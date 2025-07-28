@@ -526,10 +526,10 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
 		gasRate = c.convertThorchainAmountToWei(big.NewInt(tx.GasRate))
 	} else {
-		// Thornode uses a gas rate 1.5x the reported network fee for the rate and computed
+		// MAPO uses a gas rate 1.5x the reported network fee for the rate and computed
 		// max gas to ensure the rate is sufficient when it is signed later. Since we now know
 		// the more recent rate, we will use our current rate with a lower bound on 2/3 the
-		// outbound rate (the original rate we reported to Thornode in the network fee).
+		// outbound rate (the original rate we reported to MAPO in the network fee).
 		lowerBound := c.convertThorchainAmountToWei(big.NewInt(tx.GasRate))
 		lowerBound.Mul(lowerBound, big.NewInt(2))
 		lowerBound.Div(lowerBound, big.NewInt(3))

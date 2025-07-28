@@ -563,10 +563,10 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, memo mem.Memo, n
 		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
 		gasRate = convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate))
 	} else {
-		// Thornode uses a gas rate 1.5x the reported network fee for the rate and computed
+		// MAPO uses a gas rate 1.5x the reported network fee for the rate and computed
 		// max gas to ensure the rate is sufficient when it is signed later. Since we now know
 		// the more recent rate, we will use our current rate with a lower bound on 2/3 the
-		// outbound rate (the original rate we reported to Thornode in the network fee).
+		// outbound rate (the original rate we reported to MAPO in the network fee).
 		lowerBound := convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate))
 		lowerBound.Mul(lowerBound, big.NewInt(2))
 		lowerBound.Div(lowerBound, big.NewInt(3))

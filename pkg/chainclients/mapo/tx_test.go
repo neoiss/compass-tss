@@ -2,10 +2,10 @@ package mapo
 
 import (
 	"fmt"
-	ecommon "github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
 
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/stretchr/testify/assert"
 )

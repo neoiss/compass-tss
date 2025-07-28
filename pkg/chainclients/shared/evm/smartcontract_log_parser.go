@@ -187,7 +187,6 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 	}
 	isVaultTransfer := false
 
-	// todo
 	//earlyExit := false
 	switch ll.Topics[0].String() {
 	case constants.EventOfDeposit.GetTopic().String():

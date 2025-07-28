@@ -12,4 +12,5 @@ const (
 	GetNetworkFee     = "getInboundAddress"
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
+	IsOrderExecuted   = "isOrderExecuted"
 )

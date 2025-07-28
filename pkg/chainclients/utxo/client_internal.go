@@ -321,7 +321,7 @@ func (c *Client) sendNetworkFee(height int64) error {
 	return nil
 }
 
-// sendNetworkFeeFromBlock will send network fee to Thornode based on the block result,
+// sendNetworkFeeFromBlock will send network fee to MAPO based on the block result,
 // for chains like Dogecoin which do not support the getblockstats RPC.
 func (c *Client) sendNetworkFeeFromBlock(blockResult *btcjson.GetBlockVerboseTxResult) error {
 	height := blockResult.Height

@@ -53,6 +53,17 @@ type VoteTxIn struct {
 	Payload   []byte
 }
 
+type VoteTxOut struct {
+	Height  *big.Int
+	ToChain *big.Int
+	Amount  *big.Int
+	OrderId [32]byte
+	GasUsed *big.Int
+	Token   []byte
+	Vault   []byte
+	To      []byte
+}
+
 type Gas struct {
 	Chain          *big.Int
 	Pubkey         []byte

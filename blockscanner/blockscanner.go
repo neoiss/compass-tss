@@ -248,7 +248,7 @@ func (b *BlockScanner) scanBlocks() {
 
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
-			// determine how often we compare THORNode network fee to Bifrost network fee.
+			// determine how often we compare MAP network fee to Bifrost network fee.
 			// General goal is about once per day.
 			mod := ((24 * 60 * 60 * 1000) + ms - 1) / ms
 			if currentBlock%mod == 0 {
