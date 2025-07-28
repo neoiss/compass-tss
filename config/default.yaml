@@ -82,7 +82,7 @@ bifrost:
     max_keyshare_recover_scan_blocks: 100
   chains:
     btc: &default-chain
-      disabled: true
+      disabled: false
       chain_id: BTC
       username:
       password:
@@ -176,7 +176,7 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     bsc:
-      disabled: true
+      disabled: false
       <<: *default-chain
       chain_id: BSC
       rpc_host: "https://bsc-testnet.drpc.org"
