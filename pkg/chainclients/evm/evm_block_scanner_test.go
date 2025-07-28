@@ -153,7 +153,7 @@ func (s *BlockScannerTestSuite) TestNewBlockScanner(c *C) {
 func (s *BlockScannerTestSuite) TestProcessBlock(c *C) {
 	storage, err := blockscanner.NewBlockScannerStorage("./test", config.LevelDBOptions{})
 	c.Assert(err, IsNil)
-	ethClient, err := ethclient.Dial("https://rpc.baseservice.workers.dev/main?p=filter&chain=bsctest")
+	ethClient, err := ethclient.Dial("http://bsc.testnet.net")
 	c.Assert(err, IsNil)
 	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "BSC")
 	c.Assert(err, IsNil)
