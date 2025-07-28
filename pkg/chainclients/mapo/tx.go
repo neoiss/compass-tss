@@ -69,6 +69,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fail to call IsOrderExecuted: %w", err)
 	}
+	b.logger.Info().Str("orderId", ele.OrderId.String()).Msg("Checking orderId")
 	if exist {
 		return nil, ErrOfOrderExist
 	}

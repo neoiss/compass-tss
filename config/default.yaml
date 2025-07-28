@@ -82,7 +82,7 @@ bifrost:
     max_keyshare_recover_scan_blocks: 100
   chains:
     btc: &default-chain
-      disabled: false
+      disabled: true
       chain_id: BTC
       username:
       password:

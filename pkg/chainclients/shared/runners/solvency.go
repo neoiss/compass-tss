@@ -31,13 +31,13 @@ func SolvencyCheckRunner(chain common.Chain,
 	backOffDuration time.Duration,
 ) {
 	logger := log.Logger.With().Str("chain", chain.String()).Logger()
-	logger.Info().Msg("start solvency check runner")
+	logger.Info().Msg("Start solvency check runner")
 	defer func() {
 		wg.Done()
-		logger.Info().Msg("finish  solvency check runner")
+		logger.Info().Msg("Finish  solvency check runner")
 	}()
 	if provider == nil {
-		logger.Error().Msg("solvency checker provider is nil")
+		logger.Error().Msg("Solvency checker provider is nil")
 		return
 	}
 	if backOffDuration == 0 {
@@ -51,14 +51,14 @@ func SolvencyCheckRunner(chain common.Chain,
 			// check whether the chain is halted via mimir or not
 			haltHeight, err := bridge.GetMimir(fmt.Sprintf("Halt%sChain", chain))
 			if err != nil {
-				logger.Err(err).Msg("fail to get chain halt height")
+				logger.Err(err).Msg("Fail to get chain halt height")
 				continue
 			}
 
 			// check whether the chain is halted via solvency check
 			solvencyHaltHeight, err := bridge.GetMimir(fmt.Sprintf("SolvencyHalt%sChain", chain))
 			if err != nil {
-				logger.Err(err).Msg("fail to get solvency halt height")
+				logger.Err(err).Msg("Fail to get solvency halt height")
 				continue
 			}
 
@@ -71,13 +71,13 @@ func SolvencyCheckRunner(chain common.Chain,
 
 			currentBlockHeight, err := provider.GetHeight()
 			if err != nil {
-				logger.Err(err).Msg("fail to get current block height")
+				logger.Err(err).Msg("Fail to get current block height")
 				break
 			}
 			if provider.ShouldReportSolvency(currentBlockHeight) {
-				logger.Info().Msgf("current block height: %d, report solvency again", currentBlockHeight)
+				logger.Info().Msgf("Current block height: %d, report solvency again", currentBlockHeight)
 				if err = provider.ReportSolvency(currentBlockHeight); err != nil {
-					logger.Err(err).Msg("fail to report solvency")
+					logger.Err(err).Msg("Fail to report solvency")
 				}
 			}
 		}
@@ -105,7 +105,7 @@ func IsVaultSolvent(account common.Account, vault types.Vault, currentGasFee cos
 			Str("asgard amount", asgardCoin.Amount.String()).
 			Str("wallet amount", c.Amount.String()).
 			Str("gap", gap.String()).
-			Msg("insolvency detected")
+			Msg("Insolvency detected")
 		return false
 	}
 	return true

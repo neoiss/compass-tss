@@ -1002,7 +1002,7 @@ func (c *EVMClient) ReportSolvency(height int64) error {
 			Bool("solvent", solvent).
 			Msg("reporting solvency")
 
-		// send solvency to thorchain via global queue consumed by the observer
+		// send solvency to map via global queue consumed by the observer
 		select {
 		case c.globalSolvencyQueue <- msgs[i]:
 		case <-time.After(constants.MAPRelayChainBlockTime):

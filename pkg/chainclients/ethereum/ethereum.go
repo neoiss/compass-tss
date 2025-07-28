@@ -1091,7 +1091,7 @@ func (c *Client) ReportSolvency(ethBlockHeight int64) error {
 	return nil
 }
 
-// ShouldReportSolvency with given block height , should chain client report Solvency to THORNode?
+// ShouldReportSolvency with given block height , should chain client report Solvency to MAP
 func (c *Client) ShouldReportSolvency(height int64) bool {
 	return height%20 == 0
 }
