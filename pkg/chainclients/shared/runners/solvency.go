@@ -1,9 +1,10 @@
 package runners
 
 import (
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/rs/zerolog/log"
 
@@ -72,12 +73,12 @@ func SolvencyCheckRunner(chain common.Chain,
 	//			logger.Err(err).Msg("Fail to get current block height")
 	//			break
 	//		}
-	//		if provider.ShouldReportSolvency(currentBlockHeight) {
-	//			logger.Info().Msgf("Current block height: %d, report solvency again", currentBlockHeight)
-	//			if err = provider.ReportSolvency(currentBlockHeight); err != nil {
-	//				logger.Err(err).Msg("Fail to report solvency")
-	//			}
-	//		}
+	// if provider.ShouldReportSolvency(currentBlockHeight) {
+	// 	logger.Info().Msgf("Current block height: %d, report solvency again", currentBlockHeight)
+	// 	if err = provider.ReportSolvency(currentBlockHeight); err != nil {
+	// 		logger.Err(err).Msg("Fail to report solvency")
+	// 	}
+	// }
 	//	}
 	//}
 }
