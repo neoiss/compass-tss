@@ -5,10 +5,10 @@ package utxo
 
 import (
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
 	. "gopkg.in/check.v1"
+	"math/big"
 )
 
 func (s *LitecoinSuite) TestGetAddress(c *C) {
@@ -29,13 +29,10 @@ func (s *LitecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -48,13 +45,10 @@ func (s *LitecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -68,16 +62,10 @@ func (s *LitecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(12345600000)),
-				},
-				Gas: common.Gas{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(40000)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -100,13 +88,10 @@ func (s *LitecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.BTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -120,13 +105,10 @@ func (s *LitecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -140,13 +122,10 @@ func (s *LitecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(12345600)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -160,13 +139,10 @@ func (s *LitecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(22345600)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -180,13 +156,10 @@ func (s *LitecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456000)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},

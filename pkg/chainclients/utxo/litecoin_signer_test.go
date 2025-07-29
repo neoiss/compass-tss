@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -39,11 +41,11 @@ import (
 type LitecoinSignerSuite struct {
 	client *Client
 	server *httptest.Server
-	bridge shareTypes.ThorchainBridge
+	bridge shareTypes.Bridge
 	cfg    config.BifrostChainConfiguration
 	m      *metrics.Metrics
 	db     *leveldb.DB
-	keys   *mapclient.Keys
+	keys   *keys.Keys
 }
 
 var _ = Suite(&LitecoinSignerSuite{})
@@ -55,7 +57,7 @@ func (s *LitecoinSignerSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(bob, cKeys.English, cmd.THORChainHDPath, password, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.keys = mapclient.NewKeysWithKeybase(kb, bob, password)
+	s.keys = keys.NewKeysWithKeybase(kb, bob, password, os.Getenv(""))
 }
 
 func (s *LitecoinSignerSuite) SetUpTest(c *C) {
@@ -137,7 +139,7 @@ func (s *LitecoinSignerSuite) SetUpTest(c *C) {
 	var err error
 	s.cfg.RPCHost = s.server.Listener.Addr().String()
 	cfg.ChainHost = s.server.Listener.Addr().String()
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.keys)
+	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.keys)
 	c.Assert(err, IsNil)
 	s.client, err = NewClient(s.keys, s.cfg, nil, s.bridge, s.m)
 	c.Assert(err, IsNil)

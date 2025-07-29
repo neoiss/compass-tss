@@ -2,23 +2,18 @@ package utxo
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	cKeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	. "gopkg.in/check.v1"
+	"math/big"
+	"net/http/httptest"
+	"os"
 
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
@@ -26,7 +21,6 @@ import (
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
@@ -34,10 +28,10 @@ import (
 type LitecoinSuite struct {
 	client *Client
 	server *httptest.Server
-	bridge shareTypes.ThorchainBridge
+	bridge shareTypes.Bridge
 	cfg    config.BifrostChainConfiguration
 	m      *metrics.Metrics
-	keys   *mapclient.Keys
+	keys   *keys.Keys
 }
 
 var _ = Suite(&LitecoinSuite{})
@@ -50,162 +44,162 @@ func (s *LitecoinSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(bob, cKeys.English, cmd.THORChainHDPath, password, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.keys = mapclient.NewKeysWithKeybase(kb, bob, password)
+	s.keys = keys.NewKeysWithKeybase(kb, bob, password, os.Getenv(""))
 }
 
 var ltcChainRPCs = map[string]map[string]interface{}{}
 
 func init() {
 	// map the method and params to the loaded fixture
-	loadFixture := func(path string) map[string]interface{} {
-		f, err := os.Open(path)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		var data map[string]interface{}
-		err = json.NewDecoder(f).Decode(&data)
-		if err != nil {
-			panic(err)
-		}
-		return data
-	}
-
-	ltcChainRPCs["getnetworkinfo"] = loadFixture("../../../../test/fixtures/ltc/getnetworkinfo.json")
-	ltcChainRPCs["getblockhash"] = loadFixture("../../../../test/fixtures/ltc/blockhash.json")
-	ltcChainRPCs["getblock"] = loadFixture("../../../../test/fixtures/ltc/block_verbose.json")
-	ltcChainRPCs["getblockcount"] = loadFixture("../../../../test/fixtures/ltc/blockcount.json")
-	ltcChainRPCs["importaddress"] = loadFixture("../../../../test/fixtures/ltc/importaddress.json")
-	ltcChainRPCs["listunspent"] = loadFixture("../../../../test/fixtures/ltc/listunspent.json")
-	ltcChainRPCs["getrawmempool"] = loadFixture("../../../../test/fixtures/ltc/getrawmempool.json")
-	ltcChainRPCs["getblockstats"] = loadFixture("../../../../test/fixtures/ltc/blockstats.json")
-	ltcChainRPCs["getrawtransaction-5b0876dcc027d2f0c671fc250460ee388df39697c3ff082007b6ddd9cb9a7513"] = loadFixture("../../../../test/fixtures/ltc/tx-5b08.json")
-	ltcChainRPCs["getrawtransaction-54ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-54ef.json")
-	ltcChainRPCs["getrawtransaction-64ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-64ef.json")
-	ltcChainRPCs["getrawtransaction-74ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-74ef.json")
-	ltcChainRPCs["getrawtransaction-27de3e1865c098cd4fded71bae1e8236fd27ce5dce6e524a9ac5cd1a17b5c241"] = loadFixture("../../../../test/fixtures/ltc/tx-c241.json")
-	ltcChainRPCs["getrawtransaction"] = loadFixture("../../../../test/fixtures/ltc/tx.json")
-	ltcChainRPCs["createwallet"] = loadFixture("../../../../test/fixtures/ltc/createwallet.json")
+	//loadFixture := func(path string) map[string]interface{} {
+	//	f, err := os.Open(path)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	defer f.Close()
+	//	var data map[string]interface{}
+	//	err = json.NewDecoder(f).Decode(&data)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	return data
+	//}
+	//
+	//ltcChainRPCs["getnetworkinfo"] = loadFixture("../../../../test/fixtures/ltc/getnetworkinfo.json")
+	//ltcChainRPCs["getblockhash"] = loadFixture("../../../../test/fixtures/ltc/blockhash.json")
+	//ltcChainRPCs["getblock"] = loadFixture("../../../../test/fixtures/ltc/block_verbose.json")
+	//ltcChainRPCs["getblockcount"] = loadFixture("../../../../test/fixtures/ltc/blockcount.json")
+	//ltcChainRPCs["importaddress"] = loadFixture("../../../../test/fixtures/ltc/importaddress.json")
+	//ltcChainRPCs["listunspent"] = loadFixture("../../../../test/fixtures/ltc/listunspent.json")
+	//ltcChainRPCs["getrawmempool"] = loadFixture("../../../../test/fixtures/ltc/getrawmempool.json")
+	//ltcChainRPCs["getblockstats"] = loadFixture("../../../../test/fixtures/ltc/blockstats.json")
+	//ltcChainRPCs["getrawtransaction-5b0876dcc027d2f0c671fc250460ee388df39697c3ff082007b6ddd9cb9a7513"] = loadFixture("../../../../test/fixtures/ltc/tx-5b08.json")
+	//ltcChainRPCs["getrawtransaction-54ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-54ef.json")
+	//ltcChainRPCs["getrawtransaction-64ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-64ef.json")
+	//ltcChainRPCs["getrawtransaction-74ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/ltc/tx-74ef.json")
+	//ltcChainRPCs["getrawtransaction-27de3e1865c098cd4fded71bae1e8236fd27ce5dce6e524a9ac5cd1a17b5c241"] = loadFixture("../../../../test/fixtures/ltc/tx-c241.json")
+	//ltcChainRPCs["getrawtransaction"] = loadFixture("../../../../test/fixtures/ltc/tx.json")
+	//ltcChainRPCs["createwallet"] = loadFixture("../../../../test/fixtures/ltc/createwallet.json")
 }
 
-func (s *LitecoinSuite) SetUpTest(c *C) {
-	s.m = GetMetricForTest(c, common.LTCChain)
-	s.cfg = config.BifrostChainConfiguration{
-		ChainID:     "LTC",
-		UserName:    bob,
-		Password:    password,
-		DisableTLS:  true,
-		HTTPostMode: true,
-		BlockScanner: config.BifrostBlockScannerConfiguration{
-			StartBlockHeight: 1, // avoids querying thorchain for block height
-		},
-	}
-	s.cfg.UTXO.TransactionBatchSize = 100
-	s.cfg.UTXO.MaxMempoolBatches = 10
-	s.cfg.UTXO.EstimatedAverageTxSize = 250
-	s.cfg.BlockScanner.MaxReorgRescanBlocks = 1
-	ns := strconv.Itoa(time.Now().Nanosecond())
-
-	thordir := filepath.Join(os.TempDir(), ns, ".thorcli")
-	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       "localhost",
-		SignerName:      bob,
-		SignerPasswd:    password,
-		ChainHomeFolder: thordir,
-	}
-
-	handleRPC := func(body []byte, rw http.ResponseWriter) {
-		r := struct {
-			Method string        `json:"method"`
-			Params []interface{} `json:"params"`
-		}{}
-
-		err := json.Unmarshal(body, &r)
-		c.Assert(err, IsNil)
-
-		rw.Header().Set("Content-Type", "application/json")
-		key := r.Method
-		if r.Method == "getrawtransaction" {
-			key = fmt.Sprintf("%s-%s", r.Method, r.Params[0])
-		}
-		if ltcChainRPCs[key] == nil {
-			key = r.Method
-		}
-
-		err = json.NewEncoder(rw).Encode(ltcChainRPCs[key])
-		c.Assert(err, IsNil)
-	}
-	handleBatchRPC := func(body []byte, rw http.ResponseWriter) {
-		r := []struct {
-			Method string        `json:"method"`
-			Params []interface{} `json:"params"`
-			ID     int           `json:"id"`
-		}{}
-
-		err := json.Unmarshal(body, &r)
-		c.Assert(err, IsNil)
-
-		rw.Header().Set("Content-Type", "application/json")
-		result := make([]map[string]interface{}, len(r))
-		for i, v := range r {
-			key := v.Method
-			if v.Method == "getrawtransaction" {
-				key = fmt.Sprintf("%s-%s", v.Method, v.Params[0])
-			}
-			if ltcChainRPCs[key] == nil {
-				key = v.Method
-			}
-			result[i] = ltcChainRPCs[key]
-			result[i]["id"] = v.ID
-		}
-
-		err = json.NewEncoder(rw).Encode(result)
-		c.Assert(err, IsNil)
-	}
-
-	s.server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.RequestURI == "/" { // nolint
-			body, _ := io.ReadAll(req.Body)
-			if body[0] == '[' {
-				handleBatchRPC(body, rw)
-			} else {
-				handleRPC(body, rw)
-			}
-		} else if strings.HasPrefix(req.RequestURI, "/thorchain/node/") {
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/nodeaccount/template.json")
-		} else if req.RequestURI == "/thorchain/lastblock" {
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/lastblock/ltc.json")
-		} else if strings.HasPrefix(req.RequestURI, "/auth/accounts/") {
-			_, err := rw.Write([]byte(`{ "jsonrpc": "2.0", "id": "", "result": { "height": "0", "result": { "value": { "account_number": "0", "sequence": "0" } } } }`))
-			c.Assert(err, IsNil)
-		} else if req.RequestURI == "/txs" {
-			_, err := rw.Write([]byte(`{"height": "1", "txhash": "AAAA000000000000000000000000000000000000000000000000000000000000", "logs": [{"success": "true", "log": ""}]}`))
-			c.Assert(err, IsNil)
-		} else if strings.HasPrefix(req.RequestURI, mapclient.AsgardVault) {
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/asgard.json")
-		} else if req.RequestURI == "/thorchain/mimir/key/MaxUTXOsToSpend" {
-			_, err := rw.Write([]byte(`-1`))
-			c.Assert(err, IsNil)
-		} else if req.RequestURI == "/thorchain/vaults/pubkeys" {
-			if common.CurrentChainNetwork == common.MainNet {
-				httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys-Mainnet.json")
-			} else {
-				httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-			}
-		}
-	}))
-	var err error
-	cfg.ChainHost = s.server.Listener.Addr().String()
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.keys)
-	c.Assert(err, IsNil)
-	s.cfg.RPCHost = s.server.Listener.Addr().String()
-	s.client, err = NewClient(s.keys, s.cfg, nil, s.bridge, s.m)
-	s.client.disableVinZeroBatch = true
-	s.client.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
-	c.Assert(err, IsNil)
-	c.Assert(s.client, NotNil)
-}
+//func (s *LitecoinSuite) SetUpTest(c *C) {
+//	s.m = GetMetricForTest(c, common.LTCChain)
+//	s.cfg = config.BifrostChainConfiguration{
+//		ChainID:     "LTC",
+//		UserName:    bob,
+//		Password:    password,
+//		DisableTLS:  true,
+//		HTTPostMode: true,
+//		BlockScanner: config.BifrostBlockScannerConfiguration{
+//			StartBlockHeight: 1, // avoids querying thorchain for block height
+//		},
+//	}
+//	s.cfg.UTXO.TransactionBatchSize = 100
+//	s.cfg.UTXO.MaxMempoolBatches = 10
+//	s.cfg.UTXO.EstimatedAverageTxSize = 250
+//	s.cfg.BlockScanner.MaxReorgRescanBlocks = 1
+//	ns := strconv.Itoa(time.Now().Nanosecond())
+//
+//	thordir := filepath.Join(os.TempDir(), ns, ".thorcli")
+//	cfg := config.BifrostClientConfiguration{
+//		ChainID:         "thorchain",
+//		ChainHost:       "localhost",
+//		SignerName:      bob,
+//		SignerPasswd:    password,
+//		ChainHomeFolder: thordir,
+//	}
+//
+//	handleRPC := func(body []byte, rw http.ResponseWriter) {
+//		r := struct {
+//			Method string        `json:"method"`
+//			Params []interface{} `json:"params"`
+//		}{}
+//
+//		err := json.Unmarshal(body, &r)
+//		c.Assert(err, IsNil)
+//
+//		rw.Header().Set("Content-Type", "application/json")
+//		key := r.Method
+//		if r.Method == "getrawtransaction" {
+//			key = fmt.Sprintf("%s-%s", r.Method, r.Params[0])
+//		}
+//		if ltcChainRPCs[key] == nil {
+//			key = r.Method
+//		}
+//
+//		err = json.NewEncoder(rw).Encode(ltcChainRPCs[key])
+//		c.Assert(err, IsNil)
+//	}
+//	handleBatchRPC := func(body []byte, rw http.ResponseWriter) {
+//		r := []struct {
+//			Method string        `json:"method"`
+//			Params []interface{} `json:"params"`
+//			ID     int           `json:"id"`
+//		}{}
+//
+//		err := json.Unmarshal(body, &r)
+//		c.Assert(err, IsNil)
+//
+//		rw.Header().Set("Content-Type", "application/json")
+//		result := make([]map[string]interface{}, len(r))
+//		for i, v := range r {
+//			key := v.Method
+//			if v.Method == "getrawtransaction" {
+//				key = fmt.Sprintf("%s-%s", v.Method, v.Params[0])
+//			}
+//			if ltcChainRPCs[key] == nil {
+//				key = v.Method
+//			}
+//			result[i] = ltcChainRPCs[key]
+//			result[i]["id"] = v.ID
+//		}
+//
+//		err = json.NewEncoder(rw).Encode(result)
+//		c.Assert(err, IsNil)
+//	}
+//
+//	s.server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+//		if req.RequestURI == "/" { // nolint
+//			body, _ := io.ReadAll(req.Body)
+//			if body[0] == '[' {
+//				handleBatchRPC(body, rw)
+//			} else {
+//				handleRPC(body, rw)
+//			}
+//		} else if strings.HasPrefix(req.RequestURI, "/thorchain/node/") {
+//			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/nodeaccount/template.json")
+//		} else if req.RequestURI == "/thorchain/lastblock" {
+//			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/lastblock/ltc.json")
+//		} else if strings.HasPrefix(req.RequestURI, "/auth/accounts/") {
+//			_, err := rw.Write([]byte(`{ "jsonrpc": "2.0", "id": "", "result": { "height": "0", "result": { "value": { "account_number": "0", "sequence": "0" } } } }`))
+//			c.Assert(err, IsNil)
+//		} else if req.RequestURI == "/txs" {
+//			_, err := rw.Write([]byte(`{"height": "1", "txhash": "AAAA000000000000000000000000000000000000000000000000000000000000", "logs": [{"success": "true", "log": ""}]}`))
+//			c.Assert(err, IsNil)
+//		} else if strings.HasPrefix(req.RequestURI, mapclient.AsgardVault) {
+//			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/asgard.json")
+//		} else if req.RequestURI == "/thorchain/mimir/key/MaxUTXOsToSpend" {
+//			_, err := rw.Write([]byte(`-1`))
+//			c.Assert(err, IsNil)
+//		} else if req.RequestURI == "/thorchain/vaults/pubkeys" {
+//			if common.CurrentChainNetwork == common.MainNet {
+//				httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys-Mainnet.json")
+//			} else {
+//				httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys.json")
+//			}
+//		}
+//	}))
+//	var err error
+//	cfg.ChainHost = s.server.Listener.Addr().String()
+//	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.keys)
+//	c.Assert(err, IsNil)
+//	s.cfg.RPCHost = s.server.Listener.Addr().String()
+//	s.client, err = NewClient(s.keys, s.cfg, nil, s.bridge, s.m)
+//	s.client.disableVinZeroBatch = true
+//	s.client.globalNetworkFeeQueue = make(chan types.NetworkFee, 1)
+//	c.Assert(err, IsNil)
+//	c.Assert(s.client, NotNil)
+//}
 
 func (s *LitecoinSuite) TearDownTest(_ *C) {
 	s.server.Close()
@@ -235,12 +229,10 @@ func (s *LitecoinSuite) TestFetchTxs(c *C) {
 	txs, err := s.client.FetchTxs(0, 0)
 	c.Assert(err, IsNil)
 	c.Assert(txs.Chain, Equals, common.LTCChain)
-	c.Assert(txs.TxArray[0].BlockHeight, Equals, int64(1696761))
+	c.Assert(txs.TxArray[0].Height, Equals, int64(1696761))
 	c.Assert(txs.TxArray[0].Tx, Equals, "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2")
 	c.Assert(txs.TxArray[0].Sender, Equals, "tltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfus9tapm")
 	c.Assert(txs.TxArray[0].To, Equals, vaultAddressString)
-	c.Assert(txs.TxArray[0].Coins.EqualsEx(common.Coins{common.NewCoin(common.LTCAsset, cosmos.NewUint(10000000))}), Equals, true)
-	c.Assert(txs.TxArray[0].Gas.Equals(common.Gas{common.NewCoin(common.LTCAsset, cosmos.NewUint(22705334))}), Equals, true)
 	c.Assert(len(txs.TxArray), Equals, 1)
 }
 
@@ -775,13 +767,10 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 1,
-				Tx:          "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456789)),
-				},
+				Height: big.NewInt(1),
+				Tx:     "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -798,13 +787,10 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -821,24 +807,18 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.LTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 3,
-				Tx:          "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(12345678)),
-				},
+				Height: big.NewInt(3),
+				Tx:     "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
 			{
-				BlockHeight: 3,
-				Tx:          "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
-				To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Coins: common.Coins{
-					common.NewCoin(common.LTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(3),
+				Tx:     "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
+				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},

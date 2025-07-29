@@ -5,9 +5,9 @@ package utxo
 
 import (
 	. "gopkg.in/check.v1"
+	"math/big"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
@@ -30,13 +30,10 @@ func (s *DogecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -49,13 +46,10 @@ func (s *DogecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -69,16 +63,10 @@ func (s *DogecoinSuite) TestConfirmationCountReady(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(12345600000)),
-				},
-				Gas: common.Gas{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(40000)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -101,13 +89,10 @@ func (s *DogecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -121,13 +106,10 @@ func (s *DogecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -141,13 +123,10 @@ func (s *DogecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(12345600)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -161,13 +140,10 @@ func (s *DogecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(223456000)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -181,13 +157,10 @@ func (s *DogecoinSuite) TestGetConfirmationCount(c *C) {
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.DOGEAsset, cosmos.NewUint(123456000000)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
