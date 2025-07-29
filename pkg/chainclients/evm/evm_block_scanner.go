@@ -249,7 +249,6 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	fmt.Println("logs --------------- ", len(logs))
 
 	// process all transactions in the block
 	block, err := e.ethRpc.GetBlock(currentHeight)
