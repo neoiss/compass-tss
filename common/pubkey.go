@@ -161,7 +161,8 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 			net = &chaincfg.MainNetParams
 		}
 
-		addr, err := btcutil.NewAddressWitnessPubKeyHash(pubBytes, net)
+		hash160 := btcutil.Hash160(pubBytes[1:])
+		addr, err := btcutil.NewAddressWitnessPubKeyHash(hash160, net)
 		if err != nil {
 			return NoAddress, fmt.Errorf("fail to bech32 encode the address, err: %w", err)
 		}
