@@ -1,9 +1,9 @@
 package utxo
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -17,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
@@ -27,8 +28,10 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo/rpc"
 	"github.com/mapprotocol/compass-tss/tss"
@@ -134,10 +137,12 @@ func NewClient(
 		return nil, fmt.Errorf("fail to get THORChain private key: %w", err)
 	}
 	nodePrivKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), thorPrivateKey.Bytes())
-	nodePubKey, err := bech32AccountPubKey(nodePrivKey)
+	//nodePubKey, err := bech32AccountPubKey(nodePrivKey)
+	ethPrivateKey, err := evm.GetPrivateKey(thorPrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("fail to get node account public key: %w", err)
+		return nil, err
 	}
+	nodePubKey := hex.EncodeToString(crypto.CompressPubkey(&ethPrivateKey.PublicKey))
 
 	// create base client
 	c := &Client{
@@ -145,7 +150,7 @@ func NewClient(
 		log:                   logger,
 		m:                     m,
 		rpc:                   rpcClient,
-		nodePubKey:            nodePubKey,
+		nodePubKey:            common.PubKey(nodePubKey),
 		nodePrivKey:           nodePrivKey,
 		tssKeySigner:          tssKeysign,
 		wg:                    &sync.WaitGroup{},
