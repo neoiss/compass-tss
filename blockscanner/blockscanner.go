@@ -197,7 +197,7 @@ func (b *BlockScanner) isChainPaused() bool {
 
 // scanBlocks
 func (b *BlockScanner) scanBlocks() {
-	b.logger.Info().Str("chain", b.cfg.ChainID.String()).Msg("Start to scan blocks")
+	b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", b.previousBlock).Msg("Start to scan blocks")
 	defer b.logger.Info().Msg("Stop scan blocks")
 	defer b.wg.Done()
 
@@ -245,6 +245,7 @@ func (b *BlockScanner) scanBlocks() {
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
+			b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).Int("txs", len(txIn.TxArray)).Msg("Fetched Txs")
 
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 

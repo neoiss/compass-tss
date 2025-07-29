@@ -2,6 +2,7 @@ package thorchain
 
 import (
 	"fmt"
+	"strings"
 )
 
 type OutboundMemo struct {
@@ -18,7 +19,7 @@ func (m OutboundMemo) GetChain() string {
 }
 
 func (m OutboundMemo) GetToken() string {
-	return m.Token
+	return strings.ToUpper(m.Token)
 }
 
 func (m OutboundMemo) GetDestination() string { return m.Receiver }

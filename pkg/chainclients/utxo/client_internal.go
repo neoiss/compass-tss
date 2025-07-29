@@ -2,7 +2,6 @@ package utxo
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -473,6 +472,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 	// RBF enabled transaction will not be observed until committed to block
 	if c.isRBFEnabled(tx) && isMemPool {
+		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore RBF enabled tx in mempool")
 		return types.TxInItem{}, nil
 	}
 	sender, err := c.getSender(tx, vinZeroTxs)
@@ -541,29 +541,32 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, c.GetChain())
 	}
 
-	tokenAddress, err := c.bridge.GetTokenAddress(destChainID, m.GetToken())
+	tokenAddress, err := c.bridge.GetTokenAddress(chainID, m.GetToken())
 	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, destChainID, m.GetToken())
+		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, m.GetToken())
+	}
+	if len(tokenAddress) == 0 {
+		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, m.GetToken())
 	}
 
 	txIn := types.TxInItem{
-		Memo:     memo,
-		TxInType: constants.SWAP,
-		ToChain:  destChainID,
-		Height:   big.NewInt(height),
-		Amount:   new(big.Int).SetUint64(amt),
-		OrderId:  generateOrderID(chainID.String(), tx.Txid),
-		GasUsed:  nil,
-		Token:    tokenAddress,
-		Vault:    nil,
-		To:       ethcommon.Hex2Bytes(m.GetDestination()),
-		Method:   "",
+		Tx:        tx.Txid,
+		Memo:      memo,
+		TxInType:  constants.SWAP,
+		FromChain: chainID,
+		ToChain:   destChainID,
+		Height:    big.NewInt(height),
+		Amount:    new(big.Int).SetUint64(amt),
+		OrderId:   generateOrderID(chainID.String(), tx.Txid),
+		GasUsed:   nil,
+		Token:     tokenAddress,
+		Vault:     nil,
+		From:      []byte(sender),
+		To:        ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
+		Method:    constants.VoteTxIn,
 	}
-	marshal, _ := json.Marshal(txIn)
-	fmt.Println("============================== tx in: ", string(marshal))
-
+	fmt.Println("============================== tx in: ", common.JSON(txIn))
 	return txIn, nil
-
 }
 
 func generateOrderID(chainID, txHash string) ethcommon.Hash {
