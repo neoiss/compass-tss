@@ -6,15 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/hashicorp/go-multierror"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"math/big"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -526,10 +527,10 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
 		gasRate = c.convertThorchainAmountToWei(big.NewInt(tx.GasRate))
 	} else {
-		// Thornode uses a gas rate 1.5x the reported network fee for the rate and computed
+		// MAPO uses a gas rate 1.5x the reported network fee for the rate and computed
 		// max gas to ensure the rate is sufficient when it is signed later. Since we now know
 		// the more recent rate, we will use our current rate with a lower bound on 2/3 the
-		// outbound rate (the original rate we reported to Thornode in the network fee).
+		// outbound rate (the original rate we reported to MAPO in the network fee).
 		lowerBound := c.convertThorchainAmountToWei(big.NewInt(tx.GasRate))
 		lowerBound.Mul(lowerBound, big.NewInt(2))
 		lowerBound.Div(lowerBound, big.NewInt(3))
@@ -1091,7 +1092,7 @@ func (c *Client) ReportSolvency(ethBlockHeight int64) error {
 	return nil
 }
 
-// ShouldReportSolvency with given block height , should chain client report Solvency to THORNode?
+// ShouldReportSolvency with given block height , should chain client report Solvency to MAP
 func (c *Client) ShouldReportSolvency(height int64) bool {
 	return height%20 == 0
 }

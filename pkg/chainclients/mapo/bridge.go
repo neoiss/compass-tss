@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +29,6 @@ import (
 	keys2 "github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -85,6 +83,7 @@ type Bridge struct {
 	mainAbi       *abi.ABI
 	tokenRegistry *abi.ABI
 	mainCall      *contract.Call
+	viewCall      *contract.Call
 	epoch         *big.Int
 }
 
@@ -154,7 +153,13 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, err
 	}
 
+	viewAi, err := selfAbi.New(viewABI)
+	if err != nil {
+		return nil, err
+	}
+
 	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.Maintainer)}, ai)
+	viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.ViewController)}, viewAi)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	if err != nil {
 		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
@@ -184,6 +189,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		mainAbi:       mainAbi,
 		tokenRegistry: tokenRegistry,
 		mainCall:      mainCall,
+		viewCall:      viewCall,
 		epoch:         big.NewInt(1), // todo
 		gasPrice:      big.NewInt(0),
 	}, nil
@@ -457,72 +463,6 @@ func (b *Bridge) IsSyncing() (bool, error) {
 	return progress.CurrentBlock < progress.HighestBlock, nil
 }
 
-// HasNetworkFee checks whether the given chain has set a network fee - determined by
-// whether the `outbound_tx_size` for the inbound address response is non-zero.
-func (b *Bridge) HasNetworkFee(chain common.Chain) (bool, error) {
-	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
-	if err != nil {
-		return false, fmt.Errorf("fail to get inbound addresses: %w", err)
-	}
-	if s != http.StatusOK {
-		return false, fmt.Errorf("unexpected status code: %d", s)
-	}
-
-	var resp []openapi.InboundAddress
-	if err = json.Unmarshal(buf, &resp); err != nil {
-		return false, fmt.Errorf("fail to unmarshal inbound addresses: %w", err)
-	}
-
-	for _, addr := range resp {
-		if addr.Chain != nil && *addr.Chain == chain.String() && addr.OutboundTxSize != nil {
-			var size int64
-			size, err = strconv.ParseInt(*addr.OutboundTxSize, 10, 64)
-			if err != nil {
-				return false, fmt.Errorf("fail to parse outbound_tx_size: %w", err)
-			}
-			return size > 0, nil
-		}
-	}
-
-	return false, fmt.Errorf("no inbound address found for chain: %s", chain)
-}
-
-// GetNetworkFee get chain's network fee from THORNode.
-func (b *Bridge) GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error) {
-	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("fail to get inbound addresses: %w", err)
-	}
-	if s != http.StatusOK {
-		return 0, 0, 0, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var resp []openapi.InboundAddress
-	if err = json.Unmarshal(buf, &resp); err != nil {
-		return 0, 0, 0, fmt.Errorf("fail to unmarshal to json: %w", err)
-	}
-
-	for _, addr := range resp {
-		if addr.Chain != nil && *addr.Chain == chain.String() {
-			// Default values if nil or unfound are 0.
-			if addr.OutboundTxSize != nil {
-				transactionSize, err = strconv.ParseUint(*addr.OutboundTxSize, 10, 64)
-				if err != nil {
-					return 0, 0, 0, fmt.Errorf("fail to parse outbound_tx_size: %w", err)
-				}
-			}
-			if addr.ObservedFeeRate != nil {
-				transactionFeeRate, err = strconv.ParseUint(*addr.ObservedFeeRate, 10, 64)
-				if err != nil {
-					return 0, 0, 0, fmt.Errorf("fail to parse observed_fee_rate: %w", err)
-				}
-			}
-			// Having found the chain, do not continue through the remaining chains.
-			break
-		}
-	}
-	return
-}
-
 // WaitSync wait for map relay chain to catch up
 func (b *Bridge) WaitSync() error {
 	for {
@@ -617,47 +557,6 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 			PubKey: "029038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754",
 		},
 	}, nil
-
-	//buf, err := b.getVaultPubkeys()
-	//if err != nil {
-	//	return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
-	//}
-	//var result openapi.VaultPubkeysResponse
-	//if err = json.Unmarshal(buf, &result); err != nil {
-	//	return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
-	//}
-	//var addressPairs []shareTypes.PubKeyContractAddressPair
-	//for _, v := range append(result.Asgard, result.Inactive...) {
-	//	kp := shareTypes.PubKeyContractAddressPair{
-	//		PubKey:    common.PubKey(v.PubKey),
-	//		Contracts: make(map[common.Chain]common.Address),
-	//	}
-	//	for _, item := range v.Routers {
-	//		kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
-	//	}
-	//	addressPairs = append(addressPairs, kp)
-	//}
-	//return addressPairs, nil
-}
-
-// PostNetworkFee send network fee message to MAP
-func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionRate,
-	transactionSizeWithCall uint64) (string, error) {
-	// done next 1
-	input, err := b.mainAbi.Pack(constants.VoteNetworkFee, b.epoch, chainId, big.NewInt(height),
-		big.NewInt(0).SetUint64(transactionSize),
-		big.NewInt(0).SetUint64(transactionRate),
-		big.NewInt(0).SetUint64(transactionSizeWithCall))
-	if err != nil {
-		return "", fmt.Errorf("fail to pack input: %w", err)
-	}
-
-	tx, err := b.assemblyInternalTx(ctx, input, 2000000)
-	if err != nil {
-		return "", fmt.Errorf("fail to assembly tx: %w", err)
-	}
-
-	return b.Broadcast(tx)
 }
 
 // GetConstants from thornode
@@ -735,44 +634,7 @@ func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
 
 // GetContractAddress retrieve the contract address from asgard
 func (b *Bridge) GetContractAddress() ([]shareTypes.PubKeyContractAddressPair, error) {
-	buf, s, err := b.getWithPath(InboundAddressesEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get inbound addresses: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", s)
-	}
-	type address struct {
-		Chain   common.Chain   `json:"chain"`
-		PubKey  common.PubKey  `json:"pub_key"`
-		Address common.Address `json:"address"`
-		Router  common.Address `json:"router"`
-		Halted  bool           `json:"halted"`
-	}
-	var resp []address
-	if err = json.Unmarshal(buf, &resp); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal response: %w", err)
-	}
-	var result []shareTypes.PubKeyContractAddressPair
-	for _, item := range resp {
-		exist := false
-		for _, pair := range result {
-			if item.PubKey.Equals(pair.PubKey) {
-				pair.Contracts[item.Chain] = item.Router
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			pair := shareTypes.PubKeyContractAddressPair{
-				PubKey:    item.PubKey,
-				Contracts: map[common.Chain]common.Address{},
-			}
-			pair.Contracts[item.Chain] = item.Router
-			result = append(result, pair)
-		}
-	}
-	return result, nil
+	return nil, nil
 }
 
 // GetPools get pools from THORChain

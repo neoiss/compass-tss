@@ -24,7 +24,7 @@ bifrost:
       - ETH
       - BSC
       - BASE
-  thorchain:
+  map_relay:
     chain_id: map
     chain_host: https://testnet-rpc.maplabs.io
     chain_rpc: ""
@@ -34,6 +34,7 @@ bifrost:
     private_key: "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
     maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
     token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
+    view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m
@@ -175,10 +176,10 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     bsc:
-      disabled: true
+      disabled: false
       <<: *default-chain
       chain_id: BSC
-      rpc_host: "https://binance.llamarpc.com"
+      rpc_host: "https://bsc-testnet.drpc.org"
       solvency_blocks: 100
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
@@ -194,6 +195,7 @@ bifrost:
         observation_flexibility_blocks: 80
         max_gas_limit: 100000
         max_contract_tx_logs: 50
+        start_block_height: 59119140
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
           - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
@@ -210,10 +212,10 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
 ########################################################################################
-# Thor
+# MAPO
 ########################################################################################
 
-thor:
+map:
   node_relay_url: https://node-relay-bot.herokuapp.com
   vault_pubkeys_cutoff_blocks: 1_000_000
   seed_nodes_endpoint:

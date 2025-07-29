@@ -173,3 +173,12 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	time.Sleep(time.Second * 60)
 	return txID, nil
 }
+
+func (b *Bridge) GetKeyShare() ([]byte, error) {
+	var ret []byte
+	err := b.mainCall.Call(constants.GetKeyShare, &ret, 0)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}

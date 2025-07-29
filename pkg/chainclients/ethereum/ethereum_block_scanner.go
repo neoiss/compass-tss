@@ -845,13 +845,9 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
 	txGasPrice := receipt.EffectiveGasPrice
 
-	e.logger.Debug().Msgf("Find tx: %s, gas price: %s, gas used: %d,receipt status:%d", txInItem.Tx, txGasPrice.String(), receipt.GasUsed, receipt.Status)
+	e.logger.Info().Msgf("Find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
+		txInItem.Tx, txGasPrice.String(), receipt.GasUsed, ll.Index)
 
-	//txInItem.Gas = common.MakeEVMGas(common.ETHChain, txGasPrice, receipt.GasUsed, nil)
-	//if txInItem.Coins.IsEmpty() {
-	//	e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
-	//	return nil, nil
-	//}
 	e.logger.Debug().Msgf("Tx in item: %+v", txInItem)
 	return txInItem, nil
 }
@@ -876,13 +872,6 @@ func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
 		return nil, nil
 		//return e.getTxInFromFailedTransaction(tx, receipt), nil
 	}
-
-	// todo replace
-	//disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
-	//if err != nil {
-	//	e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
-	//	disableWhitelist = 0
-	//}
 
 	ret, err := e.getTxInFromSmartContract(ll, receipt, 0)
 	if err != nil {

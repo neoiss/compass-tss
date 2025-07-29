@@ -330,7 +330,7 @@ func (o *Observer) chunkifyAndSendToThorchain(deck types.TxIn, chainClient chain
 
 	for _, txIn := range o.chunkify(deck) {
 		if err := o.signAndSendToThorchain(txIn); err != nil {
-			o.logger.Error().Err(err).Msg("fail to send to THORChain")
+			o.logger.Error().Err(err).Msg("fail to send to MAP")
 			// tx failed to be forward to THORChain will be added back to queue , and retry later
 			newTxIn.TxArray = append(newTxIn.TxArray, txIn.TxArray...)
 			continue

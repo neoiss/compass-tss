@@ -2,7 +2,8 @@ package evm
 
 import (
 	"encoding/json"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"io"
 	"math/big"
 	"net/http"
@@ -34,8 +35,8 @@ func TestEVMPackage(t *testing.T) { TestingT(t) }
 
 type EVMSuite struct {
 	thordir  string
-	thorKeys *mapclient.Keys
-	bridge   shareTypes.ThorchainBridge
+	thorKeys *keys.Keys
+	bridge   shareTypes.Bridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }
@@ -214,8 +215,9 @@ func (s *EVMSuite) SetUpTest(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.thorKeys)
+	pri := os.Getenv("pri")
+	s.thorKeys = keys.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd, pri)
+	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.thorKeys)
 	c.Assert(err, IsNil)
 }
 

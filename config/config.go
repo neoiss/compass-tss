@@ -59,13 +59,13 @@ var (
 )
 
 type Config struct {
-	Thornode Thornode `mapstructure:"thor"`
-	Bifrost  Bifrost  `mapstructure:"bifrost"`
+	MAPO    MAPO    `mapstructure:"map"`
+	Bifrost Bifrost `mapstructure:"bifrost"`
 }
 
-// GetThornode returns the global thornode configuration.
-func GetThornode() Thornode {
-	return config.Thornode
+// GetMAPO returns the global thornode configuration.
+func GetMAPO() MAPO {
+	return config.MAPO
 }
 
 // GetBifrost returns the global thornode configuration.
@@ -225,14 +225,14 @@ func Init() {
 	viper.SetConfigType("toml")
 
 	// dynamically set rpc listen address
-	if config.Thornode.Tendermint.RPC.ListenAddress == "" {
-		config.Thornode.Tendermint.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", rpcPort)
+	if config.MAPO.Tendermint.RPC.ListenAddress == "" {
+		config.MAPO.Tendermint.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", rpcPort)
 	}
-	if config.Thornode.Tendermint.P2P.ListenAddress == "" {
-		config.Thornode.Tendermint.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", p2pPort)
+	if config.MAPO.Tendermint.P2P.ListenAddress == "" {
+		config.MAPO.Tendermint.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", p2pPort)
 	}
-	if config.Thornode.Cosmos.EBifrost.Address == "" {
-		config.Thornode.Cosmos.EBifrost.Address = fmt.Sprintf("0.0.0.0:%d", ebifrostPort)
+	if config.MAPO.Cosmos.EBifrost.Address == "" {
+		config.MAPO.Cosmos.EBifrost.Address = fmt.Sprintf("0.0.0.0:%d", ebifrostPort)
 	}
 }
 
@@ -287,17 +287,17 @@ func InitThornode(ctx context.Context) {
 	}
 
 	// if auto statesync enable, find latest snapshot height and hash that should exist
-	if config.Thornode.AutoStateSync.Enabled {
+	if config.MAPO.AutoStateSync.Enabled {
 		thornodeAutoStateSync(ctx)
 	}
 
 	// dynamically set seeds
 	seedAddrs, tmSeeds := thornodeSeeds()
-	config.Thornode.Tendermint.P2P.Seeds = strings.Join(tmSeeds, ",")
+	config.MAPO.Tendermint.P2P.Seeds = strings.Join(tmSeeds, ",")
 
 	// set the Tendermint external address
 	if os.Getenv("EXTERNAL_IP") != "" {
-		config.Thornode.Tendermint.P2P.ExternalAddress = fmt.Sprintf("%s:%d", os.Getenv("EXTERNAL_IP"), p2pPort)
+		config.MAPO.Tendermint.P2P.ExternalAddress = fmt.Sprintf("%s:%d", os.Getenv("EXTERNAL_IP"), p2pPort)
 	}
 
 	// set paths
@@ -311,7 +311,7 @@ func InitThornode(ctx context.Context) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to open config.toml")
 	}
-	err = t.ExecuteTemplate(tendermintFile, "config.toml.tmpl", config.Thornode.Tendermint)
+	err = t.ExecuteTemplate(tendermintFile, "config.toml.tmpl", config.MAPO.Tendermint)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to render config.toml")
 	}
@@ -321,7 +321,7 @@ func InitThornode(ctx context.Context) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to open app.toml")
 	}
-	err = t.ExecuteTemplate(cosmosFile, "app.toml.tmpl", config.Thornode.Cosmos)
+	err = t.ExecuteTemplate(cosmosFile, "app.toml.tmpl", config.MAPO.Cosmos)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to render app.toml")
 	}
@@ -335,10 +335,10 @@ func InitThornode(ctx context.Context) {
 }
 
 // -------------------------------------------------------------------------------------
-// Thornode
+// MAPO
 // -------------------------------------------------------------------------------------
 
-type Thornode struct {
+type MAPO struct {
 	// NodeRelayURL is the URL of the node relay service.
 	NodeRelayURL string `mapstructure:"node_relay_url"`
 
@@ -478,7 +478,7 @@ type Thornode struct {
 
 type Bifrost struct {
 	Signer            BifrostSignerConfiguration     `mapstructure:"signer"`
-	Thorchain         BifrostClientConfiguration     `mapstructure:"thorchain"`
+	Thorchain         BifrostClientConfiguration     `mapstructure:"map_relay"`
 	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
 	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
 	Chains            struct {
@@ -495,7 +495,7 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
 		common.BSCChain: b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
+		//common.BTCChain: b.Chains.BTC,
 		common.ETHChain: b.Chains.ETH,
 	}
 }
@@ -810,6 +810,7 @@ type BifrostClientConfiguration struct {
 	SignerName      string       `mapstructure:"signer_name"`
 	PrivateKey      string       `mapstructure:"private_key"`
 	Maintainer      string       `mapstructure:"maintainer"`
+	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
 	SignerPasswd    string
 }
@@ -1016,7 +1017,7 @@ func thornodeAutoStateSync(ctx context.Context) {
 		return
 	}
 
-	for _, host := range strings.Split(config.Thornode.Tendermint.StateSync.RPCServers, ",") {
+	for _, host := range strings.Split(config.MAPO.Tendermint.StateSync.RPCServers, ",") {
 		log.Info().Msgf("auto statesync enabled, determining trust height via %s", host)
 
 		client, err := tmhttp.New(host, "")
@@ -1031,7 +1032,7 @@ func thornodeAutoStateSync(ctx context.Context) {
 			log.Err(err).Str("host", host).Msg("failed to get status")
 			continue
 		}
-		height := status.SyncInfo.LatestBlockHeight - config.Thornode.AutoStateSync.BlockBuffer
+		height := status.SyncInfo.LatestBlockHeight - config.MAPO.AutoStateSync.BlockBuffer
 
 		// get the hash of the trust block
 		block, err := client.Block(ctx, &height)
@@ -1043,12 +1044,12 @@ func thornodeAutoStateSync(ctx context.Context) {
 
 		// set the trusted hash and height in tendermint
 		log.Info().Int64("height", height).Str("hash", hash).Msg("setting automatic statesync trust")
-		config.Thornode.Tendermint.StateSync.Enable = true
-		config.Thornode.Tendermint.StateSync.TrustHeight = height
-		config.Thornode.Tendermint.StateSync.TrustHash = hash
+		config.MAPO.Tendermint.StateSync.Enable = true
+		config.MAPO.Tendermint.StateSync.TrustHeight = height
+		config.MAPO.Tendermint.StateSync.TrustHash = hash
 
 		// set the persistent peers in tendermint to the known auto statesync peers
-		config.Thornode.Tendermint.P2P.PersistentPeers = strings.Join(config.Thornode.AutoStateSync.Peers, ",")
+		config.MAPO.Tendermint.P2P.PersistentPeers = strings.Join(config.MAPO.AutoStateSync.Peers, ",")
 
 		// success
 		return

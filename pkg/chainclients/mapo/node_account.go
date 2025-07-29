@@ -44,8 +44,6 @@ func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 	return stypes.NodeStatus(na.Status), nil
 }
 
-// todo handler address to string
-
 // GetNodeAccount retrieves node account for this address from mapBridge
 func (b *Bridge) GetNodeAccount(addr string) (*structure.MaintainerInfo, error) {
 	method := "getMaitainer"

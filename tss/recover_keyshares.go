@@ -37,8 +37,14 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 	if err != nil {
 		return fmt.Errorf("fail to get current epoch info: %w", err)
 	}
+	// todo
 	vault := common.Bytes2Hex(epochInfo.Pubkey)
 	keysharesPath := filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", vault))
+
+	keyShare, err := mapchain.GetKeyShare()
+	if err != nil {
+		return fmt.Errorf("fail to get current epoch info: %w", err)
+	}
 
 	// skip recovery if key shares for the nodes current vault already exist
 	if _, err = os.Stat(keysharesPath); !os.IsNotExist(err) {
@@ -46,7 +52,7 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 		return nil
 	}
 
-	if err := recoverKeyShares(keysharesPath, epochInfo.KeyShare, os.Getenv("SIGNER_SEED_PHRASE")); err != nil {
+	if err := recoverKeyShares(keysharesPath, keyShare, os.Getenv("SIGNER_SEED_PHRASE")); err != nil {
 		return err
 	}
 	// success

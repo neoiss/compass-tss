@@ -38,7 +38,9 @@ type TxInItem struct {
 	Vault               []byte
 	From                []byte
 	To                  []byte
+	Payload             []byte
 	Method              string
+	LogIndex            uint // index of the log in the block
 }
 
 type TxInStatus byte

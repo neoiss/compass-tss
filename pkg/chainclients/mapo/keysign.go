@@ -98,7 +98,6 @@ func (b *Bridge) processBlock(block *etypes.Block) error {
 		txsGas = append(txsGas, tx.GasPrice())
 	}
 	b.updateGasPrice(txsGas)
-	fmt.Println("processBlock blockNumber ", block.Number().String(), " txsGas ", txsGas)
 
 	return nil
 }

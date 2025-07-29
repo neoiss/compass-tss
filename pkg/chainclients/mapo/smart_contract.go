@@ -8,12 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-
 var (
 	//go:embed abi/maintainer.json
 	maintainerAbi string
 	//go:embed abi/tokenRegister.json
 	tokenRegistryABI string
+	//go:embed abi/view.json
+	viewABI string
 )
 
 func newMaintainerABi() (*abi.ABI, error) {

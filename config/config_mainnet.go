@@ -24,13 +24,13 @@ const (
 
 func getSeedAddrs() (addrs []string) {
 	// todo get ips by contract
-	if config.Thornode.SeedNodesEndpoint == "" {
+	if config.MAPO.SeedNodesEndpoint == "" {
 		log.Warn().Msg("no seed nodes endpoint provided")
 		return
 	}
 
 	// get nodes
-	res, err := http.Get(config.Thornode.SeedNodesEndpoint)
+	res, err := http.Get(config.MAPO.SeedNodesEndpoint)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get thorchain nodes")
 	}
@@ -65,7 +65,7 @@ func getSeedAddrs() (addrs []string) {
 }
 
 func assertBifrostHasSeeds() {
-	if config.Thornode.SeedNodesEndpoint == "" {
+	if config.MAPO.SeedNodesEndpoint == "" {
 		log.Warn().Msg("no seed nodes endpoint provided, skipping seed file check")
 		return
 	}

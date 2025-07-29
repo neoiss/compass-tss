@@ -11,10 +11,11 @@ import (
 
 	golog "github.com/ipfs/go-log"
 
+	"io"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	flag "github.com/spf13/pflag"
-	"io"
 
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
