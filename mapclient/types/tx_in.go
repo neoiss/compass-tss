@@ -10,6 +10,8 @@ import (
 	"math/big"
 )
 
+const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
 type TxIn struct {
 	Count                string       `json:"count"`
 	Chain                common.Chain `json:"chain"`
@@ -127,11 +129,11 @@ func (t *TxInItem) Copy() *TxInItem {
 
 // IsEmpty return true only when every field in TxInItem is empty
 func (t *TxInItem) IsEmpty() bool {
-	return t.Height.Uint64() == 0 &&
+	return (t.Height == nil || t.Height.Uint64() == 0) &&
 		t.Tx == "" &&
 		len(t.To) == 0 &&
 		len(t.Token) == 0 &&
-		len(t.Vault) == 0 && t.OrderId.String() == ""
+		len(t.Vault) == 0 && t.OrderId.String() == emptyHash
 }
 
 // CacheHash calculate the has used for signer cache
