@@ -28,8 +28,8 @@ func init() {
 		FundMigrationInterval:               40,
 		LiquidityLockUpBlocks:               0,
 		MaxRuneSupply:                       500_000_000_00000000,
-		JailTimeKeygen:                      10,
-		JailTimeKeysign:                     10,
+		JailTimeKeygen:                      120,
+		JailTimeKeysign:                     60,
 		AsgardSize:                          6,
 		StreamingSwapMinBPFee:               100, // TODO: remove on hard fork
 		VirtualMultSynthsBasisPoints:        20_000,
