@@ -29,12 +29,12 @@ func SolvencyCheckRunner(chain common.Chain,
 	wg *sync.WaitGroup,
 	backOffDuration time.Duration,
 ) {
-	//logger := log.Logger.With().Str("chain", chain.String()).Logger()
-	//logger.Info().Msg("Start solvency check runner")
-	//defer func() {
-	//	wg.Done()
-	//	logger.Info().Msg("Finish  solvency check runner")
-	//}()
+	logger := log.Logger.With().Str("chain", chain.String()).Logger()
+	logger.Info().Msg("Start solvency check runner")
+	defer func() {
+		wg.Done()
+		logger.Info().Msg("Finish  solvency check runner")
+	}()
 	//if provider == nil {
 	//	logger.Error().Msg("Solvency checker provider is nil")
 	//	return

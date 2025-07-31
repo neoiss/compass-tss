@@ -469,10 +469,10 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 // consolidateUTXOs only required when there is a new block
 func (c *Client) consolidateUTXOs() {
 	// todo memo
-	//defer func() {
-	//	c.wg.Done()
-	//	c.consolidateInProgress.Store(false)
-	//}()
+	defer func() {
+		c.wg.Done()
+		c.consolidateInProgress.Store(false)
+	}()
 	//
 	//nodeStatus, err := c.bridge.FetchNodeStatus()
 	//if err != nil {
