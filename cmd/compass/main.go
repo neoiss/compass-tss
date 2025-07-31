@@ -77,12 +77,12 @@ func main() {
 	if len(cfg.Thorchain.SignerPasswd) == 0 {
 		log.Fatal().Msg("signer password is empty")
 	}
-	kb, _, err := keys.GetKeyringKeybase(cfg.Thorchain.PrivateKey, cfg.Thorchain.SignerName)
+	kb, keyStore, err := keys.GetKeyringKeybase(cfg.Thorchain.KeystorePath, cfg.Thorchain.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, cfg.Thorchain.PrivateKey)
+	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, keyStore)
 	// map bridge
 	mapBridge, err := mapo.NewBridge(cfg.Thorchain, m, k)
 	if err != nil {

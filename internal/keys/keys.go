@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/constants"
 	"strings"
+
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/pkg/keystore"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -15,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	ckeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	ekeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 )
@@ -29,36 +32,44 @@ type Keys struct {
 	signerName string
 	password   string // TODO this is a bad way , need to fix it
 	kb         ckeys.Keyring
-	priKeyStr  string
+	keyStore   *ekeystore.Key
 }
 
 // NewKeysWithKeybase create a new instance of Keys
-func NewKeysWithKeybase(kb ckeys.Keyring, name, password, priKeyStr string) *Keys {
+func NewKeysWithKeybase(kb ckeys.Keyring, name, password string, keyStore *ekeystore.Key) *Keys {
 	return &Keys{
 		signerName: name,
 		password:   password,
 		kb:         kb,
-		priKeyStr:  priKeyStr,
+		keyStore:   keyStore,
 	}
 }
 
 // GetKeyringKeybase return keyring and key info
-func GetKeyringKeybase(priKeyStr, signerName string) (ckeys.Keyring, *ckeys.Record, error) {
+func GetKeyringKeybase(keyStorePath, signerName string) (ckeys.Keyring, *ekeystore.Key, error) {
 	if len(signerName) == 0 {
 		return nil, nil, fmt.Errorf("signer name is empty")
 	}
-	if len(priKeyStr) == 0 {
-		return nil, nil, fmt.Errorf("priKey is empty")
+	if len(keyStorePath) == 0 {
+		return nil, nil, fmt.Errorf("keyStorePath is empty")
 	}
+
+	kpI, err := keystore.DecryptKey(keyStorePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	priBytes := ecrypto.FromECDSA(kpI.PrivateKey)
+	priKeyStr := common.Bytes2Hex(priBytes)
+
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
 	kb := ckeys.NewInMemory(cdc)
-	err := kb.ImportPrivKeyHex(signerName, priKeyStr, string(hd.Secp256k1.Name()))
+	err = kb.ImportPrivKeyHex(signerName, priKeyStr, string(hd.Secp256k1.Name()))
 	if err != nil {
 		return nil, nil, err
 	}
-	return kb, nil, nil
+	return kb, kpI, nil
 }
 
 // GetSignerInfo return signer info
@@ -71,7 +82,7 @@ func (k *Keys) GetSignerInfo() *ckeys.Record {
 }
 
 func (k *Keys) GetEthAddress() (common.Address, error) {
-	addr, err := AddressFromPrivateKey(k.priKeyStr)
+	addr, err := AddressFromPublicKey(&k.keyStore.PrivateKey.PublicKey)
 	if err != nil {
 		return constants.ZeroAddress, err
 	}
@@ -94,20 +105,6 @@ func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
 // GetKeybase return the keybase
 func (k *Keys) GetKeybase() ckeys.Keyring {
 	return k.kb
-}
-
-func AddressFromPrivateKey(privateKeyHex string) (common.Address, error) {
-	privateKey, err := PrivateKeyFromHex(privateKeyHex)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	publicKey, err := PublicKeyFromPrivate(privateKey)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	return AddressFromPublicKey(publicKey)
 }
 
 func PrivateKeyFromHex(hexKey string) (*ecdsa.PrivateKey, error) {

@@ -808,7 +808,7 @@ type BifrostClientConfiguration struct {
 	ChainEBifrost   string       `mapstructure:"chain_ebifrost"`
 	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
 	SignerName      string       `mapstructure:"signer_name"`
-	PrivateKey      string       `mapstructure:"private_key"`
+	KeystorePath    string       `mapstructure:"keystore_path"`
 	Maintainer      string       `mapstructure:"maintainer"`
 	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
