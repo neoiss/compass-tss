@@ -3,14 +3,15 @@ package evm
 import (
 	_ "embed"
 	"encoding/json"
-	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"time"
+
+	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mapprotocol/compass-tss/blockscanner"
@@ -67,11 +68,11 @@ func (s *BlockScannerTestSuite) SetUpTest(c *C) {
 
 	name := "test-eth"
 	//  dont push
-	priStr := os.Getenv("pri")
-	kb, _, err := keys.GetKeyringKeybase(priStr, name)
+	keyStorePath := "$HOME/UTC--2025-07-17T09-26-18.738548000Z--testuser.key.json"
+	kb, keyStore, err := keys.GetKeyringKeybase(keyStorePath, name)
 	c.Assert(err, IsNil)
 
-	k := keys.NewKeysWithKeybase(kb, name, "123456", priStr)
+	k := keys.NewKeysWithKeybase(kb, name, "123456", keyStore)
 	bridge, err := mapo.NewBridge(bridgeCfg, m, k)
 	c.Assert(err, IsNil)
 	s.bridge = bridge
