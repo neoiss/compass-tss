@@ -58,12 +58,12 @@ func (b *Bridge) GetNetworkFee(chain common.Chain) (uint64, uint64, uint64, erro
 }
 
 // PostNetworkFee send network fee message to MAP
-func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionRate,
-	transactionSizeWithCall uint64) (string, error) {
+func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize,
+	transactionSizeWithCall, transactionRate uint64) (string, error) {
 	// done next 1
 	input, err := b.mainAbi.Pack(constants.VoteNetworkFee, b.epoch, chainId, big.NewInt(height),
-		big.NewInt(0).SetUint64(transactionSize),
 		big.NewInt(0).SetUint64(transactionRate),
+		big.NewInt(0).SetUint64(transactionSize),
 		big.NewInt(0).SetUint64(transactionSizeWithCall))
 	if err != nil {
 		return "", fmt.Errorf("fail to pack input: %w", err)

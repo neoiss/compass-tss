@@ -96,7 +96,7 @@ type Bridge interface {
 	GetThorchainVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)
-	PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionRate, transactionSizeWithCall uint64) (string, error)
+	PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionSizeWithCall, transactionRate uint64) (string, error)
 	RagnarokInProgress() (bool, error)
 	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
 	IsSyncing() (bool, error)
