@@ -31,7 +31,7 @@ bifrost:
     chain_ebifrost: localhost:50051
     chain_home_folder: ""
     signer_name: "first_cosmos"
-    private_key: "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
+    keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
     maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
     token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
     view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
@@ -171,7 +171,7 @@ bifrost:
         observation_flexibility_blocks: 20
         max_gas_limit: 100000
         max_contract_tx_logs: 50
-        start_block_height: 8817014
+        start_block_height: 8866200
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -195,7 +195,7 @@ bifrost:
         observation_flexibility_blocks: 80
         max_gas_limit: 100000
         max_contract_tx_logs: 50
-        start_block_height: 59119140
+        start_block_height: 59917675
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
           - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
