@@ -165,14 +165,14 @@ func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error
 // Start signer process
 func (s *Signer) Start() error {
 	//  todo handler annotate
-	//s.wg.Add(1)
-	//go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
+	s.wg.Add(1)
+	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
 
 	s.wg.Add(1)
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
 
-	//s.wg.Add(1)
-	//go s.signTransactions()
+	s.wg.Add(1)
+	go s.signTransactions()
 
 	s.blockScanner.Start(nil, nil)
 	return nil
@@ -185,8 +185,8 @@ func (s *Signer) shouldSign(tx types.TxOutItem) bool {
 // signTransactions - looks for work to do by getting a list of all unsigned
 // transactions stored in the storage
 func (s *Signer) signTransactions() {
-	s.logger.Info().Msg("start to sign transactions")
-	defer s.logger.Info().Msg("stop to sign transactions")
+	s.logger.Info().Msg("Start to sign transactions")
+	defer s.logger.Info().Msg("Stop to sign transactions")
 	defer s.wg.Done()
 	for {
 		select {
@@ -196,7 +196,7 @@ func (s *Signer) signTransactions() {
 			// When map relay chain is catching up , bifrost might get stale data from compass-tss , thus it shall pause signing
 			catchingUp, err := s.thorchainBridge.IsSyncing()
 			if err != nil {
-				s.logger.Error().Err(err).Msg("fail to get thorchain sync status")
+				s.logger.Error().Err(err).Msg("Fail to get thorchain sync status")
 				time.Sleep(constants.MAPRelayChainBlockTime)
 				break // this will break select
 			}
@@ -258,8 +258,8 @@ func (s *Signer) processTransactions() {
 
 // processTxnOut processes outbound TxOuts and save them to storage
 func (s *Signer) processTxnOut(ch <-chan types.TxOut, idx int) {
-	s.logger.Info().Int("idx", idx).Msg("start to process tx out")
-	defer s.logger.Info().Int("idx", idx).Msg("stop to process tx out")
+	s.logger.Info().Int("idx", idx).Msg("Start to process tx out")
+	defer s.logger.Info().Int("idx", idx).Msg("Stop to process tx out")
 	defer s.wg.Done()
 	for {
 		select {
@@ -276,7 +276,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut, idx int) {
 				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
 			}
 			if err := s.storage.Batch(items); err != nil {
-				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
+				s.logger.Error().Err(err).Msg("Fail to save tx out items to storage")
 			}
 		}
 	}
@@ -630,7 +630,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}()
 
 	if !tx.OutHash.IsEmpty() {
-		s.logger.Info().Str("OutHash", tx.OutHash.String()).Msg("tx had been sent out before")
+		s.logger.Info().Str("OutHash", tx.OutHash.String()).Msg("Tx had been sent out before")
 		return nil, nil, nil // return nil and discard item
 	}
 
@@ -638,18 +638,18 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// been signed already, and we can skip. This helps us not get stuck on
 	// a task that we'll never sign, because 2/3rds already has and will
 	// never be available to sign again.
-	txOut, err := s.thorchainBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get keysign items")
-		return nil, nil, err
-	}
-	for _, txArray := range txOut.TxArray {
-		if txArray.TxOutItem(item.TxOutItem.Height).Equals(tx) && !txArray.OutHash.IsEmpty() {
-			// already been signed, we can skip it
-			s.logger.Info().Str("tx_id", tx.OutHash.String()).Msgf("already signed. skipping...")
-			return nil, nil, nil
-		}
-	}
+	// txOut, err := s.thorchainBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
+	// if err != nil {
+	// 	s.logger.Error().Err(err).Msg("fail to get keysign items")
+	// 	return nil, nil, err
+	// }
+	// for _, txArray := range txOut.TxArray {
+	// 	if txArray.TxOutItem(item.TxOutItem.Height).Equals(tx) && !txArray.OutHash.IsEmpty() {
+	// 		// already been signed, we can skip it
+	// 		s.logger.Info().Str("tx_id", tx.OutHash.String()).Msgf("Already signed. skipping...")
+	// 		return nil, nil, nil
+	// 	}
+	// }
 
 	// If this is a UTXO chain, lock the vault around sign and broadcast to avoid
 	// consolidate transactions from using the same UTXOs.

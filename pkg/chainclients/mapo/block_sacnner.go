@@ -3,11 +3,12 @@ package mapo
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"strings"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -122,7 +123,6 @@ func (b *MapChainBlockScan) processKeygenBlock() error {
 
 // todo handler
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
-	//fmt.Println("mapChain blockHeight ------------------------ ", blockHeight)
 	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight, b.cfg.Mos)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {
@@ -134,7 +134,7 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	}
 
 	if len(tx.TxArray) == 0 {
-		b.logger.Debug().Int64("block", blockHeight).Msg("nothing to process")
+		b.logger.Debug().Int64("block", blockHeight).Msg("Nothing to process")
 		return nil
 	}
 	b.txOutChan <- tx

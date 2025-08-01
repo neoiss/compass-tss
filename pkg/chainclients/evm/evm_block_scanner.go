@@ -875,8 +875,7 @@ func (e *EVMScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receip
 	//txGasPrice := tx.GasPrice()
 	txHash := tx.Hash().Hex()[2:]
 	return &stypes.TxInItem{
-		Tx: txHash,
-		//Memo:   memo.NewOutboundMemo(common.TxID(txHash)).String(), todo memo
+		Tx:     txHash,
 		Sender: strings.ToLower(fromAddr.String()),
 		//To:     strings.ToLower(tx.To().String()),
 		//Coins:  common.NewCoins(common.NewCoin(e.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1))),

@@ -14,6 +14,7 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 )
 
 var ErrNotFound = fmt.Errorf("not found")
@@ -46,7 +47,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 	}
 	err = b.processBlock(block)
 	if err != nil {
-		b.logger.Error().Err(err).Int64("height", blockHeight).Msg("failed to search tx in block")
+		b.logger.Error().Err(err).Int64("height", blockHeight).Msg("Failed to search tx in block")
 		return types.TxOut{}, fmt.Errorf("failed to process block: %d, err:%w", blockHeight, err)
 	}
 	// done
@@ -63,29 +64,30 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 	if len(logs) == 0 {
 		return types.TxOut{}, err
 	}
+	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
 
 	ret := types.TxOut{
 		Height:  blockHeight,
 		TxArray: make([]types.TxArrayItem, 0, len(logs)),
 	}
+
 	// todo handler parse coins & gas
 	for _, ele := range logs {
-		inHash, _ := common.NewTxID(ele.TxHash.Hex())
-		ret.TxArray = append(ret.TxArray, types.TxArrayItem{
-			Chain:                 common.MAPChain,
-			ToAddress:             "",
-			VaultPubKey:           "",
-			Coin:                  common.Coin{},
-			Memo:                  "",
-			MaxGas:                nil,
-			GasRate:               0,
-			InHash:                inHash,
-			OutHash:               "",
-			Aggregator:            "",
-			AggregatorTargetAsset: "",
-			AggregatorTargetLimit: nil,
-			CloutSpent:            "",
-		})
+		tmp := ele
+		item := &types.TxArrayItem{}
+		p := evm.NewSmartContractLogParser(nil,
+			nil,
+			nil,
+			nil,
+			b.mainAbi,
+			common.MAPAsset,
+			0)
+		p.GetTxOutItem(&tmp, item)
+		if item.Chain == nil {
+			continue
+		}
+
+		ret.TxArray = append(ret.TxArray, *item)
 	}
 
 	return ret, nil

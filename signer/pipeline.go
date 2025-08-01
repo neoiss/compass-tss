@@ -2,8 +2,9 @@ package signer
 
 import (
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/mapprotocol/compass-tss/common"
 

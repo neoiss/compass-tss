@@ -3,6 +3,8 @@ package evm
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
@@ -12,7 +14,6 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"math/big"
 )
 
 const (
@@ -256,9 +257,138 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		//txInItem.OrderId = transferAllowanceEvt.OrderId
 
 	}
-	//if earlyExit {
-	//	break
-	//}
 
 	return isVaultTransfer, nil
+}
+
+func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types.TxArrayItem) error {
+	if ll == nil {
+		scp.logger.Info().Msg("Tx logs are empty return nil")
+		return nil
+	}
+	txOutItem.LogIndex = ll.Index // add this
+	txOutItem.TxHash = ll.TxHash.String()
+
+	switch ll.Topics[0].String() {
+	case constants.RelayEventOfMigration.GetTopic().String():
+		evt, err := scp.parseRelayMigration(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse deposit event")
+			return err
+		}
+		txOutItem.Method = constants.TransferAllowance
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Chain = evt.Chain
+		txOutItem.FromVault = evt.FromVault
+		txOutItem.ToVault = evt.ToVault
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+		txOutItem.Allowances = make([]types.TokenAllowance, 0)
+		for _, ele := range evt.Allowances {
+			txOutItem.Allowances = append(txOutItem.Allowances, types.TokenAllowance{
+				Token:  ele.Token,
+				Amount: ele.Amount,
+			})
+		}
+
+	case constants.RelayEventOfTransferOut.GetTopic().Hex():
+		// it is not legal to have multiple transferOut event , transferOut event should be final
+		evt, err := scp.parseRelayTransferOut(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse swap event")
+			return err
+		}
+		txOutItem.Method = constants.TransferOut
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Token = evt.Token
+		txOutItem.Amount = evt.Amount
+		txOutItem.Chain = evt.Chain
+		txOutItem.Vault = evt.Vault
+		txOutItem.To = evt.To
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+
+	case constants.RelayEventOfTransferCall.GetTopic().Hex():
+		evt, err := scp.parseRelayTransferCall(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse transfer out event")
+			return err
+		}
+
+		txOutItem.Method = constants.TransferOutCall
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Token = evt.Token
+		txOutItem.Amount = evt.Amount
+		txOutItem.Chain = evt.Chain
+		txOutItem.Vault = evt.Vault
+		txOutItem.To = evt.To
+		txOutItem.Payload = evt.Payload
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+	}
+	return nil
+}
+
+type TokenAllowance struct {
+	Token  []byte
+	Amount *big.Int
+}
+type RelayMigration struct {
+	OrderId         ecommon.Hash
+	Chain           *big.Int
+	FromVault       []byte
+	ToVault         []byte
+	Allowances      []TokenAllowance
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayMigration(log etypes.Log) (RelayMigration, error) {
+	const eventName = "Migration"
+	event := RelayMigration{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
+}
+
+type RelayTransferOut struct {
+	OrderId         ecommon.Hash
+	Token           []byte
+	Amount          *big.Int
+	Chain           *big.Int
+	Vault           []byte
+	To              []byte
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayTransferOut(log etypes.Log) (RelayTransferOut, error) {
+	const eventName = "RelayTransferOut"
+	event := RelayTransferOut{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
+}
+
+type RelayTransferCall struct {
+	OrderId         ecommon.Hash
+	Token           []byte
+	Amount          *big.Int
+	Chain           *big.Int
+	Vault           []byte
+	To              []byte
+	Payload         []byte
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayTransferCall(log etypes.Log) (RelayTransferCall, error) {
+	const eventName = "RelayTransferCall"
+	event := RelayTransferCall{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
 }

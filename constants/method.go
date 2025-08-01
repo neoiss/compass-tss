@@ -14,3 +14,12 @@ const (
 	VoteTxOut         = "voteTxOut"
 	IsOrderExecuted   = "isOrderExecuted"
 )
+
+// -----------------------------------------------------------------
+// Method of Gateway
+// -----------------------------------------------------------------
+const (
+	TransferAllowance = "transferAllowance"
+	TransferOut       = "transferOut"
+	TransferOutCall   = "transferOutCall"
+)
