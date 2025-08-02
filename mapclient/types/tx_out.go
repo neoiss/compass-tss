@@ -12,25 +12,25 @@ import (
 
 // TxOutItem represent the information of a tx bifrost need to process
 type TxOutItem struct {
-	Height          int64        `json:"height"`
+	Height          int64        `json:"height,omitempty"`
 	Memo            string       `json:"memo,omitempty"`
-	OrderId         ecommon.Hash `json:"order_id"`
-	Token           []byte       `json:"token`
-	Vault           []byte
-	To              []byte
-	Amount          *big.Int
-	Chain           *big.Int `json:"chain"`
-	TransactionRate *big.Int
-	TransactionSize *big.Int
-	LogIndex        uint
-	TxHash          string `json:"tx_hash"`
-	Method          string
+	OrderId         ecommon.Hash `json:"order_id,omitempty"`
+	Token           []byte       `json:"token,omitempty"`
+	Vault           []byte       `json:"vault,omitempty"`
+	To              []byte       `json:"to,omitempty"`
+	Amount          *big.Int     `json:"amount,omitempty"`
+	Chain           *big.Int     `json:"chain,omitempty"`
+	TransactionRate *big.Int     `json:"transaction_rate,omitempty"`
+	TransactionSize *big.Int     `json:"transaction_size,omitempty"`
+	LogIndex        uint         `json:"log_index,omitempty"`
+	TxHash          string       `json:"tx_hash,omitempty"`
+	Method          string       `json:"method,omitempty"`
 	// relayTransferCall
-	Payload []byte
+	Payload []byte `json:"payload,omitempty"`
 	// migration
-	FromVault  []byte
-	ToVault    []byte
-	Allowances []TokenAllowance
+	FromVault  []byte           `json:"from_vault,omitempty"`
+	ToVault    []byte           `json:"to_vault,omitempty"`
+	Allowances []TokenAllowance `json:"allowances,omitempty"`
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem

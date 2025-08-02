@@ -67,6 +67,37 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
 }
 
+var chainIDToChain = map[string]Chain{
+	// test network
+	big.NewInt(97).String():               BSCChain,
+	big.NewInt(11155111).String():         ETHChain,
+	big.NewInt(1360095883558914).String(): BTCChain,
+	big.NewInt(1360095883558916).String(): DOGEChain,
+	big.NewInt(43113).String():            AVAXChain,
+	big.NewInt(84532).String():            BASEChain,
+	big.NewInt(97).String():               MAPChain,
+
+	// main network
+	big.NewInt(56).String():               BSCChain,
+	big.NewInt(1).String():                ETHChain,
+	big.NewInt(1360095883558913).String(): BTCChain,
+	big.NewInt(1360095883558915).String(): DOGEChain,
+	big.NewInt(43114).String():            AVAXChain,
+	big.NewInt(8453).String():             BASEChain,
+	big.NewInt(22776).String():            MAPChain,
+}
+
+func GetChainName(key *big.Int) (Chain, bool) {
+	if key == nil {
+		return EmptyChain, false
+	}
+	chain, ok := chainIDToChain[key.String()]
+	if !ok {
+		return EmptyChain, false
+	}
+	return chain, ok
+}
+
 type SigningAlgo string
 
 type Chain string

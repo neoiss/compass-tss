@@ -1,19 +1,22 @@
 package chainclients
 
 import (
-	"github.com/mapprotocol/compass-tss/internal/keys"
 	"time"
+
+	"github.com/mapprotocol/compass-tss/internal/keys"
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/ethereum"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
+
 	//"github.com/mapprotocol/compass-tss/pkg/chainclients/gaia"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
+
 	//"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"

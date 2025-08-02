@@ -30,7 +30,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	ttypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -153,10 +152,15 @@ func NewSigner(cfg config.Bifrost,
 	}, nil
 }
 
-func (s *Signer) getChain(chainID common.Chain) (chainclients.ChainClient, error) {
-	chain, ok := s.chains[chainID]
+func (s *Signer) getChain(chainID *big.Int) (chainclients.ChainClient, error) {
+	chainName, ok := common.GetChainName(chainID)
 	if !ok {
-		s.logger.Debug().Str("chain", chainID.String()).Msg("is not supported yet")
+		s.logger.Debug().Str("chain", chainID.String()).Msg("Is not supported yet")
+		return nil, errors.New("not supported")
+	}
+	chain, ok := s.chains[chainName]
+	if !ok {
+		s.logger.Debug().Str("chain", chainID.String()).Msg("Is not supported yet")
 		return nil, errors.New("not supported")
 	}
 	return chain, nil
@@ -178,9 +182,9 @@ func (s *Signer) Start() error {
 	return nil
 }
 
-func (s *Signer) shouldSign(tx types.TxOutItem) bool {
-	return s.pubkeyMgr.HasPubKey(tx.VaultPubKey)
-}
+// func (s *Signer) shouldSign(tx types.TxOutItem) bool {
+// 	return s.pubkeyMgr.HasPubKey(tx.VaultPubKey)
+// }
 
 // signTransactions - looks for work to do by getting a list of all unsigned
 // transactions stored in the storage
@@ -522,10 +526,10 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	height := item.Height
 	tx := item.TxOutItem
 
-	// set the checkpoint on the tx out item if it was stored
-	if item.Checkpoint != nil {
-		tx.Checkpoint = item.Checkpoint
-	}
+	// // set the checkpoint on the tx out item if it was stored
+	// if item.Checkpoint != nil {
+	// 	tx.Checkpoint = item.Checkpoint
+	// }
 
 	blockHeight, err := s.thorchainBridge.GetBlockHeight()
 	if err != nil {
@@ -559,16 +563,16 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 			return nil, nil, nil
 		}
 
-		// determine if the round 7 retry is for an inactive vault
-		var vault ttypes.Vault
-		vault, err = s.thorchainBridge.GetVault(item.TxOutItem.VaultPubKey.String())
-		if err != nil {
-			log.Err(err).
-				Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
-				Msg("failed to get tx out item vault")
-			return nil, nil, err
-		}
-		inactiveVaultRound7Retry = vault.Status == ttypes.VaultStatus_InactiveVault
+		// // determine if the round 7 retry is for an inactive vault
+		// var vault ttypes.Vault
+		// vault, err = s.thorchainBridge.GetVault(item.TxOutItem.VaultPubKey.String())
+		// if err != nil {
+		// 	log.Err(err).
+		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
+		// 		Msg("failed to get tx out item vault")
+		// 	return nil, nil, err
+		// }
+		// inactiveVaultRound7Retry = vault.Status == ttypes.VaultStatus_InactiveVault
 	}
 
 	// if not in round 7 retry or the round 7 retry is on an inactive vault, discard
@@ -605,12 +609,12 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		s.logger.Info().Msgf("signing for %s is halted", tx.Chain)
 		return nil, nil, nil
 	}
-	if !s.shouldSign(tx) {
-		s.logger.Info().Str("signer_address", chain.GetAddress(tx.VaultPubKey)).Msg("different pool address, ignore")
-		return nil, nil, nil
-	}
+	// if !s.shouldSign(tx) {
+	// 	s.logger.Info().Str("signer_address", chain.GetAddress(tx.VaultPubKey)).Msg("different pool address, ignore")
+	// 	return nil, nil, nil
+	// }
 
-	if len(tx.ToAddress) == 0 {
+	if len(tx.To) == 0 {
 		s.logger.Info().Msg("To address is empty, THORNode don't know where to send the fund , ignore")
 		return nil, nil, nil // return nil and discard item
 	}
@@ -629,10 +633,10 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		s.m.GetHistograms(metrics.SignAndBroadcastDuration(chain.GetChain())).Observe(time.Since(start).Seconds())
 	}()
 
-	if !tx.OutHash.IsEmpty() {
-		s.logger.Info().Str("OutHash", tx.OutHash.String()).Msg("Tx had been sent out before")
-		return nil, nil, nil // return nil and discard item
-	}
+	// if !tx.OutHash.IsEmpty() {
+	// 	s.logger.Info().Str("OutHash", tx.OutHash.String()).Msg("Tx had been sent out before")
+	// 	return nil, nil, nil // return nil and discard item
+	// }
 
 	// We get the keysign object from thorchain again to ensure it hasn't
 	// been signed already, and we can skip. This helps us not get stuck on
@@ -654,7 +658,8 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// If this is a UTXO chain, lock the vault around sign and broadcast to avoid
 	// consolidate transactions from using the same UTXOs.
 	if utxoClient, ok := chain.(*utxo.Client); ok {
-		lock := utxoClient.GetVaultLock(tx.VaultPubKey.String())
+		lock := utxoClient.GetVaultLock(string(tx.Vault)) // todo will next2
+		// ensure vault rule
 		lock.Lock()
 		defer lock.Unlock()
 	}
@@ -699,9 +704,9 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}
 	s.logger.Info().Str("txid", hash).Str("memo", tx.Memo).Msg("broadcasted tx to chain")
 
-	if s.isTssKeysign(tx.VaultPubKey) {
-		s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
-	}
+	// if s.isTssKeysign(tx.VaultPubKey) {
+	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
+	// }
 
 	return nil, observation, nil
 }
@@ -712,12 +717,12 @@ func (s *Signer) isTssKeysign(pubKey common.PubKey) bool {
 
 // Stop the signer process
 func (s *Signer) Stop() error {
-	s.logger.Info().Msg("receive request to stop signer")
-	defer s.logger.Info().Msg("signer stopped successfully")
+	s.logger.Info().Msg("Receive request to stop signer")
+	defer s.logger.Info().Msg("Signer stopped successfully")
 	close(s.stopChan)
 	s.wg.Wait()
 	if err := s.m.Stop(); err != nil {
-		s.logger.Error().Err(err).Msg("fail to stop metric server")
+		s.logger.Error().Err(err).Msg("Fail to stop metric server")
 	}
 	s.blockScanner.Stop()
 	return s.storage.Close()
@@ -749,7 +754,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	checkpoint, obs, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
+	checkpoint, _, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
 		// todo will next 400
 		return s.signAndBroadcast(item)
 	})
@@ -757,15 +762,15 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		// mark the txout on round 7 failure to block other txs for the chain / pubkey
 		ksErr := tss.KeysignError{}
 		if errors.As(err, &ksErr) && ksErr.IsRound7() {
-			s.logger.Error().Err(err).Interface("tx", item.TxOutItem).Msg("round 7 signing error")
+			s.logger.Error().Err(err).Interface("tx", item.TxOutItem).Msg("Round 7 signing error")
 			item.Round7Retry = true
 			item.Checkpoint = checkpoint
 			if storeErr := s.storage.Set(item); storeErr != nil {
-				s.logger.Error().Err(storeErr).Msg("fail to update tx out store item with round 7 retry")
+				s.logger.Error().Err(storeErr).Msg("Fail to update tx out store item with round 7 retry")
 			}
 		}
 
-		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("fail to sign and broadcast tx out store item")
+		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("Fail to sign and broadcast tx out store item")
 		cancel()
 		return
 		// The 'item' for loop should not be items[0],
@@ -777,19 +782,19 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	}
 	cancel()
 
-	// if enabled and the observation is non-nil, instant observe the outbound
-	if s.cfg.Signer.AutoObserve && obs != nil {
-		s.observer.ObserveSigned(types.TxIn{
-			Chain:                item.TxOutItem.Chain,
-			TxArray:              []*types.TxInItem{obs},
-			MemPool:              true,
-			Filtered:             true,
-			ConfirmationRequired: 0,
+	// // if enabled and the observation is non-nil, instant observe the outbound
+	// if s.cfg.Signer.AutoObserve && obs != nil {
+	// 	s.observer.ObserveSigned(types.TxIn{
+	// 		Chain:                item.TxOutItem.Chain,
+	// 		TxArray:              []*types.TxInItem{obs},
+	// 		MemPool:              true,
+	// 		Filtered:             true,
+	// 		ConfirmationRequired: 0,
 
-			// Instant EVM observations have wrong gas and need future correct observations
-			AllowFutureObservation: item.TxOutItem.Chain.IsEVM(),
-		})
-	}
+	// 		// Instant EVM observations have wrong gas and need future correct observations
+	// 		AllowFutureObservation: item.TxOutItem.Chain.IsEVM(),
+	// 	})
+	// }
 
 	// We have a successful broadcast! Remove the item from our store
 	if err = s.storage.Remove(item); err != nil {

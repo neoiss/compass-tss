@@ -2,12 +2,13 @@ package types
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
-	"math/big"
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
