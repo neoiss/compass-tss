@@ -378,14 +378,6 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 }
 
 func (o *Observer) signAndSendToThorchain(txIn types.TxIn) error {
-	//nodeStatus, err := o.bridge.FetchNodeStatus()
-	//if err != nil {
-	//	return fmt.Errorf("failed to get node status: %w", err)
-	//}
-	//if nodeStatus != stypes.NodeStatus_Active {
-	//	return nil
-	//}
-
 	txBytes, err := o.bridge.GetObservationsStdTx(&txIn)
 	if err != nil {
 		return fmt.Errorf("fail to get the tx: %w", err)

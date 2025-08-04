@@ -3,12 +3,13 @@ package mapo
 import (
 	"context"
 	"fmt"
-	ecore "github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"strings"
 	"time"
+
+	ecore "github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/txpool"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func isAcceptableError(err error) bool {

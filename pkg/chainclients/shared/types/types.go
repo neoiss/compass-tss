@@ -4,9 +4,9 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/internal/ctx"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 
@@ -94,7 +94,7 @@ type Bridge interface {
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
 	GetTHORName(name string) (stypes.THORName, error)
-	GetThorchainVersion() (string, error)
+	GetMapVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)
 	PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionSizeWithCall, transactionRate uint64) (string, error)
@@ -106,7 +106,7 @@ type Bridge interface {
 	Broadcast(hexTx []byte) (string, error)
 	InitBlockScanner(...BridgeOption) error
 	GetConfig() config.BifrostClientConfiguration
-	GetContext() client.Context
+	GetContext() ctx.Context
 	GetTxByBlockNumber(blockHeight int64, pk string) (types.TxOut, error)
 	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,

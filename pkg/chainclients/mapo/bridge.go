@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	ecommon "github.com/ethereum/go-ethereum/common"
 	"io"
 	"math/big"
 	"net/http"
@@ -16,8 +15,9 @@ import (
 	"sync"
 	"time"
 
+	ecommon "github.com/ethereum/go-ethereum/common"
+
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -26,6 +26,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/ctx"
 	keys2 "github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
@@ -196,17 +197,17 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 }
 
 // GetContext return a valid context with all relevant values set
-func (b *Bridge) GetContext() client.Context {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
+func (b *Bridge) GetContext() ctx.Context {
+	signerAddr, err := b.keys.GetEthAddress()
 	if err != nil {
 		panic(err)
 	}
-	ctx := client.Context{}
+	ctx := ctx.Context{}
 	ctx = ctx.WithKeyring(b.keys.GetKeybase())
 	ctx = ctx.WithChainID(string(b.cfg.ChainID))
 	ctx = ctx.WithHomeDir(b.cfg.ChainHomeFolder)
 	ctx = ctx.WithFromName(b.cfg.SignerName)
-	ctx = ctx.WithFromAddress(signerAddr)
+	ctx = ctx.WithFromAddress(signerAddr.Hex())
 	ctx = ctx.WithBroadcastMode("sync")
 
 	remote := b.cfg.ChainRPC
@@ -559,24 +560,6 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 	}, nil
 }
 
-// GetConstants from thornode
-func (b *Bridge) GetConstants() (map[string]int64, error) {
-	var result struct {
-		Int64Values map[string]int64 `json:"int_64_values"`
-	}
-	buf, s, err := b.getWithPath(ThorchainConstants)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get constants: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", s)
-	}
-	if err = json.Unmarshal(buf, &result); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal to json: %w", err)
-	}
-	return result.Int64Values, nil
-}
-
 // RagnarokInProgress is to query mapBridge to check whether ragnarok had been triggered
 func (b *Bridge) RagnarokInProgress() (bool, error) {
 	buf, s, err := b.getWithPath(RagnarokEndpoint)
@@ -591,43 +574,6 @@ func (b *Bridge) RagnarokInProgress() (bool, error) {
 		return false, fmt.Errorf("fail to unmarshal ragnarok status: %w", err)
 	}
 	return ragnarok, nil
-}
-
-// GetThorchainVersion retrieve mapBridge version
-// func (b *Bridge) GetThorchainVersion() (semver.Version, error) {
-func (b *Bridge) GetThorchainVersion() (string, error) {
-	// todo handler
-	return "1", nil
-}
-
-// GetMimir - get mimir settings
-func (b *Bridge) GetMimir(key string) (int64, error) {
-	//buf, s, err := b.getWithPath(MimirEndpoint + "/key/" + key)
-	//if err != nil {
-	//	return 0, fmt.Errorf("fail to get mimir: %w", err)
-	//}
-	//if s != http.StatusOK {
-	//	return 0, fmt.Errorf("unexpected status code: %d", s)
-	//}
-	//var value int64
-	//if err = json.Unmarshal(buf, &value); err != nil {
-	//	return 0, fmt.Errorf("fail to unmarshal mimir: %w", err)
-	//}
-	//return value, nil
-	// todo handler
-	switch key {
-	case "MaxConfirmations-ETH":
-		return 14, nil
-	}
-	return 0, nil
-}
-
-// GetMimirWithRef is a helper function to more readably insert references (such as Asset MimirString or Chain) into Mimir key templates.
-func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
-	// 'template' should be something like "Halt%sChain" (to halt an arbitrary specified chain)
-	// or "Ragnarok-%s" (to halt the pool of an arbitrary specified Asset (MimirString used for Assets to join Chain and Symbol with a hyphen).
-	key := fmt.Sprintf(template, ref)
-	return b.GetMimir(key)
 }
 
 // PubKeyContractAddressPair is an entry to map pubkey and contract addresses
