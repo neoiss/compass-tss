@@ -180,8 +180,8 @@ func (s *BitcoinSignerSuite) TestSignTx(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(1001)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	// incorrect chain should return an error
 	result, _, _, err := s.client.SignTx(txOutItem, 1)
@@ -221,10 +221,10 @@ func (s *BitcoinSignerSuite) TestSignTxWithoutPredefinedMaxGas(c *C) {
 		Coins: common.Coins{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(10)),
 		},
-		Memo:    "MIGRATE:101",
-		GasRate: 25,
-		InHash:  "",
-		OutHash: "",
+		Memo:     "MIGRATE:101",
+		GasRate:  25,
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	c.Assert(err, IsNil)
@@ -262,8 +262,8 @@ func (s *BitcoinSignerSuite) TestBroadcastTx(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(1)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	input := []byte("hello world")
 	_, err := s.client.BroadcastTx(txOutItem, input)
@@ -310,8 +310,8 @@ func (s *BitcoinSignerSuite) TestSignTxWithAddressPubkey(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(1000)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	blockMeta := utxo.NewBlockMeta("000000000000008a0da55afa8432af3b15c225cc7e04d32f0de912702dd9e2ae",
@@ -344,8 +344,8 @@ func (s *BitcoinSignerSuite) TestToAddressCanNotRoundTripShouldBlock(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(1000)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	blockMeta := utxo.NewBlockMeta("000000000000008a0da55afa8432af3b15c225cc7e04d32f0de912702dd9e2ae",

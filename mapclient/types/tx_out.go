@@ -19,11 +19,13 @@ type TxOutItem struct {
 	Vault           []byte       `json:"vault,omitempty"`
 	To              []byte       `json:"to,omitempty"`
 	Amount          *big.Int     `json:"amount,omitempty"`
+	FromChain       *big.Int     `json:"from_chain,omitempty"`
 	Chain           *big.Int     `json:"chain,omitempty"`
 	TransactionRate *big.Int     `json:"transaction_rate,omitempty"`
 	TransactionSize *big.Int     `json:"transaction_size,omitempty"`
 	LogIndex        uint         `json:"log_index,omitempty"`
 	TxHash          string       `json:"tx_hash,omitempty"`
+	InTxHash        string       `json:"in_tx_hash"`
 	Method          string       `json:"method,omitempty"`
 	// relayTransferCall
 	Payload []byte `json:"payload,omitempty"`
@@ -31,6 +33,9 @@ type TxOutItem struct {
 	FromVault  []byte           `json:"from_vault,omitempty"`
 	ToVault    []byte           `json:"to_vault,omitempty"`
 	Allowances []TokenAllowance `json:"allowances,omitempty"`
+
+	VaultPubKey common.PubKey `json:"vault_pubkey"`
+	Checkpoint  []byte        `json:"-"`
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem

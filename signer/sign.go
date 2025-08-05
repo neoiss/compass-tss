@@ -526,10 +526,14 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	height := item.Height
 	tx := item.TxOutItem
 
-	// // set the checkpoint on the tx out item if it was stored
-	// if item.Checkpoint != nil {
-	// 	tx.Checkpoint = item.Checkpoint
-	// }
+	// set the checkpoint on the tx out item if it was stored
+	if item.Checkpoint != nil {
+		tx.Checkpoint = item.Checkpoint
+	}
+
+	// todo utxo
+	pubKeys, _ := s.thorchainBridge.GetAsgardPubKeys()
+	tx.VaultPubKey = pubKeys[0].PubKey
 
 	blockHeight, err := s.thorchainBridge.GetBlockHeight()
 	if err != nil {

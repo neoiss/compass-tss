@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/btcsuite/btcutil/base58"
 	bchwire "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
 	"github.com/hashicorp/go-multierror"
@@ -32,18 +33,23 @@ import (
 // SignTx builds and signs the outbound transaction. Returns the signed transaction, a
 // serialized checkpoint on error, and an error.
 func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []byte, *stypes.TxInItem, error) {
-	if !tx.Chain.Equals(c.cfg.ChainID) {
+	chain, ok := common.GetChainName(tx.Chain)
+	if !ok {
+		return nil, nil, nil, fmt.Errorf("unsupported chain: %s", tx.Chain)
+	}
+	if !chain.Equals(c.cfg.ChainID) {
 		return nil, nil, nil, errors.New("wrong chain")
 	}
 
 	// skip outbounds without coins
-	if tx.Coins.IsEmpty() {
-		return nil, nil, nil, nil
-	}
+	//if tx.Coins.IsEmpty() {
+	//	return nil, nil, nil, nil
+	//}
 
+	toAddress := base58.Encode(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
-		if !tx.ToAddress.IsValidBCHAddress() {
-			c.log.Error().Msgf("to address: %s is legacy not allowed ", tx.ToAddress)
+		if !common.Address(toAddress).IsValidBCHAddress() {
+			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
 			return nil, nil, nil, nil
 		}
 	}
@@ -64,25 +70,25 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	var outputAddrStr string
 	switch c.cfg.ChainID {
 	case common.DOGEChain:
-		outputAddr, err = dogutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgDOGE())
+		outputAddr, err = dogutil.DecodeAddress(toAddress, c.getChainCfgDOGE())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(dogutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BCHChain:
-		outputAddr, err = bchutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBCH())
+		outputAddr, err = bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(bchutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.LTCChain:
-		outputAddr, err = ltcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgLTC())
+		outputAddr, err = ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BTCChain:
-		outputAddr, err = btcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBTC())
+		outputAddr, err = btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -92,8 +98,8 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 
 	// verify address
-	if !strings.EqualFold(outputAddrStr, tx.ToAddress.String()) {
-		c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, tx.ToAddress.String())
+	if !strings.EqualFold(outputAddrStr, toAddress) {
+		c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
 		return nil, nil, nil, nil
 	}
 	switch outputAddr.(type) {
@@ -115,7 +121,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 
 		// abort if any checkpoint VIN is spent
-		c.log.Info().Stringer("in_hash", tx.InHash).Msgf("verifying checkpoint vins")
+		c.log.Info().Str("in_tx_hash", tx.InTxHash).Msgf("verifying checkpoint vins")
 		var unspent bool
 		unspent, err = c.vinsUnspent(tx, redeemTx.TxIn)
 		if err != nil {

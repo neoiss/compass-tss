@@ -2,12 +2,14 @@ package utxo
 
 import (
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil/base58"
 
 	"github.com/eager7/dogutil"
 	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
@@ -125,7 +127,7 @@ func (c *Client) vinsUnspent(tx stypes.TxOutItem, vins []*wire.TxIn) (bool, erro
 	for _, vin := range vins {
 		if !unspent[vin.PreviousOutPoint.Hash.String()] {
 			c.log.Warn().
-				Stringer("in_hash", tx.InHash).
+				Str("in_hash", tx.InTxHash).
 				Stringer("vin", vin.PreviousOutPoint).
 				Msg("vin is spent")
 			allUnspent = false
@@ -157,10 +159,19 @@ func (c *Client) isSelfTransaction(txID string) bool {
 }
 
 func (c *Client) getPaymentAmount(tx stypes.TxOutItem) float64 {
-	amtToPay1e8 := tx.Coins.GetCoin(c.cfg.ChainID.GetGasAsset()).Amount.Uint64()
+	// todo utxo
+	//amtToPay1e8 := tx.Coins.GetCoin(c.cfg.ChainID.GetGasAsset()).Amount.Uint64()
+	//amtToPay := btcutil.Amount(int64(amtToPay1e8)).ToBTC()
+	//if !tx.MaxGas.IsEmpty() {
+	//	gasAmt := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset()).Amount
+	//	amtToPay += btcutil.Amount(int64(gasAmt.Uint64())).ToBTC()
+	//}
+	//return amtToPay
+
+	amtToPay1e8 := tx.Amount.Uint64()
 	amtToPay := btcutil.Amount(int64(amtToPay1e8)).ToBTC()
-	if !tx.MaxGas.IsEmpty() {
-		gasAmt := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset()).Amount
+	if tx.TransactionRate != nil && tx.TransactionSize != nil {
+		gasAmt := new(big.Int).Mul(tx.TransactionRate, tx.TransactionSize)
 		amtToPay += btcutil.Amount(int64(gasAmt.Uint64())).ToBTC()
 	}
 	return amtToPay
@@ -242,7 +253,7 @@ func (c *Client) estimateTxSize(memo string, txes []btcjson.ListUnspentResult) i
 }
 
 func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
-	gasRate := tx.GasRate
+	gasRate := tx.TransactionRate.Int64()
 
 	// if the gas rate is zero, try to get from last transaction fee
 	if gasRate == 0 {
@@ -272,7 +283,7 @@ func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
 
 func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx, map[string]int64, error) {
 	// build memo
-	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.InHash.String()).String()
+	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.InTxHash).String()
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
@@ -301,10 +312,11 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	}
 
 	var buf []byte
+	toAddress := base58.Encode(tx.To)
 	switch c.cfg.ChainID {
 	case common.DOGEChain:
 		var outputAddr dogutil.Address
-		outputAddr, err = dogutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgDOGE())
+		outputAddr, err = dogutil.DecodeAddress(toAddress, c.getChainCfgDOGE())
 		if err != nil {
 			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -314,7 +326,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		}
 	case common.BCHChain:
 		var outputAddr bchutil.Address
-		outputAddr, err = bchutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBCH())
+		outputAddr, err = bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
 		if err != nil {
 			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -324,7 +336,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		}
 	case common.LTCChain:
 		var outputAddr ltcutil.Address
-		outputAddr, err = ltcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgLTC())
+		outputAddr, err = ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
 		if err != nil {
 			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -334,7 +346,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		}
 	case common.BTCChain:
 		var outputAddr btcutil.Address
-		outputAddr, err = btcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBTC())
+		outputAddr, err = btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -346,7 +358,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		c.log.Fatal().Msg("unsupported chain")
 	}
 
-	coinToCustomer := tx.Coins.GetCoin(c.cfg.ChainID.GetGasAsset())
+	//coinToCustomer := tx.Coins.GetCoin(c.cfg.ChainID.GetGasAsset())
 	totalSize := c.estimateTxSize(tx.Memo, txes)
 
 	// maxFee in sats
@@ -371,7 +383,8 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	}
 
 	// pay to customer
-	redeemTxOut := wire.NewTxOut(int64(coinToCustomer.Amount.Uint64()), buf)
+	//redeemTxOut := wire.NewTxOut(int64(coinToCustomer.Amount.Uint64()), buf)
+	redeemTxOut := wire.NewTxOut(int64(tx.Amount.Uint64()), buf)
 	redeemTx.AddTxOut(redeemTxOut)
 
 	// balance to ourselves
