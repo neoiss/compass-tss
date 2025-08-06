@@ -1,8 +1,6 @@
 [
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -56,9 +54,7 @@
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ECDSAInvalidSignature",
     "type": "error"
   },
@@ -96,58 +92,42 @@
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ERC1967NonPayable",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "EnforcedPause",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ExpectedPause",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "FailedCall",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "InvalidInitialization",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "NotInitializing",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "UUPSUnauthorizedCallContext",
     "type": "error"
   },
@@ -163,128 +143,92 @@
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "already_propose",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "empty_p2pAddress",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "empty_pubkey",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_blames",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_epoch",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_members",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_public_key_length",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_signature",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "invalid_tss_pool_id",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "maintainer_not_enough",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "member_zero_address",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "only_maitainer",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "only_relay",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "only_validator_can_register",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "only_vm_can_call",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "order_executed",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "order_not_found",
     "type": "error"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "vault_not_found",
     "type": "error"
   },
@@ -879,9 +823,7 @@
     "type": "event"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ACCOUNTS_ADDRESS",
     "outputs": [
       {
@@ -894,9 +836,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "ELECTIONS_ADDRESS",
     "outputs": [
       {
@@ -909,9 +849,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "UPGRADE_INTERFACE_VERSION",
     "outputs": [
       {
@@ -924,9 +862,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "VALIDATORS_ADDRESS",
     "outputs": [
       {
@@ -958,9 +894,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "authority",
     "outputs": [
       {
@@ -1022,9 +956,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "currentEpoch",
     "outputs": [
       {
@@ -1037,31 +969,21 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "deRegister",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "election",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "getElectionEpoch",
     "outputs": [
       {
@@ -1149,9 +1071,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "getImplementation",
     "outputs": [
       {
@@ -1183,9 +1103,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "getLastPublickey",
     "outputs": [
       {
@@ -1328,9 +1246,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "getPublickeys",
     "outputs": [
       {
@@ -1438,16 +1354,12 @@
       }
     ],
     "name": "initialize",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "isConsumingScheduledOp",
     "outputs": [
       {
@@ -1484,9 +1396,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "maitainerLimit",
     "outputs": [
       {
@@ -1499,20 +1409,14 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "migration",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "paused",
     "outputs": [
       {
@@ -1525,9 +1429,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "proxiableUUID",
     "outputs": [
       {
@@ -1563,16 +1465,12 @@
       }
     ],
     "name": "register",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "registry",
     "outputs": [
       {
@@ -1593,9 +1491,7 @@
       }
     ],
     "name": "setAuthority",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1608,9 +1504,7 @@
       }
     ],
     "name": "setMaitanerLimit",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1623,20 +1517,14 @@
       }
     ],
     "name": "setRegistry",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "trigger",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1659,9 +1547,7 @@
       }
     ],
     "name": "update",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1679,9 +1565,7 @@
       }
     ],
     "name": "updateMaitainerStatus",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1699,16 +1583,12 @@
       }
     ],
     "name": "upgradeToAndCall",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "payable",
     "type": "function"
   },
   {
-    "inputs": [
-
-    ],
+    "inputs": [],
     "name": "version",
     "outputs": [
       {
@@ -1783,9 +1663,7 @@
       }
     ],
     "name": "voteMigration",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1823,9 +1701,7 @@
       }
     ],
     "name": "voteNetworkFee",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1895,9 +1771,7 @@
       }
     ],
     "name": "voteTxIn",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1952,9 +1826,7 @@
       }
     ],
     "name": "voteTxOut",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -2004,9 +1876,7 @@
       }
     ],
     "name": "voteUpdateTssPool",
-    "outputs": [
-
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },

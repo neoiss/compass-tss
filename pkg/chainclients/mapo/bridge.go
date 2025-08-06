@@ -61,31 +61,29 @@ const (
 
 // Bridge will be used to send tx to THORChain
 type Bridge struct {
-	logger        zerolog.Logger
-	cfg           config.BifrostClientConfiguration
-	keys          *keys2.Keys
-	errCounter    *prometheus.CounterVec
-	m             *metrics.Metrics
-	blockHeight   int64
-	accountNumber uint64
-	seqNumber     uint64
-	chainID       *big.Int
-	httpClient    *retryablehttp.Client
-	broadcastLock *sync.RWMutex
-	ethClient     *ethclient.Client
-	blockScanner  *MapChainBlockScan
-	stopChan      chan struct{}
-	wg            *sync.WaitGroup
-	gasPrice      *big.Int
-	gasCache      []*big.Int
-	ethPriKey     *ecdsa.PrivateKey
-	kw            *evm.KeySignWrapper
-	ethRpc        *evm.EthRPC
-	mainAbi       *abi.ABI
-	tokenRegistry *abi.ABI
-	mainCall      *contract.Call
-	viewCall      *contract.Call
-	epoch         *big.Int
+	logger                           zerolog.Logger
+	cfg                              config.BifrostClientConfiguration
+	keys                             *keys2.Keys
+	errCounter                       *prometheus.CounterVec
+	m                                *metrics.Metrics
+	blockHeight                      int64
+	accountNumber                    uint64
+	seqNumber                        uint64
+	chainID                          *big.Int
+	httpClient                       *retryablehttp.Client
+	broadcastLock                    *sync.RWMutex
+	ethClient                        *ethclient.Client
+	blockScanner                     *MapChainBlockScan
+	stopChan                         chan struct{}
+	wg                               *sync.WaitGroup
+	gasPrice                         *big.Int
+	gasCache                         []*big.Int
+	ethPriKey                        *ecdsa.PrivateKey
+	kw                               *evm.KeySignWrapper
+	ethRpc                           *evm.EthRPC
+	mainAbi, relayAbi, tokenRegistry *abi.ABI
+	mainCall, viewCall               *contract.Call
+	epoch                            *big.Int
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -159,6 +157,11 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, err
 	}
 
+	relayAi, err := newRelayABi()
+	if err != nil {
+		return nil, err
+	}
+
 	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.Maintainer)}, ai)
 	viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.ViewController)}, viewAi)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
@@ -188,6 +191,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		relayAbi:      relayAi,
 		tokenRegistry: tokenRegistry,
 		mainCall:      mainCall,
 		viewCall:      viewCall,

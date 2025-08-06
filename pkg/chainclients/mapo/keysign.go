@@ -78,7 +78,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 			nil,
 			nil,
 			nil,
-			b.mainAbi,
+			b.relayAbi,
 			common.MAPAsset,
 			0)
 		p.GetTxOutItem(&tmp, item)
