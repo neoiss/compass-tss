@@ -619,7 +619,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// }
 
 	if len(tx.To) == 0 {
-		s.logger.Info().Msg("To address is empty, THORNode don't know where to send the fund , ignore")
+		s.logger.Info().Msg("To address is empty, map don't know where to send the fund , ignore")
 		return nil, nil, nil // return nil and discard item
 	}
 

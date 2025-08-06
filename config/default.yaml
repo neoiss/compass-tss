@@ -51,7 +51,7 @@ bifrost:
     backup_keyshares: true
     signer_db_path: ./build/signer_db
     retry_interval: 2s
-    reschedule_buffer_blocks: 150 # 15 minutes
+    reschedule_buffer_blocks: 3000000 # 15 minutes
     block_scanner:
       mos: "0x3F753d04E0d2ed95C73C24Bf44163F56cA7a3288"
       chain_id: map
