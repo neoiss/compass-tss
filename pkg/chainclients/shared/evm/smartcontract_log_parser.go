@@ -290,6 +290,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 				Amount: ele.Amount,
 			})
 		}
+		scp.logger.Info().Msgf("Parsed RelayEventOfMigration: %+v", evt)
 
 	case constants.RelayEventOfTransferOut.GetTopic().Hex():
 		// it is not legal to have multiple transferOut event , transferOut event should be final
@@ -307,6 +308,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		txOutItem.To = evt.To
 		txOutItem.TransactionRate = evt.TransactionRate
 		txOutItem.TransactionSize = evt.TransactionSize
+		scp.logger.Info().Msgf("Parsed RelayEventOfTransferOut: %+v", evt)
 
 	case constants.RelayEventOfTransferCall.GetTopic().Hex():
 		evt, err := scp.parseRelayTransferCall(*ll)
@@ -325,6 +327,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		txOutItem.Payload = evt.Payload
 		txOutItem.TransactionRate = evt.TransactionRate
 		txOutItem.TransactionSize = evt.TransactionSize
+		scp.logger.Info().Msgf("Parsed RelayTransferCall: %+v", evt)
 	}
 	return nil
 }

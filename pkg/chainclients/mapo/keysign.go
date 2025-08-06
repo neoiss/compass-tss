@@ -83,6 +83,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 			0)
 		p.GetTxOutItem(&tmp, item)
 		if item.Chain == nil {
+			b.logger.Info().Msgf("Find filter txOut=%+v", item)
 			continue
 		}
 
