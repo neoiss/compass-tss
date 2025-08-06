@@ -2,16 +2,16 @@ package utxo
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"strings"
 	"sync"
 
-	"github.com/btcsuite/btcutil/base58"
 	bchwire "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
-	"github.com/hashicorp/go-multierror"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcutil"
 
@@ -46,7 +46,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	//	return nil, nil, nil, nil
 	//}
 
-	toAddress := base58.Encode(tx.To)
+	toAddress := hex.EncodeToString(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
 		if !common.Address(toAddress).IsValidBCHAddress() {
 			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
@@ -88,7 +88,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BTCChain:
-		outputAddr, err = btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
+		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
