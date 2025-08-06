@@ -144,6 +144,9 @@ func (b *Bridge) updateGasPrice(prices []*big.Int) {
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(b.gasPrice.Int64()).Float64()
+	if b.m == nil {
+		return
+	}
 	b.m.GetGauge(metrics.GasPrice(b.cfg.ChainID)).Set(gasPriceFloat)
 	b.m.GetCounter(metrics.GasPriceChange(b.cfg.ChainID)).Inc()
 }
