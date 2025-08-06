@@ -67,6 +67,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
 	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
 	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
+	time.Sleep(time.Minute)
 
 	ret := types.TxOut{
 		Height:  blockHeight,
