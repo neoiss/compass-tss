@@ -13,8 +13,8 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 )
 
