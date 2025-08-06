@@ -107,6 +107,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			retryItems[vc] = append(retryItems[vc], item)
 		}
 	}
+	log.Info().Msgf("SpawnSignings found %d all items", len(allItems))
 
 	var itemsToSign []TxOutStoreItem
 
@@ -156,9 +157,11 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			lockedVaultChains[vc] = true
 		}
 	}
+	log.Info().Msgf("SpawnSignings will handle tx locking")
 
 	// spawn signing routines for each item
 	for _, item := range itemsToSign {
+		log.Info().Msgf("SpawnSignings will handler %s a tx", item.TxOutItem.TxHash)
 		// return if the signer is stopped
 		if s.isStopped() {
 			return
@@ -176,22 +179,23 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			p.vaultChainLock[vc] = make(chan struct{}, 1)
 		}
 
-		// get vault to determine vault status
-		vault, err := bridge.GetVault(item.TxOutItem.VaultPubKey.String())
-		if err != nil {
-			log.Err(err).
-				Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
-				Msg("failed to get tx out item vault")
-			return
-		}
+		// // get vault to determine vault status
+		// vault, err := bridge.GetVault(item.TxOutItem.VaultPubKey.String())
+		// if err != nil {
+		// 	log.Err(err).
+		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
+		// 		Msg("Failed to get tx out item vault")
+		// 	return
+		// }
 
 		// check if the vault status semaphore has capacity
-		if availableCapacities[vault.Status] == 0 {
+		// todo next
+		if availableCapacities[types.VaultStatus_ActiveVault] == 0 {
 			continue
 		}
 
 		// acquire the vault status semaphore and vault/chain lock
-		availableCapacities[vault.Status]--
+		availableCapacities[types.VaultStatus_ActiveVault]--
 		p.vaultChainLock[vc] <- struct{}{}
 		lockedVaultChains[vc] = true
 
@@ -206,7 +210,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 			// process the transaction
 			s.processTransaction(item)
-		}(item, vault.Status)
+		}(item, types.VaultStatus_ActiveVault)
 	}
 }
 

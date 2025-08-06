@@ -232,7 +232,7 @@ func runWithContext(ctx context.Context, fn func() ([]byte, *types.TxInItem, err
 func (s *Signer) processTransactions() {
 	signerConcurrency, err := s.thorchainBridge.GetMimir(constants.SignerConcurrency.String())
 	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get signer concurrency mimir")
+		s.logger.Error().Err(err).Msg("Fail to get signer concurrency mimir")
 		return
 	}
 
@@ -251,7 +251,7 @@ func (s *Signer) processTransactions() {
 	if s.pipeline == nil {
 		s.pipeline, err = newPipeline(signerConcurrency)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to create new pipeline")
+			s.logger.Error().Err(err).Msg("Fail to create new pipeline")
 			return
 		}
 	}
