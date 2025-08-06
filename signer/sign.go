@@ -273,7 +273,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut, idx int) {
 			if !more {
 				return
 			}
-			s.logger.Info().Msgf("Received a TxOut Array of %v from the Thorchain", txOut)
+			s.logger.Info().Msgf("Received a TxOut Array of %v from the MAP", txOut)
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
