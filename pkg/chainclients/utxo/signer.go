@@ -97,11 +97,12 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		c.log.Fatal().Msg("unsupported chain")
 	}
 
+	// todo utxo
 	// verify address
-	if !strings.EqualFold(outputAddrStr, toAddress) {
-		c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
-		return nil, nil, nil, nil
-	}
+	//if !strings.EqualFold(outputAddrStr, toAddress) {
+	//	c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
+	//	return nil, nil, nil, nil
+	//}
 	switch outputAddr.(type) {
 	case *dogutil.AddressPubKey, *bchutil.AddressPubKey, *ltcutil.AddressPubKey, *btcutil.AddressPubKey:
 		c.log.Info().Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
