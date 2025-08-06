@@ -13,7 +13,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
-	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 )
 
@@ -142,11 +141,11 @@ func (b *Bridge) updateGasPrice(prices []*big.Int) {
 	median = median.Mul(median, resolution)
 	b.gasPrice = median
 
-	// record metrics
-	gasPriceFloat, _ := new(big.Float).SetInt64(b.gasPrice.Int64()).Float64()
-	if b.m == nil {
-		return
-	}
-	b.m.GetGauge(metrics.GasPrice(b.cfg.ChainID)).Set(gasPriceFloat)
-	b.m.GetCounter(metrics.GasPriceChange(b.cfg.ChainID)).Inc()
+	// // record metrics
+	// gasPriceFloat, _ := new(big.Float).SetInt64(b.gasPrice.Int64()).Float64()
+	// if b.m == nil {
+	// 	return
+	// }
+	// b.m.GetGauge(metrics.GasPrice(b.cfg.ChainID)).Set(gasPriceFloat)
+	// b.m.GetCounter(metrics.GasPriceChange(b.cfg.ChainID)).Inc()
 }
