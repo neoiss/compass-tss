@@ -3,11 +3,12 @@ package tss
 import (
 	"encoding/base64"
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"sort"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/cometbft/cometbft/crypto"
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
@@ -229,9 +230,9 @@ func (s *KeySign) getVersion() string {
 	//if !s.currentVersion.Equals(semver.Version{}) && requestTime.Sub(s.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
 	//	return s.currentVersion
 	//}
-	version, err := s.bridge.GetThorchainVersion()
+	version, err := s.bridge.GetMapVersion()
 	if err != nil {
-		s.logger.Err(err).Msg("fail to get current thorchain version")
+		s.logger.Err(err).Msg("Fail to get current map version")
 		return s.currentVersion
 	}
 	s.currentVersion = version

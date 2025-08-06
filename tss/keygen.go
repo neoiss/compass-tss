@@ -2,12 +2,13 @@ package tss
 
 import (
 	"fmt"
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keygen"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
@@ -48,9 +49,9 @@ func NewTssKeyGen(keys *keys.Keys, server *tss.TssServer, bridge shareTypes.Brid
 
 func (kg *KeyGen) getVersion() string {
 	requestTime := time.Now()
-	version, err := kg.bridge.GetThorchainVersion()
+	version, err := kg.bridge.GetMapVersion()
 	if err != nil {
-		kg.logger.Err(err).Msg("fail to get current thorchain version")
+		kg.logger.Err(err).Msg("Fail to get current map version")
 		return kg.currentVersion
 	}
 	kg.currentVersion = version

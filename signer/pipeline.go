@@ -19,7 +19,7 @@ import (
 // vaultChain is a public key and chain used as a key for the vault/chain lock.
 type vaultChain struct {
 	Vault common.PubKey
-	Chain common.Chain
+	Chain string
 }
 
 type semaphore chan struct{}
@@ -103,7 +103,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 	retryItems := make(map[vaultChain][]TxOutStoreItem)
 	for _, item := range allItems {
 		if item.Round7Retry || len(item.SignedTx) > 0 {
-			vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+			vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 			retryItems[vc] = append(retryItems[vc], item)
 		}
 	}
@@ -130,7 +130,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 	// add all items from vault/chains with no items in retry
 	for _, item := range allItems {
-		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 		if _, ok := retryItems[vc]; !ok {
 			itemsToSign = append(itemsToSign, item)
 		}
@@ -164,7 +164,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			return
 		}
 
-		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 
 		// check if the vault/chain is locked
 		if lockedVaultChains[vc] {
@@ -199,7 +199,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 		go func(item TxOutStoreItem, vaultStatus types.VaultStatus) {
 			// release the vault status semaphore and vault/chain lock when complete
 			defer func() {
-				vc2 := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+				vc2 := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 				<-p.vaultChainLock[vc2]
 				p.vaultStatusConcurrency[vaultStatus].release(1)
 			}()

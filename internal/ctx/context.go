@@ -40,6 +40,7 @@ type Context struct {
 	LegacyAmino *codec.LegacyAmino
 	// CmdContext is the context.Context from the Cobra command.
 	CmdContext context.Context
+	Client     client.CometRPC
 }
 
 func (ctx Context) WithKeyring(k keyring.Keyring) Context {
