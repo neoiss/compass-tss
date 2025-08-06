@@ -583,7 +583,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// outbound if within configured blocks of reschedule
 	if !item.Round7Retry || inactiveVaultRound7Retry {
 		if blockHeight-signingTransactionPeriod > height-s.cfg.Signer.RescheduleBufferBlocks {
-			s.logger.Error().Msgf("tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
+			s.logger.Error().Msgf("Tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
 			return nil, nil, nil
 		}
 	}

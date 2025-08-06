@@ -127,7 +127,7 @@ func (b *Bridge) GetConstants() (map[string]int64, error) {
 			"SaversEjectInterval": 0,
 			"SaversStreamingSwapsInterval": 0,
 			"SecuredAssetSlipMinBps": 5,
-			"SigningTransactionPeriod": 300,
+			"SigningTransactionPeriod": 3000000,
 			"SlashPenalty": 15000,
 			"StagedPoolCost": 1000000000,
 			"StreamingSwapMaxLength": 14400,
