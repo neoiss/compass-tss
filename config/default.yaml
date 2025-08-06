@@ -130,7 +130,7 @@ bifrost:
         max_contract_tx_logs: 0
 
         # the following defaults must be defined to override with environment
-        start_block_height: 0
+        start_block_height: 263889
         cosmos_grpc_host: ""
         cosmos_grpc_tls: false
         gas_cache_blocks: 0

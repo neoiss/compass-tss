@@ -590,27 +590,27 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	chain, err := s.getChain(tx.Chain)
 	if err != nil {
-		s.logger.Error().Err(err).Msgf("not supported %s", tx.Chain.String())
+		s.logger.Error().Err(err).Msgf("Not supported %s", tx.Chain.String())
 		return nil, nil, err
 	}
 	mimirKey := "HALTSIGNING"
 	haltSigningGlobalMimir, err := s.thorchainBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
+		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningGlobalMimir > 0 && haltSigningGlobalMimir < blockHeight {
-		s.logger.Info().Msg("signing has been halted globally")
+		s.logger.Info().Msg("Signing has been halted globally")
 		return nil, nil, nil
 	}
 	mimirKey = fmt.Sprintf("HALTSIGNING%s", tx.Chain)
 	haltSigningMimir, err := s.thorchainBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
+		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningMimir > 0 && haltSigningMimir < blockHeight {
-		s.logger.Info().Msgf("signing for %s is halted", tx.Chain)
+		s.logger.Info().Msgf("Signing for %s is halted", tx.Chain)
 		return nil, nil, nil
 	}
 	// if !s.shouldSign(tx) {
