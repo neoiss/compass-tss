@@ -59,7 +59,7 @@ bifrost:
       block_retry_interval: 10s
       block_height_discover_back_off: 5s
       block_scan_processors: 1
-      start_block: "0"
+      start_block: 17243301
       http_request_timeout: 30s
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
