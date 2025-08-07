@@ -309,7 +309,7 @@ func (o *Observer) sendDeck(ctx context.Context) {
 	for _, deck := range o.onDeck {
 		chainClient, err := o.getChain(deck.Chain)
 		if err != nil {
-			o.logger.Error().Err(err).Msg("fail to retrieve chain client")
+			o.logger.Error().Err(err).Str("chain", deck.Chain.String()).Msg("fail to retrieve chain client")
 			continue
 		}
 

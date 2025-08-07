@@ -213,8 +213,9 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 	wg.Wait()
 	if utxoErr != nil {
+		// todo utxo
 		err = utxo.PostKeysignFailure(c.bridge, tx, c.log, thorchainHeight, utxoErr)
-		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", err)
+		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", utxoErr)
 	}
 
 	// convert back to wire tx
