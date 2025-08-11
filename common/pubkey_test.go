@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -268,4 +269,19 @@ func Test_BtcAddress(t *testing.T) {
 	addr, err := btcutil.NewAddressWitnessPubKeyHash(hash160, &chaincfg.MainNetParams)
 	assert.Nil(t, err, "Failed to create btc address")
 	t.Log("btcAddr ------------ ", addr.String())
+}
+
+func Test_PubKeyToBitcoinAddress(t *testing.T) {
+	pubKey, err := hex.DecodeString("029038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	hash160 := btcutil.Hash160(pubKey)
+	address, err := btcutil.NewAddressWitnessPubKeyHash(hash160, &chaincfg.SigNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("address: ", address.String())                                   // tb1q2a22ld4ymgmvxrkwk5tuydrv2wn2yjemvs3szq
+	t.Log("script address: ", hex.EncodeToString(address.ScriptAddress())) // 5754afb6a4da36c30eceb517c2346c53a6a24b3b
 }

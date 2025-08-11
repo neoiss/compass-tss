@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -15,8 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/eager7/dogutil"
-	ecommon "github.com/ethereum/go-ethereum/common"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	eth "github.com/ethereum/go-ethereum/crypto"
 	bchchaincfg "github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
@@ -147,12 +146,10 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		addressString = str
 	case BTCChain:
-		ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(p.String()))
+		pubKey, err := hex.DecodeString(p.String())
 		if err != nil {
-			return NoAddress, err
+			return NoAddress, fmt.Errorf("fail to encode pub key, err: %w", err)
 		}
-		pubBytes := ecrypto.FromECDSAPub(ethPubKey)
-
 		var net *chaincfg.Params
 		switch chainNetwork {
 		case TestNet:
@@ -161,7 +158,7 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 			net = &chaincfg.MainNetParams
 		}
 
-		hash160 := btcutil.Hash160(pubBytes[1:])
+		hash160 := btcutil.Hash160(pubKey)
 		addr, err := btcutil.NewAddressWitnessPubKeyHash(hash160, net)
 		if err != nil {
 			return NoAddress, fmt.Errorf("fail to bech32 encode the address, err: %w", err)
