@@ -299,11 +299,11 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 				return
 			}
 			if s.isKeyGen {
-				fmt.Println("ignore keyGen msg, because it is already a keygen, epoch=", keygenBlock.Epoch)
+				s.logger.Info().Interface("epoch", keygenBlock.Epoch).Msg("Ignore keyGen msg, because it is already a keygen")
 				continue
 			}
 			s.isKeyGen = true
-			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from map relay")
+			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("Received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
 			s.isKeyGen = false
 		}
@@ -383,7 +383,7 @@ func (s *Signer) scheduleKeygenRetry(keygenBlock *structure.KeyGen) bool {
 }
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
-	s.logger.Debug().Interface("keygenBlock", keygenBlock).Msg("processing keygen block")
+	s.logger.Debug().Interface("keygenBlock", keygenBlock).Msg("Processing keygen block")
 	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
@@ -402,16 +402,16 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.logger.Error().
 			Str("reason", blame.FailReason).
 			Interface("nodes", blame.BlameNodes).
-			Msg("keygen blame")
+			Msg("Keygen blame")
 	}
 	keygenTime := time.Since(keygenStart).Milliseconds()
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
-		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
+		s.logger.Error().Err(err).Msg("Fail to generate new pubkey")
 		return
 	}
 
-	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
+	s.logger.Info().Int64("keygenTime", keygenTime).Msg("ProcessKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
 	if len(pubKey.Secp256k1.String()) == 0 {
 		fmt.Println("pk is empty ------------------ ")
@@ -688,25 +688,25 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	// looks like the transaction is already signed
 	if len(signedTx) == 0 {
-		s.logger.Warn().Msgf("signed transaction is empty")
+		s.logger.Warn().Msgf("Signed transaction is empty")
 		return nil, nil, nil
 	}
 
 	// broadcast the transaction
 	hash, err := chain.BroadcastTx(tx, signedTx)
 	if err != nil {
-		s.logger.Error().Err(err).Str("memo", tx.Memo).Msg("fail to broadcast tx to chain")
+		s.logger.Error().Err(err).Str("memo", tx.Memo).Msg("Fail to broadcast tx to chain")
 
 		// store the signed tx for the next retry
 		item.SignedTx = signedTx
 		item.Observation = observation
 		if storeErr := s.storage.Set(item); storeErr != nil {
-			s.logger.Error().Err(storeErr).Msg("fail to update tx out store item with signed tx")
+			s.logger.Error().Err(storeErr).Msg("Fail to update tx out store item with signed tx")
 		}
 
 		return nil, observation, err
 	}
-	s.logger.Info().Str("txid", hash).Str("memo", tx.Memo).Msg("broadcasted tx to chain")
+	s.logger.Info().Str("txId", hash).Str("memo", tx.Memo).Msg("Broadcasted tx to chain")
 
 	// if s.isTssKeysign(tx.VaultPubKey) {
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())

@@ -301,7 +301,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 			t.logger.Log().Msgf("for message %s we get the signature from the peer", msgID)
 			return
 		}
-		fmt.Println("waitForSignatures err ---------------- ", errWait)
+		fmt.Println("waitForSignatures goroutine err ---------------- ", errWait)
 		t.logger.Log().Msgf("we fail to get the valid signature with error %v", errWait)
 	}()
 
