@@ -299,7 +299,7 @@ func (b *BlockScanner) scanBlocks() {
 func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
 	// Only broadcast MsgNetworkFee if the chain isn't THORChain
 	// and the scanner is healthy.
-	if b.cfg.ChainID.Equals(common.THORChain) || !b.healthy.Load() {
+	if !b.healthy.Load() {
 		return
 	}
 

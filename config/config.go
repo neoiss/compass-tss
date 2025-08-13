@@ -268,7 +268,7 @@ func InitBifrost() {
 	}
 
 	// set signer password explicitly from environment variable
-	config.Bifrost.Thorchain.SignerPasswd = os.Getenv("SIGNER_PASSWD")
+	config.Bifrost.MAPRelay.SignerPasswd = os.Getenv("SIGNER_PASSWD")
 
 	// set bootstrap peers from seeds endpoint if unset
 	if len(config.Bifrost.TSS.BootstrapPeers) == 0 {
@@ -478,7 +478,7 @@ type MAPO struct {
 
 type Bifrost struct {
 	Signer            BifrostSignerConfiguration     `mapstructure:"signer"`
-	Thorchain         BifrostClientConfiguration     `mapstructure:"map_relay"`
+	MAPRelay          BifrostClientConfiguration     `mapstructure:"map_relay"`
 	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
 	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
 	Chains            struct {
@@ -542,6 +542,7 @@ func (b LevelDBOptions) Options() *opt.Options {
 type BifrostSignerConfiguration struct {
 	BackupKeyshares bool                             `mapstructure:"backup_keyshares"`
 	SignerDbPath    string                           `mapstructure:"signer_db_path"`
+	OracleDbPath    string                           `mapstructure:"oracle_db_path"`
 	BlockScanner    BifrostBlockScannerConfiguration `mapstructure:"block_scanner"`
 	RetryInterval   time.Duration                    `mapstructure:"retry_interval"`
 
@@ -549,10 +550,6 @@ type BifrostSignerConfiguration struct {
 	// attempting to sign and broadcast (for outbounds not in round 7 retry).
 	RescheduleBufferBlocks int64          `mapstructure:"reschedule_buffer_blocks"`
 	LevelDB                LevelDBOptions `mapstructure:"leveldb"`
-
-	// AutoObserve will automatically submit the observation for outbound transactions once
-	// they are signed - regardless of broadcast success.
-	AutoObserve bool `mapstructure:"auto_observe"`
 
 	// -------------------- tss timeouts --------------------
 

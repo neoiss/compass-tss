@@ -2,7 +2,6 @@ package signer
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/cenkalti/backoff"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/blockscanner"
@@ -40,12 +40,13 @@ type Signer struct {
 	logger               zerolog.Logger
 	cfg                  config.Bifrost
 	wg                   *sync.WaitGroup
-	thorchainBridge      shareTypes.Bridge
+	mapBridge            shareTypes.Bridge
 	stopChan             chan struct{}
 	blockScanner         *blockscanner.BlockScanner
 	mapChainBlockScanner *mapo.MapChainBlockScan
 	chains               map[common.Chain]chainclients.ChainClient
 	storage              SignerStorage
+	oracleStorage        SignerStorage
 	m                    *metrics.Metrics
 	errCounter           *prometheus.CounterVec
 	tssKeygen            *tss.KeyGen
@@ -70,10 +71,16 @@ func NewSigner(cfg config.Bifrost,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
 	obs *observer.Observer,
 ) (*Signer, error) {
-	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB, bridge.GetConfig().SignerPasswd)
+	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
 	}
+
+	oracleStorage, err := NewSignerStore(cfg.Signer.OracleDbPath, cfg.Signer.LevelDB)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
+	}
+
 	if tssKeysignMetricMgr == nil {
 		return nil, fmt.Errorf("fail to create signer , tss keysign metric manager is nil")
 	}
@@ -139,9 +146,10 @@ func NewSigner(cfg config.Bifrost,
 		chains:               chains,
 		m:                    m,
 		storage:              storage,
+		oracleStorage:        oracleStorage,
 		errCounter:           m.GetCounterVec(metrics.SignerError),
 		pubkeyMgr:            pubkeyMgr,
-		thorchainBridge:      bridge,
+		mapBridge:            bridge,
 		tssKeygen:            kg,
 		tssServer:            tssServer,
 		constantsProvider:    constantProvider,
@@ -176,6 +184,12 @@ func (s *Signer) Start() error {
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
 
 	s.wg.Add(1)
+	go s.cacheOracle(s.mapChainBlockScanner.GetOracleMessages())
+
+	s.wg.Add(1)
+	go s.processOracle()
+
+	s.wg.Add(1)
 	go s.signTransactions()
 
 	s.blockScanner.Start(nil, nil)
@@ -198,7 +212,7 @@ func (s *Signer) signTransactions() {
 			return
 		default:
 			// When map relay chain is catching up , bifrost might get stale data from compass-tss , thus it shall pause signing
-			catchingUp, err := s.thorchainBridge.IsSyncing()
+			catchingUp, err := s.mapBridge.IsSyncing()
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Fail to get thorchain sync status")
 				time.Sleep(constants.MAPRelayChainBlockTime)
@@ -230,7 +244,7 @@ func runWithContext(ctx context.Context, fn func() ([]byte, *types.TxInItem, err
 }
 
 func (s *Signer) processTransactions() {
-	signerConcurrency, err := s.thorchainBridge.GetMimir(constants.SignerConcurrency.String())
+	signerConcurrency, err := s.mapBridge.GetMimir(constants.SignerConcurrency.String())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Fail to get signer concurrency mimir")
 		return
@@ -257,7 +271,7 @@ func (s *Signer) processTransactions() {
 	}
 
 	// process transactions
-	s.pipeline.SpawnSignings(s, s.thorchainBridge)
+	s.pipeline.SpawnSignings(s, s.mapBridge)
 }
 
 // processTxnOut processes outbound TxOuts and save them to storage
@@ -310,76 +324,74 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 	}
 }
 
-func (s *Signer) scheduleKeygenRetry(keygenBlock *structure.KeyGen) bool {
-	//// todo handler
-	//churnRetryInterval, err := s.thorchainBridge.GetMimir(constants.ChurnRetryInterval.String())
-	//if err != nil {
-	//	s.logger.Error().Err(err).Msg("fail to get churn retry mimir")
-	//	return false
-	//}
-	//if churnRetryInterval <= 0 {
-	//	churnRetryInterval = constants.NewConstantValue().GetInt64Value(constants.ChurnRetryInterval)
-	//}
-	//keygenRetryInterval, err := s.thorchainBridge.GetMimir(constants.KeygenRetryInterval.String())
-	//if err != nil {
-	//	s.logger.Error().Err(err).Msg("fail to get keygen retries mimir")
-	//	return false
-	//}
-	//if keygenRetryInterval <= 0 {
-	//	return false
-	//}
-	//
-	//// sanity check the retry interval is at least 1.5x the timeout
-	//retryIntervalDuration := time.Duration(keygenRetryInterval) * constants.MAPRelayChainBlockTime
-	//if retryIntervalDuration <= s.cfg.Signer.KeygenTimeout*3/2 {
-	//	s.logger.Error().
-	//		Stringer("retryInterval", retryIntervalDuration).
-	//		Stringer("keygenTimeout", s.cfg.Signer.KeygenTimeout).
-	//		Msg("retry interval too short")
-	//	return false
-	//}
-	//
+func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
+	s.logger.Info().Msg("Start to cache tx oracle")
+	defer s.logger.Info().Msg("Stop to cache tx oracle")
+	defer s.wg.Done()
 
-	////height, err := s.thorchainBridge.GetBlockHeight()
-	////if err != nil {
-	////	s.logger.Error().Err(err).Msg("fail to get last chain height")
-	////	return false
-	////}
-	////
-	////// target retry height is the next keygen retry interval over the keygen block height
-	////targetRetryHeight := (keygenRetryInterval - ((height - keygenBlock.Height) % keygenRetryInterval)) + height
-	////
-	////// skip trying close to churn retry
-	////if targetRetryHeight > keygenBlock.Height+churnRetryInterval-keygenRetryInterval {
-	////	return false
-	////}
-	//
-	//go func() {
-	//	// every block, try to start processing again
-	//	for {
-	//		time.Sleep(constants.MAPRelayChainBlockTime)
-	//		// trunk-ignore(golangci-lint/govet): shadow
-	//		height, err := s.thorchainBridge.GetBlockHeight()
-	//		if err != nil {
-	//			s.logger.Error().Err(err).Msg("fail to get last chain height")
-	//		}
-	//		if height >= targetRetryHeight {
-	//			s.logger.Info().
-	//				Interface("keygenBlock", keygenBlock).
-	//				Int64("currentHeight", height).
-	//				Msg("retrying keygen")
-	//			s.processKeygenBlock(keygenBlock)
-	//			return
-	//		}
-	//	}
-	//}()
-	//
-	//s.logger.Info().
-	//	Interface("keygenBlock", keygenBlock).
-	//	Int64("retryHeight", targetRetryHeight).
-	//	Msg("scheduled keygen retry")
+	for {
+		select {
+		case <-s.stopChan:
+			return
+		case txOut, ok := <-ch:
+			if !ok {
+				return
+			}
+			s.logger.Info().Msgf("Oracle Received a TxOut Array of %v from the MAPRelay", txOut)
+			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
-	return true
+			for i, tx := range txOut.TxArray {
+				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
+			}
+			if err := s.oracleStorage.Batch(items); err != nil {
+				s.logger.Error().Err(err).Msg("Fail to save tx out items to storage")
+			}
+		}
+	}
+}
+
+func (s *Signer) processOracle() {
+	s.logger.Info().Msg("Start to process tx oracle")
+	defer s.logger.Info().Msg("Stop to process tx oracle")
+	defer s.wg.Done()
+	for {
+		select {
+		case <-s.stopChan:
+			return
+		default:
+			list := s.oracleStorage.List() // this will trigger the storage to load all items
+			for _, item := range list {
+				txBytes, err := s.mapBridge.GetOracleStdTx(&item.TxOutItem)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("Fail to get oracle std tx")
+					continue
+				}
+
+				if len(txBytes) == 0 {
+					continue
+				}
+
+				tmp := item
+				bf := backoff.NewExponentialBackOff()
+				bf.MaxElapsedTime = 5 * time.Second
+				err = backoff.Retry(func() error {
+					txID, err := s.mapBridge.Broadcast(txBytes)
+					if err != nil {
+						return fmt.Errorf("fail to send the tx to thorchain: %w", err)
+					}
+					s.oracleStorage.Remove(tmp)
+					s.logger.Info().Str("mapHash", txID).Msg("Oracle tx sent successfully")
+					return nil
+				}, bf)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("Fail to broadcast tx")
+					continue
+				}
+
+				s.logger.Info().Interface("item", item).Msg("Processing oracle item")
+			}
+		}
+	}
 }
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
@@ -414,21 +426,18 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("ProcessKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
 	if len(pubKey.Secp256k1.String()) == 0 {
-		fmt.Println("pk is empty ------------------ ")
 		return
 	}
 	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
 	if len(secp256k1Sig) == 0 {
-		fmt.Println("secp256k1Sig ------------------ ", len(secp256k1Sig))
 		time.Sleep(time.Minute)
 		return
 	}
 	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
-		s.logger.Error().Err(err).Msg("fail to broadcast keygen")
+		s.logger.Error().Err(err).Msg("Fail to broadcast keygen")
 	}
 
-	fmt.Println("processKeygenBlock  GenerateNewKey 111111 -------------- ")
 	// monitor the new pubkey and any new members
 	if !pubKey.Secp256k1.IsEmpty() {
 		s.pubkeyMgr.AddPubKey(pubKey.Secp256k1, true)
@@ -444,9 +453,9 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 // THORNode before the keygen is accepted.
 func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	// create keysign instance
-	ks, err := tss.NewKeySign(s.tssServer, s.thorchainBridge)
+	ks, err := tss.NewKeySign(s.tssServer, s.mapBridge)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to create keySign for secp256k1 check signing")
+		s.logger.Error().Err(err).Msg("Fail to create keySign for secp256k1 check signing")
 		return nil
 	}
 	ks.Start()
@@ -462,10 +471,9 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	data := pubBytes[1:]
 	dataHash := ecrypto.Keccak256(data)
 	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
-	fmt.Println("v ------------------ ", v)
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
-		s.logger.Info().Err(err).Msg("fail secp256k1 check signing")
+		s.logger.Info().Err(err).Msg("Fail secp256k1 check signing")
 		return nil
 
 	} else if sigBytes == nil {
@@ -484,12 +492,10 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	}
 
 	if !signature.Verify(dataHash[:], spk) {
-		s.logger.Error().Msg("secp256k1 check signature verification failed")
+		s.logger.Error().Msg("Secp256k1 check signature verification failed")
 		return nil
 	} else {
-		fmt.Println("secp256k1VerificationSignature pk.String() ----------------- ", dataHash[:], "hex",
-			hex.EncodeToString(dataHash))
-		s.logger.Info().Msg("secp256k1 check signature verified")
+		s.logger.Info().Msg("Secp256k1 check signature verified")
 	}
 
 	return append(sigBytes, v[0]+27)
@@ -508,7 +514,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 		}
 	}
 
-	txID, err := s.thorchainBridge.SendKeyGenStdTx(epoch, poolPubKey, signature, keyShares, blame, members)
+	txID, err := s.mapBridge.SendKeyGenStdTx(epoch, poolPubKey, signature, keyShares, blame, members)
 	if err != nil {
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}
@@ -532,10 +538,10 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}
 
 	// todo utxo
-	pubKeys, _ := s.thorchainBridge.GetAsgardPubKeys()
+	pubKeys, _ := s.mapBridge.GetAsgardPubKeys()
 	tx.VaultPubKey = pubKeys[0].PubKey
 
-	blockHeight, err := s.thorchainBridge.GetBlockHeight()
+	blockHeight, err := s.mapBridge.GetBlockHeight()
 	if err != nil {
 		s.logger.Error().Err(err).Msgf("fail to get block height")
 		return nil, nil, err
@@ -552,7 +558,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	if item.Round7Retry {
 		mimirKey := "MAXOUTBOUNDATTEMPTS"
 		var maxOutboundAttemptsMimir int64
-		maxOutboundAttemptsMimir, err = s.thorchainBridge.GetMimir(mimirKey)
+		maxOutboundAttemptsMimir, err = s.mapBridge.GetMimir(mimirKey)
 		if err != nil {
 			s.logger.Err(err).Msgf("fail to get %s", mimirKey)
 			return nil, nil, err
@@ -569,7 +575,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 		// // determine if the round 7 retry is for an inactive vault
 		// var vault ttypes.Vault
-		// vault, err = s.thorchainBridge.GetVault(item.TxOutItem.VaultPubKey.String())
+		// vault, err = s.mapBridge.GetVault(item.TxOutItem.VaultPubKey.String())
 		// if err != nil {
 		// 	log.Err(err).
 		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
@@ -594,7 +600,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		return nil, nil, err
 	}
 	mimirKey := "HALTSIGNING"
-	haltSigningGlobalMimir, err := s.thorchainBridge.GetMimir(mimirKey)
+	haltSigningGlobalMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
 		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
 		return nil, nil, err
@@ -604,7 +610,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		return nil, nil, nil
 	}
 	mimirKey = fmt.Sprintf("HALTSIGNING%s", tx.Chain)
-	haltSigningMimir, err := s.thorchainBridge.GetMimir(mimirKey)
+	haltSigningMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
 		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
 		return nil, nil, err
@@ -646,7 +652,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// been signed already, and we can skip. This helps us not get stuck on
 	// a task that we'll never sign, because 2/3rds already has and will
 	// never be available to sign again.
-	// txOut, err := s.thorchainBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
+	// txOut, err := s.mapBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
 	// if err != nil {
 	// 	s.logger.Error().Err(err).Msg("fail to get keysign items")
 	// 	return nil, nil, err
@@ -785,21 +791,6 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		// Otherwise, out-of-sync lists would cycle one timeout at a time, maybe never resynchronising.
 	}
 	cancel()
-
-	// // if enabled and the observation is non-nil, instant observe the outbound
-	// if s.cfg.Signer.AutoObserve && obs != nil {
-	// 	s.observer.ObserveSigned(types.TxIn{
-	// 		Chain:                item.TxOutItem.Chain,
-	// 		TxArray:              []*types.TxInItem{obs},
-	// 		MemPool:              true,
-	// 		Filtered:             true,
-	// 		ConfirmationRequired: 0,
-
-	// 		// Instant EVM observations have wrong gas and need future correct observations
-	// 		AllowFutureObservation: item.TxOutItem.Chain.IsEVM(),
-	// 	})
-	// }
-
 	// We have a successful broadcast! Remove the item from our store
 	if err = s.storage.Remove(item); err != nil {
 		s.logger.Error().Err(err).Msg("fail to update tx out store item")

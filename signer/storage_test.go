@@ -2,6 +2,7 @@ package signer
 
 import (
 	"fmt"
+
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/common"
@@ -17,7 +18,7 @@ func (s *StorageSuite) SetUpSuite(c *C) {
 }
 
 func (s *StorageSuite) TestStorage(c *C) {
-	store, err := NewSignerStore("", config.LevelDBOptions{}, "my secret passphrase")
+	store, err := NewSignerStore("", config.LevelDBOptions{})
 	c.Assert(err, IsNil)
 
 	item := NewTxOutStoreItem(12, types.TxOutItem{Memo: "foo"}, 1)
@@ -37,13 +38,15 @@ func (s *StorageSuite) TestStorage(c *C) {
 
 	pk := common.PubKey("tthorpub1addwnpepqfup3y8p0egd7ml7vrnlxgl3wvnp89mpn0tjpj0p2nm2gh0n9hlrvrtylay")
 
-	spent := NewTxOutStoreItem(10, types.TxOutItem{Chain: common.ETHChain, VaultPubKey: pk, Memo: "spent"}, 0)
+	ethId, _ := common.ETHChain.ChainID()
+	btcId, _ := common.BTCChain.ChainID()
+	spent := NewTxOutStoreItem(10, types.TxOutItem{Chain: ethId, VaultPubKey: pk, Memo: "spent"}, 0)
 	spent.Status = TxSpent
 	items = []TxOutStoreItem{
-		NewTxOutStoreItem(12, types.TxOutItem{Chain: common.BTCChain, VaultPubKey: pk, Memo: "foo"}, 0),
-		NewTxOutStoreItem(12, types.TxOutItem{Chain: common.ETHChain, VaultPubKey: pk, Memo: "bar"}, 1),
-		NewTxOutStoreItem(13, types.TxOutItem{Chain: common.ETHChain, VaultPubKey: pk, Memo: "baz"}, 2),
-		NewTxOutStoreItem(10, types.TxOutItem{Chain: common.BTCChain, VaultPubKey: pk, Memo: "boo"}, 3),
+		NewTxOutStoreItem(12, types.TxOutItem{Chain: btcId, VaultPubKey: pk, Memo: "foo"}, 0),
+		NewTxOutStoreItem(12, types.TxOutItem{Chain: ethId, VaultPubKey: pk, Memo: "bar"}, 1),
+		NewTxOutStoreItem(13, types.TxOutItem{Chain: ethId, VaultPubKey: pk, Memo: "baz"}, 2),
+		NewTxOutStoreItem(10, types.TxOutItem{Chain: btcId, VaultPubKey: pk, Memo: "boo"}, 3),
 		spent,
 	}
 

@@ -68,26 +68,26 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	// add some logging
 	defer func() {
 		if blame.IsEmpty() {
-			kg.logger.Info().Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("tss keygen results success")
+			kg.logger.Info().Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("Tss keygen results success")
 		} else {
 			blames := make([]string, len(blame.BlameNodes))
 			for i := range blame.BlameNodes {
 				var pk common.PubKey
 				pk, err = common.NewPubKey(blame.BlameNodes[i].Pubkey)
 				if err != nil {
-					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", blame.BlameNodes[i].Pubkey).Msg("tss keygen results error")
+					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", blame.BlameNodes[i].Pubkey).Msg("Tss keygen results error")
 					continue
 				}
 				var acc cosmos.AccAddress
 				acc, err = pk.GetThorAddress()
 				if err != nil {
-					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("tss keygen results error")
+					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("Tss keygen results error")
 					continue
 				}
 				blames[i] = acc.String()
 			}
 			sort.Strings(blames)
-			kg.logger.Info().Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Str("round", blame.Round).Str("blames", strings.Join(blames, ", ")).Str("reason", blame.FailReason).Msg("tss keygen results blame")
+			kg.logger.Info().Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Str("round", blame.Round).Str("blames", strings.Join(blames, ", ")).Str("reason", blame.FailReason).Msg("Tss keygen results blame")
 		}
 	}()
 

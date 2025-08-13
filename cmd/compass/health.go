@@ -126,7 +126,7 @@ func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 
 	// get thorchain nodes
 	nodesByIP := map[string]openapi.Node{}
-	thornode := config.GetBifrost().Thorchain.ChainHost
+	thornode := config.GetBifrost().MAPRelay.ChainHost
 	url := fmt.Sprintf("http://%s/thorchain/nodes", thornode)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -235,7 +235,7 @@ func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 func (s *HealthServer) currentSigning(w http.ResponseWriter, _ *http.Request) {
 	res := make([]VaultResponse, 0)
 
-	thornode := config.GetBifrost().Thorchain.ChainHost
+	thornode := config.GetBifrost().MAPRelay.ChainHost
 	url := fmt.Sprintf("http://%s%s", thornode, mapo.AsgardVault)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -341,7 +341,7 @@ func (s *HealthServer) chainScanner(w http.ResponseWriter, _ *http.Request) {
 	wg.Wait()
 
 	// Fetch thorchain height
-	thornode := config.GetBifrost().Thorchain.ChainHost
+	thornode := config.GetBifrost().MAPRelay.ChainHost
 	url := fmt.Sprintf("http://%s/thorchain/lastblock", thornode)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -353,8 +353,8 @@ func (s *HealthServer) chainScanner(w http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			s.logger.Error().Err(err).Msg("fail to parse thornode height")
 		}
-		res[common.THORChain.String()] = ScannerResponse{
-			Chain:              common.THORChain.String(),
+		res[common.MAPChain.String()] = ScannerResponse{
+			Chain:              common.MAPChain.String(),
 			ChainHeight:        height,
 			BlockScannerHeight: -1, // TODO: pending for thorchain
 			ScannerHeightDiff:  -1,

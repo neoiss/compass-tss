@@ -77,6 +77,26 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	return b.assemblyTx(context.Background(), input, 0)
 }
 
+func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
+	//  check
+	if txOut == nil {
+		return nil, nil
+	}
+	// Here we construct tx according to method， and return tx hex bytes
+	var (
+		err   error
+		input []byte
+	)
+
+	// todo will next 2
+	input, err = b.mainAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{})
+	if err != nil {
+		return nil, fmt.Errorf("fail to pack oracleMethod: %w", err)
+	}
+
+	return b.assemblyTx(context.Background(), input, 0)
+}
+
 func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64) ([]byte, error) {
 	// estimate gas
 	gasFeeCap := b.gasPrice

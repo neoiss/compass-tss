@@ -71,20 +71,20 @@ func main() {
 	if err = m.Start(); err != nil {
 		log.Fatal().Err(err).Msg("fail to start metric collector")
 	}
-	if len(cfg.Thorchain.SignerName) == 0 {
+	if len(cfg.MAPRelay.SignerName) == 0 {
 		log.Fatal().Msg("signer name is empty")
 	}
-	if len(cfg.Thorchain.SignerPasswd) == 0 {
+	if len(cfg.MAPRelay.SignerPasswd) == 0 {
 		log.Fatal().Msg("signer password is empty")
 	}
-	kb, keyStore, err := keys.GetKeyringKeybase(cfg.Thorchain.KeystorePath, cfg.Thorchain.SignerName)
+	kb, keyStore, err := keys.GetKeyringKeybase(cfg.MAPRelay.KeystorePath, cfg.MAPRelay.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, keyStore)
+	k := keys.NewKeysWithKeybase(kb, cfg.MAPRelay.SignerName, cfg.MAPRelay.SignerPasswd, keyStore)
 	// map bridge
-	mapBridge, err := mapo.NewBridge(cfg.Thorchain, m, k)
+	mapBridge, err := mapo.NewBridge(cfg.MAPRelay, m, k)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
@@ -191,7 +191,7 @@ func main() {
 	ctx := context.Background()
 
 	// start observer notifier
-	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.Thorchain.ChainEBifrost, mapBridge, m, cfg.AttestationGossip)
+	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.MAPRelay.ChainEBifrost, mapBridge, m, cfg.AttestationGossip)
 
 	// start observer
 	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, ag)

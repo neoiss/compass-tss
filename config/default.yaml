@@ -65,7 +65,6 @@ bifrost:
       http_request_write_timeout: 30s
       max_http_request_retry: "10"
     leveldb: *default-leveldb
-    auto_observe: true
     keygen_timeout: 5m
     keysign_timeout: 45s
     party_timeout: 45s

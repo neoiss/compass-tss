@@ -90,9 +90,6 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		ret.TxArray = append(ret.TxArray, *item)
 	}
 
-	b.logger.Info().Msgf("Find filter blockHeight=%v, logs=%d", blockHeight, len(ret.TxArray))
-	time.Sleep(time.Minute)
-
 	return ret, nil
 }
 

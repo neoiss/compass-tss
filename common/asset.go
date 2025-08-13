@@ -133,14 +133,14 @@ func (a Asset) Valid() error {
 	if (a.Synth && a.Trade) || (a.Trade && a.Secured) || (a.Secured && a.Synth) {
 		return fmt.Errorf("assets can only be one of trade, synth or secured")
 	}
-	if a.Synth && a.Chain.IsTHORChain() {
-		return fmt.Errorf("synth asset cannot have chain THOR: %s", a)
+	if a.Synth && a.Chain.IsMAPChain() {
+		return fmt.Errorf("synth asset cannot have chain MAP: %s", a)
 	}
-	if a.Trade && a.Chain.IsTHORChain() {
-		return fmt.Errorf("trade asset cannot have chain THOR: %s", a)
+	if a.Trade && a.Chain.IsMAPChain() {
+		return fmt.Errorf("trade asset cannot have chain MAP: %s", a)
 	}
-	if a.Secured && a.Chain.IsTHORChain() {
-		return fmt.Errorf("secured asset cannot have chain THOR: %s", a)
+	if a.Secured && a.Chain.IsMAPChain() {
+		return fmt.Errorf("secured asset cannot have chain MAP: %s", a)
 	}
 	return nil
 }
@@ -240,10 +240,10 @@ func (a Asset) IsVaultAsset() bool {
 
 // Check if asset is a derived asset
 func (a Asset) IsDerivedAsset() bool {
-	return !a.Synth && !a.Trade && !a.Secured && a.GetChain().IsTHORChain() && !a.IsRune() && !a.Equals(TCY)
+	return !a.Synth && !a.Trade && !a.Secured && a.GetChain().IsMAPChain() && !a.IsRune() && !a.Equals(TCY)
 }
 
-// Native return native asset, only relevant on THORChain
+// Native return native asset, only relevant on MAPChain
 func (a Asset) Native() string {
 	switch {
 	case a.IsRune():
@@ -327,9 +327,9 @@ func (a Asset) IsTCY() bool {
 }
 
 // IsNative is a helper function, returns true when the asset is a native
-// asset to THORChain (ie rune, a synth, etc)
+// asset to MAPChain (ie rune, a synth, etc)
 func (a Asset) IsNative() bool {
-	return a.GetChain().IsTHORChain()
+	return a.GetChain().IsMAPChain()
 }
 
 // MarshalJSON implement Marshaler interface

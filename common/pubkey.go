@@ -239,7 +239,7 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 }
 
 func (p PubKey) GetThorAddress() (cosmos.AccAddress, error) {
-	addr, err := p.GetAddress(THORChain)
+	addr, err := p.GetAddress(MAPChain)
 	if err != nil {
 		return nil, err
 	}

@@ -33,8 +33,8 @@ func (m *MsgTradeAccountDeposit) ValidateBasic() error {
 	if m.Asset.IsEmpty() {
 		return cosmos.ErrUnknownRequest("asset cannot be empty")
 	}
-	if m.Asset.GetChain().IsTHORChain() {
-		return cosmos.ErrUnknownRequest("asset cannot be THORChain asset")
+	if m.Asset.GetChain().IsMAPChain() {
+		return cosmos.ErrUnknownRequest("asset cannot be map asset")
 	}
 	if m.Amount.IsZero() {
 		return cosmos.ErrUnknownRequest("amount cannot be zero")
