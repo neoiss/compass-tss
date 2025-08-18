@@ -6,7 +6,11 @@
     "minor": 0,
     "patch": 0
   },
-  "keywords": ["1inch", "default", "list"],
+  "keywords": [
+    "1inch",
+    "default",
+    "list"
+  ],
   "tokens": [
     {
       "address": "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c",

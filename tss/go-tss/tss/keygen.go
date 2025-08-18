@@ -84,7 +84,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		if err != nil {
 			t.logger.Error().Err(err).Msg("failed to blame nodes for joinParty failure")
 		}
-		leaderPubKey, err := conversion.GetPubKeyFromPeerID(leader)
+		leaderPubKey, err := conversion.GetPubKeyFromPeerIDByEth(leader)
 		if err != nil {
 			t.logger.Error().Err(err).Msgf("failed to convert peerID->pubkey for leader %s", leader)
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{})

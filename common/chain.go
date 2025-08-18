@@ -1,11 +1,11 @@
 package common
 
 import (
-	"errors"
+	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/cosmos/cosmos-sdk/types"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/hashicorp/go-multierror"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -26,6 +26,7 @@ const (
 	AVAXChain  = Chain("AVAX")
 	BASEChain  = Chain("BASE")
 	XRPChain   = Chain("XRP")
+	MAPChain   = Chain("MAP")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -43,6 +44,58 @@ var AllChains = [...]Chain{
 	AVAXChain,
 	BASEChain,
 	XRPChain,
+	MAPChain,
+}
+
+var chainToChainID = map[string]*big.Int{
+	// test network
+	getChainKey(BSCChain, TestNet):  big.NewInt(97),
+	getChainKey(ETHChain, TestNet):  big.NewInt(11155111),
+	getChainKey(BTCChain, TestNet):  big.NewInt(1360095883558914),
+	getChainKey(DOGEChain, TestNet): big.NewInt(1360095883558916),
+	getChainKey(AVAXChain, TestNet): big.NewInt(43113),
+	getChainKey(BASEChain, TestNet): big.NewInt(84532),
+	getChainKey(MAPChain, TestNet):  big.NewInt(212),
+
+	// main network
+	getChainKey(BSCChain, MainNet):  big.NewInt(56),
+	getChainKey(ETHChain, MainNet):  big.NewInt(1),
+	getChainKey(BTCChain, MainNet):  big.NewInt(1360095883558913),
+	getChainKey(DOGEChain, MainNet): big.NewInt(1360095883558915),
+	getChainKey(AVAXChain, MainNet): big.NewInt(43114),
+	getChainKey(BASEChain, MainNet): big.NewInt(8453),
+	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
+}
+
+var chainIDToChain = map[string]Chain{
+	// test network
+	big.NewInt(97).String():               BSCChain,
+	big.NewInt(11155111).String():         ETHChain,
+	big.NewInt(1360095883558914).String(): BTCChain,
+	big.NewInt(1360095883558916).String(): DOGEChain,
+	big.NewInt(43113).String():            AVAXChain,
+	big.NewInt(84532).String():            BASEChain,
+	big.NewInt(212).String():              MAPChain,
+
+	// main network
+	big.NewInt(56).String():               BSCChain,
+	big.NewInt(1).String():                ETHChain,
+	big.NewInt(1360095883558913).String(): BTCChain,
+	big.NewInt(1360095883558915).String(): DOGEChain,
+	big.NewInt(43114).String():            AVAXChain,
+	big.NewInt(8453).String():             BASEChain,
+	big.NewInt(22776).String():            MAPChain,
+}
+
+func GetChainName(key *big.Int) (Chain, bool) {
+	if key == nil {
+		return EmptyChain, false
+	}
+	chain, ok := chainIDToChain[key.String()]
+	if !ok {
+		return EmptyChain, false
+	}
+	return chain, ok
 }
 
 type SigningAlgo string
@@ -52,18 +105,15 @@ type Chain string
 // Chains represent a slice of Chain
 type Chains []Chain
 
+func getChainKey(chain Chain, network ChainNetwork) string {
+	return fmt.Sprintf("%v-%v", chain, network)
+}
+
 // Valid validates chain format, should consist only of uppercase letters
 func (c Chain) Valid() error {
-	if len(c) < 3 {
-		return errors.New("chain id len is less than 3")
-	}
-	if len(c) > 10 {
-		return errors.New("chain id len is more than 10")
-	}
-	for _, ch := range string(c) {
-		if ch < 'A' || ch > 'Z' {
-			return errors.New("chain id can consist only of uppercase letters")
-		}
+	_, ok := chainToChainID[getChainKey(c, CurrentChainNetwork)]
+	if !ok {
+		return UnsupportedChain
 	}
 	return nil
 }
@@ -88,19 +138,6 @@ func (c Chain) IsTHORChain() bool {
 
 func (c Chain) IsBSCChain() bool {
 	return c.Equals(BSCChain)
-}
-
-// GetEVMChains returns all "EVM" chains connected to THORChain
-// "EVM" is defined, in thornode's context, as a chain that:
-// - uses 0x as an address prefix
-// - has a "Router" Smart Contract
-func GetEVMChains() []Chain {
-	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain}
-}
-
-// GetUTXOChains returns all "UTXO" chains connected to THORChain.
-func GetUTXOChains() []Chain {
-	return []Chain{BTCChain, LTCChain, BCHChain, DOGEChain}
 }
 
 // IsEVM returns true if given chain is an EVM chain.
@@ -134,8 +171,15 @@ func (c Chain) IsEmpty() bool {
 
 // String implement fmt.Stringer
 func (c Chain) String() string {
-	// convert it to upper case again just in case someone created a ticker via Chain("rune")
 	return strings.ToUpper(string(c))
+}
+
+func (c Chain) ChainID() (*big.Int, error) {
+	id, ok := chainToChainID[getChainKey(c, CurrentChainNetwork)]
+	if !ok {
+		return nil, UnsupportedChain
+	}
+	return id, nil
 }
 
 // GetSigningAlgo get the signing algorithm for the given chain
@@ -226,26 +270,26 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		return "0x"
 	}
 	switch cn {
-	case MockNet:
+	case TestNet:
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		case THORChain:
-			// TODO update this to use mocknet address prefix
-			return types.GetConfig().GetBech32AccountAddrPrefix()
+		//case THORChain:
+		//	// TODO update this to use mocknet address prefix
+		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
-			return chaincfg.RegressionNetParams.Bech32HRPSegwit
+			return chaincfg.TestNet3Params.Bech32HRPSegwit
 		case LTCChain:
-			return ltcchaincfg.RegressionNetParams.Bech32HRPSegwit
+			return ltcchaincfg.TestNet4Params.Bech32HRPSegwit
 		case DOGEChain:
-			return dogchaincfg.RegressionNetParams.Bech32HRPSegwit
+			return dogchaincfg.TestNet3Params.Bech32HRPSegwit
 		}
-	case MainNet, StageNet:
+	case MainNet:
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		case THORChain:
-			return types.GetConfig().GetBech32AccountAddrPrefix()
+		//case THORChain:
+		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.MainNetParams.Bech32HRPSegwit
 		case LTCChain:
@@ -336,6 +380,8 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 		return 6_000
 	case BASEChain:
 		return 2_000
+	case MAPChain:
+		return 5_000
 	case XRPChain:
 		return 4_000 // approx 3-5 seconds
 	default:
@@ -358,6 +404,19 @@ func (c Chain) InboundNotes() string {
 	default:
 		return ""
 	}
+}
+
+// GetEVMChains returns all "EVM" chains connected to THORChain
+// "EVM" is defined, in thornode's context, as a chain that:
+// - uses 0x as an address prefix
+// - has a "Router" Smart Contract
+func GetEVMChains() []Chain {
+	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain}
+}
+
+// GetUTXOChains returns all "UTXO" chains connected to THORChain.
+func GetUTXOChains() []Chain {
+	return []Chain{BTCChain, LTCChain, BCHChain, DOGEChain}
 }
 
 func NewChains(raw []string) (Chains, error) {

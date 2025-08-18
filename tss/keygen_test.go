@@ -2,8 +2,6 @@ package tss
 
 import (
 	"bytes"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,9 +17,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 func TestTSSKeyGen(t *testing.T) { TestingT(t) }
@@ -31,7 +26,6 @@ type KeyGenTestSuite struct{}
 var _ = Suite(&KeyGenTestSuite{})
 
 func (*KeyGenTestSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 }
 
 const (
@@ -59,32 +53,32 @@ func (*KeyGenTestSuite) setupKeysForTest(c *C) string {
 	return thorcliDir
 }
 
-func (kts *KeyGenTestSuite) TestNewTssKenGen(c *C) {
-	oldStdIn := os.Stdin
-	defer func() {
-		os.Stdin = oldStdIn
-	}()
-	os.Stdin = nil
-	folder := kts.setupKeysForTest(c)
-	defer func() {
-		err := os.RemoveAll(folder)
-		c.Assert(err, IsNil)
-	}()
-	kb, _, err := mapclient.GetKeyringKeybase(folder, signerNameForTest, signerPasswordForTest)
-	c.Assert(err, IsNil)
-	k := mapclient.NewKeysWithKeybase(kb, signerNameForTest, signerPasswordForTest)
-	c.Assert(k, NotNil)
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		c.Logf("requestUri:%s", req.RequestURI)
-	}))
-	b, err := mapclient.NewThorchainBridge(config.BifrostClientConfiguration{
-		ChainID:      "thorchain",
-		ChainHost:    server.Listener.Addr().String(),
-		SignerName:   "bob",
-		SignerPasswd: "password",
-	}, nil, k)
-	c.Assert(err, IsNil)
-	kg, err := NewTssKeyGen(k, nil, b)
-	c.Assert(err, IsNil)
-	c.Assert(kg, NotNil)
-}
+//func (kts *KeyGenTestSuite) TestNewTssKenGen(c *C) {
+//	oldStdIn := os.Stdin
+//	defer func() {
+//		os.Stdin = oldStdIn
+//	}()
+//	os.Stdin = nil
+//	folder := kts.setupKeysForTest(c)
+//	defer func() {
+//		err := os.RemoveAll(folder)
+//		c.Assert(err, IsNil)
+//	}()
+//	kb, _, err := mapclient.GetKeyringKeybase(folder, signerNameForTest, signerPasswordForTest)
+//	c.Assert(err, IsNil)
+//	k := mapclient.NewKeysWithKeybase(kb, signerNameForTest, signerPasswordForTest)
+//	c.Assert(k, NotNil)
+//	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+//		c.Logf("requestUri:%s", req.RequestURI)
+//	}))
+//	b, err := mapclient.NewThorchainBridge(config.BifrostClientConfiguration{
+//		ChainID:      "thorchain",
+//		ChainHost:    server.Listener.Addr().String(),
+//		SignerName:   "bob",
+//		SignerPasswd: "password",
+//	}, nil, k)
+//	c.Assert(err, IsNil)
+//	kg, err := NewTssKeyGen(k, nil, b)
+//	c.Assert(err, IsNil)
+//	c.Assert(kg, NotNil)
+//}

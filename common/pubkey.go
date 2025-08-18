@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -11,21 +12,17 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/bech32"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/eager7/dogutil"
-	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
-	"github.com/ltcsuite/ltcutil"
-
+	eth "github.com/ethereum/go-ethereum/crypto"
 	bchchaincfg "github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-
-	"github.com/cometbft/cometbft/crypto"
-	eth "github.com/ethereum/go-ethereum/crypto"
-
-	xrpkm "gitlab.com/thorchain/thornode/v3/bifrost/pkg/chainclients/xrp/keymanager"
-
+	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcutil"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
+	//xrpkm "github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
 )
 
 // PubKey used in thorchain, it should be bech32 encoded string
@@ -48,20 +45,26 @@ var (
 // PubKey
 ////////////////////////////////////////////////////////////////////////////////////////
 
+// NewPubKeyByEth create a new instance of PubKey
+// key is bech32 encoded string
+func NewPubKeyByEth(key string) (PubKey, error) {
+	if len(key) == 0 {
+		return EmptyPubKey, nil
+	}
+
+	return PubKey(key), nil
+}
+
 // NewPubKey create a new instance of PubKey
 // key is bech32 encoded string
 func NewPubKey(key string) (PubKey, error) {
 	if len(key) == 0 {
 		return EmptyPubKey, nil
 	}
-	_, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, key)
-	if err != nil {
-		return EmptyPubKey, fmt.Errorf("%s is not bech32 encoded pub key,err : %w", key, err)
-	}
+
 	return PubKey(key), nil
 }
 
-// NewPubKeyFromCrypto
 func NewPubKeyFromCrypto(pk crypto.PubKey) (PubKey, error) {
 	tmp, err := codec.FromCmtPubKeyInterface(pk)
 	if err != nil {
@@ -90,6 +93,7 @@ func (p PubKey) String() string {
 }
 
 func (p PubKey) Secp256K1() (*btcec.PublicKey, error) {
+	// todo handler
 	pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 	if err != nil {
 		return nil, err
@@ -125,12 +129,13 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	var addressString string
 	switch chain {
 	case XRPChain:
-		pk, err := p.Secp256K1()
-		if err != nil {
-			return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
-		}
-		addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
-	case GAIAChain, THORChain:
+	//	// todo  will next 50
+	//	pk, err := p.Secp256K1()
+	//	if err != nil {
+	//		return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
+	//	}
+	//	addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
+	case GAIAChain:
 		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 		if err != nil {
 			return NoAddress, err
@@ -141,18 +146,20 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		addressString = str
 	case BTCChain:
-		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
+		pubKey, err := hex.DecodeString(p.String())
 		if err != nil {
-			return NoAddress, err
+			return NoAddress, fmt.Errorf("fail to encode pub key, err: %w", err)
 		}
 		var net *chaincfg.Params
 		switch chainNetwork {
-		case MockNet:
-			net = &chaincfg.RegressionNetParams
-		case MainNet, StageNet:
+		case TestNet:
+			net = &chaincfg.TestNet3Params
+		case MainNet:
 			net = &chaincfg.MainNetParams
 		}
-		addr, err := btcutil.NewAddressWitnessPubKeyHash(pk.Address().Bytes(), net)
+
+		hash160 := btcutil.Hash160(pubKey)
+		addr, err := btcutil.NewAddressWitnessPubKeyHash(hash160, net)
 		if err != nil {
 			return NoAddress, fmt.Errorf("fail to bech32 encode the address, err: %w", err)
 		}
@@ -164,9 +171,9 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		var net *ltcchaincfg.Params
 		switch chainNetwork {
-		case MockNet:
-			net = &ltcchaincfg.RegressionNetParams
-		case MainNet, StageNet:
+		case TestNet:
+			net = &ltcchaincfg.TestNet4Params
+		case MainNet:
 			net = &ltcchaincfg.MainNetParams
 		}
 		addr, err := ltcutil.NewAddressWitnessPubKeyHash(pk.Address().Bytes(), net)
@@ -181,9 +188,9 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		var net *dogchaincfg.Params
 		switch chainNetwork {
-		case MockNet:
-			net = &dogchaincfg.RegressionNetParams
-		case MainNet, StageNet:
+		case TestNet:
+			net = &dogchaincfg.TestNet3Params
+		case MainNet:
 			net = &dogchaincfg.MainNetParams
 		}
 		addr, err := dogutil.NewAddressPubKeyHash(pk.Address().Bytes(), net)
@@ -198,9 +205,9 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		var net *bchchaincfg.Params
 		switch chainNetwork {
-		case MockNet:
-			net = &bchchaincfg.RegressionNetParams
-		case MainNet, StageNet:
+		case TestNet:
+			net = &bchchaincfg.TestNet3Params
+		case MainNet:
 			net = &bchchaincfg.MainNetParams
 		}
 		addr, err := bchutil.NewAddressPubKeyHash(pk.Address().Bytes(), net)

@@ -1,22 +1,197 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "authority",
+        "type": "address"
+      }
+    ],
+    "name": "AccessManagedInvalidAuthority",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "delay",
+        "type": "uint32"
+      }
+    ],
+    "name": "AccessManagedRequiredDelay",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "AccessManagedUnauthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "ERC1967InvalidImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "ERC1967NonPayable",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "FailedCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "UUPSUnauthorizedCallContext",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "slot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "UUPSUnsupportedProxiableUUID",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "order_executed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "transfer_in_failed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "transfer_out_failed",
+    "type": "error"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "to",
+        "name": "authority",
+        "type": "address"
+      }
+    ],
+    "name": "AuthorityUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "from",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "asset",
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "token",
         "type": "address"
       },
       {
@@ -27,9 +202,9 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
       }
     ],
     "name": "Deposit",
@@ -39,21 +214,53 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "address",
-        "name": "oldVault",
+        "name": "account",
         "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "newVault",
+        "name": "from",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "asset",
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "token",
         "type": "address"
       },
       {
@@ -64,9 +271,64 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "tochain",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "to",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "Swap",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "fromVault",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "toVault",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct EVMTokenAllowance[]",
+        "name": "allowances",
+        "type": "tuple[]"
       }
     ],
     "name": "TransferAllowance",
@@ -76,21 +338,21 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "vault",
         "type": "address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
         "indexed": false,
         "internalType": "address",
-        "name": "asset",
+        "name": "token",
         "type": "address"
       },
       {
@@ -101,9 +363,15 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "result",
+        "type": "bool"
       }
     ],
     "name": "TransferOut",
@@ -113,49 +381,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "vault",
-        "type": "address"
-      },
-      {
         "indexed": false,
         "internalType": "address",
-        "name": "target",
+        "name": "account",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "finalAsset",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
       }
     ],
-    "name": "TransferOutAndCall",
+    "name": "Unpaused",
     "type": "event"
   },
   {
@@ -164,53 +396,53 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "oldVault",
+        "name": "implementation",
         "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newVault",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "asset",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct AvaxRouter.Coin[]",
-        "name": "coins",
-        "type": "tuple[]"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
       }
     ],
-    "name": "VaultTransfer",
+    "name": "Upgraded",
     "type": "event"
   },
   {
     "inputs": [
+
+    ],
+    "name": "UPGRADE_INTERFACE_VERSION",
+    "outputs": [
       {
-        "internalType": "address payable",
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "authority",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "vault",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "asset",
+        "name": "token",
         "type": "address"
       },
       {
@@ -219,181 +451,35 @@
         "type": "uint256"
       },
       {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
       }
     ],
     "name": "deposit",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "outputs": [
       {
-        "internalType": "address payable",
-        "name": "vault",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "asset",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "expiration",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
       }
     ],
-    "name": "depositWithExpiry",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "router",
-        "type": "address"
-      },
-      {
-        "internalType": "address payable",
-        "name": "asgard",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "asset",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct AvaxRouter.Coin[]",
-        "name": "coins",
-        "type": "tuple[]"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      }
-    ],
-    "name": "returnVaultAssets",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "router",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "newVault",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "asset",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      }
-    ],
-    "name": "transferAllowance",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "to",
-        "type": "address"
-      },
+
+    ],
+    "name": "getImplementation",
+    "outputs": [
       {
         "internalType": "address",
-        "name": "asset",
+        "name": "",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
       }
     ],
-    "name": "transferOut",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "target",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "finalToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      }
-    ],
-    "name": "transferOutAndCall",
-    "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -409,7 +495,7 @@
         "type": "address"
       }
     ],
-    "name": "vaultAllowance",
+    "name": "getVaultAllowance",
     "outputs": [
       {
         "internalType": "uint256",
@@ -418,6 +504,277 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_defaultAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [
+
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "isConsumingScheduledOp",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isOrderExecuted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "proxiableUUID",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newAuthority",
+        "type": "address"
+      }
+    ],
+    "name": "setAuthority",
+    "outputs": [
+
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tochain",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "to",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "swap",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "toVault",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct EVMTokenAllowance[]",
+        "name": "allowances",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "transferAllowance",
+    "outputs": [
+
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferOut",
+    "outputs": [
+
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "transferOutCall",
+    "outputs": [
+
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+
+    ],
+    "name": "trigger",
+    "outputs": [
+
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "upgradeToAndCall",
+    "outputs": [
+
+    ],
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

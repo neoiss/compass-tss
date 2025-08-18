@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -23,11 +24,9 @@ import (
 
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/common/tokenlist"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -35,9 +34,9 @@ import (
 	evmtypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	. "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/aggregators"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	"github.com/mapprotocol/compass-tss/x/aggregators"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -57,8 +56,8 @@ type EVMScanner struct {
 	ethRpc                *evm.EthRPC
 	blockMetaAccessor     evm.BlockMetaAccessor
 	globalErrataQueue     chan<- stypes.ErrataBlock
-	globalNetworkFeeQueue chan<- common.NetworkFee
-	bridge                mapclient.ThorchainBridge
+	globalNetworkFeeQueue chan<- stypes.NetworkFee
+	bridge                shareTypes.Bridge
 	pubkeyMgr             pubkeymanager.PubKeyValidator
 	eipSigner             etypes.Signer
 	currentBlockHeight    int64
@@ -68,9 +67,7 @@ type EVMScanner struct {
 	whitelistContracts    []common.Address
 	signerCacheManager    *signercache.CacheManager
 	tokenManager          *evm.TokenManager
-
-	vaultABI *abi.ABI
-	erc20ABI *abi.ABI
+	gatewayABI, erc20ABI  *abi.ABI
 }
 
 // NewEVMScanner create a new instance of EVMScanner.
@@ -79,7 +76,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	chainID *big.Int,
 	ethClient *ethclient.Client,
 	ethRpc *evm.EthRPC,
-	bridge mapclient.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
 	solvencyReporter SolvencyReporter,
@@ -113,7 +110,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	}
 
 	// load ABIs
-	vaultABI, erc20ABI, err := evm.GetContractABI(routerContractABI, erc20ContractABI)
+	vaultABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create contract abi: %w", err)
 	}
@@ -147,7 +144,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 		cfg.HTTPRequestTimeout,
 		whitelistTokens,
 		ethClient,
-		routerContractABI,
+		gatewayContractABI,
 		erc20ContractABI,
 	)
 	if err != nil {
@@ -164,7 +161,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 
 	// load whitelist contracts for the chain
 	whitelistContracts := []common.Address{}
-	for _, agg := range aggregators.DexAggregators() {
+	for _, agg := range aggregators.DexAggregators(common.LatestVersion) {
 		if agg.Chain.Equals(cfg.ChainID) {
 			whitelistContracts = append(whitelistContracts, common.Address(agg.Address))
 		}
@@ -183,7 +180,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 		gasPriceChanged:      false,
 		blockMetaAccessor:    blockMetaAccessor,
 		bridge:               bridge,
-		vaultABI:             vaultABI,
+		gatewayABI:           vaultABI,
 		erc20ABI:             erc20ABI,
 		eipSigner:            etypes.NewLondonSigner(chainID),
 		pubkeyMgr:            pubkeyMgr,
@@ -207,8 +204,8 @@ func (e *EVMScanner) GetGasPrice() *big.Int {
 }
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
-func (e *EVMScanner) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	return e.cfg.MaxGasLimit, e.lastReportedGasPrice / 1e10 // 1e18 -> 1e8
+func (e *EVMScanner) GetNetworkFee() (transactionSize, txSwapGasLimit, transactionFeeRate uint64) {
+	return e.cfg.MaxGasLimit, e.cfg.MaxSwapGasLimit, e.lastReportedGasPrice / 1e10 // 1e18 -> 1e8
 }
 
 // GetNonce returns the nonce (including pending) for the given address.
@@ -232,49 +229,64 @@ func (e *EVMScanner) GetTokens() ([]*evmtypes.TokenMeta, error) {
 }
 
 // FetchTxs extracts all relevant transactions from the block at the provided height.
-func (e *EVMScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
-	// log height every 100 blocks
-	if height%100 == 0 {
-		e.logger.Info().Int64("height", height).Msg("fetching txs for height")
+func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, error) {
+	// log currentHeight every 100 blocks
+	if currentHeight%100 == 0 {
+		e.logger.Info().Int64("currentHeight", currentHeight).Msg("Fetching txs for currentHeight")
 	}
 
-	// process all transactions in the block
-	e.currentBlockHeight = height
-	block, err := e.ethRpc.GetBlock(height)
+	logs, err := e.ethClient.FilterLogs(context.Background(), ethereum.FilterQuery{
+		FromBlock: big.NewInt(currentHeight),
+		ToBlock:   big.NewInt(currentHeight),
+		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
+		Topics: [][]ecommon.Hash{{
+			constants.EventOfDeposit.GetTopic(),
+			constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
+			constants.EventOfTransferOut.GetTopic(),
+			constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+		}},
+	})
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	txIn, err := e.processBlock(block)
+
+	// process all transactions in the block
+	block, err := e.ethRpc.GetBlock(currentHeight)
 	if err != nil {
-		e.logger.Error().Err(err).Int64("height", height).Msg("failed to search tx in block")
-		return stypes.TxIn{}, fmt.Errorf("failed to process block: %d, err:%w", height, err)
+		return stypes.TxIn{}, err
+	}
+	txIn, err := e.processBlock(block, logs)
+	if err != nil {
+		e.logger.Error().Err(err).Int64("currentHeight", currentHeight).Msg("failed to search tx in block")
+		return stypes.TxIn{}, fmt.Errorf("failed to process block: %d, err:%w", currentHeight, err)
 	}
 
+	e.currentBlockHeight = currentHeight
 	// if reorgs are possible on this chain store block meta for handling
 	if e.cfg.MaxReorgRescanBlocks > 0 {
 		blockMeta := evmtypes.NewBlockMeta(block.Header(), txIn)
-		if err = e.blockMetaAccessor.SaveBlockMeta(height, blockMeta); err != nil {
-			e.logger.Err(err).Int64("height", height).Msg("fail to save block meta")
+		if err = e.blockMetaAccessor.SaveBlockMeta(currentHeight, blockMeta); err != nil {
+			e.logger.Err(err).Int64("currentHeight", currentHeight).Msg("fail to save block meta")
 		}
-		pruneHeight := height - e.cfg.MaxReorgRescanBlocks
+		pruneHeight := currentHeight - e.cfg.MaxReorgRescanBlocks
 		if pruneHeight > 0 {
 			defer func() {
 				if err = e.blockMetaAccessor.PruneBlockMeta(pruneHeight); err != nil {
-					e.logger.Err(err).Int64("height", height).Msg("fail to prune block meta")
+					e.logger.Err(err).Int64("currentHeight", currentHeight).Msg("fail to prune block meta")
 				}
 			}()
 		}
 	}
 
 	// skip reporting network fee and solvency if block more than flexibility blocks from tip
-	if chainHeight-height > e.cfg.ObservationFlexibilityBlocks {
+	if latestHeight-currentHeight > e.cfg.ObservationFlexibilityBlocks {
 		return txIn, nil
 	}
 
 	// report network fee and solvency
-	e.reportNetworkFee(height)
+	e.reportNetworkFee(currentHeight)
 	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(height); err != nil {
+		if err = e.solvencyReporter(currentHeight); err != nil {
 			e.logger.Err(err).Msg("failed to report Solvency info to THORNode")
 		}
 	}
@@ -284,7 +296,7 @@ func (e *EVMScanner) FetchTxs(height, chainHeight int64) (stypes.TxIn, error) {
 
 // --------------------------------- extraction ---------------------------------
 
-func (e *EVMScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
+func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	txIn := stypes.TxIn{
 		Chain:    e.cfg.ChainID,
 		TxArray:  nil,
@@ -293,7 +305,7 @@ func (e *EVMScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
 	}
 
 	// skip empty blocks
-	if block.Transactions().Len() == 0 {
+	if len(logs) == 0 {
 		return txIn, nil
 	}
 
@@ -322,7 +334,7 @@ func (e *EVMScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
 	}
 
 	// collect all relevant transactions from the block
-	txInBlock, err := e.getTxIn(block)
+	txInBlock, err := e.getTxIn(block, logs)
 	if err != nil {
 		return txIn, err
 	}
@@ -332,7 +344,7 @@ func (e *EVMScanner) processBlock(block *etypes.Block) (stypes.TxIn, error) {
 	return txIn, nil
 }
 
-func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block) (stypes.TxIn, error) {
+func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	// Use custom method name as it varies between implementation
 	// It should be akin to: "fetch all transaction receipts within a block", e.g. getBlockReceipts
 	// This has shown to be more efficient than getTransactionReceipt in a batch call
@@ -343,49 +355,30 @@ func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block) (stype
 	}
 
 	// tx lookup for compatibility with shared evm functions
-	txByHash := make(map[string]*etypes.Transaction)
-	for _, tx := range block.Transactions() {
-		if tx == nil {
-			continue
-		}
-
-		// skip blob transactions
-		if tx.Type() == etypes.BlobTxType {
-			continue
-		}
-
+	logByTxHash := make(map[string]*etypes.Log)
+	for _, ele := range logs {
 		// best effort remove the tx from the signed txs (ok if it does not exist)
-		if err := e.blockMetaAccessor.RemoveSignedTxItem(tx.Hash().String()); err != nil {
-			e.logger.Err(err).Str("tx hash", tx.Hash().String()).Msg("failed to remove signed tx item")
+		if err := e.blockMetaAccessor.RemoveSignedTxItem(ele.TxHash.String()); err != nil {
+			e.logger.Err(err).Str("tx hash", ele.TxHash.String()).Msg("Failed to remove signed tx item")
 		}
 
-		txByHash[tx.Hash().String()] = tx
+		tmp := ele
+		logByTxHash[ele.TxHash.String()] = &tmp
 	}
 
 	var receipts []*etypes.Receipt
 	blockNumStr := hexutil.EncodeBig(block.Number())
-	err := e.ethClient.Client().Call(
-		&receipts,
-		method,
-		blockNumStr,
-	)
+	err := e.ethClient.Client().Call(&receipts, method, blockNumStr)
 	if err != nil {
-		e.logger.Error().Err(err).Msg("failed to fetch block receipts")
+		e.logger.Error().Err(err).Msg("Failed to fetch block receipts")
 		return stypes.TxIn{}, err
 	}
 
 	for _, receipt := range receipts {
-		txForReceipt, ok := txByHash[receipt.TxHash.String()]
+		txForReceipt, ok := logByTxHash[receipt.TxHash.String()]
 		if !ok {
-			e.logger.Warn().
-				Str("txHash", receipt.TxHash.String()).
-				Uint64("blockNumber", block.NumberU64()).
-				Msg("receipt tx not in block.Transactions or nil, ignoring...")
-			continue
-		}
-
-		// tx without to address is not valid
-		if txForReceipt.To() == nil {
+			e.logger.Debug().Str("txHash", receipt.TxHash.String()).Uint64("blockNumber", block.NumberU64()).
+				Msg("Receipt not log, ignoring...")
 			continue
 		}
 
@@ -409,7 +402,7 @@ func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block) (stype
 		}
 
 		// add the txInItem to the txInbound
-		txInItem.BlockHeight = block.Number().Int64()
+		txInItem.Height = block.Number()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
 	}
 
@@ -420,12 +413,12 @@ func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block) (stype
 	return txInbound, nil
 }
 
-func (e *EVMScanner) getTxIn(block *etypes.Block) (stypes.TxIn, error) {
+func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	// CHANGEME: if an EVM chain supports some way of fetching all transaction receipts
 	// within a block, register it here.
 	switch e.cfg.ChainID {
 	case common.BASEChain, common.BSCChain:
-		return e.getTxInOptimized("eth_getBlockReceipts", block)
+		return e.getTxInOptimized("eth_getBlockReceipts", block, logs)
 	}
 
 	txInbound := stypes.TxIn{
@@ -435,91 +428,68 @@ func (e *EVMScanner) getTxIn(block *etypes.Block) (stypes.TxIn, error) {
 	}
 
 	// collect all relevant transactions from the block into batches
-	batches := [][]*etypes.Transaction{}
-	batch := []*etypes.Transaction{}
-	for _, tx := range block.Transactions() {
-		if tx == nil || tx.To() == nil {
-			continue
-		}
-
-		// skip blob transactions
-		if tx.Type() == etypes.BlobTxType {
-			continue
-		}
-
+	var rpcBatch []rpc.BatchElem
+	for _, ele := range logs {
 		// best effort remove the tx from the signed txs (ok if it does not exist)
-		if err := e.blockMetaAccessor.RemoveSignedTxItem(tx.Hash().String()); err != nil {
-			e.logger.Err(err).Str("tx hash", tx.Hash().String()).Msg("failed to remove signed tx item")
+		if err := e.blockMetaAccessor.RemoveSignedTxItem(ele.TxHash.String()); err != nil {
+			e.logger.Err(err).Str("tx hash", ele.TxHash.String()).Msg("failed to remove signed tx item")
 		}
 
-		batch = append(batch, tx)
-		if len(batch) >= e.cfg.TransactionBatchSize {
-			batches = append(batches, batch)
-			batch = []*etypes.Transaction{}
-		}
-	}
-	if len(batch) > 0 {
-		batches = append(batches, batch)
+		rpcBatch = append(rpcBatch, rpc.BatchElem{
+			Method: "eth_getTransactionReceipt",
+			Args:   []interface{}{ele.TxHash.String()},
+			Result: &etypes.Receipt{},
+		})
 	}
 
 	// process all batches
-	for _, batch := range batches {
-		// create the batch rpc request
-		var rpcBatch []rpc.BatchElem
-		for _, tx := range batch {
-			rpcBatch = append(rpcBatch, rpc.BatchElem{
-				Method: "eth_getTransactionReceipt",
-				Args:   []interface{}{tx.Hash().String()},
-				Result: &etypes.Receipt{},
-			})
-		}
-
+	for idx, ele := range logs {
 		// send the batch rpc request
 		err := e.ethClient.Client().BatchCall(rpcBatch)
 		if err != nil {
-			e.logger.Error().Int("size", len(batch)).Err(err).Msg("failed to batch fetch transaction receipts")
+			e.logger.Error().Int("size", len(rpcBatch)).Err(err).Msg("Failed to batch fetch transaction receipts")
 			return stypes.TxIn{}, err
 		}
 
 		// process the batch rpc response
-		for i, elem := range rpcBatch {
-			if elem.Error != nil {
-				if !errors.Is(err, ethereum.NotFound) {
-					e.logger.Error().Err(elem.Error).Msg("failed to fetch transaction receipt")
-				}
-				continue
+		batchEle := rpcBatch[idx]
+		if batchEle.Error != nil {
+			if !errors.Is(err, ethereum.NotFound) {
+				e.logger.Error().Err(batchEle.Error).Msg("Failed to fetch transaction receipt")
 			}
-
-			// get the receipt
-			receipt, ok := elem.Result.(*etypes.Receipt)
-			if !ok {
-				e.logger.Error().Msg("failed to cast to transaction receipt")
-				continue
-			}
-
-			// extract the txInItem
-			var txInItem *stypes.TxInItem
-			txInItem, err = e.receiptToTxInItem(batch[i], receipt)
-			if err != nil {
-				e.logger.Error().Err(err).Msg("failed to convert receipt to txInItem")
-				continue
-			}
-
-			// skip invalid items
-			if txInItem == nil {
-				continue
-			}
-			if len(txInItem.To) == 0 {
-				continue
-			}
-			if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
-				continue
-			}
-
-			// add the txInItem to the txInbound
-			txInItem.BlockHeight = block.Number().Int64()
-			txInbound.TxArray = append(txInbound.TxArray, txInItem)
+			continue
 		}
+
+		// get the receipt
+		receipt, ok := batchEle.Result.(*etypes.Receipt)
+		if !ok {
+			e.logger.Error().Msg("Failed to cast to transaction receipt")
+			continue
+		}
+
+		// extract the txInItem
+		var txInItem *stypes.TxInItem
+		tmp := ele
+		txInItem, err = e.receiptToTxInItem(&tmp, receipt)
+		if err != nil {
+			e.logger.Error().Err(err).Msg("Failed to convert receipt to txInItem")
+			continue
+		}
+
+		// skip invalid items
+		if txInItem == nil {
+			continue
+		}
+		if len(txInItem.To) == 0 {
+			continue
+		}
+		if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
+			continue
+		}
+
+		// add the txInItem to the txInbound
+		txInItem.Height = block.Number()
+		txInbound.TxArray = append(txInbound.TxArray, txInItem)
 	}
 
 	if len(txInbound.TxArray) == 0 {
@@ -532,65 +502,40 @@ func (e *EVMScanner) getTxIn(block *etypes.Block) (stypes.TxIn, error) {
 // TODO: This is only used by unit tests now, but covers receiptToTxInItem internally -
 // refactor so this logic is only in test code.
 func (e *EVMScanner) getTxInItem(tx *etypes.Transaction) (*stypes.TxInItem, error) {
-	if tx == nil || tx.To() == nil {
-		return nil, nil
-	}
-
-	receipt, err := e.ethRpc.GetReceipt(tx.Hash().Hex())
-	if err != nil {
-		if errors.Is(err, ethereum.NotFound) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
-	}
-
-	return e.receiptToTxInItem(tx, receipt)
+	//if tx == nil || tx.To() == nil {
+	//	return nil, nil
+	//}
+	//
+	//receipt, err := e.ethRpc.GetReceipt(tx.Hash().Hex())
+	//if err != nil {
+	//	if errors.Is(err, ethereum.NotFound) {
+	//		return nil, nil
+	//	}
+	//	return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
+	//}
+	//
+	//return e.receiptToTxInItem(tx, receipt)
+	return nil, nil
 }
 
-func (e *EVMScanner) receiptToTxInItem(tx *etypes.Transaction, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
-	if receipt.Status != 1 {
-		e.logger.Debug().Stringer("txid", tx.Hash()).Uint64("status", receipt.Status).Msg("tx failed")
+func (e *EVMScanner) receiptToTxInItem(ll *etypes.Log, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
+	if receipt.Status != etypes.ReceiptStatusSuccessful {
+		e.logger.Debug().Stringer("txid", ll.TxHash).Uint64("status", receipt.Status).Msg("tx failed")
 
 		// remove failed transactions from signer cache so they are retried
 		if e.signerCacheManager != nil {
-			e.signerCacheManager.RemoveSigned(tx.Hash().String())
+			e.signerCacheManager.RemoveSigned(ll.TxHash.String())
 		}
 
-		return e.getTxInFromFailedTransaction(tx, receipt), nil
+		return nil, nil
+		//return e.getTxInFromFailedTransaction(tx, receipt), nil
 	}
 
-	disableWhitelist, err := e.bridge.GetMimir(constants.EVMDisableContractWhitelist.String())
+	ret, err := e.getTxInFromSmartContract(ll, receipt, 0)
 	if err != nil {
-		e.logger.Err(err).Msgf("fail to get %s", constants.EVMDisableContractWhitelist.String())
-		disableWhitelist = 0
+		return nil, err
 	}
-
-	if disableWhitelist == 1 {
-		// parse tx without whitelist
-		destination := tx.To()
-		isToVault, _ := e.pubkeyMgr.IsValidPoolAddress(destination.String(), e.cfg.ChainID)
-
-		switch {
-		case isToVault:
-			// Tx to a vault
-			return e.getTxInFromTransaction(tx, receipt)
-		case e.isToValidContractAddress(destination, true):
-			// Deposit directly to router
-			return e.getTxInFromSmartContract(tx, receipt, 0)
-		case evm.IsSmartContractCall(tx, receipt):
-			// Tx to a different contract, attempt to parse with max allowable logs
-			return e.getTxInFromSmartContract(tx, receipt, int64(e.cfg.MaxContractTxLogs))
-		default:
-			// Tx to a non-contract or vault address
-			return e.getTxInFromTransaction(tx, receipt)
-		}
-	} else {
-		// parse tx with whitelist
-		if e.isToValidContractAddress(tx.To(), true) {
-			return e.getTxInFromSmartContract(tx, receipt, 0)
-		}
-		return e.getTxInFromTransaction(tx, receipt)
-	}
+	return ret, nil
 }
 
 // --------------------------------- reorg ---------------------------------
@@ -636,11 +581,28 @@ func (e *EVMScanner) processReorg(header *etypes.Header) ([]stypes.TxIn, error) 
 			e.logger.Err(err).Int64("height", rescanHeight).Msg("fail to get block")
 			continue
 		}
-		if block.Transactions().Len() == 0 {
+		logs, err := e.ethClient.FilterLogs(context.Background(), ethereum.FilterQuery{
+			FromBlock: big.NewInt(rescanHeight),
+			ToBlock:   big.NewInt(rescanHeight),
+			Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
+			Topics: [][]ecommon.Hash{{
+				constants.EventOfDeposit.GetTopic(),
+				constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
+				constants.EventOfTransferOut.GetTopic(),
+				constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+			}},
+		})
+		if err != nil {
+			e.logger.Err(err).Int64("height", rescanHeight).Msg("fail to get logs")
+			continue
+		}
+
+		if len(logs) == 0 {
+			e.logger.Debug().Int64("height", rescanHeight).Msg("processReorg: no logs")
 			continue
 		}
 		var txIn stypes.TxIn
-		txIn, err = e.getTxIn(block)
+		txIn, err = e.getTxIn(block, logs)
 		if err != nil {
 			e.logger.Err(err).Int64("height", rescanHeight).Msg("fail to extract txs from block")
 			continue
@@ -759,7 +721,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	e.m.GetCounter(metrics.GasPriceChange(e.cfg.ChainID)).Inc()
 }
 
-// reportNetworkFee reports current network fee to thornode
+// reportNetworkFee reports current network fee to map
 func (e *EVMScanner) reportNetworkFee(height int64) {
 	gasPrice := e.GetGasPrice()
 
@@ -788,12 +750,14 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 	// gas price to 1e8 from 1e18
 	tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10))
 
-	// post to thorchain
-	e.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           e.cfg.ChainID,
-		Height:          height,
-		TransactionSize: e.cfg.MaxGasLimit,
-		TransactionRate: tcGasPrice.Uint64(),
+	// post to map
+	cId, _ := e.cfg.ChainID.ChainID()
+	e.globalNetworkFeeQueue <- stypes.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     e.cfg.MaxGasLimit,
+		TransactionSwapSize: e.cfg.MaxSwapGasLimit,
+		TransactionRate:     tcGasPrice.Uint64(),
 	}
 
 	e.lastReportedGasPrice = gasPrice.Uint64()
@@ -811,7 +775,7 @@ func (e *EVMScanner) getTxInFromTransaction(tx *etypes.Transaction, receipt *ety
 		return nil, fmt.Errorf("failed to get sender: %w", err)
 	}
 	txInItem.Sender = strings.ToLower(sender.String())
-	txInItem.To = strings.ToLower(tx.To().String())
+	txInItem.To = tx.To().Bytes()
 
 	// on native transactions the memo is hex encoded in the data field
 	data := tx.Data()
@@ -825,27 +789,7 @@ func (e *EVMScanner) getTxInFromTransaction(tx *etypes.Transaction, receipt *ety
 		}
 	}
 
-	nativeValue := e.tokenManager.ConvertAmount(evm.NativeTokenAddr, tx.Value())
-	txInItem.Coins = append(txInItem.Coins, common.NewCoin(e.cfg.ChainID.GetGasAsset(), nativeValue))
-	txGasPrice := tx.GasPrice()
-	txInItem.Gas = common.MakeEVMGas(e.cfg.ChainID, txGasPrice, receipt.GasUsed, receipt.L1Fee)
-	txInItem.Gas[0].Asset = e.cfg.ChainID.GetGasAsset()
-
-	if txInItem.Coins.IsEmpty() {
-		if txInItem.Sender == txInItem.To {
-			// When the Sender and To is the same then there's no balance chance whatever the Coins,
-			// and for Tx-received Valid() a non-zero Amount is needed to observe
-			// the transaction fees (THORChain gas cost) of unstuck.go's cancel transactions.
-			observableAmount := e.cfg.ChainID.DustThreshold()
-			txInItem.Coins = common.NewCoins(common.NewCoin(txInItem.Gas[0].Asset, observableAmount))
-
-			// remove the outbound from signer cache so it can be re-attempted
-			e.signerCacheManager.RemoveSigned(tx.Hash().Hex())
-		} else {
-			e.logger.Debug().Msgf("there is no coin in this tx, ignore, %+v", txInItem)
-			return nil, nil
-		}
-	}
+	//nativeValue := e.tokenManager.ConvertAmount(evm.NativeTokenAddr, tx.Value())
 
 	return txInItem, nil
 }
@@ -872,70 +816,40 @@ func (e *EVMScanner) isToValidContractAddress(addr *ecommon.Address, includeWhit
 }
 
 // getTxInFromSmartContract returns txInItem
-func (e *EVMScanner) getTxInFromSmartContract(tx *etypes.Transaction, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
+func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
 	txInItem := &stypes.TxInItem{
-		Tx: tx.Hash().Hex()[2:], // drop the "0x" prefix
+		Tx:       ll.TxHash.String()[2:], // drop the "0x" prefix
+		LogIndex: ll.Index,
 	}
-	sender, err := e.eipSigner.Sender(tx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get sender: %w", err)
-	}
-	txInItem.Sender = strings.ToLower(sender.String())
+	cId, _ := e.cfg.ChainID.ChainID()
+	txInItem.FromChain = cId
+
 	// 1 is Transaction success state
-	if receipt.Status != 1 {
-		e.logger.Debug().Stringer("txid", tx.Hash()).Uint64("status", receipt.Status).Msg("tx failed")
+	if receipt.Status != etypes.ReceiptStatusSuccessful {
+		e.logger.Debug().Stringer("txId", ll.TxHash).Uint64("status", receipt.Status).Msg("Tx failed")
 		return nil, nil
 	}
 	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
 		e.tokenManager.GetAssetFromTokenAddress,
 		e.tokenManager.GetTokenDecimalsForTHORChain,
 		e.tokenManager.ConvertAmount,
-		e.vaultABI,
+		e.gatewayABI,
 		e.cfg.ChainID.GetGasAsset(),
 		maxLogs,
 	)
 
 	// txInItem will be changed in p.getTxInItem function, so if the function return an
 	// error txInItem should be abandoned
-	isVaultTransfer, err := p.GetTxInItem(receipt.Logs, txInItem)
+	isVaultTransfer, err := p.GetTxInItem(ll, txInItem)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse logs, err: %w", err)
 	}
 	if isVaultTransfer {
-		contractAddresses := e.pubkeyMgr.GetContracts(e.cfg.ChainID)
-		isDirectlyToRouter := false
-		for _, item := range contractAddresses {
-			if strings.EqualFold(item.String(), tx.To().String()) {
-				isDirectlyToRouter = true
-				break
-			}
-		}
-		if isDirectlyToRouter {
-			// it is important to keep this part outside the above loop, as when we do router
-			// upgrade, which might generate multiple deposit event, along with tx that has
-			// native value in it
-			nativeValue := cosmos.NewUintFromBigInt(tx.Value())
-			if !nativeValue.IsZero() {
-				nativeValue = e.tokenManager.ConvertAmount(evm.NativeTokenAddr, tx.Value())
-				if txInItem.Coins.GetCoin(e.cfg.ChainID.GetGasAsset()).IsEmpty() && !nativeValue.IsZero() {
-					txInItem.Coins = append(txInItem.Coins, common.NewCoin(e.cfg.ChainID.GetGasAsset(), nativeValue))
-				}
-			}
-		}
-	}
-	e.logger.Debug().
-		Str("tx hash", txInItem.Tx).
-		Str("gas price", tx.GasPrice().String()).
-		Uint64("gas used", receipt.GasUsed).
-		Uint64("tx status", receipt.Status).
-		Msg("txInItem parsed from smart contract")
 
-	// under no circumstance EVM gas price will be less than 1 Gwei, unless it is in dev environment
-	txGasPrice := tx.GasPrice()
-	txInItem.Gas = common.MakeEVMGas(e.cfg.ChainID, txGasPrice, receipt.GasUsed, receipt.L1Fee)
-	if txInItem.Coins.IsEmpty() {
-		return nil, nil
 	}
+	e.logger.Debug().Str("tx hash", txInItem.Tx).Uint64("gas used", receipt.GasUsed).
+		Uint64("tx status", receipt.Status).Msg("TxInItem parsed from smart contract")
+
 	return txInItem, nil
 }
 
@@ -945,7 +859,7 @@ func (e *EVMScanner) getTxInFromSmartContract(tx *etypes.Transaction, receipt *e
 // subsidised need to know that this will also cause the vault that send
 // out the outbound to be slashed 1.5x gas it is for security purpose
 func (e *EVMScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receipt *etypes.Receipt) *stypes.TxInItem {
-	if receipt.Status == 1 {
+	if receipt.Status == etypes.ReceiptStatusSuccessful {
 		e.logger.Info().Str("hash", tx.Hash().String()).Msg("success transaction should not get into getTxInFromFailedTransaction")
 		return nil
 	}
@@ -958,14 +872,13 @@ func (e *EVMScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receip
 	if !ok || cif.IsEmpty() {
 		return nil
 	}
-	txGasPrice := tx.GasPrice()
+	//txGasPrice := tx.GasPrice()
 	txHash := tx.Hash().Hex()[2:]
 	return &stypes.TxInItem{
 		Tx:     txHash,
-		Memo:   memo.NewOutboundMemo(common.TxID(txHash)).String(),
 		Sender: strings.ToLower(fromAddr.String()),
-		To:     strings.ToLower(tx.To().String()),
-		Coins:  common.NewCoins(common.NewCoin(e.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1))),
-		Gas:    common.MakeEVMGas(e.cfg.ChainID, txGasPrice, receipt.GasUsed, receipt.L1Fee),
+		//To:     strings.ToLower(tx.To().String()),
+		//Coins:  common.NewCoins(common.NewCoin(e.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1))),
+		//Gas:    common.MakeEVMGas(e.cfg.ChainID, txGasPrice, receipt.GasUsed, receipt.L1Fee),
 	}
 }

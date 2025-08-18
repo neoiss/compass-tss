@@ -2,13 +2,11 @@ package signer
 
 import (
 	"fmt"
-
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
 )
 
 type StorageSuite struct{}
@@ -16,7 +14,6 @@ type StorageSuite struct{}
 var _ = Suite(&StorageSuite{})
 
 func (s *StorageSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 }
 
 func (s *StorageSuite) TestStorage(c *C) {

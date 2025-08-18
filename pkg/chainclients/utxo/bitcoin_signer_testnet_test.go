@@ -34,8 +34,8 @@ func (s *BitcoinSignerSuite) TestSignTxWithTSS(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.BTCAsset, cosmos.NewUint(1000)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	s.client.tssKeySigner = &tss.MockThorchainKeyManager{}
 	txHash := "66d2d6b5eb564972c59e4797683a1225a02515a41119f0a8919381236b63e948"

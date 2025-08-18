@@ -81,3 +81,35 @@ func check(c *C, path []string, cm map[interface{}]interface{}, t reflect.Type) 
 		}
 	}
 }
+
+func Test_resolveAddrs(t *testing.T) {
+	type args struct {
+		addrs []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "t-1",
+			args: args{
+				addrs: []string{
+					"35.228.160.75",
+					"107.189.15.173",
+				},
+			},
+			want: []string{
+				"35.228.160.75",
+				"107.189.15.173",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := resolveAddrs(tt.args.addrs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("resolveAddrs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

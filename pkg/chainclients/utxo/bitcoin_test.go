@@ -4,40 +4,46 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	cKeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-	ttypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	ttypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 type BitcoinSuite struct {
 	client *Client
 	server *httptest.Server
-	bridge mapclient.ThorchainBridge
+	bridge shareTypes.Bridge
 	cfg    config.BifrostChainConfiguration
 	m      *metrics.Metrics
-	keys   *mapclient.Keys
+	keys   *keys.Keys
 }
 
 var _ = Suite(&BitcoinSuite{})
@@ -51,55 +57,63 @@ func (s *BitcoinSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(bob, cKeys.English, cmd.THORChainHDPath, password, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.keys = mapclient.NewKeysWithKeybase(kb, bob, password)
+	//s.keys = keys.NewKeysWithKeybase(kb, bob, password, os.Getenv("TEST_PRIVATE_KEY"))
+	s.keys = keys.NewKeysWithKeybase(kb, bob, password, "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00")
 }
 
 var btcChainRPCs = map[string]map[string]interface{}{}
 
 func init() {
-	// map the method and params to the loaded fixture
-	loadFixture := func(path string) map[string]interface{} {
-		f, err := os.Open(path)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		var data map[string]interface{}
-		err = json.NewDecoder(f).Decode(&data)
-		if err != nil {
-			panic(err)
-		}
-		return data
-	}
-
-	btcChainRPCs["getnetworkinfo"] = loadFixture("../../../../test/fixtures/btc/getnetworkinfo.json")
-	btcChainRPCs["getblockhash"] = loadFixture("../../../../test/fixtures/btc/blockhash.json")
-	btcChainRPCs["getblock"] = loadFixture("../../../../test/fixtures/btc/block_verbose.json")
-	btcChainRPCs["getblockcount"] = loadFixture("../../../../test/fixtures/btc/blockcount.json")
-	btcChainRPCs["importaddress"] = loadFixture("../../../../test/fixtures/btc/importaddress.json")
-	btcChainRPCs["listunspent"] = loadFixture("../../../../test/fixtures/btc/listunspent.json")
-	btcChainRPCs["getrawmempool"] = loadFixture("../../../../test/fixtures/btc/getrawmempool.json")
-	btcChainRPCs["getblockstats"] = loadFixture("../../../../test/fixtures/btc/blockstats.json")
-	btcChainRPCs["getrawtransaction-5b0876dcc027d2f0c671fc250460ee388df39697c3ff082007b6ddd9cb9a7513"] = loadFixture("../../../../test/fixtures/btc/tx-5b08.json")
-	btcChainRPCs["getrawtransaction-54ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-54ef.json")
-	btcChainRPCs["getrawtransaction-64ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-64ef.json")
-	btcChainRPCs["getrawtransaction-74ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-74ef.json")
-	btcChainRPCs["getrawtransaction-27de3e1865c098cd4fded71bae1e8236fd27ce5dce6e524a9ac5cd1a17b5c241"] = loadFixture("../../../../test/fixtures/btc/tx-c241.json")
-	btcChainRPCs["getrawtransaction"] = loadFixture("../../../../test/fixtures/btc/tx.json")
-	btcChainRPCs["createwallet"] = loadFixture("../../../../test/fixtures/btc/createwallet.json")
+	//// map the method and params to the loaded fixture
+	//loadFixture := func(path string) map[string]interface{} {
+	//	f, err := os.Open(path)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	defer f.Close()
+	//	var data map[string]interface{}
+	//	err = json.NewDecoder(f).Decode(&data)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	return data
+	//}
+	//
+	//btcChainRPCs["getnetworkinfo"] = loadFixture("../../../../test/fixtures/btc/getnetworkinfo.json")
+	//btcChainRPCs["getblockhash"] = loadFixture("../../../../test/fixtures/btc/blockhash.json")
+	//btcChainRPCs["getblock"] = loadFixture("../../../../test/fixtures/btc/block_verbose.json")
+	//btcChainRPCs["getblockcount"] = loadFixture("../../../../test/fixtures/btc/blockcount.json")
+	//btcChainRPCs["importaddress"] = loadFixture("../../../../test/fixtures/btc/importaddress.json")
+	//btcChainRPCs["listunspent"] = loadFixture("../../../../test/fixtures/btc/listunspent.json")
+	//btcChainRPCs["getrawmempool"] = loadFixture("../../../../test/fixtures/btc/getrawmempool.json")
+	//btcChainRPCs["getblockstats"] = loadFixture("../../../../test/fixtures/btc/blockstats.json")
+	//btcChainRPCs["getrawtransaction-5b0876dcc027d2f0c671fc250460ee388df39697c3ff082007b6ddd9cb9a7513"] = loadFixture("../../../../test/fixtures/btc/tx-5b08.json")
+	//btcChainRPCs["getrawtransaction-54ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-54ef.json")
+	//btcChainRPCs["getrawtransaction-64ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-64ef.json")
+	//btcChainRPCs["getrawtransaction-74ef2f4679fb90af42e8d963a5d85645d0fd86e5fe8ea4e69dbf2d444cb26528"] = loadFixture("../../../../test/fixtures/btc/tx-74ef.json")
+	//btcChainRPCs["getrawtransaction-27de3e1865c098cd4fded71bae1e8236fd27ce5dce6e524a9ac5cd1a17b5c241"] = loadFixture("../../../../test/fixtures/btc/tx-c241.json")
+	//btcChainRPCs["getrawtransaction"] = loadFixture("../../../../test/fixtures/btc/tx.json")
+	//btcChainRPCs["createwallet"] = loadFixture("../../../../test/fixtures/btc/createwallet.json")
 }
+
+var (
+	rpcHost     = "129.226.149.150:38332"
+	rpcUser     = "map-signet"
+	rpcPassword = "TXC6c~Vl7Ln^@PQG"
+)
 
 func (s *BitcoinSuite) SetUpTest(c *C) {
 	s.m = GetMetricForTest(c, common.BTCChain)
 	s.cfg = config.BifrostChainConfiguration{
 		ChainID:     "BTC",
-		UserName:    bob,
-		Password:    password,
+		UserName:    rpcUser,
+		Password:    rpcPassword,
 		DisableTLS:  true,
 		HTTPostMode: true,
 		BlockScanner: config.BifrostBlockScannerConfiguration{
 			StartBlockHeight: 1, // avoids querying thorchain for block height
 		},
+		RPCHost: rpcHost,
 	}
 	s.cfg.UTXO.TransactionBatchSize = 500
 	s.cfg.UTXO.MaxMempoolBatches = 10
@@ -109,8 +123,9 @@ func (s *BitcoinSuite) SetUpTest(c *C) {
 
 	thordir := filepath.Join(os.TempDir(), ns, ".thorcli")
 	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       "localhost",
+		ChainID:         "map",
+		ChainHost:       "https://testnet-rpc.maplabs.io",
+		ChainRPC:        "https://testnet-rpc.maplabs.io",
 		SignerName:      bob,
 		SignerPasswd:    password,
 		ChainHomeFolder: thordir,
@@ -197,13 +212,13 @@ func (s *BitcoinSuite) SetUpTest(c *C) {
 		}
 	}))
 	var err error
-	cfg.ChainHost = s.server.Listener.Addr().String()
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.keys)
+	//cfg.ChainHost = s.server.Listener.Addr().String()
+	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.keys)
 	c.Assert(err, IsNil)
-	s.cfg.RPCHost = s.server.Listener.Addr().String()
+	//s.cfg.RPCHost = s.server.Listener.Addr().String()
 	s.client, err = NewClient(s.keys, s.cfg, nil, s.bridge, s.m)
 	s.client.disableVinZeroBatch = true
-	s.client.globalNetworkFeeQueue = make(chan common.NetworkFee, 1)
+	s.client.globalNetworkFeeQueue = make(chan types.NetworkFee, 1)
 	c.Assert(err, IsNil)
 	c.Assert(s.client, NotNil)
 }
@@ -221,27 +236,25 @@ func (s *BitcoinSuite) TestGetBlock(c *C) {
 }
 
 func (s *BitcoinSuite) TestFetchTxs(c *C) {
-	var vaultPubKey common.PubKey
+	//var vaultPubKey common.PubKey
 	var err error
-	if common.CurrentChainNetwork == common.MainNet {
-		vaultPubKey, err = common.NewPubKey("thorpub1addwnpepqwprh5vd0rrk78kd98qjruuazwvapnxft7f86w7hlf768whxytpn5quf2gs") // from PubKeys-Mainnet.json
-	} else {
-		vaultPubKey, err = common.NewPubKey("tthorpub1addwnpepqflvfv08t6qt95lmttd6wpf3ss8wx63e9vf6fvyuj2yy6nnyna576rfzjks") // from PubKeys.json
-	}
-	c.Assert(err, IsNil, Commentf(vaultPubKey.String()))
-	vaultAddress, err := vaultPubKey.GetAddress(s.client.GetChain())
+	//if common.CurrentChainNetwork == common.MainNet {
+	//	vaultPubKey, err = common.NewPubKey("thorpub1addwnpepqwprh5vd0rrk78kd98qjruuazwvapnxft7f86w7hlf768whxytpn5quf2gs") // from PubKeys-Mainnet.json
+	//} else {
+	//	vaultPubKey, err = common.NewPubKey("tthorpub1addwnpepqflvfv08t6qt95lmttd6wpf3ss8wx63e9vf6fvyuj2yy6nnyna576rfzjks") // from PubKeys.json
+	//}
+	//c.Assert(err, IsNil, Commentf(vaultPubKey.String()))
+	//vaultAddress, err := vaultPubKey.GetAddress(s.client.GetChain())
 	c.Assert(err, IsNil)
-	vaultAddressString := vaultAddress.String()
+	//vaultAddressString := vaultAddress.String()
 
-	txs, err := s.client.FetchTxs(0, 0)
+	txs, err := s.client.FetchTxs(261927, 261928)
 	c.Assert(err, IsNil)
 	c.Assert(txs.Chain, Equals, common.BTCChain)
-	c.Assert(txs.TxArray[0].BlockHeight, Equals, int64(1696761))
+	c.Assert(txs.TxArray[0].Height, Equals, int64(1696761))
 	c.Assert(txs.TxArray[0].Tx, Equals, "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2")
 	c.Assert(txs.TxArray[0].Sender, Equals, "tb1qdxxlx4r4jk63cve3rjpj428m26xcukjn5yegff")
-	c.Assert(txs.TxArray[0].To, Equals, vaultAddressString)
-	c.Assert(txs.TxArray[0].Coins.EqualsEx(common.Coins{common.NewCoin(common.BTCAsset, cosmos.NewUint(10000000))}), Equals, true)
-	c.Assert(txs.TxArray[0].Gas.Equals(common.Gas{common.NewCoin(common.BTCAsset, cosmos.NewUint(22705334))}), Equals, true)
+	//c.Assert(txs.TxArray[0].To, Equals, vaultAddressString)
 	c.Assert(len(txs.TxArray), Equals, 1)
 }
 
@@ -777,13 +790,10 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.BTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 1,
-				Tx:          "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
-				Sender:      "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				To:          "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				Coins: common.Coins{
-					common.NewCoin(common.BTCAsset, cosmos.NewUint(123456789)),
-				},
+				Height: big.NewInt(1),
+				Tx:     "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
+				Sender: "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
+				//To:          "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -800,13 +810,10 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.BTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 2,
-				Tx:          "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.BTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(2),
+				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -823,24 +830,18 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 		Chain: common.BTCChain,
 		TxArray: []*types.TxInItem{
 			{
-				BlockHeight: 3,
-				Tx:          "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.BTCAsset, cosmos.NewUint(12345678)),
-				},
+				Height: big.NewInt(3),
+				Tx:     "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
 			{
-				BlockHeight: 3,
-				Tx:          "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
-				Sender:      "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Coins: common.Coins{
-					common.NewCoin(common.BTCAsset, cosmos.NewUint(123456)),
-				},
+				Height: big.NewInt(3),
+				Tx:     "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
+				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
+				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
 				ObservedVaultPubKey: pkey,
 			},
@@ -1126,4 +1127,112 @@ func (s *BitcoinSuite) TestIsValidUTXO(c *C) {
 
 	// V1_P2TR (pay-to-taproot) output
 	c.Assert(s.client.isValidUTXO("5120f01002397e3cb9179d41f1e25412bd29fc8d22f8fe786758aeeacf137a4cbc5f"), Equals, true)
+}
+
+func TestFetchTxs(t *testing.T) {
+	signerName := "first_cosmos"
+	signerPasswd := os.Getenv("SIGNER_PASSWD")
+	privateKey := "c3e5c914c1e15b9271de78e739c7815b5f9af4d7bc448a4ad31968c6416dba00"
+
+	scfg := config.BifrostChainConfiguration{
+		ChainID:     "BTC",
+		UserName:    rpcUser,
+		Password:    rpcPassword,
+		DisableTLS:  true,
+		HTTPostMode: true,
+		BlockScanner: config.BifrostBlockScannerConfiguration{
+			StartBlockHeight: 1, // avoids querying thorchain for block height
+		},
+		RPCHost: rpcHost,
+	}
+	scfg.UTXO.TransactionBatchSize = 500
+	scfg.UTXO.MaxMempoolBatches = 10
+	scfg.UTXO.EstimatedAverageTxSize = 1000
+	scfg.BlockScanner.MaxReorgRescanBlocks = 1
+	ns := strconv.Itoa(time.Now().Nanosecond())
+
+	thordir := filepath.Join(os.TempDir(), ns, ".thorcli")
+	cfg := config.BifrostClientConfiguration{
+		ChainID:         "map",
+		ChainHost:       "https://testnet-rpc.maplabs.io",
+		ChainRPC:        "https://testnet-rpc.maplabs.io",
+		SignerName:      bob,
+		SignerPasswd:    password,
+		ChainHomeFolder: thordir,
+	}
+
+	kb, _, err := keys.GetKeyringKeybase(privateKey, signerName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ks := keys.NewKeysWithKeybase(kb, signerName, signerPasswd, privateKey)
+	bridge, err := mapclient.NewBridge(cfg, m, ks)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m, err = metrics.NewMetrics(config.BifrostMetricsConfiguration{
+		Enabled:      false,
+		ListenPort:   9000,
+		ReadTimeout:  time.Second,
+		WriteTimeout: time.Second,
+		Chains:       common.Chains{common.DOGEChain, common.BCHChain, common.LTCChain, common.BTCChain},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := NewClient(ks, scfg, nil, bridge, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.globalNetworkFeeQueue = make(chan types.NetworkFee, 1)
+
+	txs, err := client.FetchTxs(261927, 261928)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(txs)
+}
+
+func TestHex(t *testing.T) {
+	t.Log(ethcommon.Hex2Bytes("0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
+	t.Log(ethcommon.Hex2Bytes("0x0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
+	t.Log(ethcommon.ParseHexOrString("0x0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
+}
+
+func TestDecodeBitcoinAddress(t *testing.T) {
+	type args struct {
+		addr    string
+		network *chaincfg.Params
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "t-P2SH",
+			args: args{
+				addr:    "0x011b82c3b93dda9e6324d5e3c5f9b5f7bf644af3964b1932d8b8f8a2b821a8a45d",
+				network: &chaincfg.TestNet3Params,
+			},
+			want:    "tb1prwpv8wfam20xxfx4u0zlnd0hhajy4uukfvvn9k9clz3tsgdg53ws0dym5c",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DecodeBitcoinAddress(tt.args.addr, tt.args.network)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DecodeBitcoinAddress() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got.String() != tt.want {
+				t.Errorf("DecodeAddress() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

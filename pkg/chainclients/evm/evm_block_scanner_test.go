@@ -3,44 +3,31 @@ package evm
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	cKeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/ethereum/go-ethereum/common"
-	etypes "github.com/ethereum/go-ethereum/core/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mapprotocol/compass-tss/blockscanner"
-	"github.com/mapprotocol/compass-tss/cmd"
-	thorcommon "github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
-	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
-	evmtypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm/types"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 	. "gopkg.in/check.v1"
 )
 
-const TestGasPriceResolution = 50_000_000_000
+const TestGasPriceResolution = 100_000_000
 
-const Mainnet = 1
+const Mainnet = 97
 
 var (
 	//go:embed test/deposit_evm_transaction.json
@@ -59,71 +46,42 @@ var (
 	blockByNumberResp []byte
 )
 
-func CreateBlock(height int) (*etypes.Header, error) {
-	strHeight := fmt.Sprintf("%x", height)
-	blockJson := `{
-		"parentHash":"0x8b535592eb3192017a527bbf8e3596da86b3abea51d6257898b2ced9d3a83826",
-		"difficulty": "0x31962a3fc82b",
-		"extraData": "0x4477617266506f6f6c",
-		"gasLimit": "0x47c3d8",
-		"gasUsed": "0x0",
-		"hash": "0x78bfef68fccd4507f9f4804ba5c65eb2f928ea45b3383ade88aaa720f1209cba",
-		"logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-		"miner": "0x2a65aca4d5fc5b5c859090a6c34d164135398226",
-		"nonce": "0xa5e8fb780cc2cd5e",
-		"number": "0x` + strHeight + `",
-		"receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-		"sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-		"size": "0x20e",
-		"stateRoot": "0xdc6ed0a382e50edfedb6bd296892690eb97eb3fc88fd55088d5ea753c48253dc",
-		"timestamp": "0x579f4981",
-		"totalDifficulty": "0x25cff06a0d96f4bee",
-		"transactionsRoot": "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"
-	}`
-	var header *etypes.Header
-	if err := json.Unmarshal([]byte(blockJson), &header); err != nil {
-		return nil, err
-	}
-	return header, nil
-}
-
 type BlockScannerTestSuite struct {
 	m      *metrics.Metrics
-	bridge mapclient.ThorchainBridge
-	keys   *mapclient.Keys
+	bridge shareTypes.Bridge
+	keys   *keys.Keys
 }
 
 var _ = Suite(&BlockScannerTestSuite{})
 
-func (s *BlockScannerTestSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
+func (s *BlockScannerTestSuite) SetUpTest(c *C) {
 	s.m = GetMetricForTest(c)
-	c.Assert(s.m, NotNil)
-	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       "localhost",
-		SignerName:      "bob",
+
+	bridgeCfg := config.BifrostClientConfiguration{
+		ChainID:         "map",
+		ChainHost:       "https://testnet-rpc.maplabs.io",
 		SignerPasswd:    "password",
-		ChainHomeFolder: "",
+		ChainHomeFolder: "./",
+		Maintainer:      "0x0EdA5e4015448A2283662174DD7def3C3d262D38",
+		ViewController:  "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6",
 	}
 
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-	cdc := codec.NewProtoCodec(registry)
-	kb := cKeys.NewInMemory(cdc)
-	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
+	name := "test-eth"
+	//  dont push
+	keyStorePath := "$HOME/UTC--2025-07-17T09-26-18.738548000Z--testuser.key.json"
+	kb, keyStore, err := keys.GetKeyringKeybase(keyStorePath, name)
 	c.Assert(err, IsNil)
-	thorKeys := mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
+
+	k := keys.NewKeysWithKeybase(kb, name, "123456", keyStore)
+	bridge, err := mapo.NewBridge(bridgeCfg, m, k)
 	c.Assert(err, IsNil)
-	s.keys = thorKeys
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, thorKeys)
-	c.Assert(err, IsNil)
+	s.bridge = bridge
 }
 
 func getConfigForTest() config.BifrostBlockScannerConfiguration {
 	return config.BifrostBlockScannerConfiguration{
-		ChainID:                    thorcommon.AVAXChain,
-		StartBlockHeight:           1, // avoids querying thorchain for block height
+		ChainID:                    common.BSCChain,
+		StartBlockHeight:           1, // avoids querying map for block height
 		BlockScanProcessors:        1,
 		HTTPRequestTimeout:         time.Second,
 		HTTPRequestReadTimeout:     time.Second * 30,
@@ -133,8 +91,9 @@ func getConfigForTest() config.BifrostBlockScannerConfiguration {
 		BlockRetryInterval:         time.Second,
 		GasCacheBlocks:             100,
 		Concurrency:                1,
-		GasPriceResolution:         TestGasPriceResolution, // 50 navax
+		GasPriceResolution:         TestGasPriceResolution,
 		TransactionBatchSize:       500,
+		Mos:                        "0xCD9Fc97860755cD6630E5172dbad9454a1e029a9",
 	}
 }
 
@@ -152,7 +111,7 @@ func (s *BlockScannerTestSuite) TestNewBlockScanner(c *C) {
 		err = json.Unmarshal(body, &rpcRequest)
 		c.Assert(err, IsNil)
 		if rpcRequest.Method == "eth_chainId" {
-			_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x539"}`))
+			_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x61"}`))
 			c.Assert(err, IsNil)
 		}
 		if rpcRequest.Method == "eth_gasPrice" {
@@ -164,7 +123,7 @@ func (s *BlockScannerTestSuite) TestNewBlockScanner(c *C) {
 	c.Assert(err, IsNil)
 	ethClient, err := ethclient.Dial(server.URL)
 	c.Assert(err, IsNil)
-	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "AVAX")
+	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "BSC")
 	c.Assert(err, IsNil)
 	pubKeyManager, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
 	c.Assert(err, IsNil)
@@ -193,134 +152,42 @@ func (s *BlockScannerTestSuite) TestNewBlockScanner(c *C) {
 }
 
 func (s *BlockScannerTestSuite) TestProcessBlock(c *C) {
-	rpcResults := map[string]string{
-		"eth_chainId":  `"0xa868"`,
-		"eth_gasPrice": `"0x5d21dba00"`,
-		"eth_call":     `"0x52554e45"`,
-	}
-
-	// extract result from embedded json
-	var resp struct {
-		Result json.RawMessage `json:"result"`
-	}
-	err := json.Unmarshal(depositEVMReceipt, &resp)
+	storage, err := blockscanner.NewBlockScannerStorage("./test", config.LevelDBOptions{})
 	c.Assert(err, IsNil)
-	rpcResults["eth_getTransactionReceipt"] = string(resp.Result)
-	err = json.Unmarshal(blockByNumberResp, &resp)
+
+	ethClient, err := ethclient.Dial("http://bsc.testnet.net")
 	c.Assert(err, IsNil)
-	rpcResults["eth_getBlockByNumber"] = string(resp.Result)
-
-	handleRPC := func(body []byte, rw http.ResponseWriter) {
-		r := struct {
-			Method string        `json:"method"`
-			Params []interface{} `json:"params"`
-		}{}
-
-		err := json.Unmarshal(body, &r)
-		c.Assert(err, IsNil)
-
-		rw.Header().Set("Content-Type", "application/json")
-		result := map[string]json.RawMessage{
-			"result": json.RawMessage(rpcResults[r.Method]),
-		}
-
-		err = json.NewEncoder(rw).Encode(result)
-		c.Assert(err, IsNil)
-	}
-	handleBatchRPC := func(body []byte, rw http.ResponseWriter) {
-		r := []struct {
-			Method string        `json:"method"`
-			Params []interface{} `json:"params"`
-			ID     int           `json:"id"`
-		}{}
-
-		err := json.Unmarshal(body, &r)
-		c.Assert(err, IsNil)
-
-		rw.Header().Set("Content-Type", "application/json")
-		result := make([]map[string]json.RawMessage, len(r))
-		for i, v := range r {
-			result[i] = map[string]json.RawMessage{
-				"result": json.RawMessage(rpcResults[v.Method]),
-				"id":     json.RawMessage(strconv.Itoa(v.ID)),
-			}
-		}
-
-		err = json.NewEncoder(rw).Encode(result)
-		c.Assert(err, IsNil)
-	}
-
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch {
-		case req.RequestURI == mapclient.ChainVersionEndpoint:
-			_, err = rw.Write([]byte(`{"current":"` + types.GetCurrentVersion().String() + `"}`))
-			c.Assert(err, IsNil)
-		case req.RequestURI == mapclient.PubKeysEndpoint:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-		case req.RequestURI == mapclient.InboundAddressesEndpoint:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/inbound_addresses/inbound_addresses.json")
-		case req.RequestURI == mapclient.AsgardVault:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/asgard.json")
-		case strings.HasPrefix(req.RequestURI, mapclient.NodeAccountEndpoint):
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/nodeaccount/template.json")
-		case strings.HasPrefix(req.RequestURI, mapclient.LastBlockEndpoint):
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/lastblock/eth.json")
-		case strings.HasPrefix(req.RequestURI, mapclient.AuthAccountEndpoint):
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/auth/accounts/template.json")
-		default:
-			// return -1 for all unset mimirs
-			if strings.HasPrefix(req.RequestURI, mapclient.MimirEndpoint+"/key") {
-				_, err = rw.Write([]byte(`-1`))
-				c.Assert(err, IsNil)
-				return
-			}
-
-			body, err := io.ReadAll(req.Body)
-			c.Assert(err, IsNil)
-			defer func() {
-				c.Assert(req.Body.Close(), IsNil)
-			}()
-			if body[0] == '[' {
-				handleBatchRPC(body, rw)
-			} else {
-				handleRPC(body, rw)
-			}
-		}
-	}))
-	ethClient, err := ethclient.Dial(server.URL)
+	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "BSC")
 	c.Assert(err, IsNil)
-	c.Assert(ethClient, NotNil)
-	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "AVAX")
+	pubKeyManager, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
 	c.Assert(err, IsNil)
-	storage, err := blockscanner.NewBlockScannerStorage("", config.LevelDBOptions{})
-	c.Assert(err, IsNil)
-	u, err := url.Parse(server.URL)
-	c.Assert(err, IsNil)
-	bridge, err := mapclient.NewThorchainBridge(config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       u.Host,
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: "",
-	}, s.m, s.keys)
-	c.Assert(err, IsNil)
-	pubKeyMgr, err := pubkeymanager.NewPubKeyManager(bridge, s.m)
-	c.Assert(err, IsNil)
-	c.Assert(pubKeyMgr.Start(), IsNil)
-	defer func() {
-		c.Assert(pubKeyMgr.Stop(), IsNil)
-	}()
-
-	config := getConfigForTest()
-	bs, err := NewEVMScanner(config, storage, big.NewInt(43112), ethClient, rpcClient, bridge, s.m, pubKeyMgr, func(height int64) error {
+	solvencyReporter := func(height int64) error {
 		return nil
-	}, nil)
+	}
+	bs, err := NewEVMScanner(getConfigForTest(), storage, big.NewInt(int64(Mainnet)), ethClient, rpcClient,
+		s.bridge, s.m, pubKeyManager, solvencyReporter, nil)
 	c.Assert(err, IsNil)
-	c.Assert(bs, NotNil)
-	bs.whitelistContracts = append(bs.whitelistContracts, "0x40bcd4dB8889a8Bf0b1391d0c819dcd9627f9d0a")
-	txIn, err := bs.FetchTxs(int64(1), int64(1))
+	txIn, err := bs.FetchTxs(59119141, 59119141)
 	c.Assert(err, IsNil)
 	c.Check(len(txIn.TxArray), Equals, 1)
+
+	c.Log("txIn.Chain --------------- ", txIn.Chain)
+	c.Log("txIn.Count --------------- ", txIn.Count)
+	c.Log("txIn.Filtered --------------- ", txIn.Filtered)
+	c.Log("txIn.MemPool --------------- ", txIn.MemPool)
+	c.Log("txIn.ConfirmationRequired --------------- ", txIn.ConfirmationRequired)
+	c.Log("txIn.AllowFutureObservation --------------- ", txIn.AllowFutureObservation)
+	for idx, ele := range txIn.TxArray {
+		c.Log("txArray idx=", idx, " TxHash=", ele.Tx)
+		c.Log("txArray idx=", idx, " TxInType=", ele.TxInType.String())
+		c.Log("txArray idx=", idx, " Height=", ele.Height)
+		c.Log("txArray idx=", idx, " Amount=", ele.Amount)
+		c.Log("txArray idx=", idx, " OrderId=", ele.OrderId)
+		c.Log("txArray idx=", idx, " Token=", ecommon.Bytes2Hex(ele.Token))
+		c.Log("txArray idx=", idx, " Vault=", ecommon.Bytes2Hex(ele.Vault))
+		c.Log("txArray idx=", idx, " To=", ecommon.Bytes2Hex(ele.To))
+		c.Log("txArray idx=", idx, " Method=", ele.Method)
+	}
 }
 
 func httpTestHandler(c *C, rw http.ResponseWriter, fixture string) {
@@ -344,329 +211,10 @@ func httpTestHandler(c *C, rw http.ResponseWriter, fixture string) {
 }
 
 func (s *BlockScannerTestSuite) TestGetTxInItem(c *C) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch {
-		case req.RequestURI == mapclient.ChainVersionEndpoint:
-			_, err := rw.Write([]byte(`{"current":"` + types.GetCurrentVersion().String() + `"}`))
-			c.Assert(err, IsNil)
-		case req.RequestURI == mapclient.PubKeysEndpoint:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-		case req.RequestURI == mapclient.InboundAddressesEndpoint:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/inbound_addresses/inbound_addresses.json")
-		case req.RequestURI == mapclient.AsgardVault:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/asgard.json")
-		case strings.HasPrefix(req.RequestURI, mapclient.NodeAccountEndpoint):
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/nodeaccount/template.json")
-		default:
-			// return -1 for all unset mimirs
-			if strings.HasPrefix(req.RequestURI, mapclient.MimirEndpoint+"/key") {
-				_, err := rw.Write([]byte(`-1`))
-				c.Assert(err, IsNil)
-				return
-			}
-
-			body, err := io.ReadAll(req.Body)
-			c.Assert(err, IsNil)
-			type RPCRequest struct {
-				JSONRPC string          `json:"jsonrpc"`
-				ID      interface{}     `json:"id"`
-				Method  string          `json:"method"`
-				Params  json.RawMessage `json:"params"`
-			}
-			var rpcRequest RPCRequest
-			err = json.Unmarshal(body, &rpcRequest)
-			if err != nil {
-				return
-			}
-			if rpcRequest.Method == "eth_chainId" {
-				_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0xa868"}`))
-				c.Assert(err, IsNil)
-			}
-			if rpcRequest.Method == "eth_gasPrice" {
-				_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x1"}`))
-				c.Assert(err, IsNil)
-			}
-			if rpcRequest.Method == "eth_call" {
-				c.Log()
-				if string(rpcRequest.Params) == `[{"data":"0x95d89b41", "to":"0x333c3310824b7c685133F2BeDb2CA4b8b4DF633d"},"latest"]` {
-					_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x544B4E"}`))
-					c.Assert(err, IsNil)
-					return
-				} else if string(rpcRequest.Params) == `[{"data":"0x313ce567","from":"0x0000000000000000000000000000000000000000","to":"0x333c3310824b7c685133F2BeDb2CA4b8b4DF633d"},"latest"]` {
-					_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x0000000000000000000000000000000000000000000000000000000000000012"}`))
-					c.Assert(err, IsNil)
-					return
-				}
-				_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x544B4E"}`))
-				c.Assert(err, IsNil)
-			}
-			if rpcRequest.Method == "eth_getTransactionReceipt" {
-				switch string(rpcRequest.Params) {
-				case `["0xc5df10917683a31c361218577d5e13ee9d7e29f8b92415f337a318942bd2c875"]`:
-					_, err = rw.Write(depositEVMReceipt)
-					c.Assert(err, IsNil)
-					return
-				case `["0x08053d250f3897e1e27b29dc97bb71a7f99809a5dfd052117ea335c2ee0f55e5"]`:
-					_, err = rw.Write(depositTknReceipt)
-					c.Assert(err, IsNil)
-					return
-				case `["0x1f451e1361a1374d135d3da413391cd0d0510e106488b681bed888f3e141bb04"]`:
-					_, err = rw.Write(transferOutReceipt)
-					c.Assert(err, IsNil)
-					return
-				}
-				_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{
-				"transactionHash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-				"transactionIndex":"0x0",
-				"blockNumber":"0x1",
-				"blockHash":"0x78bfef68fccd4507f9f4804ba5c65eb2f928ea45b3383ade88aaa720f1209cba",
-				"cumulativeGasUsed":"0xc350",
-				"gasUsed":"0x4dc",
-				"logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-				"logs":[],
-				"status":"0x1"
-			}}`))
-				c.Assert(err, IsNil)
-			}
-		}
-	}))
-	ethClient, err := ethclient.Dial(server.URL)
-	c.Assert(err, IsNil)
-	c.Assert(ethClient, NotNil)
-	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "AVAX")
-	c.Assert(err, IsNil)
-	storage, err := blockscanner.NewBlockScannerStorage("", config.LevelDBOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(storage, NotNil)
-	u, err := url.Parse(server.URL)
-	c.Assert(err, IsNil)
-
-	cfg := config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       u.Host,
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: "",
-	}
-	bridge, err := mapclient.NewThorchainBridge(cfg, s.m, s.keys)
-	c.Assert(err, IsNil)
-	c.Assert(bridge, NotNil)
-	pkeyMgr, err := pubkeymanager.NewPubKeyManager(bridge, s.m)
-	c.Assert(pkeyMgr.Start(), IsNil)
-	defer func() {
-		c.Assert(pkeyMgr.Stop(), IsNil)
-	}()
-	c.Assert(err, IsNil)
-	config := getConfigForTest()
-	bs, err := NewEVMScanner(config, storage, big.NewInt(int64(Mainnet)), ethClient, rpcClient, bridge, s.m, pkeyMgr, func(height int64) error {
-		return nil
-	}, nil)
-	c.Assert(err, IsNil)
-	c.Assert(bs, NotNil)
-
-	// send directly to AVAX address
-	encodedTx := `{
-		"blockHash":"0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2",
-		"blockNumber":"0x5daf3b",
-		"from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-		"gas":"0xc350",
-		"gasPrice":"0x4a817c800",
-		"hash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-		"input":"0x68656c6c6f21",
-		"nonce":"0x15",
-		"to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
-		"transactionIndex":"0x41",
-		"value":"0xf3dbb76162000",
-		"v":"0x25",
-		"r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
-		"s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
-	}`
-	tx := etypes.NewTransaction(0, common.HexToAddress(evm.NativeTokenAddr), nil, 0, nil, nil)
-	err = tx.UnmarshalJSON([]byte(encodedTx))
-	c.Assert(err, IsNil)
-
-	txInItem, err := bs.getTxInItem(tx)
-	c.Assert(err, IsNil)
-	c.Assert(txInItem, NotNil)
-	c.Check(txInItem.Sender, Equals, "0xa7d9ddbe1f17865597fbd27ec712455208b6b76d")
-	c.Check(txInItem.To, Equals, "0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb")
-	c.Check(len(txInItem.Coins), Equals, 1)
-
-	c.Check(txInItem.Coins[0].Asset.String(), Equals, "AVAX.AVAX")
-	c.Check(
-		txInItem.Coins[0].Amount.Equal(cosmos.NewUint(429000)),
-		Equals,
-		true,
-	)
-	c.Check(
-		txInItem.Gas[0].Amount.Equal(cosmos.NewUint(2488)), // from GasUsed rather than gas limit
-		Equals,
-		true,
-	)
-
-	bs, err = NewEVMScanner(config, storage, big.NewInt(43112), ethClient, rpcClient, bridge, s.m, pkeyMgr, func(height int64) error {
-		return nil
-	}, nil)
-	c.Assert(err, IsNil)
-	c.Assert(bs, NotNil)
-	tx = etypes.NewTransaction(0, common.HexToAddress(evm.NativeTokenAddr), nil, 0, nil, nil)
-	c.Assert(tx.UnmarshalJSON(depositEVMTx), IsNil)
-	txInItem, err = bs.getTxInItem(tx)
-	c.Assert(err, IsNil)
-	c.Assert(txInItem, NotNil)
-	c.Assert(txInItem.Sender, Equals, "0x970e8128ab834e8eac17ab8e3812f010678cf791")
-	c.Assert(txInItem.To, Equals, "0x6F2744B3a9eba0C5929AAdc9e81183a48B9221FC")
-	c.Assert(txInItem.Memo, Equals, "ADD:AVAX.AVAX:tthor1uuds8pd92qnnq0udw0rpg0szpgcslc9p8lluej")
-	c.Assert(txInItem.Tx, Equals, "c5df10917683a31c361218577d5e13ee9d7e29f8b92415f337a318942bd2c875")
-	c.Assert(txInItem.Coins[0].Asset.String(), Equals, "AVAX.AVAX")
-	c.Assert(txInItem.Coins[0].Amount.Uint64(), Equals, cosmos.NewUint(200000000).Uint64())
-
-	config.WhitelistTokens = append(config.WhitelistTokens, "0x333c3310824b7c685133F2BeDb2CA4b8b4DF633d")
-
-	bs, err = NewEVMScanner(config, storage, big.NewInt(43112), ethClient, rpcClient, bridge, s.m, pkeyMgr, func(height int64) error {
-		return nil
-	}, nil)
-	// whitelist the address for test
-	bs.whitelistContracts = append(bs.whitelistContracts, "0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25")
-	c.Assert(err, IsNil)
-	c.Assert(bs, NotNil)
-
-	// smart contract - depositTKN
-	tx = &etypes.Transaction{}
-	c.Assert(tx.UnmarshalJSON(depositTknTx), IsNil)
-	txInItem, err = bs.getTxInItem(tx)
-	c.Assert(err, IsNil)
-	c.Assert(txInItem, NotNil)
-	c.Assert(txInItem.Sender, Equals, "0x970e8128ab834e8eac17ab8e3812f010678cf791")
-	c.Assert(txInItem.To, Equals, "0x6F2744B3a9eba0C5929AAdc9e81183a48B9221FC")
-	c.Assert(txInItem.Memo, Equals, "ADD:AVAX.TKN-0X333C3310824B7C685133F2BEDB2CA4B8B4DF633D:tthor1uuds8pd92qnnq0udw0rpg0szpgcslc9p8lluej")
-	c.Assert(txInItem.Tx, Equals, "08053d250f3897e1e27b29dc97bb71a7f99809a5dfd052117ea335c2ee0f55e5")
-	// c.Assert(txInItem.Coins[0].Asset.String(), Equals, "AVAX.TKN-0X333C3310824B7C685133F2BEDB2CA4B8B4DF633D")
-	c.Assert(txInItem.Coins[0].Amount.Uint64(), Equals, cosmos.NewUint(100000000).Uint64())
-
-	// smart contract - transferOut
-	tx = &etypes.Transaction{}
-	c.Assert(tx.UnmarshalJSON(transferOutTx), IsNil)
-	txInItem, err = bs.getTxInItem(tx)
-	c.Assert(err, IsNil)
-	c.Assert(txInItem, NotNil)
-	c.Assert(txInItem.Sender, Equals, "0xb8bc698bc9c1ed0df7efc37d7367886602361ee5")
-	c.Assert(txInItem.To, Equals, "0x970E8128AB834E8EAC17Ab8E3812F010678CF791")
-	c.Assert(txInItem.Memo, Equals, "OUT:4A9DEE79350A69BD76B7CBA261B3CEC06546973DF2EACCEDB67EC98EAF21D861")
-	c.Assert(txInItem.Tx, Equals, "1f451e1361a1374d135d3da413391cd0d0510e106488b681bed888f3e141bb04")
-	c.Assert(txInItem.Coins[0].Asset.String(), Equals, "AVAX.TKN-0X333C3310824B7C685133F2BEDB2CA4B8B4DF633D")
-	c.Assert(txInItem.Coins[0].Amount.Equal(cosmos.NewUint(24310000)), Equals, true)
 }
 
 func (s *BlockScannerTestSuite) TestProcessReOrg(c *C) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch req.RequestURI {
-		case mapclient.PubKeysEndpoint:
-			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-		default:
-			body, err := io.ReadAll(req.Body)
-			c.Assert(err, IsNil)
-			type RPCRequest struct {
-				JSONRPC string          `json:"jsonrpc"`
-				ID      interface{}     `json:"id"`
-				Method  string          `json:"method"`
-				Params  json.RawMessage `json:"params"`
-			}
-			var rpcRequest RPCRequest
-			err = json.Unmarshal(body, &rpcRequest)
-			c.Assert(err, IsNil)
-			if rpcRequest.Method == "eth_getBlockByNumber" {
-				_, err = rw.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{
-				"parentHash":"0x8b535592eb3192017a527bbf8e3596da86b3abea51d6257898b2ced9d3a83826",
-				"difficulty": "0x31962a3fc82b",
-				"extraData": "0x4477617266506f6f6c",
-				"gasLimit": "0x47c3d8",
-				"gasUsed": "0x0",
-				"hash": "0x78bfef68fccd4507f9f4804ba5c65eb2f928ea45b3383ade88aaa720f1209cba",
-				"logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-				"miner": "0x2a65aca4d5fc5b5c859090a6c34d164135398226",
-				"nonce": "0xa5e8fb780cc2cd5e",
-				"number": "0x0",
-				"receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-				"sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-				"size": "0x20e",
-				"stateRoot": "0xdc6ed0a382e50edfedb6bd296892690eb97eb3fc88fd55088d5ea753c48253dc",
-				"timestamp": "0x579f4981",
-				"totalDifficulty": "0x25cff06a0d96f4bee",
-				"transactions": [{
-					"blockHash":"0x78bfef68fccd4507f9f4804ba5c65eb2f928ea45b3383ade88aaa720f1209cba",
-					"blockNumber":"0x1",
-					"from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-					"gas":"0xc350",
-					"gasPrice":"0x4a817c800",
-					"hash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-					"input":"0x68656c6c6f21",
-					"nonce":"0x15",
-					"to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
-					"transactionIndex":"0x0",
-					"value":"0xf3dbb76162000",
-					"v":"0x25",
-					"r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
-					"s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
-				}],
-				"transactionsRoot": "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-				"uncles": [
-			]}}`))
-				c.Assert(err, IsNil)
-			}
-		}
-	}))
-	ethClient, err := ethclient.Dial(server.URL)
-	c.Assert(err, IsNil)
-	c.Assert(ethClient, NotNil)
-	storage, err := blockscanner.NewBlockScannerStorage("", config.LevelDBOptions{})
-	c.Assert(err, IsNil)
-	bridge, err := mapclient.NewThorchainBridge(config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       server.Listener.Addr().String(),
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: "",
-	}, s.m, s.keys)
-	c.Assert(err, IsNil)
-	c.Assert(bridge, NotNil)
-	pkeyMgr, err := pubkeymanager.NewPubKeyManager(bridge, s.m)
-	c.Assert(err, IsNil)
-	c.Assert(pkeyMgr.Start(), IsNil)
-	defer func() {
-		c.Assert(pkeyMgr.Stop(), IsNil)
-	}()
-	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "BSC")
-	c.Assert(err, IsNil)
-	cfg := getConfigForTest()
-	cfg.ChainID = thorcommon.BSCChain // re-org on BSC only
-	bs, err := NewEVMScanner(cfg, storage, big.NewInt(int64(Mainnet)), ethClient, rpcClient, s.bridge, s.m, pkeyMgr, func(height int64) error {
-		return nil
-	}, nil)
-	c.Assert(err, IsNil)
-	c.Assert(bs, NotNil)
-	block, err := CreateBlock(0)
-	c.Assert(err, IsNil)
-	c.Assert(block, NotNil)
-	blockNew, err := CreateBlock(1)
-	c.Assert(err, IsNil)
-	c.Assert(blockNew, NotNil)
-	blockMeta := evmtypes.NewBlockMeta(block, stypes.TxIn{TxArray: []*stypes.TxInItem{{Tx: "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"}}})
-	blockMeta.Transactions = append(blockMeta.Transactions, evmtypes.TransactionMeta{
-		Hash:        "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-		BlockHeight: block.Number.Int64(),
-	})
-	// add one UTXO which will trigger the re-org process next
-	c.Assert(bs.blockMetaAccessor.SaveBlockMeta(0, blockMeta), IsNil)
-	bs.globalErrataQueue = make(chan stypes.ErrataBlock, 1)
-	reorgedBlocks, err := bs.processReorg(blockNew)
-	c.Assert(err, IsNil)
-	c.Assert(reorgedBlocks, IsNil)
-	// make sure there is errata block in the queue
-	c.Assert(bs.globalErrataQueue, HasLen, 1)
-	blockMeta, err = bs.blockMetaAccessor.GetBlockMeta(0)
-	c.Assert(err, IsNil)
-	c.Assert(blockMeta, NotNil)
+
 }
 
 // -------------------------------------------------------------------------------------
@@ -699,7 +247,7 @@ func (s *BlockScannerTestSuite) TestUpdateGasPrice(c *C) {
 	c.Assert(err, IsNil)
 	ethClient, err := ethclient.Dial(server.URL)
 	c.Assert(err, IsNil)
-	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "AVAX")
+	rpcClient, err := evm.NewEthRPC(ethClient, time.Second, "BSC")
 	c.Assert(err, IsNil)
 	pubKeyManager, err := pubkeymanager.NewPubKeyManager(s.bridge, s.m)
 	c.Assert(err, IsNil)

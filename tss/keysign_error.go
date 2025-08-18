@@ -5,7 +5,7 @@ import (
 
 	tssMessages "github.com/mapprotocol/compass-tss/p2p/messages"
 
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 // KeysignError is a custom error create to include which party to blame

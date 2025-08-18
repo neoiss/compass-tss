@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keygen"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/rs/zerolog"
@@ -15,24 +17,22 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 // KeyGen is
 type KeyGen struct {
-	keys           *mapclient.Keys
+	keys           *keys.Keys
 	logger         zerolog.Logger
 	client         *http.Client
 	server         *tss.TssServer
-	bridge         mapclient.ThorchainBridge
-	currentVersion semver.Version
+	bridge         shareTypes.Bridge
+	currentVersion string
 	lastCheck      time.Time
 }
 
 // NewTssKeyGen create a new instance of TssKeyGen which will look after TSS key stuff
-func NewTssKeyGen(keys *mapclient.Keys, server *tss.TssServer, bridge mapclient.ThorchainBridge) (*KeyGen, error) {
+func NewTssKeyGen(keys *keys.Keys, server *tss.TssServer, bridge shareTypes.Bridge) (*KeyGen, error) {
 	if keys == nil {
 		return nil, fmt.Errorf("keys is nil")
 	}
@@ -47,14 +47,11 @@ func NewTssKeyGen(keys *mapclient.Keys, server *tss.TssServer, bridge mapclient.
 	}, nil
 }
 
-func (kg *KeyGen) getVersion() semver.Version {
+func (kg *KeyGen) getVersion() string {
 	requestTime := time.Now()
-	if !kg.currentVersion.Equals(semver.Version{}) && requestTime.Sub(kg.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
-		return kg.currentVersion
-	}
-	version, err := kg.bridge.GetThorchainVersion()
+	version, err := kg.bridge.GetMapVersion()
 	if err != nil {
-		kg.logger.Err(err).Msg("fail to get current thorchain version")
+		kg.logger.Err(err).Msg("Fail to get current map version")
 		return kg.currentVersion
 	}
 	kg.currentVersion = version
@@ -101,8 +98,8 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	keyGenReq := keygen.Request{
 		Keys: keys,
 	}
-	currentVersion := kg.getVersion()
-	keyGenReq.Version = currentVersion.String()
+	//currentVersion := kg.getVersion()
+	keyGenReq.Version = kg.getVersion()
 
 	// Use the churn try's block to choose the same leader for every node in an Asgard,
 	// since a successful keygen requires every node in the Asgard to take part.
@@ -113,6 +110,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	timer := time.NewTimer(30 * time.Minute)
 	defer timer.Stop()
 
+	//fmt.Println("processKeygenBlock GenerateNewKey 222222 -------------- ")
 	var resp keygen.Response
 	go func() {
 		resp, err = kg.server.Keygen(keyGenReq)
@@ -138,7 +136,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		blame.BlameNodes[i].BlameData = n.BlameData
 		blame.BlameNodes[i].BlameSignature = n.BlameSignature
 	}
-
+	//fmt.Println("processKeygenBlock GenerateNewKey 333333 -------------- ")
 	if err != nil {
 		// the resp from kg.server.Keygen will not be nil
 		if blame.IsEmpty() {
@@ -147,7 +145,8 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to keygen,err:%w", err)
 	}
 
-	cpk, err := common.NewPubKey(resp.PubKey)
+	fmt.Println("processKeygenBlock GenerateNewKey 444444 -------------- ", resp.PubKey)
+	cpk, err := common.NewPubKeyByEth(resp.PubKey)
 	if err != nil {
 		return common.EmptyPubKeySet, blame, fmt.Errorf("fail to create common.PubKey,%w", err)
 	}

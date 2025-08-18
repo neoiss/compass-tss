@@ -95,7 +95,7 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 	peerGroup, ok := pc.peersGroup[requestMsg.ID]
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
-		pc.logger.Info().Msg("this party is not ready")
+		pc.logger.Info().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
 		return
 	}
 	remotePeer := stream.Conn().RemotePeer()
@@ -130,7 +130,7 @@ func (pc *PartyCoordinator) HandleStream(stream network.Stream) {
 	peerGroup, ok := pc.peersGroup[msg.ID]
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
-		pc.logger.Info().Msg("this party is not ready")
+		pc.logger.Info().Str("msgId", msg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
 		return
 	}
 	_, err = peerGroup.updatePeer(remotePeer)
@@ -222,7 +222,7 @@ func (pc *PartyCoordinator) sendResponseToAll(msg *messages.JoinPartyLeaderComm,
 				return
 			}
 			if err := pc.sendMsgToPeer(msgSend, msg.ID, peer, joinPartyProtocolWithLeader, true); err != nil {
-				pc.logger.Error().Err(err).Msg("error in send the join party request to peer")
+				pc.logger.Error().Err(err).Msg("error in send the join party response to peer")
 			}
 		}(el)
 	}
@@ -341,7 +341,7 @@ func (pc *PartyCoordinator) joinPartyMember(msgID string, peerGroup *peerStatus,
 	wg.Wait()
 
 	if peerGroup.getLeaderResponse() == nil {
-		leaderPk, err := conversion.GetPubKeyFromPeerID(leaderID.String())
+		leaderPk, err := conversion.GetPubKeyFromPeerIDByEth(leaderID.String())
 		if err != nil {
 			pc.logger.Error().Msg("received no response from the leader")
 		} else {
@@ -449,10 +449,12 @@ func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64,
 
 	if pc.host.ID() == leaderID {
 		onlines, err := pc.joinPartyLeader(msgID, peerGroup, sigChan)
+		fmt.Println("JoinPartyWithLeader onlines ", onlines)
 		return onlines, leader, err
 	}
 	// now we are just the normal peer
 	onlines, err := pc.joinPartyMember(msgID, peerGroup, sigChan)
+	fmt.Println("JoinPartyWithLeader joinPartyMember onlines ", onlines)
 	return onlines, leader, err
 }
 

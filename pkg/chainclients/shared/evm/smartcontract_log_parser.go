@@ -4,26 +4,22 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	memo "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
 )
 
 const (
-	NativeTokenAddr         = "0x0000000000000000000000000000000000000000"
-	depositEvent            = "0xef519b7eb82aaf6ac376a6df2d793843ebfd593de5f1a0601d3cc6ab49ebb395"
-	transferOutEvent        = "0xa9cd03aa3c1b4515114539cd53d22085129d495cb9e9f9af77864526240f1bf7"
-	transferAllowanceEvent  = "0x05b90458f953d3fcb2d7fb25616a2fddeca749d0c47cc5c9832d0266b5346eea"
-	vaultTransferEvent      = "0x281daef48d91e5cd3d32db0784f6af69cd8d8d2e8c612a3568dca51ded51e08f"
-	transferOutAndCallEvent = "0x8e5841bcd195b858d53b38bcf91b38d47f3bc800469b6812d35451ab619c6f6c"
+	NativeTokenAddr = "0x0000000000000000000000000000000000000000"
+	VoteInMethod    = "voteTxIn"
+	VoteOutMethod   = "voteTxOut"
 )
 
 type (
@@ -66,17 +62,19 @@ func NewSmartContractLogParser(validator contractAddressValidator,
 
 // vaultDepositEvent represent a vault deposit
 type vaultDepositEvent struct {
-	To     ecommon.Address
-	Asset  ecommon.Address
-	Amount *big.Int
-	Memo   string
+	OrderId ecommon.Hash
+	From    ecommon.Address
+	Vault   ecommon.Address
+	Token   ecommon.Address
+	Amount  *big.Int
+	To      ecommon.Address
 }
 
 func (scp *SmartContractLogParser) parseDeposit(log etypes.Log) (vaultDepositEvent, error) {
 	const DepositEventName = "Deposit"
 	event := vaultDepositEvent{}
 	if err := scp.unpackVaultLog(&event, DepositEventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack event: %w", err)
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
 	}
 	return event, nil
 }
@@ -102,12 +100,34 @@ func (scp *SmartContractLogParser) unpackVaultLog(out interface{}, event string,
 	return abi.ParseTopics(out, indexed, log.Topics[1:])
 }
 
+// swapEvent represent a vault deposit
+type swapEvent struct {
+	OrderId ecommon.Hash
+	From    ecommon.Address // todo not use
+	Vault   ecommon.Address
+	Token   ecommon.Address
+	Amount  *big.Int
+	Tochain *big.Int
+	To      []byte
+	Payload []byte
+}
+
+func (scp *SmartContractLogParser) parseSwap(log etypes.Log) (swapEvent, error) {
+	const SwapEventName = "Swap"
+	event := swapEvent{}
+	if err := scp.unpackVaultLog(&event, SwapEventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack swap event: %w", err)
+	}
+	return event, nil
+}
+
 type vaultTransferOutEvent struct {
-	Vault  ecommon.Address
-	To     ecommon.Address
-	Asset  ecommon.Address
-	Amount *big.Int
-	Memo   string
+	OrderId ecommon.Hash
+	Vault   ecommon.Address
+	Token   ecommon.Address
+	Amount  *big.Int
+	To      ecommon.Address
+	Result  bool
 }
 
 func (scp *SmartContractLogParser) parseTransferOut(log etypes.Log) (vaultTransferOutEvent, error) {
@@ -120,11 +140,15 @@ func (scp *SmartContractLogParser) parseTransferOut(log etypes.Log) (vaultTransf
 }
 
 type vaultTransferAllowanceEvent struct {
-	OldVault ecommon.Address
-	NewVault ecommon.Address
-	Asset    ecommon.Address
-	Amount   *big.Int
-	Memo     string
+	OrderId    ecommon.Hash
+	FromVault  ecommon.Address
+	ToVault    ecommon.Address
+	Allowances []*evmTokenAllowance
+}
+
+type evmTokenAllowance struct {
+	Token  ecommon.Address
+	Amount *big.Int
 }
 
 func (scp *SmartContractLogParser) parseTransferAllowanceEvent(log etypes.Log) (vaultTransferAllowanceEvent, error) {
@@ -157,181 +181,217 @@ func (scp *SmartContractLogParser) parseTransferOutAndCall(log etypes.Log) (*THO
 	return event, nil
 }
 
-func (scp *SmartContractLogParser) GetTxInItem(logs []*etypes.Log, txInItem *types.TxInItem) (bool, error) {
-	if len(logs) == 0 {
+func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) (bool, error) {
+	if ll == nil {
 		scp.logger.Info().Msg("tx logs are empty return nil")
-		return false, nil
-	} else if int(scp.maxLogs) > 0 && len(logs) > int(scp.maxLogs) {
-		scp.logger.Info().Msgf("tx logs are too many, ignore")
 		return false, nil
 	}
 	isVaultTransfer := false
-	for _, item := range logs {
-		// only events produced by THORChain router is processed
-		if !scp.addressValidator(&item.Address, false) {
-			continue
-		}
-		earlyExit := false
-		switch item.Topics[0].String() {
-		case depositEvent:
-			// router contract , deposit function has re-entrance protection
-			depositEvt, err := scp.parseDeposit(*item)
-			if err != nil {
-				scp.logger.Err(err).Msg("fail to parse deposit event")
-				continue
-			}
-			if len(depositEvt.Amount.Bits()) == 0 {
-				scp.logger.Info().Msg("deposit amount is 0, ignore")
-				continue
-			}
-			if len(txInItem.To) > 0 && !strings.EqualFold(txInItem.To, depositEvt.To.String()) {
-				return false, fmt.Errorf("multiple events in the same transaction, have different to addresses , ignore")
-			}
-			if len(txInItem.Memo) > 0 && !strings.EqualFold(txInItem.Memo, depositEvt.Memo) {
-				return false, fmt.Errorf("multiple events in the same transaction , have different memo , ignore")
-			}
-			asset, err := scp.assetResolver(depositEvt.Asset.String())
-			if err != nil {
-				scp.logger.Err(err).Str("token address", depositEvt.Amount.String()).Msg("failed to get asset from token address")
-				continue
-			}
-			if asset.IsEmpty() {
-				continue
-			}
-			txInItem.To = depositEvt.To.String()
-			txInItem.Memo = depositEvt.Memo
-			decimals := scp.decimalResolver(depositEvt.Asset.String())
-			txInItem.Coins = append(txInItem.Coins,
-				common.NewCoin(asset, scp.amtConverter(depositEvt.Asset.String(), depositEvt.Amount)).WithDecimals(decimals))
-			isVaultTransfer = false
-		case transferOutEvent:
-			// it is not legal to have multiple transferOut event , transferOut event should be final
-			transferOutEvt, err := scp.parseTransferOut(*item)
-			if err != nil {
-				scp.logger.Err(err).Msg("fail to parse transfer out event")
-				continue
-			}
-			m, err := memo.ParseMemo(common.LatestVersion, transferOutEvt.Memo)
-			if err != nil {
-				scp.logger.Err(err).Str("memo", transferOutEvt.Memo).Msg("failed to parse transferOutEvent memo")
-				continue
-			}
-			if !m.IsOutbound() && !m.IsType(memo.TxMigrate) {
-				scp.logger.Error().Str("memo", transferOutEvt.Memo).Msg("incorrect memo for transferOutEvent")
-				continue
-			}
-			asset, err := scp.assetResolver(transferOutEvt.Asset.String())
-			if err != nil {
-				return false, fmt.Errorf("fail to get asset from token address: %w", err)
-			}
-			if asset.IsEmpty() {
-				return false, nil
-			}
-			txInItem.To = transferOutEvt.To.String()
-			txInItem.Memo = transferOutEvt.Memo
-			decimals := scp.decimalResolver(transferOutEvt.Asset.String())
-			txInItem.Coins = common.NewCoins(
-				common.NewCoin(asset, scp.amtConverter(transferOutEvt.Asset.String(), transferOutEvt.Amount)).WithDecimals(decimals),
-			)
-			earlyExit = true
-			isVaultTransfer = false
-		case transferAllowanceEvent:
-			// there is no circumstance , router will emit multiple transferAllowance event
-			// if that does happen , it means something dodgy happened
-			transferAllowanceEvt, err := scp.parseTransferAllowanceEvent(*item)
-			if err != nil {
-				scp.logger.Err(err).Msg("fail to parse transfer allowance event")
-				continue
-			}
-			if len(transferAllowanceEvt.Amount.Bits()) == 0 {
-				scp.logger.Error().Msg("transfer allowance event with amount 0, ignore")
-				continue
-			}
-			if len(txInItem.Sender) > 0 && !strings.EqualFold(txInItem.Sender, transferAllowanceEvt.OldVault.String()) {
-				scp.logger.Error().Msg("transfer allowance event , vault address is not the same as sender, ignore")
-				continue
-			}
-			if len(txInItem.To) > 0 && !strings.EqualFold(txInItem.To, transferAllowanceEvt.NewVault.String()) {
-				scp.logger.Error().Msg("multiple transfer allowance events , have different to addresses , ignore")
-				continue
-			}
-			if len(txInItem.Memo) > 0 && !strings.EqualFold(txInItem.Memo, transferAllowanceEvt.Memo) {
-				scp.logger.Error().Msg("multiple events in the same transaction , have different memo , ignore")
-				continue
-			}
-			m, err := memo.ParseMemo(common.LatestVersion, transferAllowanceEvt.Memo)
-			if err != nil {
-				scp.logger.Err(err).Str("memo", transferAllowanceEvt.Memo).Msg("failed to parse transferAllowanceEvt memo")
-				continue
-			}
-			if !m.IsType(memo.TxMigrate) {
-				scp.logger.Error().Str("memo", transferAllowanceEvt.Memo).Msg("incorrect memo for transferAllowanceEvt")
-				continue
-			}
-			asset, err := scp.assetResolver(transferAllowanceEvt.Asset.String())
-			if err != nil {
-				scp.logger.Err(err).Str("address", transferAllowanceEvt.Asset.String()).Msg("fail to get asset from token address")
-				continue
-			}
-			if asset.IsEmpty() {
-				continue
-			}
-			txInItem.To = transferAllowanceEvt.NewVault.String()
-			txInItem.Memo = transferAllowanceEvt.Memo
-			decimals := scp.decimalResolver(transferAllowanceEvt.Asset.String())
-			txInItem.Coins = common.NewCoins(
-				common.NewCoin(asset, scp.amtConverter(transferAllowanceEvt.Asset.String(), transferAllowanceEvt.Amount)).WithDecimals(decimals),
-			)
-			isVaultTransfer = false
-		case vaultTransferEvent:
-			// TODO vault transfer events were only fired by ygg returns
-			continue
-		case transferOutAndCallEvent:
-			transferOutAndCall, err := scp.parseTransferOutAndCall(*item)
-			if err != nil {
-				scp.logger.Err(err).Msg("fail to parse transferOutAndCall event")
-				continue
-			}
-			scp.logger.Info().Msgf("transferOutAndCall: %+v", transferOutAndCall)
-			m, err := memo.ParseMemo(common.LatestVersion, transferOutAndCall.Memo)
-			if err != nil {
-				scp.logger.Err(err).Msgf("fail to parse memo: %s", transferOutAndCall.Memo)
-				continue
-			}
-			if !m.IsType(memo.TxOutbound) {
-				scp.logger.Error().Msgf("%s is not an outbound memo", transferOutAndCall.Memo)
-				continue
-			}
-			decimals := scp.decimalResolver(NativeTokenAddr)
-			txInItem.Coins = common.Coins{
-				common.NewCoin(scp.nativeAsset, scp.amtConverter(NativeTokenAddr, transferOutAndCall.Amount)).WithDecimals(decimals),
-			}
-			aggregatorAddr, err := common.NewAddress(transferOutAndCall.Target.String())
-			if err != nil {
-				scp.logger.Err(err).Str("aggregator_address", transferOutAndCall.Target.String()).Msg("fail to parse aggregator address")
-				continue
-			}
-			aggregatorTargetAddr, err := common.NewAddress(transferOutAndCall.FinalAsset.String())
-			if err != nil {
-				scp.logger.Err(err).Str("final_asset", transferOutAndCall.FinalAsset.String()).Msg("fail to parse aggregator target address")
-				continue
-			}
 
-			txInItem.To = transferOutAndCall.To.String()
-			txInItem.Memo = transferOutAndCall.Memo
-			txInItem.Sender = transferOutAndCall.Vault.String()
-			txInItem.Aggregator = aggregatorAddr.String()
-			txInItem.AggregatorTarget = aggregatorTargetAddr.String()
-			if transferOutAndCall.AmountOutMin != nil {
-				limit := cosmos.NewUintFromBigInt(transferOutAndCall.AmountOutMin)
-				if !limit.IsZero() {
-					txInItem.AggregatorTargetLimit = &limit
-				}
-			}
+	//earlyExit := false
+	switch ll.Topics[0].String() {
+	case constants.EventOfDeposit.GetTopic().String():
+		// router contract , deposit function has re-entrance protection
+		depositEvt, err := scp.parseDeposit(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse deposit event")
+			return false, err
 		}
-		if earlyExit {
-			break
+		txInItem.OrderId = depositEvt.OrderId
+		txInItem.To = depositEvt.To.Bytes()
+		txInItem.Method = VoteInMethod
+		txInItem.TxInType = constants.DEPOSIT
+		txInItem.Amount = depositEvt.Amount
+		txInItem.Token = depositEvt.Token.Bytes()
+		txInItem.Vault = depositEvt.Vault.Bytes()
+		txInItem.ToChain = big.NewInt(0) // deposit default zero
+		txInItem.From = depositEvt.From.Bytes()
+
+	case constants.EventOfSwap.GetTopic().Hex():
+		// it is not legal to have multiple transferOut event , transferOut event should be final
+		swapEvt, err := scp.parseSwap(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse swap event")
+			return false, err
 		}
+		txInItem.OrderId = swapEvt.OrderId
+		txInItem.From = swapEvt.From.Bytes()
+		txInItem.To = swapEvt.To
+		txInItem.Method = VoteInMethod
+		txInItem.TxInType = constants.SWAP
+		txInItem.Amount = swapEvt.Amount
+		txInItem.Token = swapEvt.Token.Bytes()
+		txInItem.Vault = swapEvt.Vault.Bytes()
+		txInItem.ToChain = swapEvt.Tochain
+		txInItem.Payload = swapEvt.Payload
+
+	case constants.EventOfTransferOut.GetTopic().Hex():
+		// todo convert txOutItem
+		// there is no circumstance , router will emit multiple transferAllowance event
+		// if that does happen , it means something dodgy happened
+		transferOutEvt, err := scp.parseTransferOut(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse transfer out event")
+			return false, err
+		}
+		fmt.Println(" transferOutEvt ------------- ", transferOutEvt)
+		//transferOutEvt.To
+		//txInItem.OrderId = transferOutEvt.OrderId
+		//transferOutEvt.Vault
+		//txInItem.Token = transferOutEvt.Token
+		//txInItem.Amount = transferOutEvt.Amount
+		//transferOutEvt.Result
+
+		isVaultTransfer = false
+	case constants.EventOfTransferAllowance.GetTopic().Hex():
+		// TODO vault transfer events were only fired by ygg returns
+		transferAllowanceEvt, err := scp.parseTransferAllowanceEvent(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse transfer allowance event")
+			return false, err
+		}
+		fmt.Println(" transferAllowanceEvt ------------- ", transferAllowanceEvt)
+		//transferAllowanceEvt.Allowances
+		//transferAllowanceEvt.FromVault
+		//transferAllowanceEvt.ToVault
+		//txInItem.OrderId = transferAllowanceEvt.OrderId
+
 	}
+
 	return isVaultTransfer, nil
+}
+
+func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types.TxArrayItem) error {
+	if ll == nil {
+		scp.logger.Info().Msg("Tx logs are empty return nil")
+		return nil
+	}
+	txOutItem.LogIndex = ll.Index // add this
+	txOutItem.TxHash = ll.TxHash.String()
+
+	switch ll.Topics[0].String() {
+	case constants.RelayEventOfMigration.GetTopic().String():
+		evt, err := scp.parseRelayMigration(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse deposit event")
+			return err
+		}
+		txOutItem.Method = constants.TransferAllowance
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Chain = evt.Chain
+		txOutItem.FromVault = evt.FromVault
+		txOutItem.ToVault = evt.ToVault
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+		txOutItem.Allowances = make([]types.TokenAllowance, 0)
+		for _, ele := range evt.Allowances {
+			txOutItem.Allowances = append(txOutItem.Allowances, types.TokenAllowance{
+				Token:  ele.Token,
+				Amount: ele.Amount,
+			})
+		}
+		scp.logger.Info().Msgf("Parsed RelayEventOfMigration: %+v", evt)
+
+	case constants.RelayEventOfTransferOut.GetTopic().Hex():
+		// it is not legal to have multiple transferOut event , transferOut event should be final
+		evt, err := scp.parseRelayTransferOut(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse swap event")
+			return err
+		}
+		txOutItem.Method = constants.TransferOut
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Token = evt.Token
+		txOutItem.Amount = evt.Amount
+		txOutItem.Chain = evt.Chain
+		txOutItem.Vault = evt.Vault
+		txOutItem.To = evt.To
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+		scp.logger.Info().Msgf("Parsed RelayEventOfTransferOut: %+v", evt)
+
+	case constants.RelayEventOfTransferCall.GetTopic().Hex():
+		evt, err := scp.parseRelayTransferCall(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse transfer out event")
+			return err
+		}
+
+		txOutItem.Method = constants.TransferOutCall
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.Token = evt.Token
+		txOutItem.Amount = evt.Amount
+		txOutItem.Chain = evt.Chain
+		txOutItem.Vault = evt.Vault
+		txOutItem.To = evt.To
+		txOutItem.Payload = evt.Payload
+		txOutItem.TransactionRate = evt.TransactionRate
+		txOutItem.TransactionSize = evt.TransactionSize
+		scp.logger.Info().Msgf("Parsed RelayTransferCall: %+v", evt)
+	}
+	return nil
+}
+
+type TokenAllowance struct {
+	Token  []byte
+	Amount *big.Int
+}
+type RelayMigration struct {
+	OrderId         ecommon.Hash
+	Chain           *big.Int
+	FromVault       []byte
+	ToVault         []byte
+	Allowances      []TokenAllowance
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayMigration(log etypes.Log) (RelayMigration, error) {
+	const eventName = "Migration"
+	event := RelayMigration{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
+}
+
+type RelayTransferOut struct {
+	OrderId         ecommon.Hash
+	Token           []byte
+	Amount          *big.Int
+	Chain           *big.Int
+	Vault           []byte
+	To              []byte
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayTransferOut(log etypes.Log) (RelayTransferOut, error) {
+	const eventName = "RelayTransferOut"
+	event := RelayTransferOut{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
+}
+
+type RelayTransferCall struct {
+	OrderId         ecommon.Hash
+	Token           []byte
+	Amount          *big.Int
+	Chain           *big.Int
+	Vault           []byte
+	To              []byte
+	Payload         []byte
+	TransactionRate *big.Int
+	TransactionSize *big.Int
+}
+
+func (scp *SmartContractLogParser) parseRelayTransferCall(log etypes.Log) (RelayTransferCall, error) {
+	const eventName = "RelayTransferCall"
+	event := RelayTransferCall{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	}
+	return event, nil
 }

@@ -4,16 +4,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcutil"
-	bchtxscript "github.com/mapprotocol/compass-tss/txscript/bchd-txscript"
-	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
-	ltctxscript "github.com/mapprotocol/compass-tss/txscript/ltcd-txscript"
-	btctxscript "github.com/mapprotocol/compass-tss/txscript/txscript"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
 	"github.com/mapprotocol/compass-tss/common"
@@ -22,7 +21,10 @@ import (
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	bchtxscript "github.com/mapprotocol/compass-tss/txscript/bchd-txscript"
+	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
+	ltctxscript "github.com/mapprotocol/compass-tss/txscript/ltcd-txscript"
+	btctxscript "github.com/mapprotocol/compass-tss/txscript/txscript"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -305,18 +307,20 @@ func (c *Client) sendNetworkFee(height int64) error {
 	}
 
 	c.lastFeeRate = feeRate
-	c.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           c.cfg.ChainID,
-		Height:          height,
-		TransactionSize: c.cfg.UTXO.EstimatedAverageTxSize,
-		TransactionRate: feeRate,
+	cId, _ := c.cfg.ChainID.ChainID()
+	c.globalNetworkFeeQueue <- types.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     c.cfg.UTXO.EstimatedAverageTxSize,
+		TransactionSwapSize: c.cfg.UTXO.EstimatedAverageTxSwapSize,
+		TransactionRate:     feeRate,
 	}
 
 	c.log.Debug().Msg("send network fee to THORNode successfully")
 	return nil
 }
 
-// sendNetworkFeeFromBlock will send network fee to Thornode based on the block result,
+// sendNetworkFeeFromBlock will send network fee to MAPO based on the block result,
 // for chains like Dogecoin which do not support the getblockstats RPC.
 func (c *Client) sendNetworkFeeFromBlock(blockResult *btcjson.GetBlockVerboseTxResult) error {
 	height := blockResult.Height
@@ -364,11 +368,13 @@ func (c *Client) sendNetworkFeeFromBlock(blockResult *btcjson.GetBlockVerboseTxR
 		Uint64("feeRateSats", feeRateSats).
 		Msg("sendNetworkFee")
 
-	c.globalNetworkFeeQueue <- common.NetworkFee{
-		Chain:           c.cfg.ChainID,
-		Height:          height,
-		TransactionSize: c.cfg.UTXO.EstimatedAverageTxSize,
-		TransactionRate: feeRateSats,
+	cId, _ := c.cfg.ChainID.ChainID()
+	c.globalNetworkFeeQueue <- types.NetworkFee{
+		ChainId:             cId,
+		Height:              height,
+		TransactionSize:     c.cfg.UTXO.EstimatedAverageTxSize,
+		TransactionSwapSize: c.cfg.UTXO.EstimatedAverageTxSwapSize,
+		TransactionRate:     feeRateSats,
 	}
 
 	c.lastFeeRate = feeRateSats
@@ -466,6 +472,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 	// RBF enabled transaction will not be observed until committed to block
 	if c.isRBFEnabled(tx) && isMemPool {
+		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore RBF enabled tx in mempool")
 		return types.TxInItem{}, nil
 	}
 	sender, err := c.getSender(tx, vinZeroTxs)
@@ -479,11 +486,18 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
-	m, err := mem.ParseMemo(common.LatestVersion, memo)
+	m, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("memo", memo).Msg("fail to parse memo")
+		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
 	}
-	output, err := c.getOutput(sender, tx, m.IsType(mem.TxConsolidate))
+	if !m.IsValid() {
+		c.log.Debug().Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
+		return types.TxInItem{}, fmt.Errorf("invalid memo")
+	}
+
+	//output, err := c.getOutput(sender, tx, m.IsType(mem.TxConsolidate))
+	output, err := c.getOutput(sender, tx, false)
 	if err != nil {
 		if errors.Is(err, btypes.ErrFailOutputMatchCriteria) {
 			c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx not matching format")
@@ -512,21 +526,51 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 	amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
 
-	gas, err := c.getGas(tx)
+	//gas, err := c.getGas(tx)
+	//if err != nil {
+	//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
+	//}
+	// todo utxo get chain id from map chain ???
+	destChainID, err := common.Chain(m.GetChain()).ChainID()
 	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
+		return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, m.GetChain())
 	}
-	return types.TxInItem{
-		BlockHeight: height,
-		Tx:          tx.Txid,
-		Sender:      sender,
-		To:          toAddr,
-		Coins: common.Coins{
-			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(amt)),
-		},
-		Memo: memo,
-		Gas:  gas,
-	}, nil
+
+	chainID, err := c.GetChain().ChainID()
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, c.GetChain())
+	}
+
+	tokenAddress, err := c.bridge.GetTokenAddress(chainID, m.GetToken())
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, m.GetToken())
+	}
+	if len(tokenAddress) == 0 {
+		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, m.GetToken())
+	}
+
+	txIn := types.TxInItem{
+		Tx:        tx.Txid,
+		Memo:      memo,
+		TxInType:  constants.SWAP,
+		FromChain: chainID,
+		ToChain:   destChainID,
+		Height:    big.NewInt(height),
+		Amount:    new(big.Int).SetUint64(amt),
+		OrderId:   generateOrderID(chainID.String(), tx.Txid),
+		GasUsed:   nil,
+		Token:     tokenAddress,
+		Vault:     nil,
+		From:      []byte(sender),
+		To:        ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
+		Method:    constants.VoteTxIn,
+	}
+	fmt.Println("============================== tx in: ", common.JSON(txIn))
+	return txIn, nil
+}
+
+func generateOrderID(chainID, txHash string) ethcommon.Hash {
+	return crypto.Keccak256Hash([]byte(fmt.Sprintf("%s%s", chainID, txHash)))
 }
 
 // stripBCHAddress removes prefix on bch addresses.
@@ -662,12 +706,12 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		if txInItem.IsEmpty() {
 			continue
 		}
-		if txInItem.Coins.IsEmpty() {
-			continue
-		}
-		if txInItem.Coins[0].Amount.LT(c.cfg.ChainID.DustThreshold()) {
-			continue
-		}
+		//if txInItem.Coins.IsEmpty() {
+		//	continue
+		//}
+		//if txInItem.Coins[0].Amount.LT(c.cfg.ChainID.DustThreshold()) {
+		//	continue
+		//}
 		var added bool
 		added, err = c.temporalStorage.TrackObservedTx(txInItem.Tx)
 		if err != nil {
@@ -964,4 +1008,10 @@ func (c *Client) getBlockRequiredConfirmation(txIn types.TxIn, height int64) (in
 	c.log.Info().Msgf("totalTxValue:%s, totalFeeAndSubsidy:%d, confirm:%d", totalTxValue, totalFeeAndSubsidy, confirm)
 
 	return int64(confirm), nil
+}
+
+const errDatabaseAlreadyExists = "database already exists"
+
+func databaseAlreadyExists(e error) bool {
+	return strings.Contains(strings.ToLower(e.Error()), errDatabaseAlreadyExists)
 }

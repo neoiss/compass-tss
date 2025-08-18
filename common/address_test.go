@@ -1,5 +1,5 @@
-//go:build mocknet
-// +build mocknet
+//go:build testnet
+// +build testnet
 
 package common
 
@@ -47,7 +47,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, false)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(THORChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(THORChain), Equals, TestNet)
 
 	// eth tests
 	addr, err = NewAddress("0x90f2b1ae50e6018230e90a33f98c7844a0ab635a")
@@ -94,7 +94,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, true)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BTCChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BTCChain), Equals, TestNet)
 
 	// mainnet p2pkh
 	addr, err = NewAddress("12MzCDwodF9G1e7jfwLXfR164RNtx4BRVG")
@@ -142,7 +142,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, true)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BTCChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BTCChain), Equals, TestNet)
 
 	// mainnet p2pk compressed (0x02), UTXO SignTx unable to sign for (not a THORChain-supported format)
 	_, err = NewAddress("02192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4")
@@ -208,7 +208,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BTCChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BTCChain), Equals, TestNet)
 
 	// segwit mocknet p2wsh witness v0
 	addr, err = NewAddress("tb1qqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesrxh6hy")
@@ -221,7 +221,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BTCChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BTCChain), Equals, TestNet)
 
 	// segwit mainnet witness v1
 	addr, err = NewAddress("bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx")
@@ -258,7 +258,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(BCHChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BTCChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BTCChain), Equals, TestNet)
 
 	// Taproot mainnet (bech32m)
 	addr, err = NewAddress("bc1pfy63nact82mfmts5jv87p2uayxqs29gf8070td7kzhwzx6zc9ruq9u7xy7")
@@ -297,7 +297,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(LTCChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, false)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(BCHChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(BCHChain), Equals, TestNet)
 
 	// doge tests
 	_, err = NewAddress("DJbKker23xfz3ufxAbqUuQwp1EBibGJJHu")
@@ -315,7 +315,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(THORChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, false)
 	c.Check(addr.IsChain(XRPChain), Equals, true)
-	c.Check(addr.GetNetwork(XRPChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(XRPChain), Equals, TestNet)
 	// Valid XRP address
 	addr, err = NewAddress("r4KYDZBbcAaJJ5MQPwRR9apJ2p5EBz8bq8")
 	c.Check(err, IsNil)
@@ -333,7 +333,7 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(THORChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(DOGEChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(DOGEChain), Equals, TestNet)
 
 	addr, err = NewAddress("mtyBWSzMZaCxJ1xy9apJBZzXz648BZrpJg")
 	c.Check(err, IsNil)
@@ -345,5 +345,5 @@ func (s *AddressSuite) TestAddress(c *C) {
 	c.Check(addr.IsChain(THORChain), Equals, false)
 	c.Check(addr.IsChain(DOGEChain), Equals, true)
 	c.Check(addr.IsChain(XRPChain), Equals, false)
-	c.Check(addr.GetNetwork(DOGEChain), Equals, MockNet)
+	c.Check(addr.GetNetwork(DOGEChain), Equals, TestNet)
 }

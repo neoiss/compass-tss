@@ -110,11 +110,9 @@ func ConvertToNewBCHAddressFormat(addr Address) (Address, error) {
 	network := CurrentChainNetwork
 	var param *bchchaincfg.Params
 	switch network {
-	case MockNet:
-		param = &bchchaincfg.RegressionNetParams
+	case TestNet:
+		param = &bchchaincfg.TestNet3Params
 	case MainNet:
-		param = &bchchaincfg.MainNetParams
-	case StageNet:
 		param = &bchchaincfg.MainNetParams
 	}
 	bchAddr, err := bchutil.DecodeAddress(addr.String(), param)
@@ -242,9 +240,6 @@ func (addr Address) GetChain() Chain {
 func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 	currentNetwork := CurrentChainNetwork
 	mainNetPredicate := func() ChainNetwork {
-		if currentNetwork == StageNet {
-			return StageNet
-		}
 		return MainNet
 	}
 	// EVM addresses don't have different prefixes per network
@@ -252,24 +247,13 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 		return currentNetwork
 	}
 	switch chain {
-	case THORChain:
-		prefix, _, _ := bech32.Decode(addr.String())
-		if strings.EqualFold(prefix, "thor") {
-			return mainNetPredicate()
-		}
-		if strings.EqualFold(prefix, "tthor") {
-			return MockNet
-		}
-		if strings.EqualFold(prefix, "sthor") {
-			return StageNet
-		}
 	case BTCChain:
 		prefix, _, _ := bech32.Decode(addr.String())
 		switch prefix {
 		case "bc":
 			return mainNetPredicate()
 		case "bcrt", "tb":
-			return MockNet
+			return TestNet
 		default:
 			_, err := btcutil.DecodeAddress(addr.String(), &chaincfg.MainNetParams)
 			if err == nil {
@@ -277,11 +261,11 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 			}
 			_, err = btcutil.DecodeAddress(addr.String(), &chaincfg.TestNet3Params)
 			if err == nil {
-				return MockNet
+				return TestNet
 			}
 			_, err = btcutil.DecodeAddress(addr.String(), &chaincfg.RegressionNetParams)
 			if err == nil {
-				return MockNet
+				return TestNet
 			}
 		}
 	case LTCChain:
@@ -290,7 +274,7 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 		case "ltc":
 			return mainNetPredicate()
 		case "rltc", "tltc":
-			return MockNet
+			return TestNet
 		default:
 			_, err := ltcutil.DecodeAddress(addr.String(), &ltcchaincfg.MainNetParams)
 			if err == nil {
@@ -298,11 +282,11 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 			}
 			_, err = ltcutil.DecodeAddress(addr.String(), &ltcchaincfg.TestNet4Params)
 			if err == nil {
-				return MockNet
+				return TestNet
 			}
 			_, err = ltcutil.DecodeAddress(addr.String(), &ltcchaincfg.RegressionNetParams)
 			if err == nil {
-				return MockNet
+				return TestNet
 			}
 		}
 	case BCHChain:
@@ -314,12 +298,12 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 		// Check testnet other formats
 		_, err = bchutil.DecodeAddress(addr.String(), &bchchaincfg.TestNet3Params)
 		if err == nil {
-			return MockNet
+			return TestNet
 		}
 		// Check mocknet / regression other formats
 		_, err = bchutil.DecodeAddress(addr.String(), &bchchaincfg.RegressionNetParams)
 		if err == nil {
-			return MockNet
+			return TestNet
 		}
 	case DOGEChain:
 		// Check mainnet other formats
@@ -330,12 +314,12 @@ func (addr Address) GetNetwork(chain Chain) ChainNetwork {
 		// Check testnet other formats
 		_, err = dogutil.DecodeAddress(addr.String(), &dogchaincfg.TestNet3Params)
 		if err == nil {
-			return MockNet
+			return TestNet
 		}
 		// Check mocknet / regression other formats
 		_, err = dogutil.DecodeAddress(addr.String(), &dogchaincfg.RegressionNetParams)
 		if err == nil {
-			return MockNet
+			return TestNet
 		}
 	}
 	return currentNetwork

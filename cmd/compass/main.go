@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,6 +10,9 @@ import (
 	"time"
 
 	golog "github.com/ipfs/go-log"
+
+	"io"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	flag "github.com/spf13/pflag"
@@ -18,14 +20,15 @@ import (
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/signer"
-	btss "github.com/mapprotocol/compass-tss/tss"
+	ctss "github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/common"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 )
@@ -37,7 +40,7 @@ var (
 )
 
 const (
-	serverIdentity = "bifrost"
+	serverIdentity = "compass-tss"
 )
 
 func printVersion() {
@@ -55,7 +58,6 @@ func main() {
 		return
 	}
 
-	initPrefix()
 	initLog(*logLevel, *pretty)
 	config.Init()
 	config.InitBifrost()
@@ -75,22 +77,22 @@ func main() {
 	if len(cfg.Thorchain.SignerPasswd) == 0 {
 		log.Fatal().Msg("signer password is empty")
 	}
-	kb, _, err := mapclient.GetKeyringKeybase(cfg.Thorchain.ChainHomeFolder, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
+	kb, keyStore, err := keys.GetKeyringKeybase(cfg.Thorchain.KeystorePath, cfg.Thorchain.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := mapclient.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd)
-	// thorchain bridge
-	thorchainBridge, err := mapclient.NewThorchainBridge(cfg.Thorchain, m, k)
+	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, keyStore)
+	// map bridge
+	mapBridge, err := mapo.NewBridge(cfg.Thorchain, m, k)
 	if err != nil {
-		log.Fatal().Err(err).Msg("fail to create new thorchain bridge")
+		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
-	if err = thorchainBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
+	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
 		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
 	}
 	// PubKey Manager
-	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(thorchainBridge, m)
+	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(mapBridge, m)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create pubkey manager")
 	}
@@ -98,8 +100,8 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to start pubkey manager")
 	}
 
-	// automatically attempt to recover TSS keyshares if they are missing
-	if err = btss.RecoverKeyShares(cfg, thorchainBridge); err != nil {
+	// automatically attempt to recover TSS key shares if they are missing
+	if err = ctss.RecoverKeyShares(mapBridge); err != nil {
 		log.Error().Err(err).Msg("fail to recover key shares")
 	}
 
@@ -130,7 +132,7 @@ func main() {
 	comm, stateManager, err := p2p.StartP2P(
 		cfg.TSS,
 		tmPrivateKey,
-		DefaultHome,
+		constants.DefaultHome,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to start p2p")
@@ -172,8 +174,8 @@ func main() {
 			chainCfg.RPCHost = fmt.Sprintf("http://%s", chainCfg.RPCHost)
 		}
 	}
-	poolMgr := mapclient.NewPoolMgr(thorchainBridge)
-	chains, restart := chainclients.LoadChains(k, cfgChains, tssIns, thorchainBridge, m, pubkeyMgr, poolMgr)
+	poolMgr := mapo.NewPoolMgr(mapBridge)
+	chains, restart := chainclients.LoadChains(k, cfgChains, tssIns, mapBridge, m, pubkeyMgr, poolMgr)
 	if len(chains) == 0 {
 		log.Fatal().Msg("fail to load any chains")
 	}
@@ -189,10 +191,10 @@ func main() {
 	ctx := context.Background()
 
 	// start observer notifier
-	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.Thorchain.ChainEBifrost, thorchainBridge, m, cfg.AttestationGossip)
+	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.Thorchain.ChainEBifrost, mapBridge, m, cfg.AttestationGossip)
 
 	// start observer
-	obs, err := observer.NewObserver(pubkeyMgr, chains, thorchainBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, ag)
+	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, ag)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create observer")
 	}
@@ -205,7 +207,7 @@ func main() {
 	ag.SetObserverHandleObservedTxCommitted(obs)
 
 	// start signer
-	sign, err := signer.NewSigner(cfg, thorchainBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs)
+	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create instance of signer")
 	}
@@ -235,10 +237,6 @@ func main() {
 	if err = healthServer.Stop(); err != nil {
 		log.Fatal().Err(err).Msg("fail to stop health server")
 	}
-}
-
-func initPrefix() {
-	// todo
 }
 
 func initLog(level string, pretty bool) {

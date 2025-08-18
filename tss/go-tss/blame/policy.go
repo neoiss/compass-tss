@@ -44,14 +44,14 @@ func (m *Manager) tssTimeoutBlame(lastMessageType string, partyIDMap map[string]
 	return blamePubKeys, nil
 }
 
-// this blame blames the node who cause the timeout in node sync
+// NodeSyncBlame this blame blames the node who cause the timeout in node sync
 func (m *Manager) NodeSyncBlame(keys []string, onlinePeers []peer.ID) (Blame, error) {
 	blame := NewBlame(TssSyncFail, nil)
 	for _, item := range keys {
 		found := false
-		peerID, err := conversion.GetPeerIDFromPubKey(item)
+		peerID, err := conversion.GetPeerIDFromPubKeyByEth(item)
 		if err != nil {
-			return blame, fmt.Errorf("fail to get peer id from pub key")
+			return blame, fmt.Errorf("fail to get peer id from pub key, item:%v, err:%v", item, err)
 		}
 		for _, p := range onlinePeers {
 			if p == peerID {

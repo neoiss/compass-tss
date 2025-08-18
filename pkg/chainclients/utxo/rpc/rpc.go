@@ -39,7 +39,7 @@ type Client struct {
 }
 
 // NewClient returns a client connection to a UTXO daemon.
-func NewClient(host, user, password string, maxRetries int, log zerolog.Logger) (
+func NewClient(host, user, password string, maxRetries int, log zerolog.Logger) ( // todo replace ?
 	*Client, error,
 ) {
 	authFn := func(h http.Header) error {
@@ -98,7 +98,7 @@ func (c *Client) GetBlockHash(height int64) (string, error) {
 	return hash, extractBTCError(err)
 }
 
-// GetBlockVerbose returns information about the block with verbosity 2.
+// GetBlockVerboseTxs returns information about the block with verbosity 2.
 func (c *Client) GetBlockVerboseTxs(hash string) (*btcjson.GetBlockVerboseTxResult, error) {
 	var block btcjson.GetBlockVerboseTxResult
 	err := c.Call(&block, "getblock", hash, 2)

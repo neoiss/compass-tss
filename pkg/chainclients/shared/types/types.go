@@ -1,7 +1,14 @@
 package types
 
 import (
+	"context"
 	"math/big"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/internal/ctx"
+	"github.com/mapprotocol/compass-tss/internal/structure"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
@@ -15,7 +22,7 @@ type ChainClient interface {
 		globalTxsQueue chan types.TxIn,
 		globalErrataQueue chan types.ErrataBlock,
 		globalSolvencyQueue chan types.Solvency,
-		globalNetworkFeeQueue chan common.NetworkFee,
+		globalNetworkFeeQueue chan types.NetworkFee,
 	)
 
 	// Stop stops the chain client.
@@ -66,3 +73,58 @@ type ChainClient interface {
 
 // SolvencyReporter reports the solvency of the chain at the given height.
 type SolvencyReporter func(height int64) error
+
+// Bridge is compass 2 map
+type Bridge interface {
+	EnsureNodeWhitelisted() error
+	EnsureNodeWhitelistedWithTimeout() error
+	FetchNodeStatus() (stypes.NodeStatus, error)
+	FetchActiveNodes() ([]common.PubKey, error)
+	GetNodeAccount(string) (*structure.MaintainerInfo, error)
+	GetNodeAccounts(*big.Int) ([]structure.MaintainerInfo, error)
+	GetKeygenBlock() (*structure.KeyGen, error)
+	GetPools() (stypes.Pools, error) //
+	GetVault(pubkey string) (stypes.Vault, error)
+	GetPubKeys() ([]PubKeyContractAddressPair, error)
+	GetContractAddress() ([]PubKeyContractAddressPair, error)
+	GetLastObservedInHeight(chain common.Chain) (int64, error)
+	GetLastSignedOutHeight(chain common.Chain) (int64, error)
+	GetAsgards() (stypes.Vaults, error)
+	GetConstants() (map[string]int64, error)
+	GetMimir(key string) (int64, error)
+	GetMimirWithRef(template, ref string) (int64, error)
+	GetTHORName(name string) (stypes.THORName, error)
+	GetMapVersion() (string, error)
+	HasNetworkFee(chain common.Chain) (bool, error)
+	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)
+	PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionSizeWithCall, transactionRate uint64) (string, error)
+	RagnarokInProgress() (bool, error)
+	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
+	IsSyncing() (bool, error)
+	WaitSync() error
+	GetBlockHeight() (int64, error)
+	Broadcast(hexTx []byte) (string, error)
+	InitBlockScanner(...BridgeOption) error
+	GetConfig() config.BifrostClientConfiguration
+	GetContext() ctx.Context
+	GetTxByBlockNumber(blockHeight int64, pk string) (types.TxOut, error)
+	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
+	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
+		members []ecommon.Address) (string, error)
+	GetKeyShare() ([]byte, error)
+	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
+	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
+	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
+	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
+	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
+	GetChainID(name string) (*big.Int, error)
+	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
+	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
+}
+
+type BridgeOption func(Bridge) error
+
+type PubKeyContractAddressPair struct {
+	PubKey    common.PubKey
+	Contracts map[common.Chain]common.Address // todo will next 100
+}

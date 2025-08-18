@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecore "github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
@@ -47,12 +48,12 @@ func (c *Client) unstuckAction() {
 	// (behavior post https://gitlab.com/thorchain/thornode/-/merge_requests/3266 should
 	// not) or adjust gas values for the tx out. This should result in no more than one
 	// sign and broadcast per signing period for a given outbound.
-	constValues, err := c.bridge.GetConstants()
-	if err != nil {
-		c.logger.Err(err).Msg("failed to get THORChain constants")
-		return
-	}
-	signingPeriod := constValues[constants.SigningTransactionPeriod.String()]
+	//constValues, err := c.bridge.GetConstants()
+	//if err != nil {
+	//	c.logger.Err(err).Msg("failed to get THORChain constants")
+	//	return
+	//}
+	signingPeriod := int64(300)
 	if signingPeriod <= 0 {
 		c.logger.Err(err).Int64("signingPeriod", signingPeriod).Msg("invalid signing period")
 		return

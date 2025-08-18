@@ -23,8 +23,7 @@ import (
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
 )
 
 // TestLogWriter is a custom writer that writes to testing.T.Log
@@ -55,103 +54,6 @@ func getTestLogger(t *testing.T) zerolog.Logger {
 		Timestamp().
 		Caller(). // Include caller information
 		Logger()
-}
-
-// setupTestGossip sets up a test instance of AttestationGossip with mocked dependencies
-func setupTestGossip(t *testing.T) (*AttestationGossip, *MockHost, *MockKeys, *MockGRPCClient, *MockThorchainBridge, *MockEventClient) {
-	privKey := secp256k1.GenPrivKey()
-	keys := &MockKeys{
-		privKey: privKey,
-	}
-
-	pubkey2 := thorchain.GetRandomPubKey()
-	pubkey3 := thorchain.GetRandomPubKey()
-
-	// derive peer IDs
-	peer1, err := conversion.GetPeerIDFromSecp256PubKey(privKey.PubKey().Bytes())
-	require.NoError(t, err)
-	pubkey2Bz, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, pubkey2.String())
-	require.NoError(t, err)
-	peer2, err := conversion.GetPeerIDFromSecp256PubKey(pubkey2Bz.Bytes())
-	require.NoError(t, err)
-	pubkey3Bz, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, pubkey3.String())
-	require.NoError(t, err)
-	peer3, err := conversion.GetPeerIDFromSecp256PubKey(pubkey3Bz.Bytes())
-	require.NoError(t, err)
-
-	peers := []peer.ID{peer1, peer2, peer3}
-	host := NewMockHost(peers)
-
-	pubKey, err := cosmos.Bech32ifyPubKey(cosmos.Bech32PubKeyTypeAccPub, privKey.PubKey())
-	require.NoError(t, err)
-
-	grpcClient := &MockGRPCClient{
-		sendQuorumTxFunc: func(ctx context.Context, tx *common.QuorumTx, opts ...grpc.CallOption) (*ebifrost.SendQuorumTxResult, error) {
-			return &ebifrost.SendQuorumTxResult{}, nil
-		},
-		sendQuorumNetworkFeeFunc: func(ctx context.Context, quorumNetworkFee *common.QuorumNetworkFee, opts ...grpc.CallOption) (*ebifrost.SendQuorumNetworkFeeResult, error) {
-			return &ebifrost.SendQuorumNetworkFeeResult{}, nil
-		},
-		sendQuorumSolvencyFunc: func(ctx context.Context, quorumSolvency *common.QuorumSolvency, opts ...grpc.CallOption) (*ebifrost.SendQuorumSolvencyResult, error) {
-			return &ebifrost.SendQuorumSolvencyResult{}, nil
-		},
-		sendQuorumErrataFunc: func(ctx context.Context, quorumErrata *common.QuorumErrataTx, opts ...grpc.CallOption) (*ebifrost.SendQuorumErrataTxResult, error) {
-			return &ebifrost.SendQuorumErrataTxResult{}, nil
-		},
-	}
-
-	bridge := &MockThorchainBridge{
-		getKeysignPartyFunc: func(pubKey common.PubKey) (common.PubKeys, error) {
-			return common.PubKeys{pubKey, pubkey2, pubkey3}, nil
-		},
-	}
-
-	eventClient := NewMockEventClient()
-
-	// Create config
-	cfg := config.BifrostAttestationGossipConfig{
-		ObserveReconcileInterval:   1 * time.Second,
-		LateObserveTimeout:         2 * time.Minute,
-		NonQuorumTimeout:           10 * time.Hour,
-		MinTimeBetweenAttestations: 10 * time.Second,
-		AskPeers:                   2,
-		AskPeersDelay:              1 * time.Second,
-		MaxBatchSize:               100,
-		BatchInterval:              100 * time.Millisecond,
-	}
-
-	batcher := NewAttestationBatcher(NewMockHost(peers), getTestLogger(t), nil, 1*time.Second, 100, 10*time.Second, 4)
-
-	// Create the attestation gossip directly without calling NewAttestationGossip
-	ag := &AttestationGossip{
-		logger:               getTestLogger(t),
-		host:                 host,
-		privKey:              privKey,
-		pubKey:               privKey.PubKey().Bytes(),
-		grpcClient:           grpcClient,
-		config:               cfg,
-		bridge:               bridge,
-		eventClient:          eventClient,
-		cachedKeySignParties: make(map[common.PubKey]cachedKeySignParty),
-		batcher:              batcher,
-
-		observedTxs: make(map[txKey]*AttestationState[*common.ObservedTx]),
-		networkFees: make(map[common.NetworkFee]*AttestationState[*common.NetworkFee]),
-		solvencies:  make(map[common.TxID]*AttestationState[*common.Solvency]),
-		errataTxs:   make(map[common.ErrataTx]*AttestationState[*common.ErrataTx]),
-
-		observedTxsPool: NewAttestationStatePool[*common.ObservedTx](),
-		networkFeesPool: NewAttestationStatePool[*common.NetworkFee](),
-		solvenciesPool:  NewAttestationStatePool[*common.Solvency](),
-		errataTxsPool:   NewAttestationStatePool[*common.ErrataTx](),
-
-		peerMgr: newPeerManager(getTestLogger(t), 2),
-	}
-
-	// Set active validators
-	ag.setActiveValidators([]common.PubKey{common.PubKey(pubKey), pubkey2, pubkey3})
-
-	return ag, host, keys, grpcClient, bridge, eventClient
 }
 
 // TestNormalizeConfig tests the config normalization function

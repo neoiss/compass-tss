@@ -2,15 +2,16 @@ package utxo
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"strings"
 	"sync"
 
 	bchwire "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
-	"github.com/hashicorp/go-multierror"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcutil"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/eager7/dogutil"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 )
@@ -33,18 +33,23 @@ import (
 // SignTx builds and signs the outbound transaction. Returns the signed transaction, a
 // serialized checkpoint on error, and an error.
 func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []byte, *stypes.TxInItem, error) {
-	if !tx.Chain.Equals(c.cfg.ChainID) {
+	chain, ok := common.GetChainName(tx.Chain)
+	if !ok {
+		return nil, nil, nil, fmt.Errorf("unsupported chain: %s", tx.Chain)
+	}
+	if !chain.Equals(c.cfg.ChainID) {
 		return nil, nil, nil, errors.New("wrong chain")
 	}
 
 	// skip outbounds without coins
-	if tx.Coins.IsEmpty() {
-		return nil, nil, nil, nil
-	}
+	//if tx.Coins.IsEmpty() {
+	//	return nil, nil, nil, nil
+	//}
 
+	toAddress := hex.EncodeToString(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
-		if !tx.ToAddress.IsValidBCHAddress() {
-			c.log.Error().Msgf("to address: %s is legacy not allowed ", tx.ToAddress)
+		if !common.Address(toAddress).IsValidBCHAddress() {
+			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
 			return nil, nil, nil, nil
 		}
 	}
@@ -65,25 +70,25 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	var outputAddrStr string
 	switch c.cfg.ChainID {
 	case common.DOGEChain:
-		outputAddr, err = dogutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgDOGE())
+		outputAddr, err = dogutil.DecodeAddress(toAddress, c.getChainCfgDOGE())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(dogutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BCHChain:
-		outputAddr, err = bchutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBCH())
+		outputAddr, err = bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(bchutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.LTCChain:
-		outputAddr, err = ltcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgLTC())
+		outputAddr, err = ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
 		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BTCChain:
-		outputAddr, err = btcutil.DecodeAddress(tx.ToAddress.String(), c.getChainCfgBTC())
+		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -92,11 +97,12 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		c.log.Fatal().Msg("unsupported chain")
 	}
 
+	// todo utxo
 	// verify address
-	if !strings.EqualFold(outputAddrStr, tx.ToAddress.String()) {
-		c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, tx.ToAddress.String())
-		return nil, nil, nil, nil
-	}
+	//if !strings.EqualFold(outputAddrStr, toAddress) {
+	//	c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
+	//	return nil, nil, nil, nil
+	//}
 	switch outputAddr.(type) {
 	case *dogutil.AddressPubKey, *bchutil.AddressPubKey, *ltcutil.AddressPubKey, *btcutil.AddressPubKey:
 		c.log.Info().Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
@@ -116,7 +122,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 
 		// abort if any checkpoint VIN is spent
-		c.log.Info().Stringer("in_hash", tx.InHash).Msgf("verifying checkpoint vins")
+		c.log.Info().Str("in_tx_hash", tx.InTxHash).Msgf("verifying checkpoint vins")
 		var unspent bool
 		unspent, err = c.vinsUnspent(tx, redeemTx.TxIn)
 		if err != nil {
@@ -207,8 +213,9 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 	wg.Wait()
 	if utxoErr != nil {
+		// todo utxo
 		err = utxo.PostKeysignFailure(c.bridge, tx, c.log, thorchainHeight, utxoErr)
-		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", err)
+		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", utxoErr)
 	}
 
 	// convert back to wire tx
@@ -235,36 +242,36 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 
 	// create the observation to be sent by the signer before broadcast
-	chainHeight, err := c.rpc.GetBlockCount()
-	if err != nil { // fall back to the scanner height, thornode voter does not use height
-		chainHeight = c.currentBlockHeight.Load()
-	}
-	amt := redeemTx.TxOut[0].Value // the first output is the outbound amount
+	//chainHeight, err := c.rpc.GetBlockCount()
+	//if err != nil { // fall back to the scanner height, thornode voter does not use height
+	//	chainHeight = c.currentBlockHeight.Load()
+	//}
+	//amt := redeemTx.TxOut[0].Value // the first output is the outbound amount
 	gas := totalAmount
 	for _, txOut := range redeemTx.TxOut { // subtract all vouts to from vins to get the gas
 		gas -= txOut.Value
 	}
 	var txIn *stypes.TxInItem
-	sender, err := tx.VaultPubKey.GetAddress(tx.Chain)
-	if err == nil {
-		txIn = stypes.NewTxInItem(
-			chainHeight,
-			redeemTx.TxHash().String(),
-			tx.Memo,
-			sender.String(),
-			tx.ToAddress.String(),
-			common.NewCoins(
-				common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
-			),
-			common.Gas(common.NewCoins(
-				common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(gas))),
-			)),
-			tx.VaultPubKey,
-			"",
-			"",
-			nil,
-		)
-	}
+	//sender, err := tx.VaultPubKey.GetAddress(tx.Chain)
+	//if err == nil {
+	//	txIn = stypes.NewTxInItem(
+	//		chainHeight,
+	//		redeemTx.TxHash().String(),
+	//		tx.Memo,
+	//		sender.String(),
+	//		tx.ToAddress.String(),
+	//		common.NewCoins(
+	//			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(amt))),
+	//		),
+	//		common.Gas(common.NewCoins(
+	//			common.NewCoin(c.cfg.ChainID.GetGasAsset(), cosmos.NewUint(uint64(gas))),
+	//		)),
+	//		tx.VaultPubKey,
+	//		"",
+	//		"",
+	//		nil,
+	//	)
+	//}
 
 	return signedTx.Bytes(), nil, txIn, nil
 }
@@ -301,7 +308,7 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	}
 	bm, err := c.temporalStorage.GetBlockMeta(height)
 	if err != nil {
-		c.log.Err(err).Int64("height", height).Msg("fail to get blockmeta")
+		c.log.Err(err).Int64("height", height).Msg("fail to get block meta")
 	}
 	if bm == nil {
 		bm = utxo.NewBlockMeta("", height, "")

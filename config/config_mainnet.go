@@ -1,16 +1,19 @@
-//go:build !mocknet
-// +build !mocknet
+//go:build !testnet
+// +build !testnet
 
 package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand/v2"
 	"net/http"
 	"os"
 
 	"github.com/rs/zerolog/log"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 const (
@@ -20,13 +23,14 @@ const (
 )
 
 func getSeedAddrs() (addrs []string) {
-	if config.Thornode.SeedNodesEndpoint == "" {
+	// todo get ips by contract
+	if config.MAPO.SeedNodesEndpoint == "" {
 		log.Warn().Msg("no seed nodes endpoint provided")
 		return
 	}
 
 	// get nodes
-	res, err := http.Get(config.Thornode.SeedNodesEndpoint)
+	res, err := http.Get(config.MAPO.SeedNodesEndpoint)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get thorchain nodes")
 	}
@@ -61,13 +65,13 @@ func getSeedAddrs() (addrs []string) {
 }
 
 func assertBifrostHasSeeds() {
-	if config.Thornode.SeedNodesEndpoint == "" {
+	if config.MAPO.SeedNodesEndpoint == "" {
 		log.Warn().Msg("no seed nodes endpoint provided, skipping seed file check")
 		return
 	}
 
-	// fail if seed file is missing or empty since bifrost will hang
-	seedPath := os.ExpandEnv("$HOME/.thornode/address_book.seed")
+	// fail if seed file is missing or empty since compass-tss will hang
+	seedPath := os.ExpandEnv(fmt.Sprintf("$HOME/%s/address_book.seed", constants.DefaultHome))
 	fi, err := os.Stat(seedPath)
 	if os.IsNotExist(err) {
 		log.Fatal().Msg("no seed file found")

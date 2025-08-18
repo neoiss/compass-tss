@@ -19,23 +19,22 @@ bifrost:
     read_timeout: 30s
     write_timeout: 30s
     chains:
-      - AVAX
       - BCH
       - BTC
-      - DOGE
       - ETH
-      - GAIA
-      - LTC
       - BSC
       - BASE
-      - XRP
-  thorchain:
-    chain_id: thorchain
-    chain_host: localhost:1317
+  map_relay:
+    chain_id: map
+    chain_host: https://testnet-rpc.maplabs.io
     chain_rpc: ""
     chain_ebifrost: localhost:50051
     chain_home_folder: ""
-    signer_name: ""
+    signer_name: "first_cosmos"
+    keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
+    maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
+    token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
+    view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m
@@ -50,16 +49,17 @@ bifrost:
     peer_concurrent_receives: 5
   signer:
     backup_keyshares: true
-    signer_db_path: /var/data/bifrost/signer_db
+    signer_db_path: ./build/signer_db
     retry_interval: 2s
     reschedule_buffer_blocks: 150 # 15 minutes
     block_scanner:
-      chain_id: ThorChain
+      mos: "0x3F753d04E0d2ed95C73C24Bf44163F56cA7a3288"
+      chain_id: map
       start_block_height: 0
       block_retry_interval: 10s
       block_height_discover_back_off: 5s
       block_scan_processors: 1
-      start_block: "0"
+      start_block: 17243301
       http_request_timeout: 30s
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
@@ -73,16 +73,19 @@ bifrost:
   tss:
     rendezvous: asgard
     p2p_port: 5040
-    info_address: :6040
-    bootstrap_peers: ""
+    info_address: 0.0.0.0:6040
+    bootstrap_peers:
+      - 10.0.3.51
+      - 10.0.3.39
+      - 10.0.3.31
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
   chains:
     btc: &default-chain
       disabled: false
       chain_id: BTC
-      username: thorchain
-      password: password
+      username:
+      password:
       http_post_mode: 1
       disable_tls: 1
       parallel_mempool_scan: 5
@@ -122,12 +125,12 @@ bifrost:
         http_request_read_timeout: 30s
         http_request_write_timeout: 30s
         max_http_request_retry: 10
-        db_path: /var/data/bifrost/observer
+        db_path: ./build/observer
         scan_mempool: true
         max_contract_tx_logs: 0
 
         # the following defaults must be defined to override with environment
-        start_block_height: 0
+        start_block_height: 263889
         cosmos_grpc_host: ""
         cosmos_grpc_tls: false
         gas_cache_blocks: 0
@@ -144,7 +147,7 @@ bifrost:
       # the following defaults must be defined to override with environment
       chain_host: ""
       chain_network: ""
-      rpc_host: ""
+      rpc_host: "https://rpc.bitlayer.org"
       cosmos_grpc_host: ""
       cosmos_grpc_tls: false
       opt_to_retire: false
@@ -153,12 +156,14 @@ bifrost:
     eth:
       <<: *default-chain
       chain_id: ETH
+      rpc_host: "https://ethereum-sepolia-rpc.publicnode.com"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
+        mos: 0xC98E2C3BD2bd3B37934F94A53075e9aa8f86Dd8a
         max_reorg_rescan_blocks: 96 # 3 epochs
         gas_cache_blocks: 40
         concurrency: 1
@@ -166,73 +171,22 @@ bifrost:
         observation_flexibility_blocks: 20
         max_gas_limit: 100000
         max_contract_tx_logs: 50
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
-
-    base:
-      <<: *default-chain
-      chain_id: BASE
-      solvency_blocks: 100
-      max_pending_nonces: 3
-      max_gas_tip_percentage: 20
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      block_scanner:
-        <<: *default-block-scanner
-        gas_cache_blocks: 40
-        concurrency: 1
-        chain_id: BASE
-        observation_flexibility_blocks: 20
-        max_gas_limit: 100000
-        max_contract_tx_logs: 50
-        whitelist_tokens:
-          - 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 # USDC
-          - 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf # cbBTC
-          - 0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf # Venice (VVV)
-          - 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b # Virtuals
-          # - 0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed # Degen
-          # - 0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe # Higher
-          # - 0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb # Clanker
-          - 0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42 # EURC
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
-
-    avax:
-      <<: *default-chain
-      chain_id: AVAX
-      solvency_blocks: 100
-      max_pending_nonces: 3
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      block_scanner:
-        <<: *default-block-scanner
-        max_reorg_rescan_blocks: 0 # avax has guaranteed finality
-        concurrency: 1
-        chain_id: AVAX
-        gas_cache_blocks: 40
-        gas_price_resolution: 50_000_000_000 # 50 navax
-        observation_flexibility_blocks: 80
-        max_gas_limit: 100000
-        max_contract_tx_logs: 50
-        whitelist_tokens:
-          - 0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7 # USDT
-          - 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E # USDC
-          - 0xFE6B19286885a4F7F55AdAD09C3Cd1f906D2478F # WSOL
-          - 0x093783055F9047C2BfF99c4e414501F8A147bC69 # ALOT
-          - 0xC891EB4cbdEFf6e073e859e987815Ed1505c2ACD # EURC
+        start_block_height: 8866200
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
     bsc:
-      disabled: true
+      disabled: false
       <<: *default-chain
       chain_id: BSC
+      rpc_host: "https://bsc-testnet.drpc.org"
       solvency_blocks: 100
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
+        mos: 0xCD9Fc97860755cD6630E5172dbad9454a1e029a9
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
         chain_id: BSC
@@ -241,6 +195,7 @@ bifrost:
         observation_flexibility_blocks: 80
         max_gas_limit: 100000
         max_contract_tx_logs: 50
+        start_block_height: 59917675
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
           - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
@@ -256,125 +211,14 @@ bifrost:
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
-    doge:
-      <<: *default-chain
-      chain_id: DOGE
-      block_scanner:
-        <<: *default-block-scanner
-        max_reorg_rescan_blocks: 720 # 12h
-        chain_id: DOGE
-        gas_price_resolution: 500_000 # sats
-        gas_cache_blocks: 10
-        scan_mempool: false
-      mempool_tx_id_cache_size: 1_000_000
-      scanner_leveldb: *default-leveldb
-      min_confirmations: 2
-      utxo:
-        <<: *utxo
-        block_cache_count: 1440
-        default_sats_per_vbyte: 25
-        max_sats_per_vbyte: 976562 # backwards compatible with 1e8*10/1024
-        min_sats_per_vbyte: 2
-
-    gaia:
-      <<: *default-chain
-      chain_id: GAIA
-      block_scanner:
-        <<: *default-block-scanner
-        chain_id: GAIA
-        gas_price_resolution: 100_000 # uatom
-        observation_flexibility_blocks: 40
-        whitelist_cosmos_assets:
-          - symbol: ATOM
-            decimals: 6
-            denom: uatom
-          - symbol: KUJI
-            decimals: 6
-            denom: ibc/4CC44260793F84006656DD868E017578F827A492978161DA31D7572BCB3F4289
-          - symbol: RKUJI
-            decimals: 6
-            denom: ibc/50A69DC508ACCADE2DAC4B8B09AA6D9C9062FCBFA72BB4C6334367DECD972B06
-          - symbol: FUZN
-            decimals: 6
-            denom: ibc/6BBBB4B63C51648E9B8567F34505A9D5D8BAAC4C31D768971998BE8C18431C26
-          - symbol: WINK
-            decimals: 6
-            denom: ibc/4363FD2EF60A7090E405B79A6C4337C5E9447062972028F5A99FB041B9571942
-          - symbol: NSTK
-            decimals: 6
-            denom: ibc/0B99C4EFF1BD05E56DEDEE1D88286DB79680C893724E0E7573BC369D79B5DDF3
-          - symbol: LVN
-            decimals: 6
-            denom: ibc/6C95083ADD352D5D47FB4BA427015796E5FEF17A829463AD05ECD392EB38D889
-          - symbol: NAMI
-            decimals: 6
-            denom: ibc/4622E82B845FFC6AA8B45C1EB2F507133A9E876A5FEA1BA64585D5F564405453
-          - symbol: AUTO
-            decimals: 6
-            denom: ibc/7D20C448700E7C56DC4577DA46666BA7993AEC6BFA223E67FA23CC4333B28745
-          - symbol: LQDY
-            decimals: 6
-            denom: ibc/CF52BFC8A11248F05151BFEC0FB033C3531E40C7BAFC72E277F49346EF76E981
-
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
-
-    xrp:
-      <<: *default-chain
-      chain_id: XRP
-      solvency_blocks: 10
-      block_scanner:
-        <<: *default-block-scanner
-        chain_id: XRP
-        gas_price_resolution: 10 # drop
-        observation_flexibility_blocks: 40
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
-
-    ltc:
-      <<: *default-chain
-      chain_id: LTC
-      block_scanner:
-        <<: *default-block-scanner
-        max_reorg_rescan_blocks: 288 # 12h
-        chain_id: LTC
-        observation_flexibility_blocks: 3
-        gas_cache_blocks: 10
-        scan_mempool: false
-      mempool_tx_id_cache_size: 1_000_000
-      scanner_leveldb: *default-leveldb
-      utxo:
-        <<: *utxo
-        block_cache_count: 600
-        max_sats_per_vbyte: 9765 # backwards compatible with 1e8/10/1024
-        min_sats_per_vbyte: 2
-        estimated_average_tx_size: 250
-
-    bch:
-      <<: *default-chain
-      chain_id: BCH
-      block_scanner:
-        <<: *default-block-scanner
-        max_reorg_rescan_blocks: 72 # 12h
-        chain_id: BCH
-        observation_flexibility_blocks: 3
-      mempool_tx_id_cache_size: 1_000_000
-      scanner_leveldb: *default-leveldb
-      utxo:
-        <<: *utxo
-        block_cache_count: 144
-        max_sats_per_vbyte: 9765 # backwards compatible with 1e8/10/1024
-        min_sats_per_vbyte: 2
-        estimated_average_tx_size: 1500
-
 ########################################################################################
-# Thor
+# MAPO
 ########################################################################################
 
-thor:
+map:
   node_relay_url: https://node-relay-bot.herokuapp.com
   vault_pubkeys_cutoff_blocks: 1_000_000
-  seed_nodes_endpoint: https://thornode.ninerealms.com/thorchain/nodes
+  seed_nodes_endpoint:
   stagenet_admin_addresses: "sthor1gdq9qejfy33jctztqdrg5v4hvxnytmvjhduacc" # 9R official stagenet
   telemetry:
     slash_points: false

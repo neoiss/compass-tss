@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 // handleObservedTxAttestation processes attestations for observed transactions
@@ -75,6 +75,7 @@ func (s *AttestationGossip) sendObservedTxAttestationsToThornode(
 		s.logger.Debug().Msg("no unsent observed tx attestations")
 		return
 	}
+	// todo handler send tx 2 map
 	// Send via gRPC to thornode
 	if _, err := s.grpcClient.SendQuorumTx(ctx, &common.QuorumTx{
 		ObsTx:                  tx,

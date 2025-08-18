@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-// initSmartContracts load the erc20 contract and vault contract
+// GetContractABI load the erc20 contract and vault contract
 func GetContractABI(routerContractABI, erc20ContractABI string) (*abi.ABI, *abi.ABI, error) {
 	vault, err := abi.JSON(strings.NewReader(routerContractABI))
 	if err != nil {

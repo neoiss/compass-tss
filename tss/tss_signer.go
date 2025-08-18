@@ -8,16 +8,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+
 	"github.com/cometbft/cometbft/crypto"
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keysign"
+	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/tendermint/btcd/btcec"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 const (
@@ -33,8 +32,8 @@ type tssServer interface {
 type KeySign struct {
 	logger         zerolog.Logger
 	server         tssServer
-	bridge         mapclient.ThorchainBridge
-	currentVersion semver.Version
+	bridge         shareTypes.Bridge
+	currentVersion string
 	lastCheck      time.Time
 	wg             *sync.WaitGroup
 	taskQueue      chan *tssKeySignTask
@@ -42,7 +41,7 @@ type KeySign struct {
 }
 
 // NewKeySign create a new instance of KeySign
-func NewKeySign(server tssServer, bridge mapclient.ThorchainBridge) (*KeySign, error) {
+func NewKeySign(server tssServer, bridge shareTypes.Bridge) (*KeySign, error) {
 	return &KeySign{
 		server:    server,
 		bridge:    bridge,
@@ -102,6 +101,7 @@ func (s *KeySign) RemoteSign(msg []byte, poolPubKey string) ([]byte, []byte, err
 		Msg:        encodedMsg,
 		Resp:       make(chan tssKeySignResult, 1),
 	}
+	fmt.Println("RemoteSign --------------------- task ", task)
 	s.taskQueue <- &task
 	select {
 	case resp := <-task.Resp:
@@ -141,6 +141,7 @@ type tssKeySignResult struct {
 	Err        error
 }
 
+// todo key sign
 func (s *KeySign) processKeySignTasks() {
 	defer s.wg.Done()
 	tasks := make(map[string][]*tssKeySignTask)
@@ -185,6 +186,7 @@ func (s *KeySign) processKeySignTasks() {
 				s.wg.Add(1)
 				signingTask := v[:totalTasks]
 				tasks[k] = v[totalTasks:]
+				fmt.Println("processKeySignTasks --------------------- k ", k, " signingTask ", signingTask)
 				go s.toLocalTSSSigner(k, signingTask)
 			}
 			taskLock.Unlock()
@@ -223,14 +225,14 @@ func getSignature(r, s string) ([]byte, error) {
 	return sigBytes, nil
 }
 
-func (s *KeySign) getVersion() semver.Version {
+func (s *KeySign) getVersion() string {
 	requestTime := time.Now()
-	if !s.currentVersion.Equals(semver.Version{}) && requestTime.Sub(s.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
-		return s.currentVersion
-	}
-	version, err := s.bridge.GetThorchainVersion()
+	//if !s.currentVersion.Equals(semver.Version{}) && requestTime.Sub(s.lastCheck).Seconds() < constants.MAPRelayChainBlockTime.Seconds() {
+	//	return s.currentVersion
+	//}
+	version, err := s.bridge.GetMapVersion()
 	if err != nil {
-		s.logger.Err(err).Msg("fail to get current thorchain version")
+		s.logger.Err(err).Msg("Fail to get current map version")
 		return s.currentVersion
 	}
 	s.currentVersion = version
@@ -262,8 +264,8 @@ func (s *KeySign) toLocalTSSSigner(poolPubKey string, tasks []*tssKeySignTask) {
 		PoolPubKey: poolPubKey,
 		Messages:   msgToSign,
 	}
-	currentVersion := s.getVersion()
-	tssMsg.Version = currentVersion.String()
+	//currentVersion := s.getVersion()
+	tssMsg.Version = s.getVersion()
 	s.logger.Debug().Msg("new TSS join party")
 	// get current thorchain block height
 	blockHeight, err := s.bridge.GetBlockHeight()

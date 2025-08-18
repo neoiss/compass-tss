@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/mapclient"
+
+	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -17,7 +19,7 @@ import (
 // vaultChain is a public key and chain used as a key for the vault/chain lock.
 type vaultChain struct {
 	Vault common.PubKey
-	Chain common.Chain
+	Chain string
 }
 
 type semaphore chan struct{}
@@ -94,17 +96,19 @@ func newPipeline(concurrency int64) (*pipeline, error) {
 // The signing routines will be spawned in a goroutine, and this function will not
 // block on their completion. The spawned routines will release the corresponding vault
 // status semaphore and vault/chain lock when they are complete.
-func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapclient.ThorchainBridge) {
+func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 	allItems := s.storageList()
+	log.Info().Msgf("SpawnSignings found %d items in storage", len(allItems))
 
 	// gather all vault/chain combinations with an out item in retry
 	retryItems := make(map[vaultChain][]TxOutStoreItem)
 	for _, item := range allItems {
 		if item.Round7Retry || len(item.SignedTx) > 0 {
-			vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+			vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 			retryItems[vc] = append(retryItems[vc], item)
 		}
 	}
+	log.Info().Msgf("SpawnSignings found %d all items", len(allItems))
 
 	var itemsToSign []TxOutStoreItem
 
@@ -128,7 +132,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapclient.ThorchainBri
 
 	// add all items from vault/chains with no items in retry
 	for _, item := range allItems {
-		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 		if _, ok := retryItems[vc]; !ok {
 			itemsToSign = append(itemsToSign, item)
 		}
@@ -154,15 +158,17 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapclient.ThorchainBri
 			lockedVaultChains[vc] = true
 		}
 	}
+	log.Info().Msgf("SpawnSignings will handle %d tx locking", len(itemsToSign))
 
 	// spawn signing routines for each item
 	for _, item := range itemsToSign {
+		log.Info().Msgf("SpawnSignings will handler %s a tx", item.TxOutItem.TxHash)
 		// return if the signer is stopped
 		if s.isStopped() {
 			return
 		}
 
-		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+		vc := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 
 		// check if the vault/chain is locked
 		if lockedVaultChains[vc] {
@@ -174,22 +180,23 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapclient.ThorchainBri
 			p.vaultChainLock[vc] = make(chan struct{}, 1)
 		}
 
-		// get vault to determine vault status
-		vault, err := bridge.GetVault(item.TxOutItem.VaultPubKey.String())
-		if err != nil {
-			log.Err(err).
-				Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
-				Msg("failed to get tx out item vault")
-			return
-		}
+		// // get vault to determine vault status
+		// vault, err := bridge.GetVault(item.TxOutItem.VaultPubKey.String())
+		// if err != nil {
+		// 	log.Err(err).
+		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
+		// 		Msg("Failed to get tx out item vault")
+		// 	return
+		// }
 
 		// check if the vault status semaphore has capacity
-		if availableCapacities[vault.Status] == 0 {
+		// todo next
+		if availableCapacities[types.VaultStatus_ActiveVault] == 0 {
 			continue
 		}
 
 		// acquire the vault status semaphore and vault/chain lock
-		availableCapacities[vault.Status]--
+		availableCapacities[types.VaultStatus_ActiveVault]--
 		p.vaultChainLock[vc] <- struct{}{}
 		lockedVaultChains[vc] = true
 
@@ -197,14 +204,14 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge mapclient.ThorchainBri
 		go func(item TxOutStoreItem, vaultStatus types.VaultStatus) {
 			// release the vault status semaphore and vault/chain lock when complete
 			defer func() {
-				vc2 := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain}
+				vc2 := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
 				<-p.vaultChainLock[vc2]
 				p.vaultStatusConcurrency[vaultStatus].release(1)
 			}()
 
 			// process the transaction
 			s.processTransaction(item)
-		}(item, vault.Status)
+		}(item, types.VaultStatus_ActiveVault)
 	}
 }
 

@@ -335,7 +335,7 @@ func (t *TssCommon) checkDupAndUpdateVerMsg(bMsg *messages.BroadcastConfirmMessa
 }
 
 func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerID string) error {
-	t.logger.Debug().Msg("start process one message")
+	t.logger.Info().Msg("ProcessOneMessage start process one message")
 	defer t.logger.Debug().Msg("finish processing one message")
 	if nil == wrappedMsg {
 		return errors.New("invalid wireMessage")
@@ -397,6 +397,8 @@ func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerI
 		}
 		t.logger.Debug().Msg("we got the missing share from the peer")
 		return t.processTSSMsg(wireMsg.Msg, wireMsg.RequestType, true)
+	default:
+
 	}
 
 	return nil
@@ -849,7 +851,7 @@ func (t *TssCommon) removeKey(key string) {
 }
 
 func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.WaitGroup) {
-	t.logger.Debug().Msg("start processing inbound messages")
+	t.logger.Info().Msg("ProcessInboundMessages start processing inbound messages")
 	defer wg.Done()
 	defer t.logger.Debug().Msg("stop processing inbound messages")
 	for {

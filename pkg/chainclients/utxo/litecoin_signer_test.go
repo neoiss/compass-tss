@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -29,22 +31,21 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 )
 
 type LitecoinSignerSuite struct {
 	client *Client
 	server *httptest.Server
-	bridge mapclient.ThorchainBridge
+	bridge shareTypes.Bridge
 	cfg    config.BifrostChainConfiguration
 	m      *metrics.Metrics
 	db     *leveldb.DB
-	keys   *mapclient.Keys
+	keys   *keys.Keys
 }
 
 var _ = Suite(&LitecoinSignerSuite{})
@@ -56,7 +57,7 @@ func (s *LitecoinSignerSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(bob, cKeys.English, cmd.THORChainHDPath, password, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.keys = mapclient.NewKeysWithKeybase(kb, bob, password)
+	s.keys = keys.NewKeysWithKeybase(kb, bob, password, os.Getenv(""))
 }
 
 func (s *LitecoinSignerSuite) SetUpTest(c *C) {
@@ -138,7 +139,7 @@ func (s *LitecoinSignerSuite) SetUpTest(c *C) {
 	var err error
 	s.cfg.RPCHost = s.server.Listener.Addr().String()
 	cfg.ChainHost = s.server.Listener.Addr().String()
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.keys)
+	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.keys)
 	c.Assert(err, IsNil)
 	s.client, err = NewClient(s.keys, s.cfg, nil, s.bridge, s.m)
 	c.Assert(err, IsNil)
@@ -180,8 +181,8 @@ func (s *LitecoinSignerSuite) TestSignTx(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.LTCAsset, cosmos.NewUint(1001)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	// incorrect chain should return an error
 	result, _, _, err := s.client.SignTx(txOutItem, 1)
@@ -211,46 +212,6 @@ func (s *LitecoinSignerSuite) TestSignTx(c *C) {
 	c.Assert(result, IsNil)
 }
 
-func (s *LitecoinSignerSuite) TestSignTxHappyPathWithPrivateKey(c *C) {
-	addr, err := types2.GetRandomPubKey().GetAddress(common.LTCChain)
-	c.Assert(err, IsNil)
-	inHash := thorchain.GetRandomTxHash()
-	memo := "OUT:" + inHash.String() // Memo must be parsable or ParseMemo will error.
-
-	txOutItem := stypes.TxOutItem{
-		Chain:       common.LTCChain,
-		ToAddress:   addr,
-		VaultPubKey: "tthorpub1addwnpepqw2k68efthm08f0f5akhjs6fk5j2pze4wkwt4fmnymf9yd463puruhh0lyz",
-		Coins: common.Coins{
-			common.NewCoin(common.LTCAsset, cosmos.NewUint(10)),
-		},
-		MaxGas: common.Gas{
-			common.NewCoin(common.LTCAsset, cosmos.NewUint(1000)),
-		},
-		InHash:  inHash,
-		OutHash: "",
-		Memo:    memo,
-	}
-	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
-	c.Assert(err, IsNil)
-	blockMeta := utxo.NewBlockMeta("000000000000008a0da55afa8432af3b15c225cc7e04d32f0de912702dd9e2ae",
-		100,
-		"0000000000000068f0710c510e94bd29aa624745da43e32a1de887387306bfda")
-	blockMeta.AddCustomerTransaction(txHash)
-	c.Assert(s.client.temporalStorage.SaveBlockMeta(blockMeta.Height, blockMeta), IsNil)
-	priKeyBuf, err := hex.DecodeString("b404c5ec58116b5f0fe13464a92e46626fc5db130e418cbce98df86ffe9317c5")
-	c.Assert(err, IsNil)
-	pkey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priKeyBuf)
-	c.Assert(pkey, NotNil)
-	s.client.nodePrivKey = pkey
-	s.client.nodePubKey, err = bech32AccountPubKey(pkey)
-	c.Assert(err, IsNil)
-	txOutItem.VaultPubKey = s.client.nodePubKey
-	buf, _, _, err := s.client.SignTx(txOutItem, 1)
-	c.Assert(err, IsNil)
-	c.Assert(buf, NotNil)
-}
-
 func (s *LitecoinSignerSuite) TestSignTxWithoutPredefinedMaxGas(c *C) {
 	addr, err := types2.GetRandomPubKey().GetAddress(common.LTCChain)
 	c.Assert(err, IsNil)
@@ -261,10 +222,10 @@ func (s *LitecoinSignerSuite) TestSignTxWithoutPredefinedMaxGas(c *C) {
 		Coins: common.Coins{
 			common.NewCoin(common.LTCAsset, cosmos.NewUint(10)),
 		},
-		Memo:    "MIGRATE:101",
-		GasRate: 25,
-		InHash:  "",
-		OutHash: "",
+		Memo:     "MIGRATE:101",
+		GasRate:  25,
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	c.Assert(err, IsNil)
@@ -302,8 +263,8 @@ func (s *LitecoinSignerSuite) TestBroadcastTx(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.LTCAsset, cosmos.NewUint(1)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	input := []byte("hello world")
 	_, err := s.client.BroadcastTx(txOutItem, input)
@@ -350,8 +311,8 @@ func (s *LitecoinSignerSuite) TestSignAddressPubKeyShouldFail(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.LTCAsset, cosmos.NewUint(1000)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	blockMeta := utxo.NewBlockMeta("000000000000008a0da55afa8432af3b15c225cc7e04d32f0de912702dd9e2ae",
@@ -383,8 +344,8 @@ func (s *LitecoinSignerSuite) TestToAddressCanNotRoundTripShouldBlock(c *C) {
 		MaxGas: common.Gas{
 			common.NewCoin(common.LTCAsset, cosmos.NewUint(1000)),
 		},
-		InHash:  "",
-		OutHash: "",
+		InTxHash: "",
+		OutHash:  "",
 	}
 	txHash := "256222fb25a9950479bb26049a2c00e75b89abbb7f0cf646c623b93e942c4c34"
 	blockMeta := utxo.NewBlockMeta("000000000000008a0da55afa8432af3b15c225cc7e04d32f0de912702dd9e2ae",

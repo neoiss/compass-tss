@@ -1,6 +1,7 @@
 package utxo
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -16,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"
@@ -23,16 +25,18 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo/rpc"
 	"github.com/mapprotocol/compass-tss/tss"
 	gotss "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	mem "gitlab.com/thorchain/thornode/v3/x/thorchain/memo"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -73,12 +77,12 @@ type Client struct {
 	// ---------- control ----------
 	globalErrataQueue     chan<- types.ErrataBlock
 	globalSolvencyQueue   chan<- types.Solvency
-	globalNetworkFeeQueue chan<- common.NetworkFee
+	globalNetworkFeeQueue chan<- types.NetworkFee
 	stopchan              chan struct{}
 	currentBlockHeight    *atomic.Int64
 
 	// ---------- thornode state ----------
-	bridge          mapclient.ThorchainBridge
+	bridge          shareTypes.Bridge
 	asgardAddresses []common.Address
 	lastAsgard      time.Time
 
@@ -98,10 +102,10 @@ type Client struct {
 
 // NewClient generates a new Client
 func NewClient(
-	thorKeys *mapclient.Keys,
+	thorKeys *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *gotss.TssServer,
-	bridge mapclient.ThorchainBridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 ) (*Client, error) {
 	// verify the chain is supported
@@ -133,10 +137,12 @@ func NewClient(
 		return nil, fmt.Errorf("fail to get THORChain private key: %w", err)
 	}
 	nodePrivKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), thorPrivateKey.Bytes())
-	nodePubKey, err := bech32AccountPubKey(nodePrivKey)
+	//nodePubKey, err := bech32AccountPubKey(nodePrivKey)
+	ethPrivateKey, err := evm.GetPrivateKey(thorPrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("fail to get node account public key: %w", err)
+		return nil, err
 	}
+	nodePubKey := hex.EncodeToString(crypto.CompressPubkey(&ethPrivateKey.PublicKey))
 
 	// create base client
 	c := &Client{
@@ -144,7 +150,7 @@ func NewClient(
 		log:                   logger,
 		m:                     m,
 		rpc:                   rpcClient,
-		nodePubKey:            nodePubKey,
+		nodePubKey:            common.PubKey(nodePubKey),
 		nodePrivKey:           nodePrivKey,
 		tssKeySigner:          tssKeysign,
 		wg:                    &sync.WaitGroup{},
@@ -202,7 +208,9 @@ func (c *Client) GetChain() common.Chain {
 
 // IsBlockScannerHealthy returns true if the block scanner is healthy.
 func (c *Client) IsBlockScannerHealthy() bool {
-	return c.blockScanner.IsHealthy()
+	// todo utxo
+	//return c.blockScanner.IsHealthy()
+	return true
 }
 
 // GetHeight returns current chain (not scanner) height.
@@ -211,8 +219,8 @@ func (c *Client) GetHeight() (int64, error) {
 }
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
-func (c *Client) GetNetworkFee() (transactionSize, transactionFeeRate uint64) {
-	return c.cfg.UTXO.EstimatedAverageTxSize, c.lastFeeRate
+func (c *Client) GetNetworkFee() (transactionSize, transactionSwapSize, transactionFeeRate uint64) {
+	return c.cfg.UTXO.EstimatedAverageTxSize, c.cfg.UTXO.EstimatedAverageTxSwapSize, c.lastFeeRate
 }
 
 // GetBlockScannerHeight returns blockscanner height
@@ -248,7 +256,7 @@ func (c *Client) Start(
 	globalTxsQueue chan types.TxIn,
 	globalErrataQueue chan types.ErrataBlock,
 	globalSolvencyQueue chan types.Solvency,
-	globalNetworkFeeQueue chan common.NetworkFee,
+	globalNetworkFeeQueue chan types.NetworkFee,
 ) {
 	c.globalErrataQueue = globalErrataQueue
 	c.globalSolvencyQueue = globalSolvencyQueue
@@ -284,7 +292,7 @@ func (c *Client) RegisterPublicKey(pubkey common.PubKey) error {
 	switch c.cfg.ChainID {
 	case common.LTCChain, common.BTCChain:
 		err = c.rpc.CreateWallet("")
-		if err != nil {
+		if err != nil && !databaseAlreadyExists(err) {
 			c.log.Info().Err(err).Msg("fail to create wallet")
 			return err
 		}
@@ -369,31 +377,36 @@ func (c *Client) OnObservedTxIn(txIn types.TxInItem, blockHeight int64) {
 	if _, err = c.temporalStorage.TrackObservedTx(txIn.Tx); err != nil {
 		c.log.Err(err).Msgf("fail to add hash (%s) to observed tx cache", txIn.Tx)
 	}
-	if c.isAsgardAddress(txIn.Sender) {
-		c.log.Debug().Int64("height", blockHeight).Msgf("add hash %s as self transaction", txIn.Tx)
-		blockMeta.AddSelfTransaction(txIn.Tx)
-	} else {
-		// add the transaction to block meta
-		blockMeta.AddCustomerTransaction(txIn.Tx)
-	}
+	//if c.isAsgardAddress(txIn.Sender) {
+	//	c.log.Debug().Int64("height", blockHeight).Msgf("add hash %s as self transaction", txIn.Tx)
+	//	blockMeta.AddSelfTransaction(txIn.Tx)
+	//} else {
+	//	// add the transaction to block meta
+	//	blockMeta.AddCustomerTransaction(txIn.Tx)
+	//}
 	if err = c.temporalStorage.SaveBlockMeta(blockHeight, blockMeta); err != nil {
 		c.log.Err(err).Int64("height", blockHeight).Msgf("fail to save block meta to storage")
 	}
 	// update the signer cache
 	var m mem.Memo
-	m, err = mem.ParseMemo(common.LatestVersion, txIn.Memo)
+	m, err = mem.ParseMemo(txIn.Memo)
 	if err != nil {
 		// Debug log only as ParseMemo error is expected for THORName inbounds.
 		c.log.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
 		return
 	}
-	if !m.IsOutbound() {
+	if !m.IsValid() {
+		c.log.Debug().Str("memo", txIn.Memo).Str("type", m.GetType().String()).Msg("invalid memo")
 		return
 	}
-	if m.GetTxID().IsEmpty() {
-		return
-	}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxID().String()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+
+	//if !m.IsOutbound() {
+	//	return
+	//}
+	//if m.GetTxHash().IsEmpty() { todo utxo
+	//	return
+	//}
+	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxHash()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.log.Err(err).Msg("fail to update signer cache")
 	}
 }
@@ -592,9 +605,9 @@ func (c *Client) FetchMemPool(height int64) (types.TxIn, error) {
 			if txInItem.IsEmpty() {
 				continue
 			}
-			if txInItem.Coins.IsEmpty() {
-				continue
-			}
+			//if txInItem.Coins.IsEmpty() {
+			//	continue
+			//}
 
 			txIn.TxArray = append(txIn.TxArray, &txInItem)
 		}
@@ -630,7 +643,7 @@ func (c *Client) GetConfirmationCount(txIn types.TxIn) int64 {
 	}
 
 	// get the block height and confirmation required
-	height := txIn.TxArray[0].BlockHeight
+	height := txIn.TxArray[0].Height.Int64()
 	confirm, err := c.getBlockRequiredConfirmation(txIn, height)
 	if err != nil {
 		c.log.Err(err).Int64("height", height).Msg("fail to get required confirmation")
@@ -657,7 +670,7 @@ func (c *Client) ConfirmationCountReady(txIn types.TxIn) bool {
 	}
 
 	// check if we have the necessary number of confirmations
-	height := txIn.TxArray[0].BlockHeight
+	height := txIn.TxArray[0].Height.Int64()
 	confirm := txIn.ConfirmationRequired
 	ready := (c.currentBlockHeight.Load() - height) >= confirm // every tx already has 1
 	c.log.Info().

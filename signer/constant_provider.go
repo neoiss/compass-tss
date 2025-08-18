@@ -5,20 +5,20 @@ import (
 	"sync"
 
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
 // ConstantsProvider which will query thorchain to get the constants value per request
 // it will also cache the constant values internally
 type ConstantsProvider struct {
 	requestHeight int64 // the block height last request to thorchain to retrieve constant values
-	bridge        mapclient.ThorchainBridge
+	bridge        shareTypes.Bridge
 	constantsLock *sync.Mutex
 	constants     map[string]int64 // the constant values get from thorchain and cached in memory
 }
 
 // NewConstantsProvider create a new instance of ConstantsProvider
-func NewConstantsProvider(bridge mapclient.ThorchainBridge) *ConstantsProvider {
+func NewConstantsProvider(bridge shareTypes.Bridge) *ConstantsProvider {
 	return &ConstantsProvider{
 		constants:     make(map[string]int64),
 		requestHeight: 0,

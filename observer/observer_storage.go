@@ -37,7 +37,7 @@ func NewObserverStorage(path string, opts config.LevelDBOptions) (*ObserverStora
 // createTxKey creates a unique key for a TxIn based on prefix, chain, mempool, blockheight
 func (s *ObserverStorage) createTxKey(txIn *types.TxIn, finalizeHeight int64) string {
 	if finalizeHeight == 0 && len(txIn.TxArray) > 0 {
-		finalizeHeight = txIn.TxArray[0].BlockHeight + txIn.ConfirmationRequired
+		finalizeHeight = txIn.TxArray[0].Height.Int64() + txIn.ConfirmationRequired
 	}
 
 	return fmt.Sprintf("%s%s:%d",

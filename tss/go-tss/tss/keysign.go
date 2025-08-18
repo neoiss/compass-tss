@@ -25,6 +25,7 @@ func (t *TssServer) waitForSignatures(msgID, poolPubKey string, msgsToSign [][]b
 	// TSS keysign include both form party and keysign itself, thus we wait twice of the timeout
 	data, err := t.signatureNotifier.WaitForSignature(msgID, msgsToSign, poolPubKey, t.conf.KeySignTimeout, sigChan)
 	if err != nil {
+		fmt.Println("waitForSignatures err ---------------- ", err)
 		return keysign.Response{}, err
 	}
 	// for gg20, it wrap the signature R,S into ECSignature structure
@@ -45,7 +46,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		}, nil
 	}
 
-	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.NEWJOINPARTYVERSION)
+	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.VERSIONOFLATEST)
 	if err != nil {
 		return keysign.Response{
 			Status: common.Fail,
@@ -55,7 +56,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 	// we use the old join party
 	if oldJoinParty {
 		allParticipants = req.SignerPubKeys
-		myPk, err := conversion.GetPubKeyFromPeerID(t.p2pCommunication.GetHost().ID().String())
+		myPk, err := conversion.GetPubKeyFromPeerIDByEth(t.p2pCommunication.GetHost().ID().String())
 		if err != nil {
 			t.logger.Info().Msgf("fail to convert the p2p id(%s) to pubkey, turn to wait for signature", t.p2pCommunication.GetHost().ID().String())
 			return keysign.Response{}, p2p.ErrNotActiveSigner
@@ -108,7 +109,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		}
 
 		var blameLeader blame.Blame
-		leaderPubKey, err := conversion.GetPubKeyFromPeerID(leader)
+		leaderPubKey, err := conversion.GetPubKeyFromPeerIDByEth(leader)
 		if err != nil {
 			t.logger.Error().Err(errJoinParty).Msgf("fail to convert the peerID to public key %s", leader)
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{})
@@ -137,8 +138,10 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 		t.logger.Info().Msgf("we(%s) are not the active signer", t.p2pCommunication.GetHost().ID().String())
 		return keysign.Response{}, p2p.ErrNotActiveSigner
 	}
+
 	parsedPeers := make([]string, len(onlinePeers))
 	for i, el := range onlinePeers {
+		fmt.Println("onlinePeers ------------------- ", el.String())
 		parsedPeers[i] = el.String()
 	}
 
@@ -150,6 +153,7 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 			Blame:  blame.Blame{},
 		}, nil
 	}
+	fmt.Printf("generateSignature signers ---------------- %+v \n", signers)
 	signatureData, err := keysignInstance.SignMessage(msgsToSign, localStateItem, signers)
 	// the statistic of keygen only care about Tss it self, even if the following http response aborts,
 	// it still counted as a successful keygen as the Tss model runs successfully.
@@ -226,6 +230,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	if err != nil {
 		return emptyResp, fmt.Errorf("fail to get local keygen state: %w", err)
 	}
+	fmt.Printf("localStateItem --------------------- %+v \n", localStateItem.ParticipantKeys)
 
 	var msgsToSign [][]byte
 	for _, val := range req.Messages {
@@ -251,7 +256,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		return true
 	})
 
-	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.NEWJOINPARTYVERSION)
+	oldJoinParty, err := conversion.VersionLTCheck(req.Version, messages.VERSIONOFLATEST)
 	if err != nil {
 		return keysign.Response{
 			Status: common.Fail,
@@ -259,6 +264,9 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		}, errors.New("fail to parse the version")
 	}
 
+	fmt.Println("req.Version ----------------- ", req.Version)
+	fmt.Println("oldJoinParty ----------------- ", oldJoinParty)
+	fmt.Println("len(req.SignerPubKeys) ----------------- ", len(req.SignerPubKeys))
 	if len(req.SignerPubKeys) == 0 && oldJoinParty {
 		return emptyResp, errors.New("empty signer pub keys")
 	}
@@ -268,6 +276,8 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.logger.Error().Err(err).Msg("fail to get the threshold")
 		return emptyResp, errors.New("fail to get threshold")
 	}
+	fmt.Println("threshold ----------------- ", threshold)
+	fmt.Println("len(localStateItem.ParticipantKeys) ----------------- ", len(localStateItem.ParticipantKeys))
 	if len(req.SignerPubKeys) <= threshold && oldJoinParty {
 		t.logger.Error().Msgf("not enough signers, threshold=%d and signers=%d", threshold, len(req.SignerPubKeys))
 		return emptyResp, errors.New("not enough signers")
@@ -291,6 +301,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 			t.logger.Log().Msgf("for message %s we get the signature from the peer", msgID)
 			return
 		}
+		fmt.Println("waitForSignatures err ---------------- ", errWait)
 		t.logger.Log().Msgf("we fail to get the valid signature with error %v", errWait)
 	}()
 
@@ -301,6 +312,8 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	}()
 	wg.Wait()
 	close(sigChan)
+	fmt.Println("keySign errGen --------------------- ", errGen)
+	fmt.Println("keySign errWait --------------------- ", errWait)
 	keysignTime := time.Since(keysignStartTime)
 	// we received the generated verified signature, so we return
 	if errWait == nil {

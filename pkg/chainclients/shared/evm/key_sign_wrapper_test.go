@@ -15,9 +15,9 @@ import (
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/tss"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 const MaxContractGas = 80000

@@ -1,15 +1,15 @@
-//go:build !mocknet
-// +build !mocknet
+////go:build !mocknet
+//// +build !mocknet
 
 package utxo
 
 import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
-func GetConfMulBasisPoint(chain string, bridge mapclient.ThorchainBridge) (cosmos.Uint, error) {
+func GetConfMulBasisPoint(chain string, bridge shareTypes.Bridge) (cosmos.Uint, error) {
 	confMultiplier, err := bridge.GetMimirWithRef(constants.MimirTemplateConfMultiplierBasisPoints, chain)
 	// should never be negative
 	if err != nil || confMultiplier <= 0 {
@@ -18,7 +18,7 @@ func GetConfMulBasisPoint(chain string, bridge mapclient.ThorchainBridge) (cosmo
 	return cosmos.NewUint(uint64(confMultiplier)), nil
 }
 
-func MaxConfAdjustment(confirm uint64, chain string, bridge mapclient.ThorchainBridge) (uint64, error) {
+func MaxConfAdjustment(confirm uint64, chain string, bridge shareTypes.Bridge) (uint64, error) {
 	maxConfirmations, err := bridge.GetMimirWithRef(constants.MimirTemplateMaxConfirmations, chain)
 	if err != nil {
 		return confirm, err

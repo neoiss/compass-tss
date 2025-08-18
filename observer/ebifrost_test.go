@@ -24,19 +24,19 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
-	stypes "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/x/ebifrost"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 )
 
 // Mock ThorchainBridge that always returns active status and correct node count
 type mockThorchainBridge struct {
-	mapclient.ThorchainBridge
+	shareTypes.ThorchainBridge
 	activeNodes []common.PubKey
 }
 

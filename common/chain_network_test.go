@@ -10,6 +10,6 @@ var _ = Suite(&ChainNetworkSuite{})
 
 func (s *ChainNetworkSuite) TestSoftEquals(c *C) {
 	c.Assert(MainNet.SoftEquals(MainNet), Equals, true)
-	c.Assert(MockNet.SoftEquals(MockNet), Equals, true)
-	c.Assert(MainNet.SoftEquals(MockNet), Equals, false)
+	c.Assert(TestNet.SoftEquals(TestNet), Equals, true)
+	c.Assert(MainNet.SoftEquals(TestNet), Equals, false)
 }

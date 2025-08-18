@@ -1,6 +1,6 @@
-//go:build !mocknet && !stagenet
-// +build !mocknet,!stagenet
+//go:build !testnet
+// +build !testnet
 
 package common
 
-const CurrentChainNetwork = MainNet
+const CurrentChainNetwork = TestNet // todo switch network

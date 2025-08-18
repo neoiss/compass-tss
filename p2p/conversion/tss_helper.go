@@ -45,6 +45,9 @@ func RandStringBytesMask(n int) string {
 }
 
 func VersionLTCheck(currentVer, expectedVer string) (bool, error) {
+	if currentVer == "1" {
+		currentVer = "1.0.0"
+	}
 	c, err := semver.Make(expectedVer)
 	if err != nil {
 		return false, errors.New("fail to parse the expected version")

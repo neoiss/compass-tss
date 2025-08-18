@@ -5,6 +5,7 @@ import (
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	. "gopkg.in/check.v1"
+	"math/big"
 )
 
 type ChainSuite struct{}
@@ -18,8 +19,8 @@ func (s ChainSuite) TestChain(c *C) {
 	c.Check(ethChain.IsEmpty(), Equals, false)
 	c.Check(ethChain.String(), Equals, "ETH")
 
-	_, err = NewChain("B") // too short
-	c.Assert(err, NotNil)
+	platonChain, err := NewChain("PlatON")
+	c.Assert(err, Equals, UnsupportedChain)
 
 	chains := Chains{"DOGE", "DOGE", "BTC"}
 	c.Check(chains.Has("BTC"), Equals, true)
@@ -37,15 +38,22 @@ func (s ChainSuite) TestChain(c *C) {
 	c.Assert(DOGEChain.GetGasAsset(), Equals, DOGEAsset)
 	c.Assert(EmptyChain.GetGasAsset(), Equals, EmptyAsset)
 
-	c.Assert(BTCChain.AddressPrefix(MockNet), Equals, chaincfg.RegressionNetParams.Bech32HRPSegwit)
+	c.Assert(BTCChain.AddressPrefix(TestNet), Equals, chaincfg.TestNet3Params.Bech32HRPSegwit)
 	c.Assert(BTCChain.AddressPrefix(MainNet), Equals, chaincfg.MainNetParams.Bech32HRPSegwit)
-	c.Assert(BTCAsset.Chain.AddressPrefix(StageNet), Equals, chaincfg.MainNetParams.Bech32HRPSegwit)
+	c.Assert(BTCAsset.Chain.AddressPrefix(MainNet), Equals, chaincfg.MainNetParams.Bech32HRPSegwit)
 
-	c.Assert(LTCChain.AddressPrefix(MockNet), Equals, ltcchaincfg.RegressionNetParams.Bech32HRPSegwit)
+	c.Assert(LTCChain.AddressPrefix(TestNet), Equals, ltcchaincfg.TestNet4Params.Bech32HRPSegwit)
 	c.Assert(LTCChain.AddressPrefix(MainNet), Equals, ltcchaincfg.MainNetParams.Bech32HRPSegwit)
-	c.Assert(LTCChain.AddressPrefix(StageNet), Equals, ltcchaincfg.MainNetParams.Bech32HRPSegwit)
 
-	c.Assert(DOGEChain.AddressPrefix(MockNet), Equals, dogchaincfg.RegressionNetParams.Bech32HRPSegwit)
+	c.Assert(DOGEChain.AddressPrefix(TestNet), Equals, dogchaincfg.TestNet3Params.Bech32HRPSegwit)
 	c.Assert(DOGEChain.AddressPrefix(MainNet), Equals, dogchaincfg.MainNetParams.Bech32HRPSegwit)
-	c.Assert(DOGEChain.AddressPrefix(StageNet), Equals, dogchaincfg.MainNetParams.Bech32HRPSegwit)
+
+	c.Assert(Chain("btc").Valid(), IsNil)
+
+	ethChainID, err := ethChain.ChainID()
+	c.Assert(err, IsNil)
+	c.Assert(ethChainID, DeepEquals, big.NewInt(1))
+
+	_, err = platonChain.ChainID()
+	c.Assert(err, Equals, UnsupportedChain)
 }

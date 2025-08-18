@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"math"
 	"math/big"
 	"sort"
@@ -14,12 +15,9 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // nolint:staticcheck
+	ecommon "github.com/ethereum/go-ethereum/common"
 	crypto2 "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
-
 	"github.com/mapprotocol/compass-tss/p2p/messages"
 )
 
@@ -48,14 +46,7 @@ func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
 		return "", errors.New("invalid party")
 	}
 	partyKeyBytes := party.GetKey()
-	pk := coskey.PubKey{
-		Key: partyKeyBytes,
-	}
-	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &pk) // nolint:staticcheck
-	if err != nil {
-		return "", err
-	}
-	return pubKey, nil
+	return ecommon.Bytes2Hex(partyKeyBytes), nil
 }
 
 func AccPubKeysFromPartyIDs(partyIDs []string, partyIDMap map[string]*btss.PartyID) ([]string, error) {
@@ -111,12 +102,10 @@ func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.Par
 	var localPartyID *btss.PartyID
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)
+	fmt.Println("GetParties keys ------------------ ", keys)
+	fmt.Println("GetParties localPartyKey ------------------ ", localPartyKey)
 	for idx, item := range keys {
-		pk, err := sdk.UnmarshalPubKey(sdk.AccPK, item) // nolint:staticcheck
-		if err != nil {
-			return nil, nil, fmt.Errorf("fail to get account pub key address(%s): %w", item, err)
-		}
-		key := new(big.Int).SetBytes(pk.Bytes())
+		key := new(big.Int).SetBytes(ecommon.Hex2Bytes(item))
 		// Set up the parameters
 		// Note: The `id` and `moniker` fields are for convenience to allow you to easily track participants.
 		// The `id` should be a unique string representing this party in the network and `moniker` can be anything (even left blank).
@@ -147,24 +136,24 @@ func isOnCurve(x, y *big.Int) bool {
 	return curve.IsOnCurve(x, y)
 }
 
-func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, cosmos.AccAddress, error) {
+func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, ecommon.Address, error) {
 	// we check whether the point is on curve according to Kudelski report
 	if pubKeyPoint == nil || !isOnCurve(pubKeyPoint.X(), pubKeyPoint.Y()) {
-		return "", cosmos.AccAddress{}, errors.New("invalid points")
+		return "", ecommon.Address{}, errors.New("invalid points")
 	}
 	tssPubKey := btcec.PublicKey{
 		Curve: btcec.S256(),
 		X:     pubKeyPoint.X(),
 		Y:     pubKeyPoint.Y(),
 	}
+	ethPk := tssPubKey.ToECDSA()
+	pkBytes := ecrypto.CompressPubkey(ethPk)
 
-	compressedPubkey := coskey.PubKey{
-		Key: tssPubKey.SerializeCompressed(),
-	}
-
-	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &compressedPubkey) // nolint:staticcheck
-	addr := cosmos.AccAddress(compressedPubkey.Address().Bytes())
-	return pubKey, addr, err
+	// get address
+	publicKeyBytes := ecrypto.FromECDSAPub(ethPk)
+	hash := ecrypto.Keccak256(publicKeyBytes[1:])
+	address := ecommon.BytesToAddress(hash[12:])
+	return ecommon.Bytes2Hex(pkBytes), address, nil
 }
 
 func BytesToHashString(msg []byte) (string, error) {

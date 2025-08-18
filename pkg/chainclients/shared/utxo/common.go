@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/mapclient"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 )
 
-func GetAsgardAddress(chain common.Chain, bridge mapclient.ThorchainBridge) ([]common.Address, error) {
+func GetAsgardAddress(chain common.Chain, bridge shareTypes.Bridge) ([]common.Address, error) {
 	vaults, err := bridge.GetAsgardPubKeys()
 	if err != nil {
 		return nil, fmt.Errorf("fail to get asgards : %w", err)

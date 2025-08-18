@@ -2,113 +2,67 @@ package tss
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-	ctypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/itchio/lzma"
 	"github.com/rs/zerolog/log"
 
-	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
-	"gitlab.com/thorchain/thornode/v3/app"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/ebifrost"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	"github.com/mapprotocol/compass-tss/constants"
+	sharedTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/x/types"
 )
 
-func RecoverKeyShares(conf config.Bifrost, thorchain mapclient.ThorchainBridge) error {
-	tctx := thorchain.GetContext()
+func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
+	tctx := mapchain.GetContext()
 
 	// fetch the node account
-	na, err := thorchain.GetNodeAccount(tctx.FromAddress.String())
+	na, err := mapchain.GetNodeAccount(tctx.FromAddress)
 	if err != nil {
 		return fmt.Errorf("fail to get node account: %w", err)
 	}
 
 	// skip recovery if the current node is not active
-	if na.Status != types.NodeStatus_Active {
-		log.Info().Msgf("%s is not active, skipping key shares recovery", na.NodeAddress)
+	if types.NodeStatus(na.Status) != types.NodeStatus_Active {
+		log.Info().Msgf("%s is not active, skipping key shares recovery", na.Addr)
 		return nil
 	}
 
-	// the current vault is the last pub key in the signer membership list
-	membership := na.GetSignerMembership()
-	if len(membership) == 0 {
-		log.Info().Msgf("no signer membership for %s, skipping key shares recovery", na.NodeAddress)
-		return fmt.Errorf("fail to get signer membership")
+	// get the current epoch info
+	epochInfo, err := mapchain.GetEpochInfo(big.NewInt(0))
+	if err != nil {
+		return fmt.Errorf("fail to get current epoch info: %w", err)
 	}
-	vault := membership[len(membership)-1]
-	keysharesPath := filepath.Join(app.DefaultNodeHome, fmt.Sprintf("localstate-%s.json", vault))
+	// todo
+	vault := common.Bytes2Hex(epochInfo.Pubkey)
+	keysharesPath := filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", vault))
 
-	// skip recovery if keyshares for the nodes current vault already exist
+	keyShare, err := mapchain.GetKeyShare()
+	if err != nil {
+		return fmt.Errorf("fail to get current epoch info: %w", err)
+	}
+
+	// skip recovery if key shares for the nodes current vault already exist
 	if _, err = os.Stat(keysharesPath); !os.IsNotExist(err) {
 		log.Info().Msgf("key shares for %s already exist, skipping recovery", vault)
 		return nil
 	}
 
-	// get all vaults
-	vaults, err := thorchain.GetAsgards()
-	if err != nil {
-		return fmt.Errorf("fail to get asgards: %w", err)
+	if err := recoverKeyShares(keysharesPath, keyShare, os.Getenv("SIGNER_SEED_PHRASE")); err != nil {
+		return err
 	}
+	// success
+	log.Info().Str("path", keysharesPath).Msgf("recovered key shares for %s", na.Addr)
+	return nil
+}
 
-	// get the creation height of the member vault
-	var lastVaultHeight int64
-	for _, v := range vaults {
-		if v.PubKey.Equals(vault) {
-			lastVaultHeight = v.BlockHeight
-			break
-		}
-	}
-	if lastVaultHeight == 0 {
-		return fmt.Errorf("fail to get creation height of %s", vault)
-	}
-
-	// walk backward from the churn height until we find the TssPool message we sent
-	var keysharesEncBytes []byte
-	cdc := mapclient.MakeCodec()
-	dec := ebifrost.TxDecoder(cdc, tx.DefaultTxDecoder(cdc))
-	for i := lastVaultHeight; i > lastVaultHeight-conf.TSS.MaxKeyshareRecoverScanBlocks; i-- {
-		if i%1000 == 0 {
-			log.Info().Msgf("scanning block %d for TssPool message to recover key shares", i)
-		}
-
-		var b *coretypes.ResultBlock
-		b, err = thorchain.GetContext().Client.Block(context.Background(), &i)
-		if err != nil {
-			return fmt.Errorf("fail to get block: %w", err)
-		}
-
-		for _, txb := range b.Block.Txs {
-			var tx ctypes.Tx
-			tx, err = dec(txb)
-			if err != nil {
-				return fmt.Errorf("fail to decode tx: %w", err)
-			}
-			for _, msg := range tx.GetMsgs() {
-				switch m := msg.(type) {
-				case *types.MsgTssPool:
-					if m.Signer.Equals(na.NodeAddress) {
-						if m.KeysharesBackup == nil {
-							log.Warn().Msgf("key shares backup not saved for %s", na.NodeAddress)
-						}
-						keysharesEncBytes = m.KeysharesBackup
-						goto finish
-					}
-				default:
-				}
-			}
-		}
-	}
-
-finish:
+func recoverKeyShares(path string, keyShares []byte, passphrase string) error {
 	// open key shares file
-	f, err := os.OpenFile(keysharesPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to open keyshares file: %w", err)
 	}
@@ -116,7 +70,7 @@ finish:
 
 	// decrypt and decompress into place
 	var decrypted []byte
-	decrypted, err = DecryptKeyshares(keysharesEncBytes, os.Getenv("SIGNER_SEED_PHRASE"))
+	decrypted, err = DecryptKeyShares(keyShares, passphrase)
 	if err != nil {
 		return fmt.Errorf("failed to decrypt key shares: %w", err)
 	}
@@ -125,7 +79,5 @@ finish:
 		return fmt.Errorf("failed to decompress key shares: %w", err)
 	}
 
-	// success
-	log.Info().Str("path", keysharesPath).Msgf("recovered key shares for %s", na.NodeAddress)
 	return nil
 }

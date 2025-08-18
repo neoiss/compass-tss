@@ -59,13 +59,13 @@ var (
 )
 
 type Config struct {
-	Thornode Thornode `mapstructure:"thor"`
-	Bifrost  Bifrost  `mapstructure:"bifrost"`
+	MAPO    MAPO    `mapstructure:"map"`
+	Bifrost Bifrost `mapstructure:"bifrost"`
 }
 
-// GetThornode returns the global thornode configuration.
-func GetThornode() Thornode {
-	return config.Thornode
+// GetMAPO returns the global thornode configuration.
+func GetMAPO() MAPO {
+	return config.MAPO
 }
 
 // GetBifrost returns the global thornode configuration.
@@ -225,14 +225,14 @@ func Init() {
 	viper.SetConfigType("toml")
 
 	// dynamically set rpc listen address
-	if config.Thornode.Tendermint.RPC.ListenAddress == "" {
-		config.Thornode.Tendermint.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", rpcPort)
+	if config.MAPO.Tendermint.RPC.ListenAddress == "" {
+		config.MAPO.Tendermint.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", rpcPort)
 	}
-	if config.Thornode.Tendermint.P2P.ListenAddress == "" {
-		config.Thornode.Tendermint.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", p2pPort)
+	if config.MAPO.Tendermint.P2P.ListenAddress == "" {
+		config.MAPO.Tendermint.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", p2pPort)
 	}
-	if config.Thornode.Cosmos.EBifrost.Address == "" {
-		config.Thornode.Cosmos.EBifrost.Address = fmt.Sprintf("0.0.0.0:%d", ebifrostPort)
+	if config.MAPO.Cosmos.EBifrost.Address == "" {
+		config.MAPO.Cosmos.EBifrost.Address = fmt.Sprintf("0.0.0.0:%d", ebifrostPort)
 	}
 }
 
@@ -287,17 +287,17 @@ func InitThornode(ctx context.Context) {
 	}
 
 	// if auto statesync enable, find latest snapshot height and hash that should exist
-	if config.Thornode.AutoStateSync.Enabled {
+	if config.MAPO.AutoStateSync.Enabled {
 		thornodeAutoStateSync(ctx)
 	}
 
 	// dynamically set seeds
 	seedAddrs, tmSeeds := thornodeSeeds()
-	config.Thornode.Tendermint.P2P.Seeds = strings.Join(tmSeeds, ",")
+	config.MAPO.Tendermint.P2P.Seeds = strings.Join(tmSeeds, ",")
 
 	// set the Tendermint external address
 	if os.Getenv("EXTERNAL_IP") != "" {
-		config.Thornode.Tendermint.P2P.ExternalAddress = fmt.Sprintf("%s:%d", os.Getenv("EXTERNAL_IP"), p2pPort)
+		config.MAPO.Tendermint.P2P.ExternalAddress = fmt.Sprintf("%s:%d", os.Getenv("EXTERNAL_IP"), p2pPort)
 	}
 
 	// set paths
@@ -311,7 +311,7 @@ func InitThornode(ctx context.Context) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to open config.toml")
 	}
-	err = t.ExecuteTemplate(tendermintFile, "config.toml.tmpl", config.Thornode.Tendermint)
+	err = t.ExecuteTemplate(tendermintFile, "config.toml.tmpl", config.MAPO.Tendermint)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to render config.toml")
 	}
@@ -321,7 +321,7 @@ func InitThornode(ctx context.Context) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to open app.toml")
 	}
-	err = t.ExecuteTemplate(cosmosFile, "app.toml.tmpl", config.Thornode.Cosmos)
+	err = t.ExecuteTemplate(cosmosFile, "app.toml.tmpl", config.MAPO.Cosmos)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to render app.toml")
 	}
@@ -335,10 +335,10 @@ func InitThornode(ctx context.Context) {
 }
 
 // -------------------------------------------------------------------------------------
-// Thornode
+// MAPO
 // -------------------------------------------------------------------------------------
 
-type Thornode struct {
+type MAPO struct {
 	// NodeRelayURL is the URL of the node relay service.
 	NodeRelayURL string `mapstructure:"node_relay_url"`
 
@@ -478,38 +478,25 @@ type Thornode struct {
 
 type Bifrost struct {
 	Signer            BifrostSignerConfiguration     `mapstructure:"signer"`
-	Thorchain         BifrostClientConfiguration     `mapstructure:"thorchain"`
+	Thorchain         BifrostClientConfiguration     `mapstructure:"map_relay"`
 	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
 	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
 	Chains            struct {
-		AVAX BifrostChainConfiguration `mapstructure:"avax"`
-		BCH  BifrostChainConfiguration `mapstructure:"bch"`
-		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
-		BTC  BifrostChainConfiguration `mapstructure:"btc"`
-		DOGE BifrostChainConfiguration `mapstructure:"doge"`
-		ETH  BifrostChainConfiguration `mapstructure:"eth"`
-		GAIA BifrostChainConfiguration `mapstructure:"gaia"`
-		LTC  BifrostChainConfiguration `mapstructure:"ltc"`
-		BASE BifrostChainConfiguration `mapstructure:"base"`
-		XRP  BifrostChainConfiguration `mapstructure:"xrp"`
+		BSC BifrostChainConfiguration `mapstructure:"bsc"`
+		BTC BifrostChainConfiguration `mapstructure:"btc"`
+		ETH BifrostChainConfiguration `mapstructure:"eth"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
-	ObserverWorkers int                     `mapstructure:"observer_workers"`
+	ObserverWorkers int                     `mapstructure:"observer_workers"` // start how much goroutine to handler other2map tx save in storage
 }
 
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
+	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.AVAXChain: b.Chains.AVAX,
-		common.BCHChain:  b.Chains.BCH,
-		common.BSCChain:  b.Chains.BSC,
-		common.BTCChain:  b.Chains.BTC,
-		common.DOGEChain: b.Chains.DOGE,
-		common.ETHChain:  b.Chains.ETH,
-		common.GAIAChain: b.Chains.GAIA,
-		common.LTCChain:  b.Chains.LTC,
-		common.BASEChain: b.Chains.BASE,
-		common.XRPChain:  b.Chains.XRP,
+		common.BSCChain: b.Chains.BSC,
+		//common.BTCChain: b.Chains.BTC,
+		common.ETHChain: b.Chains.ETH,
 	}
 }
 
@@ -689,6 +676,9 @@ type BifrostChainConfiguration struct {
 		// EstimatedAverageTxSize is the estimated average transaction size in bytes.
 		EstimatedAverageTxSize uint64 `mapstructure:"estimated_average_tx_size"`
 
+		// EstimatedAverageTxSwapSize is the estimated average transaction size in bytes.
+		EstimatedAverageTxSwapSize uint64 `mapstructure:"estimated_average_tx_swap_size"`
+
 		// DefaultMinRelayFee is the default minimum relay fee in sats.
 		DefaultMinRelayFeeSats uint64 `mapstructure:"default_min_relay_fee_sats"`
 
@@ -763,12 +753,17 @@ type BifrostBlockScannerConfiguration struct {
 
 	// ObservationFlexibilityBlocks is the number of blocks behind the current tip we will
 	// submit network fee and solvency observations.
-	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"`
+	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"` // 类似 blockConfirm
 
 	// MaxGasLimit is the maximum gas allowed for non-aggregator outbounds. This is used
 	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the
 	// final outbound.
 	MaxGasLimit uint64 `mapstructure:"max_gas_limit"`
+
+	// MaxSwapGasLimit is the maximum swap gas allowed for non-aggregator outbounds. This is used
+	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the
+	// final outbound.
+	MaxSwapGasLimit uint64 `mapstructure:"max_swap_gas_limit"`
 
 	// MaxContractTxLogs is the maximum logs allowed for an inbound EVM tx. This is used to prevent
 	// bifrost being bogged down during smart contract log parsing down by large txs.
@@ -802,6 +797,8 @@ type BifrostBlockScannerConfiguration struct {
 
 	// MaxReorgRescanBlocks is the maximum number of blocks to rescan during a reorg.
 	MaxReorgRescanBlocks int64 `mapstructure:"max_reorg_rescan_blocks"`
+
+	Mos string `mapstructure:"mos"`
 }
 
 type BifrostClientConfiguration struct {
@@ -811,6 +808,10 @@ type BifrostClientConfiguration struct {
 	ChainEBifrost   string       `mapstructure:"chain_ebifrost"`
 	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
 	SignerName      string       `mapstructure:"signer_name"`
+	KeystorePath    string       `mapstructure:"keystore_path"`
+	Maintainer      string       `mapstructure:"maintainer"`
+	ViewController  string       `mapstructure:"view_controller"`
+	TokenRegistry   string       `mapstructure:"token_registry"`
 	SignerPasswd    string
 }
 
@@ -854,6 +855,7 @@ type WhitelistCosmosAsset struct {
 func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) {
 	var addrs []maddr.Multiaddr
 
+	// todo handler p2p get addr： prot 6040
 	for _, ip := range resolveAddrs(c.BootstrapPeers) {
 		if len(ip) == 0 {
 			continue
@@ -862,38 +864,41 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 		// fetch the p2pid
 		res, err := httpClient.Get(fmt.Sprintf("http://%s:6040/p2pid", ip))
 		if err != nil {
-			log.Error().Err(err).Msg("failed to get p2p id")
+			log.Error().Err(err).Msg("GetBootstrapPeers failed to get p2p id")
 			continue
 		}
 
 		// skip peers with a bad response status
 		if res.StatusCode != http.StatusOK {
-			log.Warn().Msgf("failed to get p2p id, status code: %d", res.StatusCode)
+			log.Warn().Msgf("GetBootstrapPeers failed to get p2p id, ip: %s, status code: %d", ip, res.StatusCode)
 			continue
 		}
 
 		// read the response
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to read p2p id response")
+			log.Error().Err(err).Msg("GetBootstrapPeers failed to read p2p id response")
 			continue
 		}
 		res.Body.Close()
+		fmt.Println("GetBootstrapPeers 3333 ", string(body))
 
 		// format the multiaddr
 		peerMultiAddr := fmt.Sprintf("/ip4/%s/tcp/5040/ipfs/%s", ip, string(body))
 
 		addr, err := maddr.NewMultiaddr(peerMultiAddr)
 		if err != nil {
-			log.Error().Err(err).Str("addr", peerMultiAddr).Msg("failed to parse multiaddr")
+			log.Error().Err(err).Str("addr", peerMultiAddr).Msg("GetBootstrapPeers failed to parse multiaddr")
 			continue
 		}
+
+		fmt.Println("GetBootstrapPeers add 4444  ", addr)
 		addrs = append(addrs, addr)
 	}
 
 	if len(addrs) == 0 {
 		log.Error().Msg("no bootstrap peers found")
-		assertBifrostHasSeeds()
+		//assertBifrostHasSeeds()
 	} else {
 		log.Info().Interface("peers", addrs).Msg("bootstrap peers")
 	}
@@ -1012,7 +1017,7 @@ func thornodeAutoStateSync(ctx context.Context) {
 		return
 	}
 
-	for _, host := range strings.Split(config.Thornode.Tendermint.StateSync.RPCServers, ",") {
+	for _, host := range strings.Split(config.MAPO.Tendermint.StateSync.RPCServers, ",") {
 		log.Info().Msgf("auto statesync enabled, determining trust height via %s", host)
 
 		client, err := tmhttp.New(host, "")
@@ -1027,7 +1032,7 @@ func thornodeAutoStateSync(ctx context.Context) {
 			log.Err(err).Str("host", host).Msg("failed to get status")
 			continue
 		}
-		height := status.SyncInfo.LatestBlockHeight - config.Thornode.AutoStateSync.BlockBuffer
+		height := status.SyncInfo.LatestBlockHeight - config.MAPO.AutoStateSync.BlockBuffer
 
 		// get the hash of the trust block
 		block, err := client.Block(ctx, &height)
@@ -1039,12 +1044,12 @@ func thornodeAutoStateSync(ctx context.Context) {
 
 		// set the trusted hash and height in tendermint
 		log.Info().Int64("height", height).Str("hash", hash).Msg("setting automatic statesync trust")
-		config.Thornode.Tendermint.StateSync.Enable = true
-		config.Thornode.Tendermint.StateSync.TrustHeight = height
-		config.Thornode.Tendermint.StateSync.TrustHash = hash
+		config.MAPO.Tendermint.StateSync.Enable = true
+		config.MAPO.Tendermint.StateSync.TrustHeight = height
+		config.MAPO.Tendermint.StateSync.TrustHash = hash
 
 		// set the persistent peers in tendermint to the known auto statesync peers
-		config.Thornode.Tendermint.P2P.PersistentPeers = strings.Join(config.Thornode.AutoStateSync.Peers, ",")
+		config.MAPO.Tendermint.P2P.PersistentPeers = strings.Join(config.MAPO.AutoStateSync.Peers, ",")
 
 		// success
 		return

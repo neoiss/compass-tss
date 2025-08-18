@@ -2,6 +2,8 @@ package evm
 
 import (
 	"encoding/json"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"io"
 	"math/big"
 	"net/http"
@@ -21,21 +23,20 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	openapi "gitlab.com/thorchain/thornode/v3/openapi/gen"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 )
 
 func TestEVMPackage(t *testing.T) { TestingT(t) }
 
 type EVMSuite struct {
 	thordir  string
-	thorKeys *mapclient.Keys
-	bridge   mapclient.ThorchainBridge
+	thorKeys *keys.Keys
+	bridge   shareTypes.Bridge
 	m        *metrics.Metrics
 	server   *httptest.Server
 }
@@ -72,29 +73,29 @@ func (s *EVMSuite) SetUpTest(c *C) {
 			_, err := rw.Write([]byte(`{"current":"` + types2.GetCurrentVersion().String() + `"}`))
 			c.Assert(err, IsNil)
 		case mapclient.PubKeysEndpoint:
-			priKey, _ := s.thorKeys.GetPrivateKey()
-			tm, _ := cryptocodec.ToCmtPubKeyInterface(priKey.PubKey())
-			pk, err := common.NewPubKeyFromCrypto(tm)
-			c.Assert(err, IsNil)
-			content, err := os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
-			c.Assert(err, IsNil)
-			var pubKeysVault openapi.VaultPubkeysResponse
-			c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
-			chain := common.AVAXChain.String()
-			router := "0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25"
-			pubKeysVault.Asgard = append(pubKeysVault.Asgard, openapi.VaultInfo{
-				PubKey: pk.String(),
-				Routers: []openapi.VaultRouter{
-					{
-						Chain:  &chain,
-						Router: &router,
-					},
-				},
-			})
-			buf, err := json.MarshalIndent(pubKeysVault, "", "	")
-			c.Assert(err, IsNil)
-			_, err = rw.Write(buf)
-			c.Assert(err, IsNil)
+			//priKey, _ := s.thorKeys.GetPrivateKey()
+			//tm, _ := cryptocodec.ToCmtPubKeyInterface(priKey.PubKey())
+			//pk, err := common.NewPubKeyFromCrypto(tm)
+			//c.Assert(err, IsNil)
+			//content, err := os.ReadFile("../../../../test/fixtures/endpoints/vaults/pubKeys.json")
+			//c.Assert(err, IsNil)
+			//var pubKeysVault openapi.VaultPubkeysResponse
+			//c.Assert(json.Unmarshal(content, &pubKeysVault), IsNil)
+			//chain := common.AVAXChain.String()
+			//router := "0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25"
+			//pubKeysVault.Asgard = append(pubKeysVault.Asgard, openapi.VaultInfo{
+			//	PubKey: pk.String(),
+			//	Routers: []openapi.VaultRouter{
+			//		{
+			//			Chain:  &chain,
+			//			Router: &router,
+			//		},
+			//	},
+			//})
+			//buf, err := json.MarshalIndent(pubKeysVault, "", "	")
+			//c.Assert(err, IsNil)
+			//_, err = rw.Write(buf)
+			//c.Assert(err, IsNil)
 		case mapclient.InboundAddressesEndpoint:
 			httpTestHandler(c, rw, "../../../../test/fixtures/endpoints/inbound_addresses/inbound_addresses.json")
 		case mapclient.AsgardVault:
@@ -214,8 +215,9 @@ func (s *EVMSuite) SetUpTest(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.m, s.thorKeys)
+	pri := os.Getenv("pri")
+	s.thorKeys = keys.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd, pri)
+	s.bridge, err = mapclient.NewBridge(cfg, s.m, s.thorKeys)
 	c.Assert(err, IsNil)
 }
 

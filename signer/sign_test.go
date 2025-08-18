@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -34,14 +36,13 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
-	"gitlab.com/thorchain/thornode/v3/x/thorchain"
-	types2 "gitlab.com/thorchain/thornode/v3/x/thorchain/types"
+	types2 "github.com/mapprotocol/compass-tss/x/types"
 )
 
 func TestPackage(t *testing.T) { TestingT(t) }
@@ -53,7 +54,7 @@ func TestPackage(t *testing.T) { TestingT(t) }
 // -------------------------------- bridge ---------------------------------
 
 type fakeBridge struct {
-	mapclient.ThorchainBridge
+	shareTypes.ThorchainBridge
 }
 
 func (b fakeBridge) GetBlockHeight() (int64, error) {
@@ -321,7 +322,7 @@ func GetMetricForTest(c *C) *metrics.Metrics {
 
 type SignSuite struct {
 	thorKeys *mapclient.Keys
-	bridge   mapclient.ThorchainBridge
+	bridge   shareTypes.ThorchainBridge
 	metrics  *metrics.Metrics
 	rpcHost  string
 	storage  *SignerStore
@@ -330,7 +331,6 @@ type SignSuite struct {
 var _ = Suite(&SignSuite{})
 
 func (s *SignSuite) SetUpSuite(c *C) {
-	thorchain.SetupConfigForTest()
 	s.metrics = GetMetricForTest(c)
 	c.Assert(s.metrics, NotNil)
 
@@ -375,9 +375,9 @@ func (s *SignSuite) SetUpSuite(c *C) {
 	kb := cKeys.NewInMemory(cdc)
 	_, _, err := kb.NewMnemonic(cfg.SignerName, cKeys.English, cmd.THORChainHDPath, cfg.SignerPasswd, hd.Secp256k1)
 	c.Assert(err, IsNil)
-	s.thorKeys = mapclient.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
+	s.thorKeys = keys.NewKeysWithKeybase(kb, cfg.SignerName, cfg.SignerPasswd)
 	c.Assert(err, IsNil)
-	s.bridge, err = mapclient.NewThorchainBridge(cfg, s.metrics, s.thorKeys)
+	s.bridge, err = mapo.NewBridge(cfg, s.metrics, s.thorKeys)
 	c.Assert(err, IsNil)
 	s.storage, err = NewSignerStore("", config.LevelDBOptions{}, "")
 	c.Assert(err, IsNil)
@@ -408,25 +408,25 @@ func (s *SignSuite) TestProcess(c *C) {
 		},
 	}
 
-	blockScan, err := NewThorchainBlockScan(cfg.BlockScanner, s.storage, s.bridge, s.metrics, pubkeymanager.NewMockPoolAddressValidator())
+	blockScan, err := mapo.NewBlockScan(cfg.BlockScanner, s.storage, s.bridge, s.metrics, pubkeymanager.NewMockPoolAddressValidator())
 	c.Assert(err, IsNil)
 
 	blockScanner, err := blockscanner.NewBlockScanner(cfg.BlockScanner, s.storage, m, s.bridge, blockScan)
 	c.Assert(err, IsNil)
 
 	sign := &Signer{
-		logger:                log.With().Str("module", "signer").Logger(),
-		cfg:                   config.Bifrost{Signer: cfg},
-		wg:                    &sync.WaitGroup{},
-		stopChan:              make(chan struct{}),
-		blockScanner:          blockScanner,
-		thorchainBlockScanner: blockScan,
-		chains:                chains,
-		m:                     s.metrics,
-		storage:               s.storage,
-		errCounter:            s.metrics.GetCounterVec(metrics.SignerError),
-		pubkeyMgr:             pubkeymanager.NewMockPoolAddressValidator(),
-		thorchainBridge:       s.bridge,
+		logger:               log.With().Str("module", "signer").Logger(),
+		cfg:                  config.Bifrost{Signer: cfg},
+		wg:                   &sync.WaitGroup{},
+		stopChan:             make(chan struct{}),
+		blockScanner:         blockScanner,
+		mapChainBlockScanner: blockScan,
+		chains:               chains,
+		m:                    s.metrics,
+		storage:              s.storage,
+		errCounter:           s.metrics.GetCounterVec(metrics.SignerError),
+		pubkeyMgr:            pubkeymanager.NewMockPoolAddressValidator(),
+		thorchainBridge:      s.bridge,
 	}
 	c.Assert(sign, NotNil)
 	err = sign.Start()
