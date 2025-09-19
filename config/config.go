@@ -811,6 +811,7 @@ type BifrostClientConfiguration struct {
 	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
 	SignerPasswd    string
+	Addr            string `mapstructure:"addr"`
 }
 
 type BifrostMetricsConfiguration struct {

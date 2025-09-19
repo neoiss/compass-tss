@@ -76,6 +76,7 @@ type SolvencyReporter func(height int64) error
 
 // Bridge is compass 2 map
 type Bridge interface {
+	Register() error
 	EnsureNodeWhitelisted() error
 	EnsureNodeWhitelistedWithTimeout() error
 	FetchNodeStatus() (stypes.NodeStatus, error)

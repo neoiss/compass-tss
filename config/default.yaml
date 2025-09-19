@@ -36,6 +36,7 @@ bifrost:
     tss_manager: "0x7c64da77a10001131840b30119Bf7c9D50154fda"
     token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
     view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
+    addr: ""
   attestation_gossip:
     observe_reconcile_interval: 15s
     late_observe_timeout: 5m

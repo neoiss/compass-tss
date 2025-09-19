@@ -8,12 +8,52 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/internal/structure"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/pkg/errors"
 )
+
+func (b *Bridge) Register() error {
+	method := constants.Register
+	priv, err := b.keys.GetPrivateKey()
+	if err != nil {
+		return err
+	}
+
+	ethPrivateKey, err := evm.GetPrivateKey(priv)
+	if err != nil {
+		return err
+	}
+	pk, err := keys.PublicKeyFromPrivate(ethPrivateKey)
+	if err != nil {
+		return err
+	}
+	publicKeyBytes := ecrypto.FromECDSAPub(pk)
+	fmt.Println("publicKeyBytes ----------- ", publicKeyBytes)
+	fmt.Println("publicKeyBytes ----------- ", ecommon.Bytes2Hex(publicKeyBytes))
+
+	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], nil, b.cfg.Addr)
+	if err != nil {
+		return errors.Wrap(err, "fail to pack input")
+	}
+
+	txBytes, err := b.assemblyTx(nil, input, 0, b.cfg.Maintainer)
+	if err != nil {
+		return errors.Wrap(err, "fail to assembly tx")
+	}
+	txId, err := b.Broadcast(txBytes)
+	if err != nil {
+		return errors.Wrap(err, "fail to broadcast tx")
+	}
+	b.logger.Info().Str("txId", txId).Msg("Register maintainer successfully")
+
+	return nil
+}
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
