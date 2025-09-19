@@ -3,13 +3,22 @@ package constants
 // -----------------------------------------------------------------
 // Method of Maintainer
 // -----------------------------------------------------------------
+
+const (
+	ElectionEpoch      = "electionEpoch"
+	GetEpochInfo       = "getEpochInfo"
+	GetMaintainerInfos = "getMaintainerInfos"
+	Register           = "register"
+)
+
+// -----------------------------------------------------------------
+// Method of tssManager
+// -----------------------------------------------------------------
 const (
 	VoteUpdateTssPool = "voteUpdateTssPool"
-	GetElectionEpoch  = "getElectionEpoch"
 	GetKeyShare       = "getKeyShare"
-	GetTSSPoolId      = "getTSSPoolId"
 	VoteNetworkFee    = "voteNetworkFee"
-	GetNetworkFee     = "getInboundAddress"
+	GetNetworkFee     = "getNetworkFee"
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
 	IsOrderExecuted   = "isOrderExecuted"

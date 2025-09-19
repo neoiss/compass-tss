@@ -494,8 +494,8 @@ type Bifrost struct {
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.BSCChain: b.Chains.BSC,
-		//common.BTCChain: b.Chains.BTC,
+		// common.BSCChain: b.Chains.BSC,
+		common.BTCChain: b.Chains.BTC,
 		common.ETHChain: b.Chains.ETH,
 	}
 }
@@ -807,6 +807,7 @@ type BifrostClientConfiguration struct {
 	SignerName      string       `mapstructure:"signer_name"`
 	KeystorePath    string       `mapstructure:"keystore_path"`
 	Maintainer      string       `mapstructure:"maintainer"`
+	TssManager      string       `mapstructure:"tss_manager"`
 	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
 	SignerPasswd    string

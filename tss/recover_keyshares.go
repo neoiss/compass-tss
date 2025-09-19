@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"path/filepath"
 
@@ -28,23 +27,22 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 
 	// skip recovery if the current node is not active
 	if types.NodeStatus(na.Status) != types.NodeStatus_Active {
-		log.Info().Msgf("%s is not active, skipping key shares recovery", na.Addr)
+		log.Info().Msgf("%s is not active, skipping key shares recovery", na.Account)
 		return nil
 	}
 
-	// get the current epoch info
-	epochInfo, err := mapchain.GetEpochInfo(big.NewInt(0))
+	keyShare, pubKey, err := mapchain.GetKeyShare()
 	if err != nil {
 		return fmt.Errorf("fail to get current epoch info: %w", err)
 	}
-	// todo
-	vault := common.Bytes2Hex(epochInfo.Pubkey)
-	keysharesPath := filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", vault))
+	if len(pubKey) <= 0 {
+		log.Info().Msg("pk is empty, skipping key shares recovery")
+		return nil
+	}
 
-	keyShare, err := mapchain.GetKeyShare()
-	if err != nil {
-		return fmt.Errorf("fail to get current epoch info: %w", err)
-	}
+	// todo
+	vault := common.Bytes2Hex(pubKey)
+	keysharesPath := filepath.Join(constants.DefaultHome, fmt.Sprintf("localstate-%s.json", vault))
 
 	// skip recovery if key shares for the nodes current vault already exist
 	if _, err = os.Stat(keysharesPath); !os.IsNotExist(err) {
@@ -56,7 +54,7 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 		return err
 	}
 	// success
-	log.Info().Str("path", keysharesPath).Msgf("recovered key shares for %s", na.Addr)
+	log.Info().Str("path", keysharesPath).Msgf("recovered key shares for %s", na.Account)
 	return nil
 }
 

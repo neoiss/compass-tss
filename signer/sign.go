@@ -399,11 +399,11 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
-		if ele.Addr.String() == "" {
+		if ele.Account.String() == "" {
 			continue
 		}
 		members = append(members, common.PubKey(ecommon.Bytes2Hex(ele.Secp256Pubkey)))
-		memberAddrs = append(memberAddrs, ele.Addr)
+		memberAddrs = append(memberAddrs, ele.Account)
 	}
 	// NOTE: in practice there is only one keygen in the keygen block
 	//for _, keygenReq := range keygenBlock.Keygens {

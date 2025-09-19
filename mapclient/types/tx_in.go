@@ -3,11 +3,11 @@ package types
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
+
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/constants"
-	"math/big"
 )
 
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -29,7 +29,6 @@ type TxInItem struct {
 	Memo                string        `json:"memo"`
 	Sender              string        `json:"sender"`
 	ObservedVaultPubKey common.PubKey `json:"observed_vault_pub_key"`
-	TxInType            constants.TxInType
 	FromChain           *big.Int
 	ToChain             *big.Int
 	Height              *big.Int
@@ -43,6 +42,11 @@ type TxInItem struct {
 	Payload             []byte
 	Method              string
 	LogIndex            uint // index of the log in the block
+	// bridgeOut add new fields
+	ChainAndGasLimit *big.Int
+	TxOutType        uint8
+	// bridgeIn add new fields
+	Sequence *big.Int
 }
 
 type TxInStatus byte
@@ -113,17 +117,16 @@ func (t *TxInItem) EqualsObservedTx(other common.ObservedTx) bool {
 
 func (t *TxInItem) Copy() *TxInItem {
 	return &TxInItem{
-		Tx:       t.Tx,
-		TxInType: t.TxInType,
-		ToChain:  t.ToChain,
-		Height:   t.Height,
-		Amount:   t.Amount,
-		OrderId:  t.OrderId,
-		GasUsed:  t.GasUsed,
-		Token:    t.Token,
-		Vault:    t.Vault,
-		To:       t.To,
-		Method:   t.Method,
+		Tx:      t.Tx,
+		ToChain: t.ToChain,
+		Height:  t.Height,
+		Amount:  t.Amount,
+		OrderId: t.OrderId,
+		GasUsed: t.GasUsed,
+		Token:   t.Token,
+		Vault:   t.Vault,
+		To:      t.To,
+		Method:  t.Method,
 	}
 }
 

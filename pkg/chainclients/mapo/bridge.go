@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	ecommon "github.com/ethereum/go-ethereum/common"
-
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,10 +28,8 @@ import (
 	keys2 "github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/pkg/contract"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -61,29 +57,28 @@ const (
 
 // Bridge will be used to send tx to THORChain
 type Bridge struct {
-	logger                           zerolog.Logger
-	cfg                              config.BifrostClientConfiguration
-	keys                             *keys2.Keys
-	errCounter                       *prometheus.CounterVec
-	m                                *metrics.Metrics
-	blockHeight                      int64
-	accountNumber                    uint64
-	seqNumber                        uint64
-	chainID                          *big.Int
-	httpClient                       *retryablehttp.Client
-	broadcastLock                    *sync.RWMutex
-	ethClient                        *ethclient.Client
-	blockScanner                     *MapChainBlockScan
-	stopChan                         chan struct{}
-	wg                               *sync.WaitGroup
-	gasPrice                         *big.Int
-	gasCache                         []*big.Int
-	ethPriKey                        *ecdsa.PrivateKey
-	kw                               *evm.KeySignWrapper
-	ethRpc                           *evm.EthRPC
-	mainAbi, relayAbi, tokenRegistry *abi.ABI
-	mainCall, viewCall               *contract.Call
-	epoch                            *big.Int
+	logger                                   zerolog.Logger
+	cfg                                      config.BifrostClientConfiguration
+	keys                                     *keys2.Keys
+	errCounter                               *prometheus.CounterVec
+	m                                        *metrics.Metrics
+	blockHeight                              int64
+	accountNumber                            uint64
+	seqNumber                                uint64
+	chainID                                  *big.Int
+	httpClient                               *retryablehttp.Client
+	broadcastLock                            *sync.RWMutex
+	ethClient                                *ethclient.Client
+	blockScanner                             *MapChainBlockScan
+	stopChan                                 chan struct{}
+	wg                                       *sync.WaitGroup
+	gasPrice                                 *big.Int
+	gasCache                                 []*big.Int
+	ethPriKey                                *ecdsa.PrivateKey
+	kw                                       *evm.KeySignWrapper
+	ethRpc                                   *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, tokenRegistry *abi.ABI
+	epoch                                    *big.Int
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -138,21 +133,23 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	if err != nil {
 		return nil, err
 	}
+
+	signerAddr, err := k.GetEthAddress()
+	if err != nil {
+		return nil, err
+	}
+	logger.Info().Any("addr", signerAddr).Msg("Map signer address retrieved")
+
 	mainAbi, err := newMaintainerABi()
 	if err != nil {
 		return nil, err
 	}
+
+	tssAbi, err := newTssABi()
+	if err != nil {
+		return nil, err
+	}
 	tokenRegistry, err := NewTokenRegistry()
-	if err != nil {
-		return nil, err
-	}
-
-	ai, err := selfAbi.New(maintainerAbi)
-	if err != nil {
-		return nil, err
-	}
-
-	viewAi, err := selfAbi.New(viewABI)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +159,6 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, err
 	}
 
-	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.Maintainer)}, ai)
-	viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(cfg.ViewController)}, viewAi)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	if err != nil {
 		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
@@ -191,12 +186,13 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
+		tssAbi:        tssAbi,
 		relayAbi:      relayAi,
 		tokenRegistry: tokenRegistry,
-		mainCall:      mainCall,
-		viewCall:      viewCall,
-		epoch:         big.NewInt(1), // todo
-		gasPrice:      big.NewInt(0),
+		// mainCall:      mainCall,
+		// viewCall: viewCall,
+		epoch:    big.NewInt(1), // todo
+		gasPrice: big.NewInt(0),
 	}, nil
 }
 
@@ -478,7 +474,7 @@ func (b *Bridge) WaitSync() error {
 		if !yes {
 			break
 		}
-		b.logger.Info().Msg("map relay chain is syncing... waiting...")
+		b.logger.Info().Msg("Map relay chain is syncing... waiting...")
 		time.Sleep(constants.MAPRelayChainBlockTime)
 	}
 	return nil

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -113,7 +114,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 	if err != nil {
 		return nil, err
 	}
-	vaultABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
+	gatewayABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create contract abi: %w", err)
 	}
@@ -131,7 +132,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 		blockMetaAccessor:    blockMetaAccessor,
 		tokens:               tokens,
 		bridge:               bridge,
-		gatewayABI:           vaultABI,
+		gatewayABI:           gatewayABI,
 		erc20ABI:             erc20ABI,
 		eipSigner:            etypes.NewLondonSigner(chainID),
 		pubkeyMgr:            pubkeyMgr,
@@ -197,10 +198,8 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		ToBlock:   big.NewInt(currentHeight),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
 		Topics: [][]ecommon.Hash{{
-			constants.EventOfDeposit.GetTopic(),
-			constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
-			constants.EventOfTransferOut.GetTopic(),
-			constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+			constants.EventOfBridgeOut.GetTopic(), // txIn -> voteTxIn
+			constants.EventOfBridgeIn.GetTopic(),  // txOut -> voteTxOut
 		}},
 	})
 	if err != nil {

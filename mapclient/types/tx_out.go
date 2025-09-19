@@ -30,12 +30,17 @@ type TxOutItem struct {
 	// relayTransferCall
 	Payload []byte `json:"payload,omitempty"`
 	// migration
-	FromVault  []byte           `json:"from_vault,omitempty"`
-	ToVault    []byte           `json:"to_vault,omitempty"`
-	Allowances []TokenAllowance `json:"allowances,omitempty"`
-
-	VaultPubKey common.PubKey `json:"vault_pubkey"`
-	Checkpoint  []byte        `json:"-"`
+	FromVault   []byte           `json:"from_vault,omitempty"`
+	ToVault     []byte           `json:"to_vault,omitempty"`
+	Allowances  []TokenAllowance `json:"allowances,omitempty"`
+	VaultPubKey common.PubKey    `json:"vault_pubkey"`
+	Checkpoint  []byte           `json:"-"`
+	// bridgeRelay add new field
+	ChainAndGasLimit *big.Int
+	TxOutType        uint8
+	Sequence         *big.Int
+	From             []byte
+	Data             []byte
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem
@@ -104,12 +109,12 @@ type TxArrayItem struct {
 	LogIndex        uint
 	TxHash          string
 	Method          string
-	// relayTransferCall
-	Payload []byte
-	// migration
-	FromVault  []byte
-	ToVault    []byte
-	Allowances []TokenAllowance
+	// bridgeRelay add new field
+	ChainAndGasLimit *big.Int
+	TxOutType        uint8
+	Sequence         *big.Int
+	From             []byte
+	Data             []byte
 }
 
 type TokenAllowance struct {
@@ -120,23 +125,24 @@ type TokenAllowance struct {
 // TxOutItem convert the information to TxOutItem
 func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 	return TxOutItem{
-		Chain:           tx.Chain,
-		Memo:            tx.Memo,
-		Height:          height,
-		OrderId:         tx.OrderId,
-		Token:           tx.Token,
-		Vault:           tx.Vault,
-		To:              tx.To,
-		Amount:          tx.Amount,
-		TransactionRate: tx.TransactionRate,
-		TransactionSize: tx.TransactionSize,
-		LogIndex:        tx.LogIndex,
-		TxHash:          tx.TxHash,
-		Method:          tx.Method,
-		Payload:         tx.Payload,
-		FromVault:       tx.FromVault,
-		ToVault:         tx.ToVault,
-		Allowances:      tx.Allowances,
+		Chain:            tx.Chain,
+		Memo:             tx.Memo,
+		Height:           height,
+		OrderId:          tx.OrderId,
+		Token:            tx.Token,
+		Vault:            tx.Vault,
+		To:               tx.To,
+		Amount:           tx.Amount,
+		TransactionRate:  tx.TransactionRate,
+		TransactionSize:  tx.TransactionSize,
+		LogIndex:         tx.LogIndex,
+		TxHash:           tx.TxHash,
+		Method:           tx.Method,
+		ChainAndGasLimit: tx.ChainAndGasLimit,
+		TxOutType:        tx.TxOutType,
+		Sequence:         tx.Sequence,
+		From:             tx.From,
+		Data:             tx.Data,
 	}
 }
 

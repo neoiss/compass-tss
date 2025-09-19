@@ -7,18 +7,14 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
-	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
-	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/pkg/contract"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
@@ -211,14 +207,14 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 	tokenRegistry, err := NewTokenRegistry()
 	c.Assert(err, IsNil)
 
-	ai, err := selfAbi.New(maintainerAbi)
-	c.Assert(err, IsNil)
+	// ai, err := selfAbi.New(maintainerAbi)
+	// c.Assert(err, IsNil)
 
-	viewAi, err := selfAbi.New(viewABI)
-	c.Assert(err, IsNil)
+	// viewAi, err := selfAbi.New(viewABI)
+	// c.Assert(err, IsNil)
 
-	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.Maintainer)}, ai)
-	viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.ViewController)}, viewAi)
+	// mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.Maintainer)}, ai)
+	// viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.ViewController)}, viewAi)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	c.Assert(err, IsNil)
 
@@ -246,10 +242,10 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 		ethRpc:        rpcClient,
 		mainAbi:       mainAbi,
 		tokenRegistry: tokenRegistry,
-		mainCall:      mainCall,
-		viewCall:      viewCall,
-		epoch:         big.NewInt(1),
-		gasPrice:      big.NewInt(0),
+		// mainCall:      mainCall,
+		// viewCall: viewCall,
+		epoch:    big.NewInt(1),
+		gasPrice: big.NewInt(0),
 	}
 
 }
@@ -266,9 +262,9 @@ func (s *BridgeSuite) Benchmark_GetNetworkFee(c *C) {
 }
 
 func (s *BridgeSuite) Test_CheckOrderId(c *C) {
-	var exist bool
-	err := s.b.mainCall.Call(constants.IsOrderExecuted, &exist, 0,
-		ecommon.HexToHash("fabc36c8987035c7d01d7a3e8e9602b621263c0c9e286b5c408e39171037854d"), true)
-	c.Assert(err, IsNil)
-	c.Log("CheckOrderId -------- ", exist)
+	// var exist bool
+	// err := s.b.mainCall.Call(constants.IsOrderExecuted, &exist, 0,
+	// 	ecommon.HexToHash("fabc36c8987035c7d01d7a3e8e9602b621263c0c9e286b5c408e39171037854d"), true)
+	// c.Assert(err, IsNil)
+	// c.Log("CheckOrderId -------- ", exist)
 }

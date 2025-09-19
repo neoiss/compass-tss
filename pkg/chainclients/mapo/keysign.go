@@ -55,9 +55,8 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		ToBlock:   big.NewInt(blockHeight),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // done
 		Topics: [][]ecommon.Hash{{
-			constants.RelayEventOfMigration.GetTopic(),
-			constants.RelayEventOfTransferCall.GetTopic(),
-			constants.RelayEventOfTransferOut.GetTopic(),
+			constants.EventOfBridgeRelay.GetTopic(),
+			constants.EventOfBridgeCompleted.GetTopic(),
 		}},
 	})
 	if len(logs) == 0 {

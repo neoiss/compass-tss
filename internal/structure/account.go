@@ -1,18 +1,18 @@
 package structure
 
 import (
-	"github.com/mapprotocol/compass-tss/constants"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type MaintainerInfo struct {
-	Status        uint8          `json:"status"`
-	Addr          common.Address `json:"addr"`
-	Secp256Pubkey []byte         `json:"secp256Pubkey"`
-	Ed25519Pubkey []byte         `json:"ed25519Pubkey"`
-	P2pAddress    string         `json:"p2pAddress"`
+	Status          uint8          `json:"status,omitempty"`
+	Account         common.Address `json:"account,omitempty"`
+	LastActiveEpoch *big.Int       `json:"last_active_epoch,omitempty"`
+	Secp256Pubkey   []byte         `json:"secp_256_pubkey,omitempty"`
+	Ed25519Pubkey   []byte         `json:"ed_25519_pubkey,omitempty"`
+	P2pAddress      string         `json:"p_2_p_address,omitempty"`
 }
 
 type KeyGen struct {
@@ -21,7 +21,6 @@ type KeyGen struct {
 }
 
 type TssPoolParam struct {
-	Id        [32]byte
 	Epoch     *big.Int
 	Pubkey    []byte
 	KeyShare  []byte
@@ -31,37 +30,40 @@ type TssPoolParam struct {
 }
 
 type EpochInfo struct {
-	Status     uint8
-	StartBlock *big.Int
-	EndBlock   *big.Int
-	Pubkey     []byte
-	KeyShare   []byte
-	Maitainers []common.Address
+	ElectedBlock  uint64
+	StartBlock    uint64
+	EndBlock      uint64
+	MigratedBlock uint64
+	Maintainers   []common.Address
 }
 
 type VoteTxIn struct {
-	TxInType  constants.TxInType
-	ToChain   *big.Int
-	Height    *big.Int
-	FromChain *big.Int
-	Amount    *big.Int
-	OrderId   [32]byte
-	Vault     []byte
-	Token     []byte
-	From      []byte
-	To        []byte
-	Payload   []byte
+	TxInType         uint8
+	OrderId          [32]byte
+	ChainAndGasLimit *big.Int
+	Height           *big.Int
+	Token            []byte
+	Amount           *big.Int
+	From             []byte
+	Vault            []byte
+	To               []byte
+	Payload          []byte
 }
 
 type VoteTxOut struct {
-	Height  *big.Int
-	ToChain *big.Int
-	Amount  *big.Int
-	OrderId [32]byte
-	GasUsed *big.Int
-	Token   []byte
-	Vault   []byte
-	To      []byte
+	TxOutType        uint8
+	OrderId          [32]byte
+	ChainAndGasLimit *big.Int
+	Height           *big.Int
+	GasUsed          *big.Int
+	Sequence         *big.Int
+	Amount           *big.Int
+	Sender           common.Address
+	Token            []byte
+	From             []byte
+	To               []byte
+	Vault            []byte
+	Data             []byte
 }
 
 type Gas struct {

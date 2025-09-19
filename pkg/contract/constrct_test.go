@@ -1,10 +1,9 @@
 package contract
 
 import (
-	"github.com/mapprotocol/compass-tss/constants"
-	. "gopkg.in/check.v1"
-	"math/big"
 	"testing"
+
+	. "gopkg.in/check.v1"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -33,20 +32,6 @@ func (s *CallSuite) SetUpTest(c *C) {
 	call := New(ethClient, []ecommon.Address{ecommon.HexToAddress("0x0EdA5e4015448A2283662174DD7def3C3d262D38")}, testAbi)
 
 	s.call = call
-}
-
-func (s *CallSuite) Test_Call(c *C) {
-	var tssPoolId ecommon.Hash
-	err := s.call.Call(constants.GetTSSPoolId, &tssPoolId, 0,
-		ecommon.Hex2Bytes("3ea5c282cb98f83c1d7e87e696c9c2c9a51a029ab3805d66d5392fdb45dc104e"),
-		[]ecommon.Address{ecommon.HexToAddress("0x25fa71d4f689f4b65eb6d020a414090828281d51"),
-			ecommon.HexToAddress("0xad76db9c043fb5386d8d5c4634f55bbada559b29"),
-			ecommon.HexToAddress("0x2b7588165556ab2fa1d30c520491c385baa424d8")},
-		big.NewInt(1),
-		[]ecommon.Address{},
-	)
-	c.Assert(err, IsNil)
-	c.Log("tssPoolId ", tssPoolId)
 }
 
 //func Test_NewCall(t *testing.T) {

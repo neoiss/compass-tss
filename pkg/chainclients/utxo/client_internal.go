@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
-	mem "github.com/mapprotocol/compass-tss/x/memo"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto"
+	mem "github.com/mapprotocol/compass-tss/x/memo"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcutil"
@@ -552,7 +553,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	txIn := types.TxInItem{
 		Tx:        tx.Txid,
 		Memo:      memo,
-		TxInType:  constants.SWAP,
+		TxOutType: uint8(constants.TRANSFER), // swap -> transfer
 		FromChain: chainID,
 		ToChain:   destChainID,
 		Height:    big.NewInt(height),

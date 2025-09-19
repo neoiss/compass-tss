@@ -110,7 +110,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	}
 
 	// load ABIs
-	vaultABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
+	gatewayABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create contract abi: %w", err)
 	}
@@ -180,7 +180,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 		gasPriceChanged:      false,
 		blockMetaAccessor:    blockMetaAccessor,
 		bridge:               bridge,
-		gatewayABI:           vaultABI,
+		gatewayABI:           gatewayABI,
 		erc20ABI:             erc20ABI,
 		eipSigner:            etypes.NewLondonSigner(chainID),
 		pubkeyMgr:            pubkeyMgr,
@@ -240,10 +240,8 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		ToBlock:   big.NewInt(currentHeight),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
 		Topics: [][]ecommon.Hash{{
-			constants.EventOfDeposit.GetTopic(),
-			constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
-			constants.EventOfTransferOut.GetTopic(),
-			constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+			constants.EventOfBridgeOut.GetTopic(), // txIn -> voteTxIn
+			constants.EventOfBridgeIn.GetTopic(),  // txOut -> voteTxOut
 		}},
 	})
 	if err != nil {
@@ -586,10 +584,8 @@ func (e *EVMScanner) processReorg(header *etypes.Header) ([]stypes.TxIn, error) 
 			ToBlock:   big.NewInt(rescanHeight),
 			Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
 			Topics: [][]ecommon.Hash{{
-				constants.EventOfDeposit.GetTopic(),
-				constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
-				constants.EventOfTransferOut.GetTopic(),
-				constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+				constants.EventOfBridgeOut.GetTopic(), // txIn -> voteTxIn
+				constants.EventOfBridgeIn.GetTopic(),  // txOut -> voteTxOut
 			}},
 		})
 		if err != nil {

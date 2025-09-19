@@ -74,15 +74,15 @@ func main() {
 	if len(cfg.MAPRelay.SignerName) == 0 {
 		log.Fatal().Msg("signer name is empty")
 	}
-	if len(cfg.MAPRelay.SignerPasswd) == 0 {
-		log.Fatal().Msg("signer password is empty")
-	}
+	// if len(cfg.MAPRelay.SignerPasswd) == 0 {
+	// 	log.Fatal().Msg("signer password is empty")
+	// }
 	kb, keyStore, err := keys.GetKeyringKeybase(cfg.MAPRelay.KeystorePath, cfg.MAPRelay.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := keys.NewKeysWithKeybase(kb, cfg.MAPRelay.SignerName, cfg.MAPRelay.SignerPasswd, keyStore)
+	k := keys.NewKeysWithKeybase(kb, cfg.MAPRelay.SignerName, "", keyStore) // "cfg.MAPRelay.SignerPasswd"
 	// map bridge
 	mapBridge, err := mapo.NewBridge(cfg.MAPRelay, m, k)
 	if err != nil {

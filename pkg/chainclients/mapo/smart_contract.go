@@ -17,6 +17,8 @@ var (
 	viewABI string
 	//go:embed abi/relay.json
 	relayABI string
+	//go:embed abi/tssManager.json
+	tssABI string
 )
 
 func newMaintainerABi() (*abi.ABI, error) {
@@ -26,6 +28,15 @@ func newMaintainerABi() (*abi.ABI, error) {
 	}
 
 	return &maintainer, nil
+}
+
+func newTssABi() (*abi.ABI, error) {
+	tss, err := abi.JSON(strings.NewReader(tssABI))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal tss abi: %w", err)
+	}
+
+	return &tss, nil
 }
 
 func newRelayABi() (*abi.ABI, error) {

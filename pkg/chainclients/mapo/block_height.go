@@ -45,18 +45,6 @@ func (b *Bridge) GetBlockHeight() (int64, error) {
 
 // getLastBlock calls the /lastblock/{chain} endpoint and Unmarshal's into the QueryResLastBlockHeights type
 func (b *Bridge) getLastBlock(chain common.Chain) ([]openapi.LastBlock, error) {
-	//path := LastBlockEndpoint
-	//if !chain.IsEmpty() {
-	//	path = fmt.Sprintf("%s/%s", path, chain.String())
-	//}
-	//buf, _, err := b.getWithPath(path)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to get lastblock: %w", err)
-	//}
-	//var lastBlock []openapi.LastBlock
-	//if err = json.Unmarshal(buf, &lastBlock); err != nil {
-	//	return nil, fmt.Errorf("failed to unmarshal last block: %w", err)
-	//}
 	// todo handler
 	return []openapi.LastBlock{
 		{

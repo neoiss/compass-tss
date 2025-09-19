@@ -11,41 +11,48 @@ func (es EventSig) GetTopic() common.Hash {
 	return crypto.Keccak256Hash([]byte(es))
 }
 
+func (es EventSig) String() string {
+	return string(es)
+}
+
 const (
 	EventOfMessageOut = "0x469059a9fd182ad3741bdd67b925e15056d35262609ea83393db7e8fb5a05ab1"
 )
 
 // relay event
 const (
-	RelayEventOfMigration    EventSig = "Migration(bytes32,uint256,bytes,bytes,TokenAllowance[],uint256,uint256)"            // -> dst gateway 合约 transferAllowance
-	RelayEventOfTransferOut  EventSig = "RelayTransferOut(bytes32,bytes,uint256,uint256,bytes,bytes,uint256,uint256)"        // -> dst gateway 合约 transferOut
-	RelayEventOfTransferCall EventSig = "RelayTransferCall(bytes32,bytes,uint256,uint256,bytes,bytes,bytes,uint256,uint256)" // -> dst gateway 合约 transferOutCall
+	EventOfBridgeRelay     EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,uint256,bytes,uint256,bytes,bytes,bytes)" // -> dst gateway 合约 transferAllowance
+	EventOfBridgeCompleted EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // -> dst gateway 合约 transferOut
 )
 
 // src or dst chain event
 const (
-	EventOfDeposit EventSig = "Deposit(bytes32,address,address,address,uint256,address)"          // -> maintainer 合约 voteTxIn
-	EventOfSwap    EventSig = "Swap(bytes32,address,address,address,uint256,uint256,bytes,bytes)" // -> maintainer 合约 voteTxIn
-)
-
-const (
-	EventOfTransferOut       EventSig = "TransferOut(bytes32,address,address,uint256,address,bool)"      // -> maintainer 合约 voteTxOut
-	EventOfTransferAllowance EventSig = "TransferAllowance(bytes32,address,address,EVMTokenAllowance[])" // -> maintainer 合约 voteTxOut
+	EventOfBridgeOut EventSig = "BridgeOut(bytes32,uint256,uint8,bytes,address,uint256,address,bytes,bytes)"                // -> tss_manager 合约 voteTxIn
+	EventOfBridgeIn  EventSig = "BridgeIn(bytes32,uint256,uint8,bytes,uint256,address,address,uint256,bytes,address,bytes)" // -> tss_manager 合约 voteTxOut
 )
 
 type TxInType uint8
 
 const (
 	DEPOSIT TxInType = iota
-	SWAP
+	TRANSFER
+	MIGRATE
+	REFUND
+	MESSAGE
 )
 
 func (tx TxInType) String() string {
 	switch tx {
 	case DEPOSIT:
 		return "DEPOSIT"
-	case SWAP:
-		return "SWAP"
+	case TRANSFER:
+		return "TRANSFER"
+	case MIGRATE:
+		return "MIGRATE"
+	case REFUND:
+		return "REFUND"
+	case MESSAGE:
+		return "MESSAGE"
 	}
 	return "UNKNOWN"
 }

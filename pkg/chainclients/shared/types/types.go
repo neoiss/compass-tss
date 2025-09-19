@@ -81,7 +81,7 @@ type Bridge interface {
 	FetchNodeStatus() (stypes.NodeStatus, error)
 	FetchActiveNodes() ([]common.PubKey, error)
 	GetNodeAccount(string) (*structure.MaintainerInfo, error)
-	GetNodeAccounts(*big.Int) ([]structure.MaintainerInfo, error)
+	GetNodeAccounts() ([]structure.MaintainerInfo, error)
 	GetKeygenBlock() (*structure.KeyGen, error)
 	GetPools() (stypes.Pools, error) //
 	GetVault(pubkey string) (stypes.Vault, error)
@@ -111,7 +111,7 @@ type Bridge interface {
 	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
 		members []ecommon.Address) (string, error)
-	GetKeyShare() ([]byte, error)
+	GetKeyShare() ([]byte, []byte, error)
 	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
 	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
 	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency

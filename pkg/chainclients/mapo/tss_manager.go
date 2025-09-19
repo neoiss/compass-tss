@@ -2,7 +2,6 @@ package mapo
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"time"
@@ -17,79 +16,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetKeygenBlock retrieves keygen request for the given block height from mapBridge
-func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
-	method := constants.GetElectionEpoch
-	input, err := b.mainAbi.Pack(method)
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to pack input")
-	}
-
-	to := ecommon.HexToAddress(b.cfg.Maintainer)
-	outPut, err := b.ethClient.CallContract(context.Background(), ethereum.CallMsg{
-		From: constants.ZeroAddress,
-		To:   &to,
-		Data: input,
-	}, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to call contract")
-	}
-
-	outputs := b.mainAbi.Methods[method].Outputs
-	unpack, err := outputs.Unpack(outPut)
-	if err != nil {
-		return nil, errors.Wrap(err, "unpack output")
-	}
-
-	var epoch *big.Int
-	//err = b.mainCall.Call(constants.GetElectionEpoch, epoch, 0)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "fail to call contract")
-	//}
-	if err = outputs.Copy(&epoch, unpack); err != nil {
-		return nil, errors.Wrap(err, "copy output")
-	}
-	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
-	if epoch.Uint64() == 0 { // not in epoch
-		return nil, nil
-	}
-	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		fmt.Println("KeyGen Block ignore ----------------- ", epoch, " b.epoch ", b.epoch)
-		return nil, nil
-	}
-	fmt.Println("============================== in election period")
-	// done
-	ret, err := b.GetNodeAccounts(epoch)
-	if err != nil {
-		return nil, err
-	}
-
-	return &structure.KeyGen{
-		Epoch: epoch,
-		Ms:    ret,
-	}, nil
-}
-
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
-	fmt.Println("keyShares ", hex.EncodeToString(keyShares))
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 	}
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
-	var tssPoolId ecommon.Hash
-	err = b.mainCall.Call(constants.GetTSSPoolId, &tssPoolId, 0, pubBytes, members, epoch, blames)
-	if err != nil {
-		return "", errors.Wrap(err, "fail to call contract")
-	}
-	fmt.Println("tssPoolId ----------------- ", tssPoolId)
-
 	method := constants.VoteUpdateTssPool
 	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
-		Id:        tssPoolId,
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
 		KeyShare:  keyShares,
@@ -163,7 +100,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", err
 	}
-	txID, err := b.Broadcast(sign) // todo  &stypes.TxOutItem{},
+	txID, err := b.Broadcast(sign)
 	if err != nil {
 		return "", err
 	}
@@ -174,11 +111,23 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	return txID, nil
 }
 
-func (b *Bridge) GetKeyShare() ([]byte, error) {
-	var ret []byte
-	err := b.mainCall.Call(constants.GetKeyShare, &ret, 0)
+type TSSManagerKeyShare struct {
+	Pubkey   []byte
+	KeyShare []byte
+}
+
+// todo 改这里
+func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
+	var ret TSSManagerKeyShare
+	method := constants.GetKeyShare
+	signerAddr, _ := b.keys.GetEthAddress()
+	input, err := b.tssAbi.Pack(method, signerAddr)
 	if err != nil {
-		return nil, err
+		return nil, nil, errors.Wrap(err, "fail to pack input")
 	}
-	return ret, nil
+	err = b.callContract(&ret, b.cfg.TssManager, constants.GetKeyShare, input, b.tssAbi)
+	if err != nil {
+		return nil, nil, err
+	}
+	return ret.KeyShare, ret.Pubkey, nil
 }

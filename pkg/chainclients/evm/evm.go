@@ -8,7 +8,7 @@ import _ "embed"
 //go:embed abi/erc20.json
 var erc20ContractABI string
 
-//go:embed abi/router.json
+//go:embed abi/gateway.json
 var gatewayContractABI string
 
 const (
