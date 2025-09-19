@@ -3,7 +3,6 @@ package utxo
 import (
 	"encoding/json"
 	"fmt"
-	ethcommon "github.com/ethereum/go-ethereum/common"
 	"io"
 	"math/big"
 	"net/http"
@@ -16,11 +15,13 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	cKeys "github.com/cosmos/cosmos-sdk/crypto/keyring"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/cmd"
@@ -1199,4 +1200,39 @@ func TestHex(t *testing.T) {
 	t.Log(ethcommon.Hex2Bytes("0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
 	t.Log(ethcommon.Hex2Bytes("0x0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
 	t.Log(ethcommon.ParseHexOrString("0x0eb16a9cfdf8e3a4471ef190ee63de5a24f38787"))
+}
+
+func TestDecodeBitcoinAddress(t *testing.T) {
+	type args struct {
+		addr    string
+		network *chaincfg.Params
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "t-P2SH",
+			args: args{
+				addr:    "0x011b82c3b93dda9e6324d5e3c5f9b5f7bf644af3964b1932d8b8f8a2b821a8a45d",
+				network: &chaincfg.TestNet3Params,
+			},
+			want:    "tb1prwpv8wfam20xxfx4u0zlnd0hhajy4uukfvvn9k9clz3tsgdg53ws0dym5c",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DecodeBitcoinAddress(tt.args.addr, tt.args.network)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DecodeBitcoinAddress() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got.String() != tt.want {
+				t.Errorf("DecodeAddress() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

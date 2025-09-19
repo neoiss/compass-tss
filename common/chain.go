@@ -74,7 +74,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(1360095883558916).String(): DOGEChain,
 	big.NewInt(43113).String():            AVAXChain,
 	big.NewInt(84532).String():            BASEChain,
-	big.NewInt(97).String():               MAPChain,
+	big.NewInt(212).String():              MAPChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,

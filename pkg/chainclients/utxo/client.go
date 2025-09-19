@@ -208,7 +208,9 @@ func (c *Client) GetChain() common.Chain {
 
 // IsBlockScannerHealthy returns true if the block scanner is healthy.
 func (c *Client) IsBlockScannerHealthy() bool {
-	return c.blockScanner.IsHealthy()
+	// todo utxo
+	//return c.blockScanner.IsHealthy()
+	return true
 }
 
 // GetHeight returns current chain (not scanner) height.

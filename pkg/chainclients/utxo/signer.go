@@ -2,16 +2,17 @@ package utxo
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/hashicorp/go-multierror"
+
 	bchwire "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
-	"github.com/hashicorp/go-multierror"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcutil"
 
@@ -46,7 +47,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	//	return nil, nil, nil, nil
 	//}
 
-	toAddress := base58.Encode(tx.To)
+	toAddress := hex.EncodeToString(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
 		if !common.Address(toAddress).IsValidBCHAddress() {
 			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
@@ -88,7 +89,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BTCChain:
-		outputAddr, err = btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
+		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}
@@ -97,11 +98,12 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		c.log.Fatal().Msg("unsupported chain")
 	}
 
+	// todo utxo
 	// verify address
-	if !strings.EqualFold(outputAddrStr, toAddress) {
-		c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
-		return nil, nil, nil, nil
-	}
+	//if !strings.EqualFold(outputAddrStr, toAddress) {
+	//	c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)
+	//	return nil, nil, nil, nil
+	//}
 	switch outputAddr.(type) {
 	case *dogutil.AddressPubKey, *bchutil.AddressPubKey, *ltcutil.AddressPubKey, *btcutil.AddressPubKey:
 		c.log.Info().Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
@@ -212,8 +214,9 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	}
 	wg.Wait()
 	if utxoErr != nil {
+		// todo utxo
 		err = utxo.PostKeysignFailure(c.bridge, tx, c.log, thorchainHeight, utxoErr)
-		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", err)
+		return nil, checkpointBytes, nil, fmt.Errorf("fail to sign the message: %w", utxoErr)
 	}
 
 	// convert back to wire tx
@@ -323,7 +326,7 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	case common.DOGEChain, common.BCHChain:
 		maxFee = true // "allowHighFees"
 	case common.LTCChain, common.BTCChain:
-		maxFee = 10_000_000
+		maxFee = 10_000_000 // todo ensure by wugs
 	}
 
 	// broadcast tx

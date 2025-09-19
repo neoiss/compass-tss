@@ -1,6 +1,7 @@
 package utxo
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sort"
@@ -9,8 +10,6 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil/base58"
-
 	"github.com/eager7/dogutil"
 	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
 
@@ -312,7 +311,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	}
 
 	var buf []byte
-	toAddress := base58.Encode(tx.To)
+	toAddress := hex.EncodeToString(tx.To)
 	switch c.cfg.ChainID {
 	case common.DOGEChain:
 		var outputAddr dogutil.Address
@@ -346,7 +345,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		}
 	case common.BTCChain:
 		var outputAddr btcutil.Address
-		outputAddr, err = btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
+		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
 		}

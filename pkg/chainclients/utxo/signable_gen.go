@@ -4,6 +4,7 @@ package utxo
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -110,17 +111,23 @@ func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 }
 
 func (ts *tssSignableBTC) GetPubKey() *btcec.PublicKey {
-	cpk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, ts.poolPubKey.String())
+	//cpk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, ts.poolPubKey.String())
+	//if err != nil {
+	//	ts.log.Err(err).Str("pubkey", ts.poolPubKey.String()).Msg("fail to get pubic key from the bech32 pool public key string")
+	//	return nil
+	//}
+	//secpPubKey, err := codec.ToCmtPubKeyInterface(cpk)
+	//if err != nil {
+	//	ts.log.Err(err).Msgf("%s is not a secp256 k1 public key", ts.poolPubKey)
+	//	return nil
+	//}
+	pubKey, err := hex.DecodeString(ts.poolPubKey.String())
 	if err != nil {
-		ts.log.Err(err).Str("pubkey", ts.poolPubKey.String()).Msg("fail to get pubic key from the bech32 pool public key string")
+		ts.log.Err(err).Msg("fail to decode public key")
 		return nil
 	}
-	secpPubKey, err := codec.ToCmtPubKeyInterface(cpk)
-	if err != nil {
-		ts.log.Err(err).Msgf("%s is not a secp256 k1 public key", ts.poolPubKey)
-		return nil
-	}
-	newPubkey, err := btcec.ParsePubKey(secpPubKey.Bytes(), btcec.S256())
+	//newPubkey, err := btcec.ParsePubKey(secpPubKey.Bytes(), btcec.S256())
+	newPubkey, err := btcec.ParsePubKey(pubKey, btcec.S256())
 	if err != nil {
 		ts.log.Err(err).Msg("fail to parse public key")
 		return nil
