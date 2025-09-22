@@ -88,12 +88,12 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
-	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
-		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
-	}
 	err = mapBridge.Register()
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to register node")
+	}
+	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
+		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
 	}
 	// PubKey Manager
 	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(mapBridge, m)

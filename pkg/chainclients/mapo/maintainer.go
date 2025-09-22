@@ -165,7 +165,7 @@ func (b *Bridge) callContract(ret interface{}, addr, method string, input []byte
 		return errors.Wrap(err, "unpack output")
 	}
 
-	if err = outputs.Copy(&ret, unpack); err != nil {
+	if err = outputs.Copy(ret, unpack); err != nil {
 		return errors.Wrap(err, "copy output")
 	}
 	return nil
