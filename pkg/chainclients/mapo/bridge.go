@@ -169,6 +169,9 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		time.Second*5,
 		cfg.ChainID.String(),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create rpc : %w", err)
+	}
 
 	return &Bridge{
 		logger:        logger,
@@ -189,10 +192,8 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		tssAbi:        tssAbi,
 		relayAbi:      relayAi,
 		tokenRegistry: tokenRegistry,
-		// mainCall:      mainCall,
-		// viewCall: viewCall,
-		epoch:    big.NewInt(1), // todo
-		gasPrice: big.NewInt(0),
+		epoch:         big.NewInt(0),
+		gasPrice:      big.NewInt(0),
 	}, nil
 }
 

@@ -31,7 +31,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 
 	switch ele.Method {
 	case constants.VoteTxIn:
-		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.VoteTxIn{
+		fmt.Println("b.tssAbi ---------------- ", b.tssAbi)
+		fmt.Printf("ele ---------------- %+v \n", ele)
+		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.TxInItem{
 			Height:           ele.Height,
 			Amount:           ele.Amount,
 			OrderId:          ele.OrderId,
@@ -41,7 +43,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			Payload:          ele.Payload,
 			TxInType:         ele.TxOutType,
 			ChainAndGasLimit: ele.ChainAndGasLimit,
-			//Vault:     ele.Vault, // todo will next2
+			// todo will next2
 			Vault: ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
 		})
 	case constants.VoteTxOut:

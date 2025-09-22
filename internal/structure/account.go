@@ -37,7 +37,7 @@ type EpochInfo struct {
 	Maintainers   []common.Address
 }
 
-type VoteTxIn struct {
+type TxInItem struct {
 	TxInType         uint8
 	OrderId          [32]byte
 	ChainAndGasLimit *big.Int
