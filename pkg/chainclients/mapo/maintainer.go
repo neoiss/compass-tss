@@ -37,7 +37,7 @@ func (b *Bridge) Register() error {
 	fmt.Println("publicKeyBytes ----------- ", publicKeyBytes)
 	fmt.Println("publicKeyBytes ----------- ", ecommon.Bytes2Hex(publicKeyBytes))
 
-	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], nil, b.cfg.Addr)
+	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], make([]byte, 0), b.cfg.Addr)
 	if err != nil {
 		return errors.Wrap(err, "fail to pack input")
 	}
