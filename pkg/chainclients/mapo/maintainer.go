@@ -126,7 +126,6 @@ func (b *Bridge) GetNodeAccount(addr string) (*structure.MaintainerInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("ret ----------------- ", ret)
 	return &ret.Infos[0], nil
 }
 

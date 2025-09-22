@@ -19,6 +19,7 @@ import (
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
+	fmt.Println("SendKeyGenStdTx =================== ", poolPubKey)
 	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)

@@ -31,7 +31,6 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 
 	switch ele.Method {
 	case constants.VoteTxIn:
-		fmt.Println("b.tssAbi ---------------- ", b.tssAbi)
 		fmt.Printf("ele ---------------- %+v \n", ele)
 		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.TxInItem{
 			Height:           ele.Height,
