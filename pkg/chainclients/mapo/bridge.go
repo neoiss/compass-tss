@@ -407,7 +407,6 @@ func (b *Bridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTx
 
 // EnsureNodeWhitelistedWithTimeout check node is whitelisted with timeout retry
 func (b *Bridge) EnsureNodeWhitelistedWithTimeout() error {
-	// todo handler done
 	for {
 		select {
 		case <-time.After(time.Hour):
@@ -431,7 +430,7 @@ func (b *Bridge) EnsureNodeWhitelisted() error {
 		return fmt.Errorf("failed to get node status: %w", err)
 	}
 	if status == stypes.NodeStatus_Unknown {
-		return fmt.Errorf("node account status %s , will not be able to forward transaction to mapBridge", status)
+		return fmt.Errorf("node account status %d , will not be able to forward transaction to mapBridge", status)
 	}
 	return nil
 }

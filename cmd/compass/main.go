@@ -88,10 +88,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
-	err = mapBridge.Register()
-	if err != nil {
-		log.Fatal().Err(err).Msg("fail to register node")
-	}
+	// err = mapBridge.Register()
+	// if err != nil {
+	// 	log.Fatal().Err(err).Msg("fail to register node")
+	// }
 	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
 		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
 	}

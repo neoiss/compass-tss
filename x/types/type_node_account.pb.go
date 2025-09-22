@@ -33,17 +33,17 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type NodeStatus int32
 
 const (
-	NodeStatus_Unknown     NodeStatus = 0
-	NodeStatus_Whitelisted NodeStatus = 1
-	NodeStatus_Standby     NodeStatus = 2
-	NodeStatus_Ready       NodeStatus = 3
-	NodeStatus_Active      NodeStatus = 4
-	NodeStatus_Disabled    NodeStatus = 5
+	NodeStatus_Unknown  NodeStatus = 0
+	NodeStatus_REVOKED  NodeStatus = 1
+	NodeStatus_Standby  NodeStatus = 2
+	NodeStatus_Ready    NodeStatus = 3
+	NodeStatus_Active   NodeStatus = 4
+	NodeStatus_Disabled NodeStatus = 5
 )
 
 var NodeStatus_name = map[int32]string{
 	0: "Unknown",
-	1: "Whitelisted",
+	1: "REVOKED",
 	2: "Standby",
 	3: "Ready",
 	4: "Active",
