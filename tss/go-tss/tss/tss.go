@@ -178,7 +178,7 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 		}
 		peersID, err := conversion.GetPeerIDsFromPubKeys(participants)
 		if err != nil {
-			return nil, "", errors.New("fail to convert the public key to peer ID")
+			return nil, "", fmt.Errorf("fail to convert the public key to peer ID: %w", err)
 		}
 		var peersIDStr []string
 		for _, el := range peersID {

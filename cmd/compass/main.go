@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,13 +11,6 @@ import (
 	"time"
 
 	golog "github.com/ipfs/go-log"
-
-	"io"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	flag "github.com/spf13/pflag"
-
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
@@ -31,6 +25,9 @@ import (
 	ctss "github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/common"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	flag "github.com/spf13/pflag"
 )
 
 // THORNode define version / revision here , so THORNode could inject the version from CI pipeline if THORNode want to
@@ -88,6 +85,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
+
 	// err = mapBridge.Register()
 	// if err != nil {
 	// 	log.Fatal().Err(err).Msg("fail to register node")

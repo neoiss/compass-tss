@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	tcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -16,7 +17,10 @@ import (
 
 // GetPeerIDFromPubKeyByEth get the peer.ID from public key format node pub key
 func GetPeerIDFromPubKeyByEth(pubkey string) (peer.ID, error) {
-	ppk, err := crypto.UnmarshalSecp256k1PublicKey(ecommon.Hex2Bytes(pubkey))
+	pks := make([]byte, 0)
+	pks = append(pks, 4)
+	pks = append(pks, ecommon.Hex2Bytes(pubkey)...)
+	ppk, err := crypto.UnmarshalSecp256k1PublicKey(pks)
 	if err != nil {
 		return "", fmt.Errorf("fail to convert pubkey to the crypto pubkey used in libp2p: %w", err)
 	}
@@ -44,9 +48,8 @@ func GetPubKeyFromPeerIDByEth(pID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 	}
-	pubBytes := ecrypto.CompressPubkey(ethPubKey)
 
-	return hex.EncodeToString(pubBytes), nil
+	return hex.EncodeToString(ecrypto.FromECDSAPub(ethPubKey)[1:]), nil
 }
 
 // GetPeerIDsFromPubKeys convert a list of node pub key to their peer.ID
