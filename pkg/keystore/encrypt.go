@@ -11,7 +11,7 @@ import (
 func GetPassword(msg string) []byte {
 	for {
 		fmt.Println(msg)
-		fmt.Print("> ")
+		fmt.Print("> \n")
 		password, err := terminal.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			fmt.Printf("invalid input: %s\n", err)

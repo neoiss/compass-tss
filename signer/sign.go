@@ -30,6 +30,7 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -400,6 +401,11 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	memberAddrs := make([]ecommon.Address, 0, len(keygenBlock.Ms))
 	for _, ele := range keygenBlock.Ms {
 		if ele.Account.String() == "" {
+			continue
+		}
+		if ele.Status != uint8(stypes.NodeStatus_Ready) {
+			s.logger.Info().Str("addr", ele.Account.String()).
+				Uint8("status", ele.Status).Msg("Ignore inactive member")
 			continue
 		}
 		members = append(members, common.PubKey(ecommon.Bytes2Hex(ele.Secp256Pubkey)))

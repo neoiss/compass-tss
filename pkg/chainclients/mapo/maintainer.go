@@ -132,7 +132,7 @@ func (b *Bridge) GetNodeAccount(addr string) (*structure.MaintainerInfo, error) 
 // GetNodeAccounts retrieves all node accounts from mapBridge
 func (b *Bridge) GetNodeAccounts() ([]structure.MaintainerInfo, error) {
 	method := constants.GetMaintainerInfos
-	input, err := b.mainAbi.Pack(method)
+	input, err := b.mainAbi.Pack(method, make([]ecommon.Address, 0))
 	if err != nil {
 		return nil, err
 	}
