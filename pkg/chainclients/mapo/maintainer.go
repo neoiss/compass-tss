@@ -37,12 +37,13 @@ func (b *Bridge) Register() error {
 	fmt.Println("publicKeyBytes ----------- ", publicKeyBytes)
 	fmt.Println("publicKeyBytes ----------- ", ecommon.Bytes2Hex(publicKeyBytes))
 
-	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], make([]byte, 0), b.cfg.Addr)
+	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], publicKeyBytes[1:], b.cfg.Addr)
 	if err != nil {
 		return errors.Wrap(err, "fail to pack input")
 	}
 
-	txBytes, err := b.assemblyTx(nil, input, 0, b.cfg.Maintainer)
+	ctx := context.TODO()
+	txBytes, err := b.assemblyTx(ctx, input, 0, b.cfg.Maintainer)
 	if err != nil {
 		return errors.Wrap(err, "fail to assembly tx")
 	}
