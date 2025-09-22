@@ -79,18 +79,21 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 	fmt.Println("============================== in election period")
 	// done
-	ret, err := b.GetNodeAccounts()
+	ret, err := b.GetEpochInfo(epoch)
+	if err != nil {
+		return nil, err
+	}
+	ms, err := b.GetNodeAccounts(ret.Maintainers)
 	if err != nil {
 		return nil, err
 	}
 
 	return &structure.KeyGen{
 		Epoch: epoch,
-		Ms:    ret,
+		Ms:    ms,
 	}, nil
 }
 
-// todo handler
 func (b *Bridge) GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error) {
 	method := constants.GetEpochInfo
 	input, err := b.mainAbi.Pack(method, epoch)
@@ -130,9 +133,9 @@ func (b *Bridge) GetNodeAccount(addr string) (*structure.MaintainerInfo, error) 
 }
 
 // GetNodeAccounts retrieves all node accounts from mapBridge
-func (b *Bridge) GetNodeAccounts() ([]structure.MaintainerInfo, error) {
+func (b *Bridge) GetNodeAccounts(addrs []ecommon.Address) ([]structure.MaintainerInfo, error) {
 	method := constants.GetMaintainerInfos
-	input, err := b.mainAbi.Pack(method, make([]ecommon.Address, 0))
+	input, err := b.mainAbi.Pack(method, addrs)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +191,12 @@ func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
 }
 
 func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
-	na, err := b.GetNodeAccounts()
+	// done
+	ret, err := b.GetEpochInfo(b.epoch)
+	if err != nil {
+		return nil, err
+	}
+	na, err := b.GetNodeAccounts(ret.Maintainers)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get node accounts: %w", err)
 	}

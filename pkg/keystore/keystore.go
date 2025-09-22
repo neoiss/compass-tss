@@ -13,7 +13,7 @@ func DecryptKey(path string) (*keystore.Key, error) {
 		return nil, fmt.Errorf("key file not found: %s", path)
 	}
 
-	var pswd = GetPassword(fmt.Sprintf("Enter password for key %s:\n", path))
+	var pswd = GetPassword(fmt.Sprintf("Enter password for key %s:", path))
 
 	file, err := os.ReadFile(path)
 	if err != nil {

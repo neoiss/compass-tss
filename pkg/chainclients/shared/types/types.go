@@ -82,7 +82,7 @@ type Bridge interface {
 	FetchNodeStatus() (stypes.NodeStatus, error)
 	FetchActiveNodes() ([]common.PubKey, error)
 	GetNodeAccount(string) (*structure.MaintainerInfo, error)
-	GetNodeAccounts() ([]structure.MaintainerInfo, error)
+	GetNodeAccounts([]ecommon.Address) ([]structure.MaintainerInfo, error)
 	GetKeygenBlock() (*structure.KeyGen, error)
 	GetPools() (stypes.Pools, error) //
 	GetVault(pubkey string) (stypes.Vault, error)
