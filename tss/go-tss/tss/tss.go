@@ -10,11 +10,8 @@ import (
 	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
 	tcrypto "github.com/cometbft/cometbft/crypto"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
 	"github.com/mapprotocol/compass-tss/p2p/messages"
@@ -23,6 +20,9 @@ import (
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keygen"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keysign"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/monitor"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // TssServer is the structure that can provide all keysign and key gen features
@@ -56,7 +56,12 @@ func NewTss(
 	preParams *bkeygen.LocalPreParams,
 ) (*TssServer, error) {
 	var err error
-	pk := priKey.PubKey().Bytes()
+	pk := priKey.PubKey().Bytes() // use this is compressed
+	// todo this 111
+	ethPubKey, err := ecrypto.DecompressPubkey(pk)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+	}
 
 	// When using the keygen party it is recommended that you pre-compute the
 	// "safe primes" and Paillier secret beforehand because this can take some
@@ -83,7 +88,7 @@ func NewTss(
 		conf:              conf,
 		logger:            log.With().Str("module", "tss").Logger(),
 		p2pCommunication:  comm,
-		localNodePubKey:   ecommon.Bytes2Hex(pk),
+		localNodePubKey:   ecommon.Bytes2Hex(ecrypto.FromECDSAPub(ethPubKey)[1:]),
 		preParams:         preParams,
 		tssKeyGenLocker:   &sync.Mutex{},
 		stopChan:          make(chan struct{}),
