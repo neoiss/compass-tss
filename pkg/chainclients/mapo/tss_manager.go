@@ -31,7 +31,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	method := constants.VoteUpdateTssPool
-	input, err := b.mainAbi.Pack(method, &structure.TssPoolParam{
+	input, err := b.tssAbi.Pack(method, &structure.TssPoolParam{
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
 		KeyShare:  keyShares,
