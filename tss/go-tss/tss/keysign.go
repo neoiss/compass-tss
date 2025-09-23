@@ -230,7 +230,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	if err != nil {
 		return emptyResp, fmt.Errorf("fail to get local keygen state: %w", err)
 	}
-	fmt.Printf("localStateItem --------------------- %+v \n", localStateItem.ParticipantKeys)
 
 	var msgsToSign [][]byte
 	for _, val := range req.Messages {
@@ -264,9 +263,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		}, errors.New("fail to parse the version")
 	}
 
-	fmt.Println("req.Version ----------------- ", req.Version)
-	fmt.Println("oldJoinParty ----------------- ", oldJoinParty)
-	fmt.Println("len(req.SignerPubKeys) ----------------- ", len(req.SignerPubKeys))
 	if len(req.SignerPubKeys) == 0 && oldJoinParty {
 		return emptyResp, errors.New("empty signer pub keys")
 	}
@@ -276,8 +272,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.logger.Error().Err(err).Msg("fail to get the threshold")
 		return emptyResp, errors.New("fail to get threshold")
 	}
-	fmt.Println("threshold ----------------- ", threshold)
-	fmt.Println("len(localStateItem.ParticipantKeys) ----------------- ", len(localStateItem.ParticipantKeys))
 	if len(req.SignerPubKeys) <= threshold && oldJoinParty {
 		t.logger.Error().Msgf("not enough signers, threshold=%d and signers=%d", threshold, len(req.SignerPubKeys))
 		return emptyResp, errors.New("not enough signers")

@@ -71,7 +71,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	}
 
 	gasFeeCap := b.gasPrice
-	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	to := ecommon.HexToAddress(b.cfg.TssManager)
 	createdTx := ethereum.CallMsg{
 		From:     fromAddr,
 		To:       &to,

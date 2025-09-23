@@ -261,7 +261,7 @@ func (b *BlockScanner) scanBlocks() {
 			mod = (60_000 + ms - 1) / ms
 			// enable this one , so we could see how far it is behind
 			if currentBlock%mod == 0 || !b.healthy.Load() {
-				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
+				b.logger.Debug().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
 					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
 					Msg("Scan block progressing")
 			}
