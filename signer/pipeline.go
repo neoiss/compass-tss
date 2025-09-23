@@ -98,7 +98,9 @@ func newPipeline(concurrency int64) (*pipeline, error) {
 // status semaphore and vault/chain lock when they are complete.
 func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 	allItems := s.storageList()
-	log.Info().Msgf("SpawnSignings found %d items in storage", len(allItems))
+	if len(allItems) > 0 {
+		log.Info().Msgf("SpawnSignings found %d items in storage", len(allItems))
+	}
 
 	// gather all vault/chain combinations with an out item in retry
 	retryItems := make(map[vaultChain][]TxOutStoreItem)
@@ -108,7 +110,9 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			retryItems[vc] = append(retryItems[vc], item)
 		}
 	}
-	log.Info().Msgf("SpawnSignings found %d all items", len(allItems))
+	if len(allItems) > 0 {
+		log.Info().Msgf("SpawnSignings found %d all items", len(allItems))
+	}
 
 	var itemsToSign []TxOutStoreItem
 
@@ -158,7 +162,9 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			lockedVaultChains[vc] = true
 		}
 	}
-	log.Info().Msgf("SpawnSignings will handle %d tx locking", len(itemsToSign))
+	if len(itemsToSign) > 0 {
+		log.Info().Msgf("SpawnSignings will handle %d tx locking", len(itemsToSign))
+	}
 
 	// spawn signing routines for each item
 	for _, item := range itemsToSign {

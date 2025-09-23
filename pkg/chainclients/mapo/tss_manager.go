@@ -31,6 +31,12 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	method := constants.VoteUpdateTssPool
+	fmt.Println("epoch ----------- ", epoch)
+	fmt.Println("pubBytes ----------- ", pubBytes[1:])
+	fmt.Println("keyShares ----------- ", keyShares)
+	fmt.Println("members ----------- ", members)
+	fmt.Println("blames ----------- ", blames)
+	fmt.Println("signature ----------- ", signature)
 	input, err := b.tssAbi.Pack(method, &structure.TssPoolParam{
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
@@ -74,6 +80,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		Data:     input,
 	}
 
+	fmt.Println("input ----------- ", ecommon.Bytes2Hex(input))
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
 		b.logger.Err(err).Msgf("fail to estimate gas")
