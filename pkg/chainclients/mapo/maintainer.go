@@ -87,6 +87,19 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err != nil {
 		return nil, err
 	}
+	// use compressed pk, dont modify this code
+	for idx, item := range ms {
+		pks := make([]byte, 0)
+		pks = append(pks, 4)
+		pks = append(pks, item.Secp256Pubkey...)
+		epk, err := ecrypto.UnmarshalPubkey(pks)
+		// ethPubKey, err := ecrypto.DecompressPubkey(item.Secp256Pubkey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+		}
+		pubBytes := ecrypto.CompressPubkey(epk)
+		ms[idx].Secp256Pubkey = pubBytes
+	}
 
 	return &structure.KeyGen{
 		Epoch: epoch,
