@@ -22,6 +22,7 @@ const (
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
 	IsOrderExecuted   = "isOrderExecuted"
+	GetTSSStatus      = "getTSSStatus"
 )
 
 // -----------------------------------------------------------------

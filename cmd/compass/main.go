@@ -119,16 +119,12 @@ func main() {
 	jailTimeKeygen := time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)) * constants.MAPRelayChainBlockTime
 	jailTimeKeysign := time.Duration(consts.GetInt64Value(constants.JailTimeKeysign)) * constants.MAPRelayChainBlockTime
 	if cfg.Signer.KeygenTimeout >= jailTimeKeygen {
-		log.Fatal().
-			Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).
-			Stringer("keygenJail", jailTimeKeygen).
-			Msg("keygen timeout must be shorter than jail time")
+		log.Fatal().Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).
+			Stringer("keygenJail", jailTimeKeygen).Msg("keygen timeout must be shorter than jail time")
 	}
 	if cfg.Signer.KeysignTimeout >= jailTimeKeysign {
-		log.Fatal().
-			Stringer("keysignTimeout", cfg.Signer.KeysignTimeout).
-			Stringer("keysignJail", jailTimeKeysign).
-			Msg("keysign timeout must be shorter than jail time")
+		log.Fatal().Stringer("keysignTimeout", cfg.Signer.KeysignTimeout).
+			Stringer("keysignJail", jailTimeKeysign).Msg("keysign timeout must be shorter than jail time")
 	}
 
 	comm, stateManager, err := p2p.StartP2P(

@@ -27,7 +27,7 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 
 	// skip recovery if the current node is not active
 	if types.NodeStatus(na.Status) != types.NodeStatus_Active {
-		log.Info().Msgf("%s is not active, skipping key shares recovery", na.Account)
+		log.Info().Msgf("%s is not active, status(%d), skipping key shares recovery", na.Account, na.Status)
 		return nil
 	}
 

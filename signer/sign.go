@@ -415,10 +415,8 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	// todo debug blame
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
-		s.logger.Error().
-			Str("reason", blame.FailReason).
-			Interface("nodes", blame.BlameNodes).
-			Msg("Keygen blame")
+		s.logger.Error().Str("reason", blame.FailReason).
+			Interface("nodes", blame.BlameNodes).Msg("Keygen blame")
 	}
 	keygenTime := time.Since(keygenStart).Milliseconds()
 	if err != nil {

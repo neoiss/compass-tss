@@ -143,3 +143,13 @@ func (cv ConstantVals) MarshalJSON() ([]byte, error) {
 	result := cv.GetConstantValsByKeyname()
 	return json.MarshalIndent(result, "", "	")
 }
+
+type TssStatus uint8
+
+const (
+	TssStatusUnknown TssStatus = iota
+	TssStatusPending
+	TssStatusConsensus
+	TssStatusCompleted
+	TssStatusFailed
+)

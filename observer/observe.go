@@ -275,37 +275,24 @@ func (o *Observer) handleObservedTxCommitted(tx common.ObservedTx) {
 }
 
 func (o *Observer) sendDeck(ctx context.Context) {
-	//// fetch and update active validator count on attestation gossip so it can calculate quorum
-	//activeVals, err := o.bridge.FetchActiveNodes()
-	//if err != nil {
-	//	o.logger.Error().Err(err).Msg("failed to get active node count")
-	//	return
-	//}
-	//o.attestationGossip.setActiveValidators(activeVals)
-
 	// todo will next2
-	//// check if node is active
-	//nodeStatus, err := o.bridge.FetchNodeStatus()
-	//if err != nil {
-	//	o.logger.Error().Err(err).Msg("failed to get node status")
-	//	return
-	//}
-	//if nodeStatus != o.lastNodeStatus {
-	//	if nodeStatus == stypes.NodeStatus_Active {
-	//		o.logger.Info().Msg("node is now active, will begin observation and gossip")
-	//		o.attestationGossip.askForAttestationState(ctx)
-	//	}
-	//	o.lastNodeStatus = nodeStatus
-	//}
-	//if nodeStatus != stypes.NodeStatus_Active {
-	//	o.logger.Warn().Msg("node is not active, will not handle tx in")
-	//	return
-	//}
+	// check if node is active
+	nodeStatus, err := o.bridge.FetchNodeStatus()
+	if err != nil {
+		o.logger.Error().Err(err).Msg("failed to get node status")
+		return
+	}
+	if nodeStatus != o.lastNodeStatus {
+		o.lastNodeStatus = nodeStatus
+	}
+	if nodeStatus != stypes.NodeStatus_Active {
+		o.logger.Warn().Msg("node is not active, will not handle tx in")
+		return
+	}
 
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
-	// todo next
 	for _, deck := range o.onDeck {
 		chainClient, err := o.getChain(deck.Chain)
 		if err != nil {
@@ -314,13 +301,12 @@ func (o *Observer) sendDeck(ctx context.Context) {
 		}
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
-
-		result := o.chunkifyAndSendToThorchain(*deck, chainClient, false)
+		result := o.chunkifyAndSendToMapRelay(*deck, chainClient, false)
 		o.logger.Info().Any("result", result).Msg("sending success")
 	}
 }
 
-func (o *Observer) chunkifyAndSendToThorchain(deck types.TxIn, chainClient chainclients.ChainClient, finalised bool) types.TxIn {
+func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainclients.ChainClient, finalised bool) types.TxIn {
 	newTxIn := types.TxIn{
 		Chain:                deck.Chain,
 		Filtered:             true,

@@ -31,12 +31,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	method := constants.VoteUpdateTssPool
-	fmt.Println("epoch ----------- ", epoch)
-	fmt.Println("pubBytes ----------- ", pubBytes[1:])
-	fmt.Println("keyShares ----------- ", keyShares)
-	fmt.Println("members ----------- ", members)
-	fmt.Println("blames ----------- ", blames)
-	fmt.Println("signature ----------- ", signature)
 	input, err := b.tssAbi.Pack(method, &structure.TssPoolParam{
 		Epoch:     epoch,
 		Pubkey:    pubBytes[1:],
@@ -63,9 +57,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	}
 	// todo handler add cfg
 	if (nonce - finalizedNonce) > 3 {
-		b.logger.Warn().
-			Uint64("nonce", nonce).
-			Uint64("finalizedNonce", finalizedNonce).
+		b.logger.Warn().Uint64("nonce", nonce).Uint64("finalizedNonce", finalizedNonce).
 			Msg("pending nonce too far in future")
 		return "", fmt.Errorf("pending nonce too far in future")
 	}
@@ -80,7 +72,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		Data:     input,
 	}
 
-	fmt.Println("input ----------- ", ecommon.Bytes2Hex(input))
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
 		b.logger.Err(err).Msgf("fail to estimate gas")
@@ -128,7 +119,6 @@ type TSSManagerKeyShare struct {
 	KeyShare []byte
 }
 
-// todo 改这里
 func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
 	var ret TSSManagerKeyShare
 	method := constants.GetKeyShare
@@ -142,4 +132,18 @@ func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 	return ret.KeyShare, ret.Pubkey, nil
+}
+
+func (b *Bridge) getTssStatus(epoch *big.Int) (constants.TssStatus, error) {
+	var ret constants.TssStatus
+	method := constants.GetTSSStatus
+	input, err := b.tssAbi.Pack(method, epoch)
+	if err != nil {
+		return constants.TssStatusUnknown, errors.Wrap(err, "fail to pack input")
+	}
+	err = b.callContract(&ret, b.cfg.TssManager, method, input, b.tssAbi)
+	if err != nil {
+		return constants.TssStatusUnknown, errors.Wrap(err, "fail to call contract")
+	}
+	return ret, nil
 }
