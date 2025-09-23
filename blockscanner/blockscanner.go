@@ -245,23 +245,22 @@ func (b *BlockScanner) scanBlocks() {
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).Int("txs", len(txIn.TxArray)).Msg("Fetched Txs")
+			b.logger.Debug().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).Int("txs", len(txIn.TxArray)).Msg("Fetched Txs")
 
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
 			// determine how often we compare MAP network fee to Bifrost network fee.
 			// General goal is about once per day.
-			mod := ((24 * 60 * 60 * 1000) + ms - 1) / ms
+			mod := ((60 * 60 * 1000) + ms - 1) / ms
 			if currentBlock%mod == 0 {
 				b.updateStaleNetworkFee(currentBlock)
 			}
 
 			// determine how often we print a info log line for scanner
 			// progress. General goal is about once per minute
-			mod = (60_000 + ms - 1) / ms
 			// enable this one , so we could see how far it is behind
-			if currentBlock%mod == 0 || !b.healthy.Load() {
-				b.logger.Debug().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
+			if currentBlock%100 == 0 || !b.healthy.Load() {
+				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
 					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
 					Msg("Scan block progressing")
 			}

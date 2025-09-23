@@ -135,7 +135,7 @@ func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
 }
 
 func (b *Bridge) getTssStatus(epoch *big.Int) (constants.TssStatus, error) {
-	var ret constants.TssStatus
+	var ret uint8
 	method := constants.GetTSSStatus
 	input, err := b.tssAbi.Pack(method, epoch)
 	if err != nil {
@@ -145,5 +145,5 @@ func (b *Bridge) getTssStatus(epoch *big.Int) (constants.TssStatus, error) {
 	if err != nil {
 		return constants.TssStatusUnknown, errors.Wrap(err, "fail to call contract")
 	}
-	return ret, nil
+	return constants.TssStatus(ret), nil
 }
