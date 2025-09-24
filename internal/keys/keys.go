@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/pkg/keystore"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto"
@@ -19,7 +16,10 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	ekeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/pkg/keystore"
 )
 
 const (
@@ -152,4 +152,15 @@ func AddressFromPublicKey(publicKey *ecdsa.PublicKey) (common.Address, error) {
 	address := common.BytesToAddress(hash[12:])
 
 	return address, nil
+}
+
+func GetAddressByCompressPk(compressPk string) (common.Address, error) {
+	if compressPk == "" {
+		return common.Address{}, errors.New("empty public key")
+	}
+	pk, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(compressPk))
+	if err != nil {
+		return common.Address{}, err
+	}
+	return AddressFromPublicKey(pk)
 }

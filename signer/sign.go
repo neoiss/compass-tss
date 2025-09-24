@@ -422,20 +422,29 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
 		s.logger.Error().Err(err).Msg("Fail to generate new pubkey")
-		return
 	}
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("ProcessKeygenBlock keyGen time")
 	// generate a verification signature to ensure we can sign with the new key
-	if len(pubKey.Secp256k1.String()) == 0 {
-		return
+	// if len(pubKey.Secp256k1.String()) == 0 {
+	// 	return
+	// }
+	secp256k1Sig := make([]byte, 0)
+	if len(pubKey.Secp256k1.String()) > 0 {
+		secp256k1Sig = s.secp256k1VerificationSignature(pubKey.Secp256k1)
 	}
-	secp256k1Sig := s.secp256k1VerificationSignature(pubKey.Secp256k1)
-	if len(secp256k1Sig) == 0 {
-		time.Sleep(time.Minute)
-		return
+	blames := make([]ecommon.Address, 0)
+	if len(blame.BlameNodes) > 0 {
+		for _, node := range blame.BlameNodes {
+			addr, err := keys.GetAddressByCompressPk(node.Pubkey)
+			if err != nil {
+				continue
+			}
+			blames = append(blames, addr)
+		}
 	}
-	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, nil, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
+
+	if err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, blames, memberAddrs, secp256k1Sig); err != nil { // todo handler blame
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
 		s.logger.Error().Err(err).Msg("Fail to broadcast keygen")
 	}

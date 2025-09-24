@@ -24,16 +24,20 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", nil
 	}
 	fmt.Println("SendKeyGenStdTx =================== ", poolPubKey)
-	ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+	pubBytes := make([]byte, 0)
+	if !poolPubKey.IsEmpty() {
+		ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
+		}
+		pubBytes = crypto.FromECDSAPub(ethPubKey)
+		pubBytes = pubBytes[1:] // remove 0x04 prefix
 	}
-	pubBytes := crypto.FromECDSAPub(ethPubKey)
 
 	method := constants.VoteUpdateTssPool
 	input, err := b.tssAbi.Pack(method, &structure.TssPoolParam{
 		Epoch:     epoch,
-		Pubkey:    pubBytes[1:],
+		Pubkey:    pubBytes,
 		KeyShare:  keyShares,
 		Members:   members,
 		Blames:    blames,
