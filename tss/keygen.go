@@ -16,7 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/x/types"
 )
 
@@ -72,16 +71,10 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 		} else {
 			blames := make([]string, len(blame.BlameNodes))
 			for i := range blame.BlameNodes {
-				var pk common.PubKey
-				pk, err = common.NewPubKey(blame.BlameNodes[i].Pubkey)
+				acc, err := keys.GetAddressByCompressPk(blame.BlameNodes[i].Pubkey)
 				if err != nil {
-					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", blame.BlameNodes[i].Pubkey).Msg("Tss keygen results error")
-					continue
-				}
-				var acc cosmos.AccAddress
-				acc, err = pk.GetThorAddress()
-				if err != nil {
-					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("Tss keygen results error")
+					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).
+						Str("pubkey", pk.String()).Msg("Tss keygen results error")
 					continue
 				}
 				blames[i] = acc.String()
