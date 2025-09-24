@@ -259,7 +259,7 @@ func (b *BlockScanner) scanBlocks() {
 			// determine how often we print a info log line for scanner
 			// progress. General goal is about once per minute
 			// enable this one , so we could see how far it is behind
-			if currentBlock%100 == 0 || !b.healthy.Load() {
+			if currentBlock%100 == 0 { // || !b.healthy.Load()
 				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
 					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
 					Msg("Scan block progressing")
