@@ -66,6 +66,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", fmt.Errorf("pending nonce too far in future")
 	}
 
+	fmt.Println(" input ----------- ", ecommon.Bytes2Hex(input))
 	gasFeeCap := b.gasPrice
 	to := ecommon.HexToAddress(b.cfg.TssManager)
 	createdTx := ethereum.CallMsg{
