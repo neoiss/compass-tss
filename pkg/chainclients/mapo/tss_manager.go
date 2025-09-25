@@ -120,8 +120,8 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 }
 
 type TSSManagerKeyShare struct {
-	Pubkey   []byte
-	KeyShare []byte
+	Pubkey   []byte `json:"pubkey,omitempty"`
+	KeyShare []byte `json:"keyShare,omitempty"`
 }
 
 func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
@@ -132,7 +132,7 @@ func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "fail to pack input")
 	}
-	err = b.callContract(&ret, b.cfg.TssManager, constants.GetKeyShare, input, b.tssAbi)
+	err = b.callContract(&ret, b.cfg.TssManager, method, input, b.tssAbi)
 	if err != nil {
 		return nil, nil, err
 	}
