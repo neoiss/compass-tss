@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -101,6 +102,20 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	idx := -1
+	selfAddr, _ := b.keys.GetEthAddress()
+	for i, ele := range ms {
+		if strings.EqualFold(ele.Account.Hex(), selfAddr.Hex()) {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		b.logger.Info().Any("self", selfAddr).Any("elect", ms).Msg("this node is not in the election period")
+		return nil, nil
+	}
+
 	// use compressed pk, dont modify this code
 	for idx, item := range ms {
 		pks := make([]byte, 0)

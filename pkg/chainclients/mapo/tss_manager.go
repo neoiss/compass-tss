@@ -115,7 +115,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	// todo handler tx online
 	b.epoch = epoch
 	fmt.Println("SendKeyGenStdTx txID is ------------------ ", txID)
-	time.Sleep(time.Minute * 20)
+	time.Sleep(time.Second * 10)
 	return txID, nil
 }
 
