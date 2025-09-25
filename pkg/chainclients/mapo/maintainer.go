@@ -69,7 +69,6 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, errors.Wrap(err, "fail to call contract")
 	}
 
-	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
@@ -91,6 +90,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
 		return nil, nil
 	}
+	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	fmt.Println("============================== in election period")
 	// done
 	ret, err := b.GetEpochInfo(epoch)
