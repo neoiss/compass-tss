@@ -115,8 +115,17 @@ func Test_GetPubKeyFromPeerIDByEth(t *testing.T) {
 	testCases := []struct {
 		desc string
 	}{
+		// {
+		// 	desc: "16Uiu2HAm4EQGEiC8HChuZwt4m2nNpgFZ7kdBNifF6qVCpXzMngit",
+		// },
+		{
+			desc: "16Uiu2HAmGMDXAJ2SkJY8iTu3qTkr8QLJZrWVW9ZNWtUL5eCie4jx",
+		},
 		{
 			desc: "16Uiu2HAmJiFAAggjvwMftkM8nGrAutb6LYqCQYeUFk23WCB2dsiQ",
+		},
+		{
+			desc: "16Uiu2HAmN4KJgcnvkT1sJuFnEkgwEvmgVqbEgzDzGbQnBTNYop9e",
 		},
 	}
 	for _, tC := range testCases {

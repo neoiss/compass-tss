@@ -85,12 +85,11 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, fmt.Errorf("tss status (%d)failed", tssStatus)
 	default:
 		b.epoch = big.NewInt(0)
-		b.logger.Info().Any("epoch", epoch).
+		b.logger.Info().Any("epoch", epoch).Any("tssStatus", tssStatus).
 			Msg("The epoch tss status is not completed, reset local epoch to 0, will keygen")
 	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		b.logger.Info().Any("epoch", epoch).
-			Msg("The epoch is completed")
+		b.logger.Debug().Any("epoch", epoch).Msg("The epoch is completed")
 		return nil, nil
 	}
 	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
@@ -114,7 +113,8 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		}
 	}
 	if idx == -1 {
-		b.logger.Info().Any("self", selfAddr).Any("elect", ms).Msg("this node is not in the election period")
+		b.epoch = epoch
+		b.logger.Debug().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
 		return nil, nil
 	}
 

@@ -73,8 +73,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 			for i := range blame.BlameNodes {
 				acc, err := keys.GetAddressByCompressPk(blame.BlameNodes[i].Pubkey)
 				if err != nil {
-					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).
-						Str("pubkey", pk.String()).Msg("Tss keygen results error")
+					kg.logger.Error().Err(err).Int64("height", keygenBlockHeight).Str("pubkey", pk.String()).Msg("Tss keygen results error")
 					continue
 				}
 				blames[i] = acc.String()
@@ -86,11 +85,13 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 
 	var keys []string
 	for _, item := range pKeys {
+		fmt.Println("pKeys ------------ ", item.String())
 		keys = append(keys, item.String())
 	}
 	keyGenReq := keygen.Request{
 		Keys: keys,
 	}
+
 	//currentVersion := kg.getVersion()
 	keyGenReq.Version = kg.getVersion()
 

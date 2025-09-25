@@ -82,26 +82,26 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		var blameNodes blame.Blame
 		blameNodes, err = blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
 		if err != nil {
-			t.logger.Error().Err(err).Msg("failed to blame nodes for joinParty failure")
+			t.logger.Error().Err(err).Msg("Failed to blame nodes for joinParty failure")
 		}
 		leaderPubKey, err := conversion.GetPubKeyFromPeerIDByEth(leader)
 		if err != nil {
-			t.logger.Error().Err(err).Msgf("failed to convert peerID->pubkey for leader %s", leader)
+			t.logger.Error().Err(err).Msgf("Failed to convert peerID->pubkey for leader %s", leader)
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{})
 		} else {
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{{Pubkey: leaderPubKey, BlameData: nil, BlameSignature: nil}})
 		}
 
 		if len(onlinePeers) != 0 {
-			t.logger.Trace().Msgf("there were %d onlinePeers, adding leader to %d existing nodes blamed",
+			t.logger.Trace().Msgf("There were %d onlinePeers, adding leader to %d existing nodes blamed",
 				len(onlinePeers), len(blameNodes.BlameNodes))
 			blameNodes.AddBlameNodes(blameLeader.BlameNodes...)
 		} else {
-			t.logger.Trace().Msgf("there were %d onlinePeers, setting blame nodes to just the leader",
+			t.logger.Trace().Msgf("There were %d onlinePeers, setting blame nodes to just the leader",
 				len(onlinePeers))
 			blameNodes = blameLeader
 		}
-		t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
+		t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v", onlinePeers)
 
 		return keygen.Response{
 			Status: common.Fail,
