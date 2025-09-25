@@ -79,7 +79,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 
 	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
 	if err != nil {
-		b.logger.Err(err).Msgf("fail to estimate gas")
+		b.logger.Info().Any("err", err).Msgf("Fail to estimate gas")
 		return "", err
 	}
 
