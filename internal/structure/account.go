@@ -7,12 +7,13 @@ import (
 )
 
 type MaintainerInfo struct {
-	Status          uint8          `json:"status,omitempty"`
-	Account         common.Address `json:"account,omitempty"`
-	LastActiveEpoch *big.Int       `json:"last_active_epoch,omitempty"`
-	Secp256Pubkey   []byte         `json:"secp_256_pubkey,omitempty"`
-	Ed25519Pubkey   []byte         `json:"ed_25519_pubkey,omitempty"`
-	P2pAddress      string         `json:"p_2_p_address,omitempty"`
+	Status            uint8          `json:"status,omitempty"`
+	Account           common.Address `json:"account,omitempty"`
+	LastHeartbeatTime *big.Int       `json:"last_heartbeat_time,omitempty"`
+	LastActiveEpoch   *big.Int       `json:"last_active_epoch,omitempty"`
+	Secp256Pubkey     []byte         `json:"secp_256_pubkey,omitempty"`
+	Ed25519Pubkey     []byte         `json:"ed_25519_pubkey,omitempty"`
+	P2pAddress        string         `json:"p_2_p_address,omitempty"`
 }
 
 type KeyGen struct {
