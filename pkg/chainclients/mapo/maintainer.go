@@ -73,20 +73,23 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
+	tssStatus, err := b.getTssStatus(epoch)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to get tss status")
+	}
+	switch tssStatus {
+	case constants.TssStatusCompleted:
+		b.epoch = epoch
+		return nil, nil
+	case constants.TssStatusFailed:
+		return nil, fmt.Errorf("tss status (%d)failed", tssStatus)
+	default:
+		b.epoch = big.NewInt(0)
+		b.logger.Info().Any("epoch", epoch).
+			Msg("the epoch tss status is not completed, reset local epoch to 0, will keygen")
+	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		tssStatus, err := b.getTssStatus(epoch)
-		if err != nil {
-			return nil, errors.Wrap(err, "fail to get tss status")
-		}
-		switch tssStatus {
-		case constants.TssStatusCompleted:
-			b.epoch = epoch
-			return nil, nil
-		default:
-			b.epoch = big.NewInt(0)
-			b.logger.Info().Any("epoch", epoch).
-				Msg("the epoch tss status is not completed, reset local epoch to 0, will keygen")
-		}
+		return nil, nil
 	}
 	fmt.Println("============================== in election period")
 	// done
