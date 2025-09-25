@@ -86,9 +86,11 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	default:
 		b.epoch = big.NewInt(0)
 		b.logger.Info().Any("epoch", epoch).
-			Msg("the epoch tss status is not completed, reset local epoch to 0, will keygen")
+			Msg("The epoch tss status is not completed, reset local epoch to 0, will keygen")
 	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
+		b.logger.Info().Any("epoch", epoch).
+			Msg("The epoch is completed")
 		return nil, nil
 	}
 	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")

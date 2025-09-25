@@ -436,6 +436,38 @@ func (b *Bridge) EnsureNodeWhitelisted() error {
 	return nil
 }
 
+// EnsureNodeWhitelisted will call to mapBridge to check whether the observer had been whitelist or not
+func (b *Bridge) HeartBeat() error {
+	go func() {
+		b.logger.Info().Msg("Start heartbeat")
+		for {
+			select {
+			case <-b.stopChan:
+				b.logger.Info().Msg("Stop heartbeat")
+			default:
+				input, err := b.mainAbi.Pack(constants.Heartbeat)
+				if err != nil {
+					b.logger.Error().Err(err).Msg("Fail to pack heartbeat input")
+					continue
+				}
+				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer)
+				if err != nil {
+					b.logger.Error().Err(err).Msg("Fail to assembly heartbeat tx")
+					continue
+				}
+				txId, err := b.Broadcast(txBytes)
+				if err != nil {
+					b.logger.Error().Err(err).Msg("Fail to broadcast heartbeat tx")
+					continue
+				}
+				b.logger.Info().Msgf("Broadcast heartbeat tx %s", txId)
+				time.Sleep(time.Minute)
+			}
+		}
+	}()
+	return nil
+}
+
 // GetKeysignParty call into mapBridge to get the node accounts that should be join together to sign the message
 func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error) {
 	p := fmt.Sprintf(SignerMembershipEndpoint, vaultPubKey.String())

@@ -9,6 +9,7 @@ const (
 	GetEpochInfo       = "getEpochInfo"
 	GetMaintainerInfos = "getMaintainerInfos"
 	Register           = "register"
+	Heartbeat          = "heartbeat"
 )
 
 // -----------------------------------------------------------------

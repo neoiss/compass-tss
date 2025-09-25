@@ -20,7 +20,7 @@ import (
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
 	if epoch.Cmp(b.epoch) == 0 {
-		b.logger.Info().Any("epoch", epoch).Msg("the epoch is the same as the last one, skip sending keygen tx")
+		b.logger.Info().Any("epoch", epoch).Msg("The epoch is the same as the last one, skip sending keygen tx")
 		return "", nil
 	}
 	fmt.Println("SendKeyGenStdTx =================== ", poolPubKey)
