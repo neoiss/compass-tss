@@ -178,7 +178,7 @@ func (s *Signer) getChain(chainID *big.Int) (chainclients.ChainClient, error) {
 func (s *Signer) Start() error {
 	//  todo handler annotate
 	s.wg.Add(1)
-	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages(), 1) // cache local
+	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages()) // cache local
 
 	s.wg.Add(1)
 	go s.processKeygen(s.mapChainBlockScanner.GetKeygenMessages())
@@ -275,9 +275,9 @@ func (s *Signer) processTransactions() {
 }
 
 // processTxnOut processes outbound TxOuts and save them to storage
-func (s *Signer) processTxnOut(ch <-chan types.TxOut, idx int) {
-	s.logger.Info().Int("idx", idx).Msg("Start to process tx out")
-	defer s.logger.Info().Int("idx", idx).Msg("Stop to process tx out")
+func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
+	s.logger.Info().Msg("Start to process tx out")
+	defer s.logger.Info().Msg("Stop to process tx out")
 	defer s.wg.Done()
 	for {
 		select {

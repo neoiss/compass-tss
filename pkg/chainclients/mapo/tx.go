@@ -42,8 +42,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			Payload:          ele.Payload,
 			TxInType:         ele.TxOutType,
 			ChainAndGasLimit: ele.ChainAndGasLimit,
-			// todo will next2
-			Vault: ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
+			Vault:            ele.Vault,
+			//			Vault: ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
+
 		})
 	case constants.VoteTxOut:
 		input, err = b.tssAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{
@@ -51,7 +52,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			Amount:           ele.Amount,
 			GasUsed:          ele.GasUsed,
 			OrderId:          ele.OrderId,
-			Vault:            ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
+			Vault:            ele.Vault,
 			Token:            ele.Token,
 			To:               ele.To,
 			TxOutType:        ele.TxOutType,
@@ -60,6 +61,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			Sender:           ecommon.HexToAddress(ele.Sender),
 			From:             ele.From,
 			Data:             ele.Payload,
+			// Vault:            ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
 		})
 	}
 
