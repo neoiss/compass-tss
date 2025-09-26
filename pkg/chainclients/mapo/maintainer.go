@@ -59,7 +59,6 @@ func (b *Bridge) Register() error {
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
-	b.logger.Info().Msg("GetKeygenBlock-----------")
 	if b.isSelecting {
 		b.logger.Info().Msg("GetKeygenBlock is selecting")
 		return nil, nil
@@ -75,6 +74,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, errors.Wrap(err, "fail to call contract")
 	}
 
+	b.logger.Info().Any("epoch", epoch).Msg("GetKeygenBlock-----------")
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
