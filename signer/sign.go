@@ -518,7 +518,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 			os.Getenv("SIGNER_SEED_PHRASE"),
 		)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to encrypt keyShares")
+			s.logger.Error().Err(err).Msg("Fail to encrypt keyShares")
 		}
 	}
 
@@ -527,7 +527,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}
 
-	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("sent keygen tx to thorchain")
+	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("Send keygen tx to thorchain")
 	return nil
 }
 

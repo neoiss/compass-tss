@@ -70,7 +70,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 				t.logger.Err(errJoinParty).Msg("Fail to get peers to blame")
 			}
 			// make sure we blame the leader as well
-			t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v", onlinePeers)
+			t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v,blameNodes=%v", onlinePeers, blameNodes)
 			return keygen.Response{
 				Status: common.Fail,
 				Blame:  blameNodes,

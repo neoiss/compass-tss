@@ -59,6 +59,7 @@ func (b *Bridge) Register() error {
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
+	b.logger.Info().Msg("GetKeygenBlock-----------")
 	if b.isSelecting {
 		b.logger.Info().Msg("GetKeygenBlock is selecting")
 		return nil, nil

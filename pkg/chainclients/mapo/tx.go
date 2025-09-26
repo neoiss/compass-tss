@@ -190,7 +190,7 @@ func (b *Bridge) Broadcast(hexTx []byte) (string, error) {
 		b.logger.Error().Str("txId", txID).Err(err).Msg("Failed to send transaction")
 		return "", err
 	}
-	b.logger.Info().Str("txId", txID).Msg("Broadcast tx")
+	b.logger.Debug().Str("txId", txID).Msg("Broadcast tx")
 	return txID, nil
 }
 
