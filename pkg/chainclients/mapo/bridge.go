@@ -79,6 +79,7 @@ type Bridge struct {
 	ethRpc                                   *evm.EthRPC
 	mainAbi, tssAbi, relayAbi, tokenRegistry *abi.ABI
 	epoch                                    *big.Int
+	isSelecting                              bool
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -194,6 +195,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		tokenRegistry: tokenRegistry,
 		epoch:         big.NewInt(0),
 		gasPrice:      big.NewInt(0),
+		isSelecting:   false,
 	}, nil
 }
 

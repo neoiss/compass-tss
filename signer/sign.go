@@ -422,10 +422,6 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	}
 
 	s.logger.Info().Int64("keygenTime", keygenTime).Msg("ProcessKeygenBlock keyGen time")
-	// generate a verification signature to ensure we can sign with the new key
-	// if len(pubKey.Secp256k1.String()) == 0 {
-	// 	return
-	// }
 	secp256k1Sig := make([]byte, 0)
 	if len(pubKey.Secp256k1.String()) > 0 {
 		secp256k1Sig = s.secp256k1VerificationSignature(pubKey.Secp256k1)
@@ -446,6 +442,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.logger.Error().Err(err).Msg("Fail to broadcast keygen")
 	}
 	if err == nil {
+		// Indicates that in this epoch, the user has sent a transaction
 		s.epoch = big.NewInt(keygenBlock.Epoch.Int64())
 	}
 

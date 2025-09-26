@@ -59,7 +59,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		// this indicate we are processing the leaderless join party
 		if leader == "NONE" {
 			if onlinePeers == nil {
-				t.logger.Error().Err(err).Msg("error before we start join party")
+				t.logger.Error().Err(err).Msg("Error before we start join party")
 				return keygen.Response{
 					Status: common.Fail,
 					Blame:  blame.NewBlame(blame.InternalError, []blame.Node{}),
@@ -67,10 +67,10 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 			}
 			blameNodes, err := blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
 			if err != nil {
-				t.logger.Err(errJoinParty).Msg("fail to get peers to blame")
+				t.logger.Err(errJoinParty).Msg("Fail to get peers to blame")
 			}
 			// make sure we blame the leader as well
-			t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
+			t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v", onlinePeers)
 			return keygen.Response{
 				Status: common.Fail,
 				Blame:  blameNodes,

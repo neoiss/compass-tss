@@ -59,6 +59,10 @@ func (b *Bridge) Register() error {
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
+	if b.isSelecting {
+		b.logger.Info().Msg("GetKeygenBlock is selecting")
+		return nil, nil
+	}
 	method := constants.ElectionEpoch
 	input, err := b.mainAbi.Pack(method)
 	if err != nil {
@@ -78,22 +82,24 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, errors.Wrap(err, "fail to get tss status")
 	}
 	switch tssStatus {
-	case constants.TssStatusCompleted:
-		b.epoch = epoch
+	case constants.TssStatusPending, constants.TssStatusConsensus:
+		break
+	case constants.TssStatusUnknown:
 		return nil, nil
 	case constants.TssStatusFailed:
 		return nil, fmt.Errorf("tss status (%d)failed", tssStatus)
 	default:
-		b.epoch = big.NewInt(0)
+		b.epoch = epoch
+		// b.epoch = big.NewInt(0)
 		b.logger.Info().Any("epoch", epoch).Any("tssStatus", tssStatus).
-			Msg("The epoch tss status is not completed, reset local epoch to 0, will keygen")
+			Msg("The epoch tss status is completed")
+		return nil, nil
 	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
 		b.logger.Debug().Any("epoch", epoch).Msg("The epoch is completed")
 		return nil, nil
 	}
 	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
-	fmt.Println("============================== in election period")
 	// done
 	ret, err := b.GetEpochInfo(epoch)
 	if err != nil {
@@ -131,6 +137,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		pubBytes := ecrypto.CompressPubkey(epk)
 		ms[idx].Secp256Pubkey = pubBytes
 	}
+	b.isSelecting = true
 
 	return &structure.KeyGen{
 		Epoch: epoch,

@@ -19,11 +19,16 @@ import (
 // SendKeyGenStdTx get keygen tx from params
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
+	var txID string
+	defer func() {
+		// Something went wrong, retry the keygen
+		b.isSelecting = false
+	}()
 	if epoch.Cmp(b.epoch) == 0 {
 		b.logger.Info().Any("epoch", epoch).Msg("The epoch is the same as the last one, skip sending keygen tx")
 		return "", nil
 	}
-	fmt.Println("SendKeyGenStdTx =================== ", poolPubKey)
+
 	pubBytes := make([]byte, 0)
 	if !poolPubKey.IsEmpty() {
 		ethPubKey, err := crypto.DecompressPubkey(ecommon.Hex2Bytes(poolPubKey.String()))
@@ -90,7 +95,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		}
 		gasFeeCap = head.BaseFee
 	}
-	gasLimit = gasLimit * 2 // todo add cfg
+	gasLimit = gasLimit*2 + 2000000
 	// tip cap at configured percentage of max fee
 	tipCap := new(big.Int).Mul(gasFeeCap, big.NewInt(10))
 	tipCap.Div(tipCap, big.NewInt(100))
@@ -108,13 +113,13 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	if err != nil {
 		return "", err
 	}
-	txID, err := b.Broadcast(sign)
+	txID, err = b.Broadcast(sign)
 	if err != nil {
 		return "", err
 	}
 	// todo handler tx online
 	b.epoch = epoch
-	fmt.Println("SendKeyGenStdTx txID is ------------------ ", txID)
+	b.logger.Info().Msg("SendKeyGenStdTx txID is " + txID)
 	time.Sleep(time.Second * 10)
 	return txID, nil
 }
