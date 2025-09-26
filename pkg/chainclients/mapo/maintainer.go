@@ -82,6 +82,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to get tss status")
 	}
+	b.logger.Info().Any("epoch", epoch).Any("status", tssStatus).Msg("The epoch info")
 	switch tssStatus {
 	case constants.TssStatusPending, constants.TssStatusConsensus:
 		break
