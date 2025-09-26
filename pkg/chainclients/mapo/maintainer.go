@@ -97,7 +97,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, nil
 	}
 	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		b.logger.Debug().Any("epoch", epoch).Msg("The epoch is completed")
+		b.logger.Info().Any("epoch", epoch).Msg("The epoch is completed")
 		return nil, nil
 	}
 	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")

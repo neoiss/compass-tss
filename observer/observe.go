@@ -286,7 +286,7 @@ func (o *Observer) sendDeck(ctx context.Context) {
 		o.lastNodeStatus = nodeStatus
 	}
 	if nodeStatus != stypes.NodeStatus_Active {
-		o.logger.Warn().Msg("node is not active, will not handle tx in")
+		o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("node is not active, will not handle tx in")
 		return
 	}
 

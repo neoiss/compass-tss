@@ -175,6 +175,7 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 			t.logger.Error().Msg("we fail to have any participants or passed by request")
 			return nil, "", errors.New("no participants can be found")
 		}
+		fmt.Println("joinParty participants ", participants)
 		peersID, err := conversion.GetPeerIDsFromPubKeys(participants)
 		if err != nil {
 			return nil, "", fmt.Errorf("fail to convert the public key to peer ID: %w", err)
@@ -184,6 +185,7 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 			peersIDStr = append(peersIDStr, el.String())
 		}
 
+		fmt.Println("joinParty peersIDStr ", peersIDStr)
 		return t.partyCoordinator.JoinPartyWithLeader(msgID, blockHeight, peersIDStr, threshold, sigChan)
 	}
 }
