@@ -145,6 +145,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		pubBytes := ecrypto.CompressPubkey(epk)
 		ms[idx].Secp256Pubkey = pubBytes
 	}
+	b.epochHash = currEpochHash
 	return &structure.KeyGen{
 		Epoch: epoch,
 		Ms:    ms,
@@ -267,13 +268,14 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 }
 
 func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address) (ecommon.Hash, error) {
-	sort.Slice(members, func(i, j int) bool {
-		return members[i].Hex() < members[j].Hex()
-	})
 	memberStrs := make([]string, 0, len(members))
 	for _, item := range members {
-		memberStrs = append(memberStrs, item.Hex())
+		memberStrs = append(memberStrs, strings.ToLower(item.Hex()))
 	}
+	sort.Slice(memberStrs, func(i, j int) bool {
+		return memberStrs[i] < memberStrs[j]
+	})
+
 	data := strings.Join(append(memberStrs, epoch.String()), "|")
 
 	encoded, err := rlp.EncodeToBytes(data)
