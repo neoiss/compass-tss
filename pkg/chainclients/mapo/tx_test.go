@@ -31,7 +31,7 @@ func TestBridge_GetObservationsStdTx(t *testing.T) {
 						{
 							Tx:        "bc7492b7900c180ef6acd7913e7aca4fc5d42b014ae8ebf24ea722af515b64d4",
 							Memo:      "",
-							TxInType:  0,
+							TxOutType: 0,
 							FromChain: big.NewInt(11155111),
 							ToChain:   big.NewInt(0),
 							Height:    big.NewInt(8817015),

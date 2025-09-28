@@ -132,6 +132,8 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 			Any("curEpoch", currEpochHash).Msg("The epoch is same")
 		return nil, nil
 	}
+	b.epoch = big.NewInt(0) // reset
+	b.epochHash = currEpochHash
 
 	// use compressed pk, dont modify this code
 	for idx, item := range ms {
@@ -145,7 +147,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		pubBytes := ecrypto.CompressPubkey(epk)
 		ms[idx].Secp256Pubkey = pubBytes
 	}
-	b.epochHash = currEpochHash
+
 	return &structure.KeyGen{
 		Epoch: epoch,
 		Ms:    ms,

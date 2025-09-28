@@ -95,7 +95,7 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 	peerGroup, ok := pc.peersGroup[requestMsg.ID]
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
-		pc.logger.Info().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
+		pc.logger.Info().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("This party is not ready")
 		return
 	}
 	remotePeer := stream.Conn().RemotePeer()
@@ -428,7 +428,8 @@ func (pc *PartyCoordinator) joinPartyLeader(msgID string, peerGroup *peerStatus,
 	return onlinePeers, nil
 }
 
-func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64, peers []string, threshold int, sigChan chan string) ([]peer.ID, string, error) {
+func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64, peers []string,
+	threshold int, sigChan chan string) ([]peer.ID, string, error) {
 	leader, err := LeaderNode(msgID, blockHeight, peers)
 	if err != nil {
 		return nil, "", err

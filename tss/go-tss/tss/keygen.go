@@ -95,12 +95,12 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		}
 
 		if len(onlinePeers) != 0 {
-			t.logger.Trace().Msgf("There were %d onlinePeers, adding leader to %d existing nodes blamed",
-				len(onlinePeers), len(blameNodes.BlameNodes))
+			t.logger.Info().Msgf("There were %d onlinePeers, adding leader to %d existing nodes blamed",
+				len(onlinePeers), len(blameNodes.BlameNodes)) // trace
 			blameNodes.AddBlameNodes(blameLeader.BlameNodes...)
 		} else {
-			t.logger.Trace().Msgf("There were %d onlinePeers, setting blame nodes to just the leader",
-				len(onlinePeers))
+			t.logger.Info().Msgf("There were %d onlinePeers, setting blame nodes to just the leader",
+				len(onlinePeers)) // trace
 			blameNodes = blameLeader
 		}
 		t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v", onlinePeers)

@@ -7,7 +7,6 @@ import (
 )
 
 func Test_Topics(t *testing.T) {
-	t.Log("RelayEventOfMigration ", constants.RelayEventOfMigration.GetTopic())
-	t.Log("RelayEventOfTransferCall ", constants.RelayEventOfTransferCall.GetTopic())
-	t.Log("RelayEventOfTransferOut ", constants.RelayEventOfTransferOut.GetTopic())
+	t.Log("EventOfBridgeIn ", constants.EventOfBridgeIn.GetTopic())
+	t.Log("EventOfBridgeOut ", constants.EventOfBridgeOut.GetTopic())
 }

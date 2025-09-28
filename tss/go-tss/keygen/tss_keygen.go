@@ -169,25 +169,25 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 
 		case <-time.After(tssConf.KeyGenTimeout):
 			// we bail out after KeyGenTimeoutSeconds
-			tKeyGen.logger.Error().Msgf("fail to generate message with %s", tssConf.KeyGenTimeout.String())
+			tKeyGen.logger.Error().Msgf("Fail to generate message with %s", tssConf.KeyGenTimeout.String())
 			lastMsg := blameMgr.GetLastMsg()
 			failReason := blameMgr.GetBlame().FailReason
 			if failReason == "" {
 				failReason = blame.TssTimeout
 			}
 			if lastMsg == nil {
-				tKeyGen.logger.Error().Msg("fail to start the keygen, the last produced message of this node is none")
+				tKeyGen.logger.Error().Msg("Fail to start the keygen, the last produced message of this node is none")
 				return nil, errors.New("timeout before shared message is generated")
 			}
 			blameNodesUnicast, err := blameMgr.GetUnicastBlame(messages.KEYGEN2aUnicast)
 			if err != nil {
-				tKeyGen.logger.Error().Err(err).Msg("error in get unicast blame")
+				tKeyGen.logger.Error().Err(err).Msg("Error in get unicast blame")
 			}
 			tKeyGen.tssCommonStruct.P2PPeersLock.RLock()
 			threshold, err := conversion.GetThreshold(len(tKeyGen.tssCommonStruct.P2PPeers) + 1)
 			tKeyGen.tssCommonStruct.P2PPeersLock.RUnlock()
 			if err != nil {
-				tKeyGen.logger.Error().Err(err).Msg("error in get the threshold to generate blame")
+				tKeyGen.logger.Error().Err(err).Msg("Error in get the threshold to generate blame")
 			}
 
 			if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
@@ -195,7 +195,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			}
 			blameNodesBroadcast, err := blameMgr.GetBroadcastBlame(lastMsg.Type())
 			if err != nil {
-				tKeyGen.logger.Error().Err(err).Msg("error in get broadcast blame")
+				tKeyGen.logger.Error().Err(err).Msg("Error in get broadcast blame")
 			}
 			blameMgr.GetBlame().AddBlameNodes(blameNodesBroadcast...)
 
@@ -203,7 +203,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			if len(blameMgr.GetBlame().BlameNodes) == 0 {
 				blameNodesMisingShare, isUnicast, err := blameMgr.TssMissingShareBlame(messages.TSSKEYGENROUNDS)
 				if err != nil {
-					tKeyGen.logger.Error().Err(err).Msg("fail to get the node of missing share ")
+					tKeyGen.logger.Error().Err(err).Msg("Fail to get the node of missing share ")
 				}
 				if len(blameNodesMisingShare) > 0 && len(blameNodesMisingShare) <= threshold {
 					blameMgr.GetBlame().AddBlameNodes(blameNodesMisingShare...)
@@ -222,7 +222,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			}
 
 		case msg := <-endCh:
-			tKeyGen.logger.Info().Msgf("keygen finished successfully: %s", msg.ECDSAPub.Y().String())
+			tKeyGen.logger.Info().Msgf("Keygen finished successfully: %s", msg.ECDSAPub.Y().String())
 			err := tKeyGen.tssCommonStruct.NotifyTaskDone()
 			if err != nil {
 				tKeyGen.logger.Error().Err(err).Msg("fail to broadcast the keysign done")
@@ -239,7 +239,7 @@ func (tKeyGen *TssKeyGen) processKeyGen(errChan chan struct{},
 			address := tKeyGen.p2pComm.ExportPeerAddress()
 			fmt.Printf("processKeyGen address ---------------- %+v \n", address)
 			if err := tKeyGen.stateManager.SaveAddressBook(address); err != nil {
-				tKeyGen.logger.Error().Err(err).Msg("fail to save the peer addresses")
+				tKeyGen.logger.Error().Err(err).Msg("Fail to save the peer addresses")
 			}
 			return msg.ECDSAPub, nil
 		}
