@@ -276,6 +276,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.logger.Error().Msgf("not enough signers, threshold=%d and signers=%d", threshold, len(req.SignerPubKeys))
 		return emptyResp, errors.New("not enough signers")
 	}
+	fmt.Println("keySign  threshold ---------------- ", threshold)
 
 	blameMgr := keysignInstance.GetTssCommonStruct().GetBlameMgr()
 

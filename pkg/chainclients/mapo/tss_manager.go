@@ -20,10 +20,6 @@ import (
 func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blames []ecommon.Address,
 	members []ecommon.Address) (string, error) {
 	var txID string
-	defer func() {
-		// Something went wrong, retry the keygen
-		b.isSelecting = false
-	}()
 	if epoch.Cmp(b.epoch) == 0 {
 		b.logger.Info().Any("epoch", epoch).Msg("The epoch is the same as the last one, skip sending keygen tx")
 		return "", nil

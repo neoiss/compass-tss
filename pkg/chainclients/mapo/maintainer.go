@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
@@ -35,8 +36,8 @@ func (b *Bridge) Register() error {
 		return err
 	}
 	publicKeyBytes := ecrypto.FromECDSAPub(pk)
-	fmt.Println("publicKeyBytes ----------- ", publicKeyBytes)
-	fmt.Println("publicKeyBytes ----------- ", ecommon.Bytes2Hex(publicKeyBytes))
+	// fmt.Println("publicKeyBytes ----------- ", publicKeyBytes)
+	// fmt.Println("publicKeyBytes ----------- ", ecommon.Bytes2Hex(publicKeyBytes))
 
 	input, err := b.mainAbi.Pack(method, publicKeyBytes[1:], publicKeyBytes[1:], b.cfg.Addr)
 	if err != nil {
@@ -59,10 +60,6 @@ func (b *Bridge) Register() error {
 
 // GetKeygenBlock retrieves keygen request for the given block height from mapBridge
 func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
-	if b.isSelecting {
-		b.logger.Info().Msg("GetKeygenBlock is selecting")
-		return nil, nil
-	}
 	method := constants.ElectionEpoch
 	input, err := b.mainAbi.Pack(method)
 	if err != nil {
@@ -97,10 +94,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 			Msg("The epoch tss status is completed")
 		return nil, nil
 	}
-	if b.epoch.Cmp(epoch) == 0 { // local epoch equals contract epoch
-		b.logger.Info().Any("epoch", epoch).Msg("The epoch is completed")
-		return nil, nil
-	}
+
 	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	// done
 	ret, err := b.GetEpochInfo(epoch)
@@ -114,15 +108,27 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 
 	idx := -1
 	selfAddr, _ := b.keys.GetEthAddress()
+	members := make([]ecommon.Address, 0)
 	for i, ele := range ms {
+		members = append(members, ele.Account)
 		if strings.EqualFold(ele.Account.Hex(), selfAddr.Hex()) {
 			idx = i
-			break
 		}
 	}
 	if idx == -1 {
 		b.epoch = epoch
 		b.logger.Debug().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
+		return nil, nil
+	}
+
+	currEpochHash, err := b.genHash(epoch, members)
+	if err != nil {
+		return nil, err
+	}
+	// chech hash
+	if strings.EqualFold(b.epochHash.Hex(), currEpochHash.Hex()) {
+		b.logger.Info().Any("epoch", epoch).Any("history", b.epochHash.Hex()).
+			Any("curEpoch", currEpochHash).Msg("The epoch is same")
 		return nil, nil
 	}
 
@@ -132,15 +138,12 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		pks = append(pks, 4)
 		pks = append(pks, item.Secp256Pubkey...)
 		epk, err := ecrypto.UnmarshalPubkey(pks)
-		// ethPubKey, err := ecrypto.DecompressPubkey(item.Secp256Pubkey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)
 		}
 		pubBytes := ecrypto.CompressPubkey(epk)
 		ms[idx].Secp256Pubkey = pubBytes
 	}
-	b.isSelecting = true
-
 	return &structure.KeyGen{
 		Epoch: epoch,
 		Ms:    ms,
@@ -260,4 +263,16 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 		}
 	}
 	return active, nil
+}
+
+func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address) (ecommon.Hash, error) {
+	data := []interface{}{epoch, len(members), members}
+
+	encoded, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		return ecommon.Hash{}, fmt.Errorf("RLP failed: %v", err)
+	}
+	hash := ecommon.BytesToHash(ecrypto.Keccak256(encoded))
+	return hash, nil
+
 }

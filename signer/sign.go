@@ -57,7 +57,6 @@ type Signer struct {
 	tssKeysignMetricMgr  *metrics.TssKeysignMetricMgr
 	observer             *observer.Observer
 	pipeline             *pipeline
-	epoch                *big.Int
 }
 
 // NewSigner create a new instance of signer
@@ -156,7 +155,6 @@ func NewSigner(cfg config.Bifrost,
 		localPubKey:          selfKey,
 		tssKeysignMetricMgr:  tssKeysignMetricMgr,
 		observer:             obs,
-		epoch:                big.NewInt(0),
 	}, nil
 }
 
@@ -312,10 +310,7 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 			if !more {
 				return
 			}
-			// if s.epoch.Cmp(keygenBlock.Epoch) == 0 {
-			// 	s.logger.Info().Interface("epoch", keygenBlock.Epoch).Msg("Ignore keyGen msg, because it is already a keygen")
-			// 	continue
-			// }
+
 			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("Received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
 		}
@@ -441,10 +436,6 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
 		s.logger.Error().Err(err).Msg("Fail to broadcast keygen")
 	}
-	// if err == nil {
-	// 	// Indicates that in this epoch, the user has sent a transaction
-	// 	s.epoch = big.NewInt(keygenBlock.Epoch.Int64())
-	// }
 
 	// monitor the new pubkey and any new members
 	if !pubKey.Secp256k1.IsEmpty() {
