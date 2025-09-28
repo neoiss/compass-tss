@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -266,7 +267,14 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 }
 
 func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address) (ecommon.Hash, error) {
-	data := []interface{}{epoch, len(members), members}
+	sort.Slice(members, func(i, j int) bool {
+		return members[i].Hex() < members[j].Hex()
+	})
+	memberStrs := make([]string, 0, len(members))
+	for _, item := range members {
+		memberStrs = append(memberStrs, item.Hex())
+	}
+	data := strings.Join(append(memberStrs, epoch.String()), "|")
 
 	encoded, err := rlp.EncodeToBytes(data)
 	if err != nil {
