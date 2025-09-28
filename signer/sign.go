@@ -311,7 +311,7 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 				return
 			}
 
-			// s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("Received a keygen block from map relay")
+			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("Received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
 		}
 	}
@@ -388,7 +388,6 @@ func (s *Signer) processOracle() {
 }
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
-	s.logger.Debug().Interface("keygenBlock", keygenBlock).Msg("Processing keygen block")
 	if len(keygenBlock.Ms) <= 0 {
 		s.logger.Info().Msg("Processing keygen block, members is zero")
 		return
