@@ -118,7 +118,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 	if idx == -1 {
 		b.epoch = epoch
-		b.logger.Debug().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
+		b.logger.Info().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
 		return nil, nil
 	}
 
