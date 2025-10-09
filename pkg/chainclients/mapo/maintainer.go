@@ -122,7 +122,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, nil
 	}
 
-	currEpochHash, err := b.genHash(epoch, members)
+	currEpochHash, err := b.genHash(epoch, members, ret.ElectedBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 	return active, nil
 }
 
-func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address) (ecommon.Hash, error) {
+func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address, electedBlock uint64) (ecommon.Hash, error) {
 	memberStrs := make([]string, 0, len(members))
 	for _, item := range members {
 		memberStrs = append(memberStrs, strings.ToLower(item.Hex()))
@@ -278,7 +278,8 @@ func (b *Bridge) genHash(epoch *big.Int, members []ecommon.Address) (ecommon.Has
 		return memberStrs[i] < memberStrs[j]
 	})
 
-	data := strings.Join(append(memberStrs, epoch.String()), "|")
+	data := strings.Join(append(memberStrs, epoch.String(),
+		fmt.Sprintf("%d", electedBlock)), "|")
 
 	encoded, err := rlp.EncodeToBytes(data)
 	if err != nil {

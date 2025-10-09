@@ -23,6 +23,7 @@ const (
 const (
 	EventOfBridgeRelay     EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,uint256,bytes,uint256,bytes,bytes,bytes)" // -> dst gateway 合约 transferAllowance
 	EventOfBridgeCompleted EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // -> dst gateway 合约 transferOut
+	EventOfBridgeInRelay   EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // 目标链是map，弹出此事件
 )
 
 // src or dst chain event

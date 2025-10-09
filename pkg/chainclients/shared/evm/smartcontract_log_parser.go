@@ -122,6 +122,7 @@ func (scp *SmartContractLogParser) parseBridgeIn(log etypes.Log) (*bridgeIn, err
 	}
 	return &event, nil
 }
+
 func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) (bool, error) {
 	if ll == nil {
 		scp.logger.Info().Msg("tx logs are empty return nil")
@@ -154,6 +155,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Method = constants.VoteTxIn
 		txInItem.ChainAndGasLimit = evt.ChainAndGasLimit
 		txInItem.TxOutType = evt.TxOutType
+		// txInItem.Sequence = 0
 		// txInItem.Memo
 		// txInItem.ObservedVaultPubKey = evt.ObservedVaultPubKey
 		// txInItem.GasUsed = evt.GasUsed
@@ -213,6 +215,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 
 	case constants.EventOfBridgeCompleted.GetTopic().Hex():
 		// todo handler
+	case constants.EventOfBridgeInRelay.GetTopic().Hex():
 	}
 	return nil
 }

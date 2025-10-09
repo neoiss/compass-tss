@@ -517,7 +517,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}
 
-	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("Send keygen tx to thorchain")
+	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("Send keygen tx to relay")
 	return nil
 }
 
