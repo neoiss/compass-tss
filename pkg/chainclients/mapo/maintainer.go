@@ -72,7 +72,6 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, errors.Wrap(err, "fail to call contract")
 	}
 
-	b.logger.Info().Any("epoch", epoch).Msg("GetKeygenBlock-----------")
 	if epoch.Uint64() == 0 { // not in epoch
 		return nil, nil
 	}
@@ -80,7 +79,6 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to get tss status")
 	}
-	b.logger.Info().Any("epoch", epoch).Any("status", tssStatus).Msg("The epoch info")
 	switch tssStatus {
 	case constants.TssStatusPending, constants.TssStatusConsensus:
 		break
@@ -90,13 +88,10 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 		return nil, fmt.Errorf("tss status (%d)failed", tssStatus)
 	default:
 		b.epoch = epoch
-		// b.epoch = big.NewInt(0)
-		b.logger.Info().Any("epoch", epoch).Any("tssStatus", tssStatus).
-			Msg("The epoch tss status is completed")
 		return nil, nil
 	}
 
-	b.logger.Info().Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
+	b.logger.Info().Any("status", tssStatus).Int64("epoch", epoch.Int64()).Msg("KeyGen Block")
 	// done
 	ret, err := b.GetEpochInfo(epoch)
 	if err != nil {
@@ -210,6 +205,22 @@ func (b *Bridge) GetNodeAccounts(addrs []ecommon.Address) ([]structure.Maintaine
 	}
 
 	return ret.Infos, nil
+}
+
+// GetMapVersion retrieve mapBridge version
+func (b *Bridge) GetMapVersion() (string, error) {
+	method := constants.VersionMethod
+	input, err := b.mainAbi.Pack(method)
+	if err != nil {
+		return "", errors.Wrap(err, "fail to pack input")
+	}
+	var version string
+	err = b.callContract(&version, b.cfg.Maintainer, method,
+		input, b.mainAbi)
+	if err != nil {
+		return "", errors.Wrap(err, "fail to call contract")
+	}
+	return version, nil
 }
 
 func (b *Bridge) callContract(ret interface{}, addr, method string, input []byte, abi *abi.ABI) error {

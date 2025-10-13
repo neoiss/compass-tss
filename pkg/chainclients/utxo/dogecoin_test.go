@@ -768,7 +768,7 @@ func (s *DogecoinSuite) TestGetHeight(c *C) {
 }
 
 func (s *DogecoinSuite) TestOnObservedTxIn(c *C) {
-	pkey := ttypes.GetRandomPubKey()
+	
 	txIn := types.TxIn{
 		Chain: common.DOGEChain,
 		TxArray: []*types.TxInItem{
@@ -778,7 +778,7 @@ func (s *DogecoinSuite) TestOnObservedTxIn(c *C) {
 				Sender: "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				//To:          "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				
 			},
 		},
 	}
@@ -798,7 +798,7 @@ func (s *DogecoinSuite) TestOnObservedTxIn(c *C) {
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:     "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				
 			},
 		},
 	}
@@ -818,7 +818,7 @@ func (s *DogecoinSuite) TestOnObservedTxIn(c *C) {
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				
 			},
 			{
 				Height: big.NewInt(3),
@@ -826,7 +826,7 @@ func (s *DogecoinSuite) TestOnObservedTxIn(c *C) {
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				
 			},
 		},
 	}

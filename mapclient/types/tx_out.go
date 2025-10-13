@@ -30,11 +30,10 @@ type TxOutItem struct {
 	// relayTransferCall
 	Payload []byte `json:"payload,omitempty"`
 	// migration
-	FromVault   []byte           `json:"from_vault,omitempty"`
-	ToVault     []byte           `json:"to_vault,omitempty"`
-	Allowances  []TokenAllowance `json:"allowances,omitempty"`
-	VaultPubKey common.PubKey    `json:"vault_pubkey"`
-	Checkpoint  []byte           `json:"-"`
+	FromVault   []byte        `json:"from_vault,omitempty"`
+	ToVault     []byte        `json:"to_vault,omitempty"`
+	VaultPubKey common.PubKey `json:"vault_pubkey"`
+	Checkpoint  []byte        `json:"-"`
 	// bridgeRelay add new field
 	ChainAndGasLimit *big.Int
 	TxOutType        uint8
@@ -97,12 +96,7 @@ func (tx TxOutItem) Equals(tx2 TxOutItem) bool {
 // TxArrayItem from THORChain has Coin , which only have a single coin
 // TxOutItem used in bifrost need to support Coins for multisend
 type TxArrayItem struct {
-	Memo            string       `json:"memo,omitempty"`
-	OrderId         ecommon.Hash `json:"order_id"`
-	Token           []byte
-	Vault           []byte
-	To              []byte
-	Amount          *big.Int
+	Memo            string `json:"memo,omitempty"`
 	Chain           *big.Int
 	TransactionRate *big.Int
 	TransactionSize *big.Int
@@ -110,16 +104,19 @@ type TxArrayItem struct {
 	TxHash          string
 	Method          string
 	// bridgeRelay add new field
+	OrderId          ecommon.Hash `json:"order_id"`
 	ChainAndGasLimit *big.Int
-	TxOutType        uint8
+	TxType           uint8
+	Vault            []byte
+	To               []byte
+	Token            []byte
+	Amount           *big.Int
 	Sequence         *big.Int
+	Hash             ecommon.Hash
 	From             []byte
-	Data             []byte
-}
-
-type TokenAllowance struct {
-	Token  []byte
-	Amount *big.Int
+	Data             []byte // relaySigned relayData -> data
+	Sender           []byte // bridgeCompleted event field
+	Signature        []byte // relaySigned event field
 }
 
 // TxOutItem convert the information to TxOutItem
@@ -139,7 +136,7 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		TxHash:           tx.TxHash,
 		Method:           tx.Method,
 		ChainAndGasLimit: tx.ChainAndGasLimit,
-		TxOutType:        tx.TxOutType,
+		TxOutType:        tx.TxType,
 		Sequence:         tx.Sequence,
 		From:             tx.From,
 		Data:             tx.Data,

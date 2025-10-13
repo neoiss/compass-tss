@@ -785,7 +785,7 @@ func (s *BitcoinSuite) TestGetHeight(c *C) {
 }
 
 func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
-	pkey := ttypes.GetRandomPubKey()
+
 	txIn := types.TxIn{
 		Chain: common.BTCChain,
 		TxArray: []*types.TxInItem{
@@ -794,8 +794,7 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
 				Sender: "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
 				//To:          "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}
@@ -814,8 +813,7 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}
@@ -834,16 +832,14 @@ func (s *BitcoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 			{
 				Height: big.NewInt(3),
 				Tx:     "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "bc1q0s4mg25tu6termrk8egltfyme4q7sg3h0e56p3",
 				//To:          "bc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mcl2q9j",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}

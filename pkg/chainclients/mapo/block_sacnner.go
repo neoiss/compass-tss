@@ -128,7 +128,6 @@ func (b *MapChainBlockScan) processKeygenBlock() error {
 	return nil
 }
 
-// todo handler
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight, b.cfg.Mos)
 	if err != nil {
@@ -160,15 +159,16 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		if !ok {
 			continue
 		}
+		tmp := ele
 		switch toChain {
 		case common.BTCChain, common.XRPChain:
-			txOut.TxArray = append(txOut.TxArray, ele)
+			txOut.TxArray = append(txOut.TxArray, tmp)
 		default:
-			oracleTx.TxArray = append(oracleTx.TxArray, ele)
+			oracleTx.TxArray = append(oracleTx.TxArray, tmp)
 		}
 	}
 
-	if len(txOut.TxArray) == 0 {
+	if len(txOut.TxArray) > 0 {
 		b.txOutChan <- txOut
 	}
 

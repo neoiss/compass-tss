@@ -179,13 +179,6 @@ func (b *Bridge) GetConstants() (map[string]int64, error) {
 	return result.Int64Values, nil
 }
 
-// GetMapVersion retrieve mapBridge version
-// func (b *Bridge) GetMapVersion() (semver.Version, error) {
-func (b *Bridge) GetMapVersion() (string, error) {
-	// todo handler
-	return "1.0.0", nil
-}
-
 // GetMimir - get mimir settings
 func (b *Bridge) GetMimir(key string) (int64, error) {
 	// todo handler

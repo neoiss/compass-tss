@@ -15,15 +15,11 @@ func (es EventSig) String() string {
 	return string(es)
 }
 
-const (
-	EventOfMessageOut = "0x469059a9fd182ad3741bdd67b925e15056d35262609ea83393db7e8fb5a05ab1"
-)
-
 // relay event
 const (
-	EventOfBridgeRelay     EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,uint256,bytes,uint256,bytes,bytes,bytes)" // -> dst gateway 合约 transferAllowance
-	EventOfBridgeCompleted EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // -> dst gateway 合约 transferOut
-	EventOfBridgeInRelay   EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // 目标链是map，弹出此事件
+	EventOfBridgeRelay       EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,uint256,bytes,uint256,bytes,bytes,bytes)" // -> dst gateway 合约 transferAllowance
+	EventOfBridgeCompleted   EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // -> dst gateway 合约 transferOut
+	EventOfBridgeRelaySigned EventSig = "BridgeRelaySigned(bytes32,uint256,bytes,bytes,bytes)"                             // 目标链是map，弹出此事件
 )
 
 // src or dst chain event

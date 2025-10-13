@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/rs/zerolog"
@@ -20,39 +18,15 @@ const (
 	NativeTokenAddr = "0x0000000000000000000000000000000000000000"
 )
 
-type (
-	contractAddressValidator func(addr *ecommon.Address, includeWhitelist bool) bool
-	assetResolver            func(token string) (common.Asset, error)
-	tokenDecimalResolver     func(token string) int64
-	amountConverter          func(token string, amt *big.Int) cosmos.Uint
-)
-
 type SmartContractLogParser struct {
-	addressValidator contractAddressValidator
-	assetResolver    assetResolver
-	decimalResolver  tokenDecimalResolver
-	amtConverter     amountConverter
-	logger           zerolog.Logger
-	vaultABI         *abi.ABI
-	nativeAsset      common.Asset
+	logger   zerolog.Logger
+	vaultABI *abi.ABI
 }
 
-func NewSmartContractLogParser(validator contractAddressValidator,
-	resolver assetResolver,
-	decimalResolver tokenDecimalResolver,
-	amtConverter amountConverter,
-	vaultABI *abi.ABI,
-	nativeAsset common.Asset,
-	maxLogs int64,
-) SmartContractLogParser {
+func NewSmartContractLogParser(vaultABI *abi.ABI) SmartContractLogParser {
 	return SmartContractLogParser{
-		addressValidator: validator,
-		assetResolver:    resolver,
-		decimalResolver:  decimalResolver,
-		vaultABI:         vaultABI,
-		amtConverter:     amtConverter,
-		logger:           log.Logger.With().Str("module", "SmartContractLogParser").Logger(),
-		nativeAsset:      nativeAsset,
+		vaultABI: vaultABI,
+		logger:   log.Logger.With().Str("module", "SmartContractLogParser").Logger(),
 	}
 }
 
@@ -65,6 +39,7 @@ type bridgeOutEvent struct {
 	Token            ecommon.Address
 	Amount           *big.Int
 	From             ecommon.Address
+	RefundAddr       ecommon.Address
 	To               []byte
 	Payload          []byte
 }
@@ -133,7 +108,6 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 	txInItem.LogIndex = ll.Index
 	txInItem.Height = big.NewInt(0).SetUint64(ll.BlockNumber)
 
-	//earlyExit := false
 	switch ll.Topics[0].String() {
 	case constants.EventOfBridgeOut.GetTopic().String():
 		// router contract , deposit function has re-entrance protection
@@ -142,8 +116,6 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 			scp.logger.Err(err).Msg("fail to parse bridge out event")
 			return false, err
 		}
-		// txInItem.FromChain = evt.FromChain
-		// txInItem.ToChain = evt.ToChain
 		txInItem.Sender = evt.From.Hex()
 		txInItem.Amount = evt.Amount
 		txInItem.OrderId = evt.OrderId
@@ -155,10 +127,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Method = constants.VoteTxIn
 		txInItem.ChainAndGasLimit = evt.ChainAndGasLimit
 		txInItem.TxOutType = evt.TxOutType
-		// txInItem.Sequence = 0
-		// txInItem.Memo
-		// txInItem.ObservedVaultPubKey = evt.ObservedVaultPubKey
-		// txInItem.GasUsed = evt.GasUsed
+		txInItem.RefundAddr = evt.RefundAddr // for refund
 
 	case constants.EventOfBridgeIn.GetTopic().Hex():
 		// it is not legal to have multiple transferOut event , transferOut event should be final
@@ -179,7 +148,6 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Payload = evt.Data
 		txInItem.Sender = evt.Sender.Hex()
 		txInItem.Sequence = evt.Sequence
-
 	}
 
 	return isVaultTransfer, nil
@@ -194,28 +162,54 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	txOutItem.TxHash = ll.TxHash.String()
 
 	switch ll.Topics[0].String() {
-	case constants.EventOfBridgeRelay.GetTopic().Hex():
+	case constants.EventOfBridgeRelay.GetTopic().Hex(): // oracle
 		evt, err := scp.parseBridgeRelay(*ll)
 		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse deposit event")
+			scp.logger.Err(err).Msg("fail to parse bridgeRelay event")
 			return err
 		}
-		txOutItem.Method = constants.TransferAllowance
+		txOutItem.Method = constants.RelaySigned
 		txOutItem.OrderId = evt.OrderId
 		txOutItem.Token = evt.Token
 		txOutItem.Vault = evt.Vault
 		txOutItem.To = evt.To
 		txOutItem.Amount = evt.Amount
-		// txOutItem.Chain = evt.Chain // todo handler
 		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
-		txOutItem.TxOutType = evt.TxOutType
+		txOutItem.TxType = evt.TxType
 		txOutItem.Sequence = evt.Sequence
 		txOutItem.From = evt.From
 		txOutItem.Data = evt.Data
+		txOutItem.Hash = evt.Hash // sign this field
 
 	case constants.EventOfBridgeCompleted.GetTopic().Hex():
-		// todo handler
-	case constants.EventOfBridgeInRelay.GetTopic().Hex():
+		evt, err := scp.parseBridgeCompleted(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse bridgeCompleted event")
+			return err
+		}
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txOutItem.Method = constants.BridgeCompleted // todo
+		txOutItem.TxType = evt.TxOutType
+		txOutItem.Vault = evt.Vault
+		txOutItem.Sequence = evt.Sequence
+		txOutItem.Sender = evt.Sender.Bytes()
+		txOutItem.Data = evt.Data
+
+	case constants.EventOfBridgeRelaySigned.GetTopic().Hex():
+		evt, err := scp.parseBridgeRelaySigned(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse bridgeRelaySigned event")
+			return err
+		}
+
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txOutItem.Vault = evt.Vault
+		txOutItem.Data = evt.RelayData
+		txOutItem.Signature = evt.Signature
+	default:
+		return fmt.Errorf("unknown event topic: %s", ll.Topics[0].String())
 	}
 	return nil
 }
@@ -223,20 +217,21 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 type BridgeRelay struct {
 	OrderId          ecommon.Hash
 	ChainAndGasLimit *big.Int
-	TxOutType        uint8
+	TxType           uint8
 	Vault            []byte
-	Sequence         *big.Int
+	To               []byte
 	Token            []byte
 	Amount           *big.Int
+	Sequence         *big.Int
+	Hash             [32]byte
 	From             []byte
-	To               []byte
 	Data             []byte
 }
 
 func (scp *SmartContractLogParser) parseBridgeRelay(log etypes.Log) (*BridgeRelay, error) {
-	const eventName = constants.EventOfBridgeRelay
+	const eventName = constants.BridgeRelay
 	event := BridgeRelay{}
-	if err := scp.unpackVaultLog(&event, eventName.String(), log); err != nil {
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
 		return nil, fmt.Errorf("fail to unpack bridge relay event: %w", err)
 	}
 	return &event, nil
@@ -248,15 +243,32 @@ type BridgeCompleted struct {
 	TxOutType        uint8
 	Vault            []byte
 	Sequence         *big.Int
-	Sender           common.Address
+	Sender           ecommon.Address
 	Data             []byte
 }
 
 func (scp *SmartContractLogParser) parseBridgeCompleted(log etypes.Log) (*BridgeCompleted, error) {
-	const eventName = constants.EventOfBridgeCompleted
+	const eventName = constants.BridgeCompleted
 	event := BridgeCompleted{}
-	if err := scp.unpackVaultLog(&event, eventName.String(), log); err != nil {
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
 		return nil, fmt.Errorf("fail to unpack bridge completed event: %w", err)
+	}
+	return &event, nil
+}
+
+type BridgeRelaySigned struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	Vault            []byte
+	RelayData        []byte
+	Signature        []byte
+}
+
+func (scp *SmartContractLogParser) parseBridgeRelaySigned(log etypes.Log) (*BridgeRelaySigned, error) {
+	const eventName = constants.BridgeRelaySigned
+	event := BridgeRelaySigned{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return nil, fmt.Errorf("fail to unpack bridge relay signed event: %w", err)
 	}
 	return &event, nil
 }

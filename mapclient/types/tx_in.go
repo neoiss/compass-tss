@@ -25,26 +25,26 @@ type TxIn struct {
 }
 
 type TxInItem struct {
-	Tx                  string        `json:"tx"`
-	Memo                string        `json:"memo"`
-	Sender              string        `json:"sender"`
-	ObservedVaultPubKey common.PubKey `json:"observed_vault_pub_key"`
-	FromChain           *big.Int
-	ToChain             *big.Int
-	Height              *big.Int
-	Amount              *big.Int
-	OrderId             ecommon.Hash
-	GasUsed             *big.Int
-	Token               []byte
-	Vault               []byte
-	From                []byte
-	To                  []byte
-	Payload             []byte
-	Method              string
-	LogIndex            uint // index of the log in the block
+	Tx        string `json:"tx"`
+	Memo      string `json:"memo"`
+	Sender    string `json:"sender"`
+	FromChain *big.Int
+	ToChain   *big.Int
+	Height    *big.Int
+	Amount    *big.Int
+	OrderId   ecommon.Hash
+	GasUsed   *big.Int
+	Token     []byte
+	Vault     []byte
+	From      []byte
+	To        []byte
+	Payload   []byte
+	Method    string
+	LogIndex  uint // index of the log in the block
 	// bridgeOut add new fields
 	ChainAndGasLimit *big.Int
 	TxOutType        uint8
+	RefundAddr       ecommon.Address
 	// bridgeIn add new fields
 	Sequence *big.Int
 }

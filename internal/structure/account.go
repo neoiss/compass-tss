@@ -39,32 +39,30 @@ type EpochInfo struct {
 }
 
 type TxInItem struct {
-	TxInType         uint8
-	OrderId          [32]byte
+	OrderId    [32]byte
+	BridgeItem BridgeItem
+	Height     *big.Int
+	RefundAddr []byte
+}
+
+type BridgeItem struct {
 	ChainAndGasLimit *big.Int
-	Height           *big.Int
+	Vault            []byte
+	TxType           uint8
+	Sequence         *big.Int
 	Token            []byte
 	Amount           *big.Int
 	From             []byte
-	Vault            []byte
 	To               []byte
 	Payload          []byte
 }
 
 type VoteTxOut struct {
-	TxOutType        uint8
-	OrderId          [32]byte
-	ChainAndGasLimit *big.Int
-	Height           *big.Int
-	GasUsed          *big.Int
-	Sequence         *big.Int
-	Amount           *big.Int
-	Sender           common.Address
-	Token            []byte
-	From             []byte
-	To               []byte
-	Vault            []byte
-	Data             []byte
+	OrderId    [32]byte
+	BridgeItem BridgeItem
+	Height     *big.Int
+	GasUsed    *big.Int
+	Sender     common.Address
 }
 
 type Gas struct {

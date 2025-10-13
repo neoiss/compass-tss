@@ -825,14 +825,7 @@ func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 		e.logger.Debug().Stringer("txId", ll.TxHash).Uint64("status", receipt.Status).Msg("Tx failed")
 		return nil, nil
 	}
-	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
-		e.tokenManager.GetAssetFromTokenAddress,
-		e.tokenManager.GetTokenDecimalsForTHORChain,
-		e.tokenManager.ConvertAmount,
-		e.gatewayABI,
-		e.cfg.ChainID.GetGasAsset(),
-		maxLogs,
-	)
+	p := evm.NewSmartContractLogParser(e.gatewayABI)
 
 	// txInItem will be changed in p.getTxInItem function, so if the function return an
 	// error txInItem should be abandoned

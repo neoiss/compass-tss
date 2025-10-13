@@ -10,18 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 )
 
 var ErrNotFound = fmt.Errorf("not found")
-
-type QueryKeysign struct {
-	Keysign   types.TxOut `json:"keysign"`
-	Signature string      `json:"signature"`
-}
 
 func (b *Bridge) getContextWithTimeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)
@@ -37,7 +31,7 @@ func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error)
 func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut, error) {
 	// get block
 	if blockHeight%100 == 0 {
-		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")
+		b.logger.Info().Int64("height", blockHeight).Msg("Fetching txs for height")
 	}
 
 	block, err := b.ethRpc.GetBlock(blockHeight)
@@ -57,6 +51,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		Topics: [][]ecommon.Hash{{
 			constants.EventOfBridgeRelay.GetTopic(),
 			constants.EventOfBridgeCompleted.GetTopic(),
+			constants.EventOfBridgeRelaySigned.GetTopic(),
 		}},
 	})
 	if len(logs) == 0 {
@@ -69,17 +64,11 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		TxArray: make([]types.TxArrayItem, 0, len(logs)),
 	}
 
-	// todo handler parse coins & gas
+	// handler parse coins & gas
 	for _, ele := range logs {
 		tmp := ele
 		item := &types.TxArrayItem{}
-		p := evm.NewSmartContractLogParser(nil,
-			nil,
-			nil,
-			nil,
-			b.relayAbi,
-			common.MAPAsset,
-			0)
+		p := evm.NewSmartContractLogParser(b.relayAbi)
 		p.GetTxOutItem(&tmp, item)
 		if item.Chain == nil {
 			b.logger.Info().Msgf("Find filter txOut=%+v", item)

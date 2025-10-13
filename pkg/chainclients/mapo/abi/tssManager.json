@@ -188,6 +188,19 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "uint256",
+                "name": "epochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "MigrateCompleted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "account",
                 "type": "address"
@@ -207,6 +220,44 @@
             }
         ],
         "name": "ResetSlashPoint",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "retireEpochId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "activeEpochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "Retire",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "currentId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "nextId",
+                "type": "uint256"
+            }
+        ],
+        "name": "Rotate",
         "type": "event"
     },
     {
@@ -328,19 +379,61 @@
             {
                 "components": [
                     {
-                        "internalType": "enum TxType",
-                        "name": "txInType",
-                        "type": "uint8"
-                    },
-                    {
                         "internalType": "bytes32",
                         "name": "orderId",
                         "type": "bytes32"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "chainAndGasLimit",
-                        "type": "uint256"
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "uint128",
@@ -349,32 +442,7 @@
                     },
                     {
                         "internalType": "bytes",
-                        "name": "token",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "from",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "vault",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "to",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "payload",
+                        "name": "refundAddr",
                         "type": "bytes"
                     }
                 ],
@@ -393,19 +461,61 @@
             {
                 "components": [
                     {
-                        "internalType": "enum TxType",
-                        "name": "txOutType",
-                        "type": "uint8"
-                    },
-                    {
                         "internalType": "bytes32",
                         "name": "orderId",
                         "type": "bytes32"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "chainAndGasLimit",
-                        "type": "uint256"
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "uint128",
@@ -418,44 +528,9 @@
                         "type": "uint128"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "sequence",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "sender",
                         "type": "address"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "token",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "from",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "to",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "vault",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "data",
-                        "type": "bytes"
                     }
                 ],
                 "indexed": false,
@@ -639,25 +714,6 @@
                 "type": "address"
             }
         ],
-        "name": "getJailBlock",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "jailBlock",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "m",
-                "type": "address"
-            }
-        ],
         "name": "getKeyShare",
         "outputs": [
             {
@@ -673,7 +729,7 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct TSSManager.KeyShare",
+                "internalType": "struct ITSSManager.KeyShare",
                 "name": "keyShare",
                 "type": "tuple"
             }
@@ -957,19 +1013,61 @@
             {
                 "components": [
                     {
-                        "internalType": "enum TxType",
-                        "name": "txInType",
-                        "type": "uint8"
-                    },
-                    {
                         "internalType": "bytes32",
                         "name": "orderId",
                         "type": "bytes32"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "chainAndGasLimit",
-                        "type": "uint256"
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "uint128",
@@ -978,32 +1076,7 @@
                     },
                     {
                         "internalType": "bytes",
-                        "name": "token",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "from",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "vault",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "to",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "payload",
+                        "name": "refundAddr",
                         "type": "bytes"
                     }
                 ],
@@ -1022,19 +1095,61 @@
             {
                 "components": [
                     {
-                        "internalType": "enum TxType",
-                        "name": "txOutType",
-                        "type": "uint8"
-                    },
-                    {
                         "internalType": "bytes32",
                         "name": "orderId",
                         "type": "bytes32"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "chainAndGasLimit",
-                        "type": "uint256"
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "uint128",
@@ -1047,44 +1162,9 @@
                         "type": "uint128"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "sequence",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "sender",
                         "type": "address"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "token",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "from",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "to",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "vault",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "data",
-                        "type": "bytes"
                     }
                 ],
                 "internalType": "struct TxOutItem",

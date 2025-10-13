@@ -17,68 +17,59 @@ import (
 
 var ErrOfOrderExist = errors.New("order already exist")
 
-func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
+func (b *Bridge) GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error) {
 	//  check
-	if len(txIn.TxArray) == 0 {
+	if txIn == nil {
 		return nil, nil
 	}
 	// Here we construct tx according to method， and return tx hex bytes
 	var (
 		err   error
 		input []byte
-		ele   = txIn.TxArray[0] // todo will next add mul
+		ele   = txIn
 	)
 
 	switch ele.Method {
 	case constants.VoteTxIn:
-		fmt.Printf("ele ---------------- %+v \n", ele)
 		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.TxInItem{
-			Height:           ele.Height,
-			Amount:           ele.Amount,
-			OrderId:          ele.OrderId,
-			Token:            ele.Token,
-			From:             ele.From,
-			To:               ele.To,
-			Payload:          ele.Payload,
-			TxInType:         ele.TxOutType,
-			ChainAndGasLimit: ele.ChainAndGasLimit,
-			Vault:            ele.Vault,
-			//			Vault: ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
-
+			Height:     ele.Height,
+			OrderId:    ele.OrderId,
+			RefundAddr: ele.RefundAddr.Bytes(),
+			BridgeItem: structure.BridgeItem{
+				ChainAndGasLimit: ele.ChainAndGasLimit,
+				Vault:            ele.Vault,
+				TxType:           ele.TxOutType,
+				Sequence:         ele.Sequence,
+				Token:            ele.Token,
+				Amount:           ele.Amount,
+				From:             ele.From,
+				To:               ele.To,
+				Payload:          ele.Payload,
+			},
 		})
 	case constants.VoteTxOut:
 		input, err = b.tssAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{
-			Height:           ele.Height,
-			Amount:           ele.Amount,
-			GasUsed:          ele.GasUsed,
-			OrderId:          ele.OrderId,
-			Vault:            ele.Vault,
-			Token:            ele.Token,
-			To:               ele.To,
-			TxOutType:        ele.TxOutType,
-			ChainAndGasLimit: ele.ChainAndGasLimit,
-			Sequence:         ele.Sequence,
-			Sender:           ecommon.HexToAddress(ele.Sender),
-			From:             ele.From,
-			Data:             ele.Payload,
-			// Vault:            ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
+			Height:  ele.Height,
+			GasUsed: ele.GasUsed,
+			OrderId: ele.OrderId,
+			Sender:  ecommon.HexToAddress(ele.Sender),
+			BridgeItem: structure.BridgeItem{
+				ChainAndGasLimit: ele.ChainAndGasLimit,
+				Vault:            ele.Vault,
+				TxType:           ele.TxOutType,
+				Sequence:         ele.Sequence,
+				Token:            ele.Token,
+				Amount:           ele.Amount,
+				From:             ele.From,
+				To:               ele.To,
+				Payload:          ele.Payload,
+			},
 		})
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("fail to method(%s) pack input: %w",
-			txIn.TxArray[0].Method, err)
+		return nil, fmt.Errorf("fail to method(%s) pack input: %w", txIn.Method, err)
 	}
-	// //
-	// var exist bool
-	// err = b.mainCall.Call(constants.IsOrderExecuted, &exist, 0, ele.OrderId, isTxIn)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("fail to call IsOrderExecuted: %w", err)
-	// }
-	// b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.String()).Msg("Checking orderId")
-	// if exist {
-	// 	return nil, ErrOfOrderExist
-	// }
 
 	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
 }
@@ -127,7 +118,6 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 		gasFeeCap = head.BaseFee
 	}
 
-	// assemble tx
 	nonce, err := b.ethRpc.GetNonce(fromAddr.Hex())
 	if err != nil {
 		return nil, fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)

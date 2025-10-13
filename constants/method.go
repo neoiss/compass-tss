@@ -10,6 +10,17 @@ const (
 	GetMaintainerInfos = "getMaintainerInfos"
 	Register           = "register"
 	Heartbeat          = "heartbeat"
+	VersionMethod      = "version"
+)
+
+// -----------------------------------------------------------------
+// Method of relay
+// -----------------------------------------------------------------
+const (
+	RelaySigned       = "relaySigned"
+	BridgeRelay       = "BridgeRelay"
+	BridgeCompleted   = "BridgeCompleted"
+	BridgeRelaySigned = "BridgeRelaySigned"
 )
 
 // -----------------------------------------------------------------

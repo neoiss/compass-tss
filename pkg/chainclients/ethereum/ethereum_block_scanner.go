@@ -829,13 +829,7 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 		e.logger.Info().Msgf("Find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
 		return nil, nil
 	}
-	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
-		e.getAssetFromTokenAddress,
-		e.getTokenDecimalsForTHORChain,
-		e.convertAmount,
-		e.gatewayABI,
-		common.ETHAsset,
-		maxLogs)
+	p := evm.NewSmartContractLogParser(e.gatewayABI)
 	// txInItem will be changed in p.GetTxInItem function, so if the function return an error
 	// txInItem should be abandoned
 	if _, err := p.GetTxInItem(ll, txInItem); err != nil {
