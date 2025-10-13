@@ -19,40 +19,70 @@ var (
 	relayABI string
 	//go:embed abi/tssManager.json
 	tssABI string
+	//go:embed abi/gasService.json
+	gasABI string
 )
 
-func newMaintainerABi() (*abi.ABI, error) {
-	maintainer, err := abi.JSON(strings.NewReader(maintainerAbi))
-	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal maintainer abi: %w", err)
-	}
+type bridgeOption func(*Bridge) error
 
-	return &maintainer, nil
+var (
+	opts = make([]bridgeOption, 0)
+)
+
+func init() {
+	opts = append(opts,
+		func(b *Bridge) error {
+			mainAbi, err := abi.JSON(strings.NewReader(maintainerAbi))
+			if err != nil {
+				return fmt.Errorf("fail to unmarshal maintainer abi: %w", err)
+			}
+			b.mainAbi = &mainAbi
+			return nil
+		},
+		func(b *Bridge) error {
+			tss, err := abi.JSON(strings.NewReader(tssABI))
+			if err != nil {
+				return fmt.Errorf("fail to unmarshal tss abi: %w", err)
+			}
+			b.tssAbi = &tss
+			return nil
+		},
+		func(b *Bridge) error {
+			relay, err := abi.JSON(strings.NewReader(relayABI))
+			if err != nil {
+				return fmt.Errorf("fail to unmarshal relayABI abi: %w", err)
+			}
+			b.relayAbi = &relay
+
+			return nil
+		},
+		func(b *Bridge) error {
+			gas, err := abi.JSON(strings.NewReader(gasABI))
+			if err != nil {
+				return fmt.Errorf("fail to unmarshal relayABI abi: %w", err)
+			}
+			b.gasAbi = &gas
+
+			return nil
+		},
+		func(b *Bridge) error {
+			registry, err := abi.JSON(strings.NewReader(tokenRegistryABI))
+			if err != nil {
+				return fmt.Errorf("failed to parse token registry abi: %w", err)
+			}
+			b.tokenRegistry = &registry
+
+			return nil
+		},
+	)
 }
 
-func newTssABi() (*abi.ABI, error) {
-	tss, err := abi.JSON(strings.NewReader(tssABI))
-	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal tss abi: %w", err)
+func InitAbi(b *Bridge) error {
+	for _, opt := range opts {
+		err := opt(b)
+		if err != nil {
+			return err
+		}
 	}
-
-	return &tss, nil
-}
-
-func newRelayABi() (*abi.ABI, error) {
-	relay, err := abi.JSON(strings.NewReader(relayABI))
-	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal relayABI abi: %w", err)
-	}
-
-	return &relay, nil
-}
-
-func NewTokenRegistry() (*abi.ABI, error) {
-	registry, err := abi.JSON(strings.NewReader(tokenRegistryABI))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token registry abi: %w", err)
-	}
-
-	return &registry, nil
+	return nil
 }

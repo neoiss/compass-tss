@@ -14,17 +14,23 @@ const (
 )
 
 // -----------------------------------------------------------------
-// Method of relay
+// Method of Relay
 // -----------------------------------------------------------------
 const (
-	RelaySigned       = "relaySigned"
+	RelaySigned = "relaySigned"
+)
+
+// -----------------------------------------------------------------
+// EventName of Relay
+// -----------------------------------------------------------------
+const (
 	BridgeRelay       = "BridgeRelay"
 	BridgeCompleted   = "BridgeCompleted"
 	BridgeRelaySigned = "BridgeRelaySigned"
 )
 
 // -----------------------------------------------------------------
-// Method of tssManager
+// Method of TssManager
 // -----------------------------------------------------------------
 const (
 	VoteUpdateTssPool = "voteUpdateTssPool"
@@ -38,10 +44,12 @@ const (
 )
 
 // -----------------------------------------------------------------
-// Method of Gateway
+// Method of GasService
 // -----------------------------------------------------------------
 const (
-	TransferAllowance = "transferAllowance"
-	TransferOut       = "transferOut"
-	TransferOutCall   = "transferOutCall"
+	GetNetworkFeeInfo = "getNetworkFeeInfo"
 )
+
+// -----------------------------------------------------------------
+// Method of Gateway
+// -----------------------------------------------------------------

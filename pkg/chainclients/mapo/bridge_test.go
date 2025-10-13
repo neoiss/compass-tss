@@ -202,10 +202,10 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	c.Assert(err, IsNil)
-	mainAbi, err := newMaintainerABi()
-	c.Assert(err, IsNil)
-	tokenRegistry, err := NewTokenRegistry()
-	c.Assert(err, IsNil)
+	// mainAbi, err := newMaintainerABi()
+	// c.Assert(err, IsNil)
+	// tokenRegistry, err := NewTokenRegistry()
+	// c.Assert(err, IsNil)
 
 	// ai, err := selfAbi.New(maintainerAbi)
 	// c.Assert(err, IsNil)
@@ -240,8 +240,8 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 		ethPriKey:     ethPrivateKey,
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
-		mainAbi:       mainAbi,
-		tokenRegistry: tokenRegistry,
+		// mainAbi:       mainAbi,
+		// tokenRegistry: tokenRegistry,
 		// mainCall:      mainCall,
 		// viewCall: viewCall,
 		epoch:    big.NewInt(1),

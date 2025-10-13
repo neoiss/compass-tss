@@ -153,3 +153,24 @@ func (b *Bridge) getTssStatus(epoch *big.Int) (constants.TssStatus, error) {
 	}
 	return constants.TssStatus(ret), nil
 }
+
+// PostNetworkFee send network fee message to MAP
+func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize,
+	transactionSizeWithCall, transactionRate uint64) (string, error) {
+	input, err := b.tssAbi.Pack(constants.VoteNetworkFee,
+		chainId,
+		big.NewInt(height),
+		big.NewInt(0).SetUint64(transactionRate),
+		big.NewInt(0).SetUint64(transactionSize),
+		big.NewInt(0).SetUint64(transactionSizeWithCall))
+	if err != nil {
+		return "", fmt.Errorf("fail to pack input: %w", err)
+	}
+
+	tx, err := b.assemblyTx(ctx, input, 2000000, b.cfg.TssManager)
+	if err != nil {
+		return "", fmt.Errorf("fail to assembly tx: %w", err)
+	}
+
+	return b.Broadcast(tx)
+}

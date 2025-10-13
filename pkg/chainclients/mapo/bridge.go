@@ -58,29 +58,27 @@ const (
 
 // Bridge will be used to send tx to THORChain
 type Bridge struct {
-	logger                                   zerolog.Logger
-	cfg                                      config.BifrostClientConfiguration
-	keys                                     *keys2.Keys
-	errCounter                               *prometheus.CounterVec
-	m                                        *metrics.Metrics
-	blockHeight                              int64
-	accountNumber                            uint64
-	seqNumber                                uint64
-	chainID                                  *big.Int
-	httpClient                               *retryablehttp.Client
-	broadcastLock                            *sync.RWMutex
-	ethClient                                *ethclient.Client
-	blockScanner                             *MapChainBlockScan
-	stopChan                                 chan struct{}
-	wg                                       *sync.WaitGroup
-	gasPrice                                 *big.Int
-	gasCache                                 []*big.Int
-	ethPriKey                                *ecdsa.PrivateKey
-	kw                                       *evm.KeySignWrapper
-	ethRpc                                   *evm.EthRPC
-	mainAbi, tssAbi, relayAbi, tokenRegistry *abi.ABI
-	epoch                                    *big.Int
-	epochHash                                ecommon.Hash
+	logger                                           zerolog.Logger
+	cfg                                              config.BifrostClientConfiguration
+	keys                                             *keys2.Keys
+	errCounter                                       *prometheus.CounterVec
+	m                                                *metrics.Metrics
+	blockHeight                                      int64
+	chainID                                          *big.Int
+	httpClient                                       *retryablehttp.Client
+	broadcastLock                                    *sync.RWMutex
+	ethClient                                        *ethclient.Client
+	blockScanner                                     *MapChainBlockScan
+	stopChan                                         chan struct{}
+	wg                                               *sync.WaitGroup
+	gasPrice                                         *big.Int
+	gasCache                                         []*big.Int
+	ethPriKey                                        *ecdsa.PrivateKey
+	kw                                               *evm.KeySignWrapper
+	ethRpc                                           *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry *abi.ABI
+	epoch                                            *big.Int
+	epochHash                                        ecommon.Hash
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -142,25 +140,6 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	}
 	logger.Info().Any("addr", signerAddr).Msg("Map signer address retrieved")
 
-	mainAbi, err := newMaintainerABi()
-	if err != nil {
-		return nil, err
-	}
-
-	tssAbi, err := newTssABi()
-	if err != nil {
-		return nil, err
-	}
-	tokenRegistry, err := NewTokenRegistry()
-	if err != nil {
-		return nil, err
-	}
-
-	relayAi, err := newRelayABi()
-	if err != nil {
-		return nil, err
-	}
-
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	if err != nil {
 		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
@@ -175,7 +154,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, fmt.Errorf("fail to create rpc : %w", err)
 	}
 
-	return &Bridge{
+	ret := &Bridge{
 		logger:        logger,
 		cfg:           cfg,
 		keys:          k,
@@ -190,14 +169,16 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		ethPriKey:     ethPrivateKey,
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
-		mainAbi:       mainAbi,
-		tssAbi:        tssAbi,
-		relayAbi:      relayAi,
-		tokenRegistry: tokenRegistry,
 		epoch:         big.NewInt(0),
 		gasPrice:      big.NewInt(0),
 		epochHash:     ecommon.Hash{},
-	}, nil
+	}
+	err = InitAbi(ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 // GetContext return a valid context with all relevant values set
