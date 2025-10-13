@@ -44,7 +44,7 @@ type TxInItem struct {
 	// bridgeOut add new fields
 	ChainAndGasLimit *big.Int
 	TxOutType        uint8
-	RefundAddr       ecommon.Address
+	RefundAddr       []byte
 	// bridgeIn add new fields
 	Sequence *big.Int
 }

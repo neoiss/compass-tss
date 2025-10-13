@@ -127,7 +127,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Method = constants.VoteTxIn
 		txInItem.ChainAndGasLimit = evt.ChainAndGasLimit
 		txInItem.TxOutType = evt.TxOutType
-		txInItem.RefundAddr = evt.RefundAddr // for refund
+		txInItem.RefundAddr = evt.RefundAddr.Bytes() // for refund
 
 	case constants.EventOfBridgeIn.GetTopic().Hex():
 		// it is not legal to have multiple transferOut event , transferOut event should be final

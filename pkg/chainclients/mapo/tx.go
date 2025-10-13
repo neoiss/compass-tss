@@ -34,7 +34,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error) {
 		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.TxInItem{
 			Height:     ele.Height,
 			OrderId:    ele.OrderId,
-			RefundAddr: ele.RefundAddr.Bytes(),
+			RefundAddr: ele.RefundAddr,
 			BridgeItem: structure.BridgeItem{
 				ChainAndGasLimit: ele.ChainAndGasLimit,
 				Vault:            ele.Vault,
