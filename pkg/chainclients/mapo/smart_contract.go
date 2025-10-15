@@ -21,6 +21,8 @@ var (
 	tssABI string
 	//go:embed abi/gasService.json
 	gasABI string
+	//
+	packABI = `{"inputs":[{"components":[{"internalType":"uint256","name":"chainAndGasLimit","type":"uint256"},{"internalType":"bytes","name":"vault","type":"bytes"},{"internalType":"enum TxType","name":"txType","type":"uint8"},{"internalType":"uint256","name":"sequence","type":"uint256"},{"internalType":"bytes","name":"token","type":"bytes"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"from","type":"bytes"},{"internalType":"bytes","name":"to","type":"bytes"},{"internalType":"bytes","name":"payload","type":"bytes"}],"internalType":"struct BridgeItem","name":"bridgeItem","type":"tuple"}],"name":"relaySignedPack","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"nonpayable","type":"function"}`
 )
 
 type bridgeOption func(*Bridge) error

@@ -109,7 +109,7 @@ type Bridge interface {
 	InitBlockScanner(...BridgeOption) error
 	GetConfig() config.BifrostClientConfiguration
 	GetContext() ctx.Context
-	GetTxByBlockNumber(blockHeight int64, pk string) (types.TxOut, error)
+	GetTxByBlockNumber(blockHeight int64) (types.TxOut, error)
 	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
 		members []ecommon.Address) (string, error)

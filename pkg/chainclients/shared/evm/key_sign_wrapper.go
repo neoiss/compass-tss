@@ -104,7 +104,7 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 		return nil, err
 	}
 	if ecrypto.VerifySignature(secpPubKey.Bytes(), hash[:], sig) {
-		w.logger.Info().Msg("we can successfully verify the bytes")
+		w.logger.Info().Msg("We can successfully verify the bytes")
 	} else {
 		w.logger.Error().Msg("Oops! we cannot verify the bytes")
 	}
@@ -112,6 +112,31 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 	result := make([]byte, 65)
 	copy(result, sig)
 	result[64] = recovery[0]
+	return result, nil
+}
+
+func (w *KeySignWrapper) SignCustomTSS(hash []byte, poolPubKey string) ([]byte, error) {
+	pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, poolPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get pub key: %w", err)
+	}
+	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], poolPubKey)
+	if err != nil || sig == nil {
+		return nil, fmt.Errorf("fail to TSS sign: %w", err)
+	}
+	secpPubKey, err := codec.ToCmtPubKeyInterface(pk)
+	if err != nil {
+		return nil, err
+	}
+	if ecrypto.VerifySignature(secpPubKey.Bytes(), hash[:], sig) {
+		w.logger.Info().Msg("We can successfully verify the bytes")
+	} else {
+		w.logger.Error().Msg("Oops! we cannot verify the bytes")
+	}
+	// add the recovery id at the end
+	result := make([]byte, 65)
+	copy(result, sig)
+	result[64] = recovery[0] + 27
 	return result, nil
 }
 

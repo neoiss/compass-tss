@@ -160,6 +160,12 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	}
 	txOutItem.LogIndex = ll.Index // add this
 	txOutItem.TxHash = ll.TxHash.String()
+	// parse chain and gas limit
+	cgl, err := parseChainAndGasLimit(ll.Topics[2])
+	if err != nil {
+		return fmt.Errorf("failed to parse chain and gas limit, err: %w", err)
+	}
+	txOutItem.ToChain = cgl.ToChain
 
 	switch ll.Topics[0].String() {
 	case constants.EventOfBridgeRelay.GetTopic().Hex(): // oracle
@@ -203,6 +209,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 			return err
 		}
 
+		txOutItem.Method = constants.BridgeIn
 		txOutItem.OrderId = evt.OrderId
 		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
 		txOutItem.Vault = evt.Vault
@@ -212,6 +219,29 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		return fmt.Errorf("unknown event topic: %s", ll.Topics[0].String())
 	}
 	return nil
+}
+
+type ChainAndGasLimit struct {
+	FromChain *big.Int
+	ToChain   *big.Int
+	Third     *big.Int
+	End       *big.Int
+}
+
+func parseChainAndGasLimit(cgl ecommon.Hash) (*ChainAndGasLimit, error) {
+	if cgl.Hex() == constants.ZeroHash {
+		return nil, errors.New("chainAndGasLimit is nil")
+	}
+	bs := cgl.Bytes()
+	if len(bs) != 32 {
+		return nil, fmt.Errorf("invalid chainAndGasLimit length: %d", len(bs))
+	}
+	return &ChainAndGasLimit{
+		FromChain: big.NewInt(0).SetBytes(bs[0:8]),
+		ToChain:   big.NewInt(0).SetBytes(bs[8:16]),
+		Third:     big.NewInt(0).SetBytes(bs[16:24]),
+		End:       big.NewInt(0).SetBytes(bs[24:32]),
+	}, nil
 }
 
 type BridgeRelay struct {

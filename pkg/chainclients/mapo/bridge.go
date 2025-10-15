@@ -434,7 +434,7 @@ func (b *Bridge) HeartBeat() error {
 					b.logger.Error().Err(err).Msg("Fail to pack heartbeat input")
 					continue
 				}
-				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer)
+				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer, false)
 				if err != nil {
 					b.logger.Error().Err(err).Msg("Fail to assembly heartbeat tx")
 					continue

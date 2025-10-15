@@ -12,34 +12,32 @@ import (
 
 // TxOutItem represent the information of a tx bifrost need to process
 type TxOutItem struct {
-	Height          int64        `json:"height,omitempty"`
-	Memo            string       `json:"memo,omitempty"`
-	OrderId         ecommon.Hash `json:"order_id,omitempty"`
-	Token           []byte       `json:"token,omitempty"`
-	Vault           []byte       `json:"vault,omitempty"`
-	To              []byte       `json:"to,omitempty"`
-	Amount          *big.Int     `json:"amount,omitempty"`
-	FromChain       *big.Int     `json:"from_chain,omitempty"`
-	Chain           *big.Int     `json:"chain,omitempty"`
-	TransactionRate *big.Int     `json:"transaction_rate,omitempty"`
-	TransactionSize *big.Int     `json:"transaction_size,omitempty"`
-	LogIndex        uint         `json:"log_index,omitempty"`
-	TxHash          string       `json:"tx_hash,omitempty"`
-	InTxHash        string       `json:"in_tx_hash"`
-	Method          string       `json:"method,omitempty"`
-	// relayTransferCall
-	Payload []byte `json:"payload,omitempty"`
-	// migration
-	FromVault   []byte        `json:"from_vault,omitempty"`
-	ToVault     []byte        `json:"to_vault,omitempty"`
-	VaultPubKey common.PubKey `json:"vault_pubkey"`
-	Checkpoint  []byte        `json:"-"`
-	// bridgeRelay add new field
+	Height           int64         `json:"height,omitempty"`
+	FromChain        *big.Int      `json:"from_chain,omitempty"`
+	TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
+	TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
+	InTxHash         string        `json:"in_tx_hash"`
+	VaultPubKey      common.PubKey `json:"vault_pubkey"`
+	Checkpoint       []byte        `json:"-"`
+	Memo             string        `json:"memo,omitempty"`
+	Chain            *big.Int      // bridgeRelay add new field
+	LogIndex         uint
+	TxHash           string
+	Method           string
+	ToChain          *big.Int
+	OrderId          ecommon.Hash `json:"order_id"`
 	ChainAndGasLimit *big.Int
-	TxOutType        uint8
+	TxType           uint8
+	Vault            []byte
+	To               []byte
+	Token            []byte
+	Amount           *big.Int
 	Sequence         *big.Int
+	HashData         [32]byte
 	From             []byte
-	Data             []byte
+	Data             []byte // relaySigned relayData -> data
+	Sender           []byte // bridgeCompleted event field
+	Signature        []byte // relaySigned event field
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem
@@ -96,15 +94,13 @@ func (tx TxOutItem) Equals(tx2 TxOutItem) bool {
 // TxArrayItem from THORChain has Coin , which only have a single coin
 // TxOutItem used in bifrost need to support Coins for multisend
 type TxArrayItem struct {
-	Memo            string `json:"memo,omitempty"`
-	Chain           *big.Int
-	TransactionRate *big.Int
-	TransactionSize *big.Int
-	LogIndex        uint
-	TxHash          string
-	Method          string
-	// bridgeRelay add new field
-	OrderId          ecommon.Hash `json:"order_id"`
+	Memo             string `json:"memo,omitempty"`
+	Chain            *big.Int
+	LogIndex         uint
+	TxHash           string
+	Method           string
+	ToChain          *big.Int
+	OrderId          ecommon.Hash `json:"order_id"` // bridgeRelay add new field
 	ChainAndGasLimit *big.Int
 	TxType           uint8
 	Vault            []byte
@@ -112,7 +108,7 @@ type TxArrayItem struct {
 	Token            []byte
 	Amount           *big.Int
 	Sequence         *big.Int
-	Hash             ecommon.Hash
+	Hash             [32]byte
 	From             []byte
 	Data             []byte // relaySigned relayData -> data
 	Sender           []byte // bridgeCompleted event field
@@ -130,16 +126,15 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		Vault:            tx.Vault,
 		To:               tx.To,
 		Amount:           tx.Amount,
-		TransactionRate:  tx.TransactionRate,
-		TransactionSize:  tx.TransactionSize,
 		LogIndex:         tx.LogIndex,
 		TxHash:           tx.TxHash,
 		Method:           tx.Method,
 		ChainAndGasLimit: tx.ChainAndGasLimit,
-		TxOutType:        tx.TxType,
+		TxType:           tx.TxType,
 		Sequence:         tx.Sequence,
 		From:             tx.From,
 		Data:             tx.Data,
+		HashData:         tx.Hash,
 	}
 }
 

@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/mapprotocol/compass-tss/constants"
@@ -71,30 +73,49 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to method(%s) pack input: %w", txIn.Method, err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager, true)
 }
 
+// GetOracleStdTx Here we construct tx according to method， and return tx hex bytes
 func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 	//  check
 	if txOut == nil {
 		return nil, nil
 	}
-	// Here we construct tx according to method， and return tx hex bytes
+
 	var (
 		err   error
 		input []byte
 	)
-
-	// todo will next 2
-	input, err = b.mainAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{})
+	packAbi, _ := abi.JSON(strings.NewReader(packABI))
+	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
+		&structure.BridgeItem{
+			Amount:           txOut.Amount,
+			ChainAndGasLimit: txOut.ChainAndGasLimit,
+			From:             txOut.From,
+			Payload:          txOut.Data,
+			Sequence:         txOut.Sequence,
+			To:               txOut.To,
+			Token:            txOut.Token,
+			TxType:           txOut.TxType,
+			Vault:            txOut.Vault,
+		},
+	)
+	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], "") // todo
 	if err != nil {
-		return nil, fmt.Errorf("fail to pack oracleMethod: %w", err)
+		return nil, errors.Wrap(err, "fail to sign tx")
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager) // todo this add is error
+	input, err = packAbi.Pack(constants.RelaySigned, txOut.OrderId, relayData, sign)
+	if err != nil {
+		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
+	}
+
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager, true) // todo this add is error
 }
 
-func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64, addr string) ([]byte, error) {
+func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64,
+	addr string, cache bool) ([]byte, error) {
 	// estimate gas
 	gasFeeCap := b.gasPrice
 	fromAddr, _ := b.keys.GetEthAddress()
@@ -153,6 +174,10 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 	ret, err := b.kw.LocalSign(td)
 	if err != nil {
 		return nil, fmt.Errorf("fail to sign transaction: %w", err)
+	}
+	if cache {
+		// todo handler this
+		// b.AddSignedTxItem(td.Hash(), ret)
 	}
 
 	return ret, nil

@@ -34,8 +34,10 @@ bifrost:
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
     maintainer: "0x5673E37B38f50e2C2CE16a71e8eE98D7BcE8a967"
     tss_manager: "0x81F50D29166089FeB6305bec79B55eCf44448B7d"
-    token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
-    view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
+    relay: "0x88E220b62227d84B7f30aC51B314B0C318e82e62"
+    gas_service: "0xeA6B6Ae985A9b51BF544A59e020071a0B51Ea267"
+    token_registry: "0x52a95bf759641711C8060291b21565a3b3B08e0F"
+    view_controller: "0x1281a83F7c23f1a5E9de5e993ADc2a25BB87A9ff"
     addr: ""
   attestation_gossip:
     observe_reconcile_interval: 15s
@@ -55,7 +57,6 @@ bifrost:
     retry_interval: 2s
     reschedule_buffer_blocks: 150 # 15 minutes
     block_scanner:
-      mos: "0x3F753d04E0d2ed95C73C24Bf44163F56cA7a3288"
       chain_id: map
       start_block_height: 0
       block_retry_interval: 10s

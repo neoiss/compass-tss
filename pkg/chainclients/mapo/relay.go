@@ -28,7 +28,7 @@ func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error)
 }
 
 // GetTxByBlockNumber retrieves txout from this block height from mapBridge
-func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut, error) {
+func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 	// get block
 	if blockHeight%100 == 0 {
 		b.logger.Info().Int64("height", blockHeight).Msg("Fetching txs for height")
@@ -47,10 +47,10 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 	logs, err := b.getFilterLogs(ethereum.FilterQuery{
 		FromBlock: big.NewInt(blockHeight),
 		ToBlock:   big.NewInt(blockHeight),
-		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // done
+		Addresses: []ecommon.Address{ecommon.HexToAddress(b.cfg.Relay)}, // done
 		Topics: [][]ecommon.Hash{{
 			constants.EventOfBridgeRelay.GetTopic(),
-			constants.EventOfBridgeCompleted.GetTopic(),
+			// constants.EventOfBridgeCompleted.GetTopic(), // todo
 			constants.EventOfBridgeRelaySigned.GetTopic(),
 		}},
 	})
@@ -69,7 +69,11 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		tmp := ele
 		item := &types.TxArrayItem{}
 		p := evm.NewSmartContractLogParser(b.relayAbi)
-		p.GetTxOutItem(&tmp, item)
+		err = p.GetTxOutItem(&tmp, item)
+		if err != nil {
+			b.logger.Error().Msgf("GetTxOutItem err=%v", err)
+			continue
+		}
 		if item.Chain == nil {
 			b.logger.Info().Msgf("Find filter txOut=%+v", item)
 			continue

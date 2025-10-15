@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -129,7 +130,7 @@ func (b *MapChainBlockScan) processKeygenBlock() error {
 }
 
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
-	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight, b.cfg.Mos)
+	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {
 			// custom error (to be dropped and not logged) because the block is
@@ -155,17 +156,24 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		}
 	)
 	for _, ele := range tx.TxArray {
-		toChain, ok := common.GetChainName(ele.Chain)
-		if !ok {
-			continue
-		}
 		tmp := ele
-		switch toChain {
-		case common.BTCChain, common.XRPChain:
+		switch ele.Method {
+		case constants.BridgeIn:
+			toChain, ok := common.GetChainName(ele.ToChain)
+			if !ok {
+				continue
+			}
+
+			switch toChain {
+			case common.BTCChain, common.XRPChain:
+				txOut.TxArray = append(txOut.TxArray, tmp)
+			default:
+				oracleTx.TxArray = append(oracleTx.TxArray, tmp)
+			}
+		default: // relaySigned
 			txOut.TxArray = append(txOut.TxArray, tmp)
-		default:
-			oracleTx.TxArray = append(oracleTx.TxArray, tmp)
 		}
+
 	}
 
 	if len(txOut.TxArray) > 0 {

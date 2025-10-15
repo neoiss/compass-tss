@@ -46,7 +46,7 @@ func (b *Bridge) Register() error {
 	}
 
 	ctx := context.TODO()
-	txBytes, err := b.assemblyTx(ctx, input, 0, b.cfg.Maintainer)
+	txBytes, err := b.assemblyTx(ctx, input, 0, b.cfg.Maintainer, false)
 	if err != nil {
 		return errors.Wrap(err, "fail to assembly tx")
 	}

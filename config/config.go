@@ -810,6 +810,8 @@ type BifrostClientConfiguration struct {
 	TssManager      string       `mapstructure:"tss_manager"`
 	ViewController  string       `mapstructure:"view_controller"`
 	TokenRegistry   string       `mapstructure:"token_registry"`
+	Relay           string       `mapstructure:"relay"`
+	GasService      string       `mapstructure:"gas_service"`
 	SignerPasswd    string
 	Addr            string `mapstructure:"addr"`
 }
