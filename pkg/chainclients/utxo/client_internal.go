@@ -550,21 +550,48 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, m.GetToken())
 	}
 
+	var txOutType = constants.TRANSFER
+	if m.GetType() == mem.TxAdd {
+		txOutType = constants.DEPOSIT
+	}
+
+	address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
+	}
+	from, err := EncodeBitcoinAddress(address)
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
+	}
+	fromBytes, err := hex.DecodeString(strings.TrimPrefix("0x", from))
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
+	}
+
+	chainAndGasLimit := make([]byte, 32)
+	fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
+	toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
+	copy(chainAndGasLimit[0:8], fromChain)
+	copy(chainAndGasLimit[8:16], toChain)
+
 	txIn := types.TxInItem{
-		Tx:        tx.Txid,
-		Memo:      memo,
-		TxOutType: uint8(constants.TRANSFER), // swap -> transfer
-		FromChain: chainID,
-		ToChain:   destChainID,
-		Height:    big.NewInt(height),
-		Amount:    new(big.Int).SetUint64(amt),
-		OrderId:   generateOrderID(chainID.String(), tx.Txid),
-		GasUsed:   nil,
-		Token:     tokenAddress,
-		Vault:     nil,
-		From:      []byte(sender),
-		To:        ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
-		Method:    constants.VoteTxIn,
+		Tx:               tx.Txid,
+		Memo:             memo,
+		TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
+		FromChain:        chainID,
+		ToChain:          destChainID,
+		Height:           big.NewInt(height),
+		Amount:           new(big.Int).SetUint64(amt),
+		OrderId:          generateOrderID(chainID.String(), tx.Txid),
+		GasUsed:          big.NewInt(0),
+		Token:            tokenAddress,
+		Vault:            nil,
+		From:             fromBytes,
+		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
+		Method:           constants.VoteTxIn,
+		LogIndex:         0,
+		ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
+		RefundAddr:       fromBytes,
 	}
 	fmt.Println("============================== tx in: ", common.JSON(txIn))
 	return txIn, nil
