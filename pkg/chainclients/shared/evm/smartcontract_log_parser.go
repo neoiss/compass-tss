@@ -98,12 +98,12 @@ func (scp *SmartContractLogParser) parseBridgeIn(log etypes.Log) (*bridgeIn, err
 	return &event, nil
 }
 
-func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) (bool, error) {
+func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) error {
 	if ll == nil {
 		scp.logger.Info().Msg("tx logs are empty return nil")
-		return false, nil
+		return nil
 	}
-	isVaultTransfer := false
+
 	txInItem.Tx = ll.TxHash.Hex()
 	txInItem.LogIndex = ll.Index
 	txInItem.Height = big.NewInt(0).SetUint64(ll.BlockNumber)
@@ -114,7 +114,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		evt, err := scp.parseBridgeOut(*ll)
 		if err != nil {
 			scp.logger.Err(err).Msg("fail to parse bridge out event")
-			return false, err
+			return err
 		}
 		txInItem.Sender = evt.From.Hex()
 		txInItem.Amount = evt.Amount
@@ -134,7 +134,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		evt, err := scp.parseBridgeIn(*ll)
 		if err != nil {
 			scp.logger.Err(err).Msg("fail to parse swap event")
-			return false, err
+			return err
 		}
 		txInItem.Amount = evt.Amount
 		txInItem.OrderId = evt.OrderId
@@ -150,7 +150,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 		txInItem.Sequence = evt.Sequence
 	}
 
-	return isVaultTransfer, nil
+	return nil
 }
 
 func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types.TxArrayItem) error {
