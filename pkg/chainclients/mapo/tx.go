@@ -101,7 +101,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 			Vault:            txOut.Vault,
 		},
 	)
-	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], "") // todo
+	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], "") // todo next 1
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to sign tx")
 	}
@@ -211,4 +211,26 @@ func (b *Bridge) Broadcast(hexTx []byte) (string, error) {
 
 func (b *Bridge) getTimeoutContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)
+}
+
+func (b *Bridge) TxStatus(txHash string) error {
+	_, pending, err := b.ethClient.TransactionByHash(context.Background(), ecommon.HexToHash(txHash))
+	if err != nil {
+		return errors.Wrap(err, "fail to get tx by hash")
+	}
+	if pending {
+		b.logger.Info().Str("tx", txHash).Msg("Tx is still pending")
+		return errors.New("tx is pending")
+	}
+
+	receipt, err := b.ethClient.TransactionReceipt(context.Background(), ecommon.HexToHash(txHash))
+	if err != nil {
+		return errors.Wrap(err, "fail to get tx receipt")
+	}
+
+	if receipt.Status == etypes.ReceiptStatusSuccessful {
+		b.logger.Info().Str("hash", txHash).Msg("Tx receipt status is success")
+		return nil
+	}
+	return fmt.Errorf("txHash(%s), status not success, current status is (%d)", txHash, receipt.Status)
 }

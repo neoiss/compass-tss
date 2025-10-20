@@ -79,6 +79,8 @@ func (m *peerManager) decRefCount(sem *peerSemaphore) {
 	}
 }
 
+const semaphorePruneInterval = 5 * time.Minute
+
 func (m *peerManager) prune() {
 	m.mu.Lock()
 	defer m.mu.Unlock()

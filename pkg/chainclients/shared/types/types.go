@@ -123,6 +123,7 @@ type Bridge interface {
 	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
 	GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error)
 	GetOracleStdTx(txIn *types.TxOutItem) ([]byte, error)
+	TxStatus(txHash string) error
 }
 
 type BridgeOption func(Bridge) error

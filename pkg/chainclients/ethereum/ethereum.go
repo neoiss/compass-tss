@@ -105,7 +105,7 @@ func NewClient(thorKeys *keys.Keys,
 	}
 
 	if bridge == nil {
-		return nil, errors.New("THORChain bridge is nil")
+		return nil, errors.New("relay bridge is nil")
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")
@@ -684,14 +684,14 @@ func (c *Client) sign(tx *etypes.Transaction, poolPubKey common.PubKey, height i
 			// TSS doesn't know which node to blame
 			return nil, fmt.Errorf("fail to sign tx: %w", err)
 		}
-		// key sign error forward the keysign blame to thorchain
+		// key sign error forward the keysign blame to relay
 		// todo replace
 		txID, errPostKeysignFail := c.bridge.PostKeysignFailure(keysignError.Blame, height,
 			txOutItem.Memo, nil, common.EmptyPubKey) // txOutItem.Coins, txOutItem.VaultPubKey
 		if errPostKeysignFail != nil {
 			return nil, multierror.Append(err, errPostKeysignFail)
 		}
-		c.logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
+		c.logger.Info().Str("tx_id", txID).Msgf("post keysign failure to relay")
 	}
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
 }
@@ -802,26 +802,26 @@ func (c *Client) BroadcastTx(txOutItem stypes.TxOutItem, hexTx []byte) (string, 
 		return "", err
 	}
 	txID := tx.Hash().String()
-	c.logger.Info().Msgf("broadcast tx with memo: %s to ETH chain , hash: %s", txOutItem.Memo, txID)
+	c.logger.Info().Msgf("Broadcast tx with memo: %s to ETH chain , hash: %s", txOutItem.Memo, txID)
 
 	if err := c.signerCacheManager.SetSigned(txOutItem.CacheHash(), txOutItem.CacheVault(c.GetChain()), txID); err != nil {
-		c.logger.Err(err).Msgf("fail to mark tx out item (%+v) as signed", txOutItem)
+		c.logger.Err(err).Msgf("Fail to mark tx out item (%+v) as signed", txOutItem)
 	}
 
 	blockHeight, err := c.bridge.GetBlockHeight()
 	if err != nil {
-		c.logger.Err(err).Msgf("fail to get current THORChain block height")
+		c.logger.Err(err).Msgf("Fail to get current relay block height")
 		// at this point , the tx already broadcast successfully , don't return an error
 		// otherwise will cause the same tx to retry
 	} else if err = c.AddSignedTxItem(txID, blockHeight, string(common.EmptyPubKey),
 		&txOutItem); err != nil { //txOutItem.VaultPubKey.String()
-		c.logger.Err(err).Msgf("fail to add signed tx item,hash:%s", txID)
+		c.logger.Err(err).Msgf("Fail to add signed tx item,hash:%s", txID)
 	}
 
 	return txID, nil
 }
 
-// ConfirmationCountReady check whether the given txIn is ready to be send to THORChain
+// ConfirmationCountReady check whether the given txIn is ready to be send to relay
 func (c *Client) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	if len(txIn.TxArray) == 0 {
 		return true
@@ -1014,11 +1014,11 @@ func (c *Client) ReportSolvency(ethBlockHeight int64) error {
 			Bool("solvent", solvent).
 			Msg("reporting solvency")
 
-		// send solvency to thorchain via global queue consumed by the observer
+		// send solvency to relay via global queue consumed by the observer
 		select {
 		case c.globalSolvencyQueue <- msgs[i]:
 		case <-time.After(constants.MAPRelayChainBlockTime):
-			c.logger.Info().Msgf("fail to send solvency info to THORChain, timeout")
+			c.logger.Info().Msgf("fail to send solvency info to relay, timeout")
 		}
 	}
 	c.lastSolvencyCheckHeight = ethBlockHeight

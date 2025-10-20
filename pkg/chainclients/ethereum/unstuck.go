@@ -75,7 +75,7 @@ func (c *Client) unstuckAction() {
 
 		// this should not possible , but just skip it
 		if item.Height > height {
-			clog.Warn().Msg("signed outbound height greater than current thorchain height")
+			clog.Warn().Msg("Signed outbound height greater than current thorchain height")
 			continue
 		}
 

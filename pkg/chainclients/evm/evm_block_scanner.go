@@ -829,15 +829,12 @@ func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 
 	// txInItem will be changed in p.getTxInItem function, so if the function return an
 	// error txInItem should be abandoned
-	isVaultTransfer, err := p.GetTxInItem(ll, txInItem)
+	err := p.GetTxInItem(ll, txInItem)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse logs, err: %w", err)
 	}
-	if isVaultTransfer {
 
-	}
-	e.logger.Debug().Str("tx hash", txInItem.Tx).Uint64("gas used", receipt.GasUsed).
-		Uint64("tx status", receipt.Status).Msg("TxInItem parsed from smart contract")
+	e.logger.Debug().Msg("TxInItem parsed from smart contract")
 
 	return txInItem, nil
 }

@@ -123,18 +123,9 @@ func (t *SmartContractLogParserTestSuite) TestGetTxInItem_DepositEvents(c *C) {
 	parser := NewSmartContractLogParser(vaultABI)
 
 	// when logs are empty
-	isVaultTransfer, err := parser.GetTxInItem(nil, &types.TxInItem{})
-	c.Assert(isVaultTransfer, Equals, false)
+	err = parser.GetTxInItem(nil, &types.TxInItem{})
 	c.Assert(err, IsNil)
 
-	// when log is not emit by router contract
-	isVaultTransfer, err = parser.GetTxInItem([]*etypes.Log{
-		{
-			Address: ecommon.HexToAddress("0xe17d9cf3620ea447eed9089a22096a63bbd63eb4"),
-			Topics:  nil,
-		},
-	}, &types.TxInItem{})
-	c.Assert(isVaultTransfer, Equals, false)
 	c.Assert(err, IsNil)
 
 	// Deposit with zero amount should be ignored

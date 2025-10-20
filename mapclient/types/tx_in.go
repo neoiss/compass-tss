@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
+	"strings"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/common"
@@ -47,6 +48,9 @@ type TxInItem struct {
 	RefundAddr       []byte
 	// bridgeIn add new fields
 	Sequence *big.Int
+	// outHash
+	MapRelayHash string
+	PendingCount int
 }
 
 type TxInStatus byte
@@ -89,7 +93,13 @@ func (t *TxInItem) Equals(other *TxInItem) bool {
 	if t.Height.Cmp(other.Height) != 0 {
 		return false
 	}
-	if t.Tx != other.Tx {
+	if !strings.EqualFold(t.Tx, other.Tx) {
+		return false
+	}
+	if !strings.EqualFold(t.OrderId.Hex(), other.OrderId.Hex()) {
+		return false
+	}
+	if t.LogIndex != other.LogIndex {
 		return false
 	}
 	if ecommon.Bytes2Hex(t.To) != ecommon.Bytes2Hex(other.To) {

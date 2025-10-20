@@ -40,7 +40,7 @@ func (b *Bridge) GetNetworkFee(chain common.Chain) (uint64, uint64, uint64, erro
 		TransactionSize         *big.Int
 		TransactionSizeWithCall *big.Int
 	}{}
-	err = b.callContract(&ret, "todo", method, input, b.gasAbi) // todo
+	err = b.callContract(&ret, b.cfg.GasService, method, input, b.gasAbi)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "unable to call %s", method)
 	}

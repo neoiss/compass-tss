@@ -832,7 +832,7 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	p := evm.NewSmartContractLogParser(e.gatewayABI)
 	// txInItem will be changed in p.GetTxInItem function, so if the function return an error
 	// txInItem should be abandoned
-	if _, err := p.GetTxInItem(ll, txInItem); err != nil {
+	if err := p.GetTxInItem(ll, txInItem); err != nil {
 		return nil, fmt.Errorf("fail to parse logs, err: %w", err)
 	}
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment

@@ -190,22 +190,14 @@ func main() {
 	}()
 
 	ctx := context.Background()
-
-	// start observer notifier
-	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.MAPRelay.ChainEBifrost, mapBridge, m, cfg.AttestationGossip)
-
 	// start observer
-	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, ag)
+	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create observer")
 	}
 	if err = obs.Start(ctx); err != nil {
 		log.Fatal().Err(err).Msg("fail to start observer")
 	}
-
-	// enable observer to react to notifications from thornode
-	// that come through the grpc connection within AttestationGossip.
-	ag.SetObserverHandleObservedTxCommitted(obs)
 
 	// start signer
 	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs)
