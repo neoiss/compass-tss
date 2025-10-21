@@ -121,7 +121,7 @@ type Bridge interface {
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 	GetChainID(name string) (*big.Int, error)
 	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
-	GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error)
+	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
 	GetOracleStdTx(txIn *types.TxOutItem) ([]byte, error)
 	TxStatus(txHash string) error
 }

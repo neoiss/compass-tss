@@ -740,6 +740,25 @@
     {
         "inputs": [
             {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+            }
+        ],
+        "name": "getMembers",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "members",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
                 "name": "epoch",
                 "type": "uint256"
@@ -1080,9 +1099,9 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct TxInItem",
-                "name": "txInItem",
-                "type": "tuple"
+                "internalType": "struct TxInItem[]",
+                "name": "txInItems",
+                "type": "tuple[]"
             }
         ],
         "name": "voteTxIn",
@@ -1167,9 +1186,9 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct TxOutItem",
-                "name": "txOutItem",
-                "type": "tuple"
+                "internalType": "struct TxOutItem[]",
+                "name": "txOutItems",
+                "type": "tuple[]"
             }
         ],
         "name": "voteTxOut",

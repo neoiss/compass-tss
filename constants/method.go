@@ -17,7 +17,8 @@ const (
 // Method of Relay
 // -----------------------------------------------------------------
 const (
-	RelaySigned = "relaySigned"
+	RelaySigned     = "relaySigned"
+	IsOrderExecuted = "isOrderExecuted"
 )
 
 // -----------------------------------------------------------------
@@ -36,10 +37,8 @@ const (
 	VoteUpdateTssPool = "voteUpdateTssPool"
 	GetKeyShare       = "getKeyShare"
 	VoteNetworkFee    = "voteNetworkFee"
-	GetNetworkFee     = "getNetworkFee"
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
-	IsOrderExecuted   = "isOrderExecuted"
 	GetTSSStatus      = "getTSSStatus"
 )
 
@@ -48,6 +47,7 @@ const (
 // -----------------------------------------------------------------
 const (
 	GetNetworkFeeInfo = "getNetworkFeeInfo"
+	GetNetworkFee     = "getNetworkFee"
 )
 
 // -----------------------------------------------------------------

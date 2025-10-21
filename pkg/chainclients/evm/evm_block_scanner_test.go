@@ -179,7 +179,7 @@ func (s *BlockScannerTestSuite) TestProcessBlock(c *C) {
 	c.Log("txIn.AllowFutureObservation --------------- ", txIn.AllowFutureObservation)
 	for idx, ele := range txIn.TxArray {
 		c.Log("txArray idx=", idx, " TxHash=", ele.Tx)
-		c.Log("txArray idx=", idx, " TxInType=", ele.TxInType.String())
+		c.Log("txArray idx=", idx, " TxInType=", ele.TxOutType)
 		c.Log("txArray idx=", idx, " Height=", ele.Height)
 		c.Log("txArray idx=", idx, " Amount=", ele.Amount)
 		c.Log("txArray idx=", idx, " OrderId=", ele.OrderId)

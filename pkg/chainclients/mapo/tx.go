@@ -19,7 +19,7 @@ import (
 
 var ErrOfOrderExist = errors.New("order already exist")
 
-func (b *Bridge) GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error) {
+func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	//  check
 	if txIn == nil {
 		return nil, nil
@@ -28,45 +28,53 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxInItem) ([]byte, error) {
 	var (
 		err   error
 		input []byte
-		ele   = txIn
 	)
 
-	switch ele.Method {
+	switch txIn.Method {
 	case constants.VoteTxIn:
-		input, err = b.tssAbi.Pack(constants.VoteTxIn, &structure.TxInItem{
-			Height:     ele.Height,
-			OrderId:    ele.OrderId,
-			RefundAddr: ele.RefundAddr,
-			BridgeItem: structure.BridgeItem{
-				ChainAndGasLimit: ele.ChainAndGasLimit,
-				Vault:            ele.Vault,
-				TxType:           ele.TxOutType,
-				Sequence:         ele.Sequence,
-				Token:            ele.Token,
-				Amount:           ele.Amount,
-				From:             ele.From,
-				To:               ele.To,
-				Payload:          ele.Payload,
-			},
-		})
+		arg := make([]*structure.VoteTxIn, 0)
+		for _, ele := range txIn.TxArray {
+			arg = append(arg, &structure.VoteTxIn{
+				Height:     ele.Height,
+				OrderId:    ele.OrderId,
+				RefundAddr: ele.RefundAddr,
+				BridgeItem: structure.BridgeItem{
+					ChainAndGasLimit: ele.ChainAndGasLimit,
+					Vault:            ele.Vault,
+					TxType:           ele.TxOutType,
+					Sequence:         ele.Sequence,
+					Token:            ele.Token,
+					Amount:           ele.Amount,
+					From:             ele.From,
+					To:               ele.To,
+					Payload:          ele.Payload,
+				},
+			})
+		}
+
+		input, err = b.tssAbi.Pack(constants.VoteTxIn, arg)
 	case constants.VoteTxOut:
-		input, err = b.tssAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{
-			Height:  ele.Height,
-			GasUsed: ele.GasUsed,
-			OrderId: ele.OrderId,
-			Sender:  ecommon.HexToAddress(ele.Sender),
-			BridgeItem: structure.BridgeItem{
-				ChainAndGasLimit: ele.ChainAndGasLimit,
-				Vault:            ele.Vault,
-				TxType:           ele.TxOutType,
-				Sequence:         ele.Sequence,
-				Token:            ele.Token,
-				Amount:           ele.Amount,
-				From:             ele.From,
-				To:               ele.To,
-				Payload:          ele.Payload,
-			},
-		})
+		arg := make([]*structure.VoteTxOut, 0)
+		for _, ele := range txIn.TxArray {
+			arg = append(arg, &structure.VoteTxOut{
+				Height:  ele.Height,
+				GasUsed: ele.GasUsed,
+				OrderId: ele.OrderId,
+				Sender:  ecommon.HexToAddress(ele.Sender),
+				BridgeItem: structure.BridgeItem{
+					ChainAndGasLimit: ele.ChainAndGasLimit,
+					Vault:            ele.Vault,
+					TxType:           ele.TxOutType,
+					Sequence:         ele.Sequence,
+					Token:            ele.Token,
+					Amount:           ele.Amount,
+					From:             ele.From,
+					To:               ele.To,
+					Payload:          ele.Payload,
+				},
+			})
+		}
+		input, err = b.tssAbi.Pack(constants.VoteTxOut, arg)
 	}
 
 	if err != nil {

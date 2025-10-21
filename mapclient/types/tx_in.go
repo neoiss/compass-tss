@@ -23,6 +23,10 @@ type TxIn struct {
 	// whether this originated from a "instant observation" - e.g. by a member of the signing party
 	// immediately after signing, and also has incorrect gas, requiring a re-observation to correct.
 	AllowFutureObservation bool `json:"allow_future_observation"`
+	// outHash
+	Method       string
+	MapRelayHash string
+	PendingCount int
 }
 
 type TxInItem struct {
@@ -48,9 +52,6 @@ type TxInItem struct {
 	RefundAddr       []byte
 	// bridgeIn add new fields
 	Sequence *big.Int
-	// outHash
-	MapRelayHash string
-	PendingCount int
 }
 
 type TxInStatus byte

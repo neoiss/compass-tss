@@ -15,7 +15,6 @@ import (
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
@@ -784,7 +783,7 @@ func Test_Scanner(t *testing.T) {
 	t.Log("txIn.AllowFutureObservation --------------- ", txIn.AllowFutureObservation)
 	for idx, ele := range txIn.TxArray {
 		t.Log("txArray idx=", idx, " TxHash=", ele.Tx)
-		t.Log("txArray idx=", idx, " TxInType=", ele.TxInType.String())
+		t.Log("txArray idx=", idx, " TxInType=", ele.TxOutType)
 		t.Log("txArray idx=", idx, " Height=", ele.Height)
 		t.Log("txArray idx=", idx, " Amount=", ele.Amount)
 		t.Log("txArray idx=", idx, " OrderId=", ele.OrderId)
@@ -793,11 +792,6 @@ func Test_Scanner(t *testing.T) {
 		t.Log("txArray idx=", idx, " To=", ecommon.Bytes2Hex(ele.To))
 		t.Log("txArray idx=", idx, " Method=", ele.Method)
 	}
-
-	t.Log("EventOfDeposit ", constants.EventOfDeposit.GetTopic())
-	t.Log("EventOfSwap ", constants.EventOfSwap.GetTopic())
-	t.Log("EventOfTransferOut ", constants.EventOfTransferOut.GetTopic())
-	t.Log("EventOfTransferAllowance ", constants.EventOfTransferAllowance.GetTopic())
 
 	txIn, err = scanner.FetchTxs(8817025, 8817025)
 	assert.Nil(t, err)

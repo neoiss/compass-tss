@@ -144,6 +144,11 @@
     },
     {
         "inputs": [],
+        "name": "invalid_refund_address",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "invalid_signature",
         "type": "error"
     },
@@ -297,12 +302,6 @@
             },
             {
                 "indexed": false,
-                "internalType": "bytes",
-                "name": "from",
-                "type": "bytes"
-            },
-            {
-                "indexed": false,
                 "internalType": "address",
                 "name": "to",
                 "type": "address"
@@ -360,6 +359,12 @@
                 "indexed": false,
                 "internalType": "address",
                 "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "refundAddr",
                 "type": "address"
             },
             {
@@ -501,14 +506,8 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "bytes",
-                "name": "publicKey",
-                "type": "bytes"
-            }
-        ],
-        "name": "_publicKeyToAddress",
+        "inputs": [],
+        "name": "activeTssAddress",
         "outputs": [
             {
                 "internalType": "address",
@@ -516,7 +515,7 @@
                 "type": "address"
             }
         ],
-        "stateMutability": "pure",
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -535,14 +534,14 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
                 "internalType": "bytes32",
                 "name": "orderId",
                 "type": "bytes32"
-            },
-            {
-                "internalType": "bytes",
-                "name": "vault",
-                "type": "bytes"
             },
             {
                 "internalType": "bytes",
@@ -584,7 +583,7 @@
             },
             {
                 "internalType": "address",
-                "name": "refund",
+                "name": "refundAddr",
                 "type": "address"
             },
             {
@@ -623,7 +622,7 @@
             },
             {
                 "internalType": "address",
-                "name": "refund",
+                "name": "refundAddr",
                 "type": "address"
             }
         ],
@@ -668,6 +667,19 @@
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_defaultAdmin",
+                "type": "address"
+            }
+        ],
+        "name": "initialize",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -727,6 +739,11 @@
                 "internalType": "bytes32",
                 "name": "orderId",
                 "type": "bytes32"
+            },
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
             }
         ],
         "name": "isOrderExecuted",
@@ -787,6 +804,19 @@
                 "internalType": "bytes",
                 "name": "",
                 "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "retireTssAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",

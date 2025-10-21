@@ -38,7 +38,7 @@ type EpochInfo struct {
 	Maintainers   []common.Address
 }
 
-type TxInItem struct {
+type VoteTxIn struct {
 	OrderId    [32]byte
 	BridgeItem BridgeItem
 	Height     *big.Int

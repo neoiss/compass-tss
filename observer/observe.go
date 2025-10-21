@@ -14,6 +14,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
@@ -37,14 +38,16 @@ const (
 )
 
 type txInKey struct {
-	chain  common.Chain
-	height int64
+	chain   common.Chain
+	height  int64
+	orderId string
 }
 
 func TxInKey(txIn *types.TxIn) txInKey {
 	return txInKey{
-		chain:  txIn.Chain,
-		height: txIn.TxArray[0].Height.Int64() + txIn.ConfirmationRequired,
+		chain:   txIn.Chain,
+		height:  txIn.TxArray[0].Height.Int64() + txIn.ConfirmationRequired,
+		orderId: txIn.TxArray[0].OrderId.Hex(),
 	}
 }
 
@@ -144,7 +147,6 @@ func (o *Observer) Start(ctx context.Context) error {
 		chain.Start(o.globalTxsQueue, o.globalErrataQueue, o.globalSolvencyQueue, o.globalNetworkFeeQueue)
 	}
 	go o.processTxIns() //  o.globalTxsQueue --> txIn, txIn --> o.onDeck, txIn --> o.storage
-	//go o.processErrataTx(ctx)
 	go o.processNetworkFeeQueue(ctx)
 	go o.deck(ctx) // o.onDeck --> txIn, txIn --> ObservedTxs,
 	go o.checkTxConfirmation()
@@ -272,20 +274,20 @@ func (o *Observer) handleObservedTxCommitted(tx common.ObservedTx) {
 }
 
 func (o *Observer) sendDeck(ctx context.Context) {
-	// todo will next2
-	// check if node is active
-	nodeStatus, err := o.bridge.FetchNodeStatus()
-	if err != nil {
-		o.logger.Error().Err(err).Msg("Failed to get node status")
-		return
-	}
-	if nodeStatus != o.lastNodeStatus {
-		o.lastNodeStatus = nodeStatus
-	}
-	if nodeStatus != stypes.NodeStatus_Active {
-		o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("Node is not active, will not handle tx in")
-		return
-	}
+	// // todo will next2
+	// // check if node is active
+	// nodeStatus, err := o.bridge.FetchNodeStatus()
+	// if err != nil {
+	// 	o.logger.Error().Err(err).Msg("Failed to get node status")
+	// 	return
+	// }
+	// if nodeStatus != o.lastNodeStatus {
+	// 	o.lastNodeStatus = nodeStatus
+	// }
+	// if nodeStatus != stypes.NodeStatus_Active {
+	// 	o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("Node is not active, will not handle tx in")
+	// 	return
+	// }
 
 	o.lock.Lock()
 	defer o.lock.Unlock()
@@ -312,27 +314,23 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainc
 	}
 
 	for _, txIn := range o.chunkify(deck) {
-		for _, txInItem := range txIn.TxArray {
-			if txInItem.MapRelayHash != "" { // is sended already
-				continue
-			}
-			tmp := txInItem
-			if err := o.signAndSendToMapRelay(tmp); err != nil {
-				o.logger.Error().Err(err).Str("orderId", txIn.TxArray[0].OrderId.String()).
-					Msg("fail to send to MAP")
-				// tx failed to be forward to THORChain will be added back to queue , and retry later
-				newTxIn.TxArray = append(newTxIn.TxArray, txIn.TxArray...)
-				continue
-			}
-
-			i, ok := chainClient.(interface {
-				OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
-			})
-			if ok {
-				i.OnObservedTxIn(*tmp, tmp.Height.Int64())
-			}
+		tmp := txIn
+		if err := o.signAndSendToMapRelay(&tmp); err != nil {
+			o.logger.Error().Err(err).Str("orderId", txIn.TxArray[0].OrderId.String()).
+				Msg("fail to send to MAP")
+			// tx failed to be forward to THORChain will be added back to queue , and retry later
+			newTxIn.TxArray = append(newTxIn.TxArray, txIn.TxArray...)
+			continue
 		}
 
+		i, ok := chainClient.(interface {
+			OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
+		})
+		if ok {
+			for _, item := range txIn.TxArray {
+				i.OnObservedTxIn(*item, item.Height.Int64()) // notice srcChain
+			}
+		}
 	}
 	return newTxIn
 }
@@ -365,7 +363,7 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 	return result
 }
 
-func (o *Observer) signAndSendToMapRelay(txIn *types.TxInItem) error {
+func (o *Observer) signAndSendToMapRelay(txIn *types.TxIn) error {
 	txBytes, err := o.bridge.GetObservationsStdTx(txIn)
 	if err != nil {
 		return fmt.Errorf("fail to get the tx: %w", err)
@@ -394,56 +392,37 @@ func (o *Observer) checkTxConfirmation() {
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
-				for _, ele := range deck.TxArray {
-					tmp := ele
-					err := o.bridge.TxStatus(ele.MapRelayHash)
-					if err != nil {
-						o.logger.Error().Err(err).Msg("Failed to check tx confirmation")
-						ele.PendingCount += 1
-						if ele.PendingCount >= 10 {
-							tmp.PendingCount = 0
-							tmp.MapRelayHash = ""
-						}
-						continue
+				tmp := deck
+				err := o.bridge.TxStatus(tmp.MapRelayHash)
+				if err != nil {
+					o.logger.Error().Err(err).Msg("Failed to check tx confirmation")
+					tmp.PendingCount += 1
+					if tmp.PendingCount >= 10 {
+						tmp.PendingCount = 0
+						tmp.MapRelayHash = ""
 					}
-					k := TxInKey(deck)
-					o.removeConfirmedTx(k, tmp)
+					continue
 				}
+				k := TxInKey(deck)
+				o.removeConfirmedTx(k)
 			}
 		}
 	}
 }
 
-func (o *Observer) removeConfirmedTx(k txInKey, tx *types.TxInItem) {
+func (o *Observer) removeConfirmedTx(k txInKey) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
-	if deck, ok := o.onDeck[k]; ok {
-		for i, txInItem := range deck.TxArray {
-			if txInItem.Tx == tx.Tx && txInItem.LogIndex == tx.LogIndex {
-				deck.TxArray = append(deck.TxArray[:i], deck.TxArray[i+1:]...)
-				break
-			}
-		}
-
-		if len(deck.TxArray) == 0 {
-			delete(o.onDeck, k)
-			if err := o.storage.RemoveTx(deck, 0); err != nil {
-				o.logger.Error().Err(err).Msg("fail to remove tx from storage")
-			}
-		} else {
-			if err := o.storage.AddOrUpdateTx(deck); err != nil {
-				o.logger.Error().Err(err).Msg("fail to update tx in storage")
-			}
+	if deck, ok := o.onDeck[k]; !ok {
+		delete(o.onDeck, k)
+		if err := o.storage.RemoveTx(deck, 0); err != nil {
+			o.logger.Error().Err(err).Msg("Fail to remove tx from storage")
 		}
 	}
 }
 
 func (o *Observer) processTxIns() {
-	// Create a worker pool with a reasonable number of workers
-	// We can use runtime.NumCPU() to get the number of available CPUs
-	// but let's limit the workers to avoid overwhelming the system
-
 	// Create a semaphore to limit concurrency
 	sem := make(chan struct{}, o.observerWorkers)
 
@@ -493,13 +472,43 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	} else {
 		o.logger.Error().Err(err).Msg("Fail to get chain client for confirmation count")
 	}
-
-	k := TxInKey(&txIn)
+	// Here we distinguish between calling bridgein and bridgeOut
+	var (
+		bridgeIn = types.TxIn{
+			MemPool:              txIn.MemPool,
+			Filtered:             txIn.Filtered,
+			ConfirmationRequired: txIn.ConfirmationRequired,
+			Method:               constants.VoteTxIn,
+			TxArray:              []*types.TxInItem{},
+		}
+		bridgeOut = types.TxIn{
+			MemPool:              txIn.MemPool,
+			Filtered:             txIn.Filtered,
+			ConfirmationRequired: txIn.ConfirmationRequired,
+			Method:               constants.VoteTxOut,
+			TxArray:              []*types.TxInItem{},
+		}
+	)
+	for _, ele := range txIn.TxArray {
+		switch ele.Method {
+		case constants.VoteTxIn:
+			bridgeIn.TxArray = append(bridgeIn.TxArray, ele)
+		case constants.VoteTxOut:
+			bridgeOut.TxArray = append(bridgeOut.TxArray, ele)
+		}
+	}
+	bridgeIn.Count = fmt.Sprintf("%d", len(bridgeIn.TxArray))
+	bridgeOut.Count = fmt.Sprintf("%d", len(bridgeOut.TxArray))
 
 	// Now acquire a write lock for modifying the onDeck slice
 	o.lock.Lock()
 	defer o.lock.Unlock()
+	o.addToOnDeck(&bridgeIn)
+	o.addToOnDeck(&bridgeOut)
+}
 
+func (o *Observer) addToOnDeck(txIn *types.TxIn) {
+	k := TxInKey(txIn)
 	in, ok := o.onDeck[k]
 	if ok {
 		// tx is already in the onDeck, dedupe incoming txs
@@ -524,71 +533,20 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			in.TxArray = append(in.TxArray, newTxs...)
 			setDeckStart := time.Now()
 			if err := o.storage.AddOrUpdateTx(in); err != nil {
-				o.logger.Error().Err(err).Msg("fail to add tx to storage")
+				o.logger.Error().Err(err).Msg("Fail to add tx to storage")
 			}
 			o.logger.Debug().Msgf("AddOrUpdateTx existing took %s", time.Since(setDeckStart))
 		}
 
 		return
 	}
-	o.onDeck[k] = &txIn
+	o.onDeck[k] = txIn
 
 	setDeckStart := time.Now()
-	if err := o.storage.AddOrUpdateTx(&txIn); err != nil {
-		o.logger.Error().Err(err).Msg("fail to add tx to storage")
+	if err := o.storage.AddOrUpdateTx(txIn); err != nil {
+		o.logger.Error().Err(err).Msg("Fail to add tx to storage")
 	}
 	o.logger.Debug().Msgf("AddOrUpdateTx new took %s", time.Since(setDeckStart))
-}
-
-// handler re-org tx
-// func (o *Observer) processErrataTx(ctx context.Context) {
-// 	for {
-// 		select {
-// 		case <-o.stopChan:
-// 			return
-// 		case errataBlock, more := <-o.globalErrataQueue:
-// 			if !more {
-// 				return
-// 			}
-// 			// filter
-// 			o.filterErrataTx(errataBlock)
-// 			o.logger.Info().Msgf("Received a errata block %+v from the Thorchain", errataBlock.Height)
-// 			for _, errataTx := range errataBlock.Txs {
-// 				if err := o.attestationGossip.AttestErrata(ctx, common.ErrataTx{
-// 					Chain: errataTx.Chain,
-// 					Id:    errataTx.TxID,
-// 				}); err != nil {
-// 					o.errCounter.WithLabelValues("fail_to_broadcast_errata_tx", "").Inc()
-// 					o.logger.Error().Err(err).Msg("fail to broadcast errata tx")
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
-// filterErrataTx with confirmation counting logic in place, all inbound tx to asgard will be parked and waiting for confirmation count to reach
-// the target threshold before it get forward to THORChain,  it is possible that when a re-org happened on BTC / ETH
-// the transaction that has been re-org out ,still in bifrost memory waiting for confirmation, as such, it should be
-// removed from ondeck tx queue, and not forward it to THORChain
-func (o *Observer) filterErrataTx(block types.ErrataBlock) {
-	o.lock.Lock()
-	defer o.lock.Unlock()
-BlockLoop:
-	for _, tx := range block.Txs {
-		for k, txIn := range o.onDeck {
-			for i, item := range txIn.TxArray {
-				if item.Tx == tx.TxID.String() {
-					o.logger.Info().Msgf("drop tx (%s) from ondeck memory due to errata", tx.TxID)
-					txIn.TxArray = append(txIn.TxArray[:i], txIn.TxArray[i+1:]...) // nolint
-					if len(txIn.TxArray) == 0 {
-						o.logger.Info().Msgf("ondeck tx is empty, remove it from ondeck")
-						delete(o.onDeck, k)
-					}
-					break BlockLoop
-				}
-			}
-		}
-	}
 }
 
 func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
@@ -614,8 +572,8 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 
 // Stop the observer
 func (o *Observer) Stop() error {
-	o.logger.Debug().Msg("request to stop observer")
-	defer o.logger.Debug().Msg("observer stopped")
+	o.logger.Debug().Msg("Request to stop observer")
+	defer o.logger.Debug().Msg("Observer stopped")
 
 	for _, chain := range o.chains {
 		chain.Stop()
@@ -623,10 +581,10 @@ func (o *Observer) Stop() error {
 
 	close(o.stopChan)
 	if err := o.pubkeyMgr.Stop(); err != nil {
-		o.logger.Error().Err(err).Msg("fail to stop pool address manager")
+		o.logger.Error().Err(err).Msg("Fail to stop pool address manager")
 	}
 	if err := o.storage.Close(); err != nil {
-		o.logger.Err(err).Msg("fail to close observer storage")
+		o.logger.Err(err).Msg("Fail to close observer storage")
 	}
 	return o.m.Stop()
 }
