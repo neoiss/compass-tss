@@ -134,7 +134,7 @@ func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 func (o *Observer) getChain(chainID common.Chain) (chainclients.ChainClient, error) {
 	chain, ok := o.chains[chainID]
 	if !ok {
-		o.logger.Debug().Str("chain", chainID.String()).Msg("Is not supported yet")
+		o.logger.Debug().Str("chain", chainID.String()).Msg("is not supported yet")
 		return nil, errors.New("not supported")
 	}
 	return chain, nil
@@ -270,7 +270,7 @@ func (o *Observer) handleObservedTxCommitted(tx common.ObservedTx) {
 		Str("coins", tx.Tx.Coins.String()).
 		Str("gas", common.Coins(tx.Tx.Gas).String()).
 		Str("observed_vault_pubkey", tx.ObservedPubKey.String()).
-		Msg("Observed tx committed to mapRelay")
+		Msg("observed tx committed to mapRelay")
 }
 
 func (o *Observer) sendDeck(ctx context.Context) {
@@ -295,13 +295,13 @@ func (o *Observer) sendDeck(ctx context.Context) {
 	for _, deck := range o.onDeck {
 		chainClient, err := o.getChain(deck.Chain)
 		if err != nil {
-			o.logger.Error().Err(err).Str("chain", deck.Chain.String()).Msg("Fail to retrieve chain client")
+			o.logger.Error().Err(err).Str("chain", deck.Chain.String()).Msg("fail to retrieve chain client")
 			continue
 		}
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
 		result := o.chunkifyAndSendToMapRelay(*deck, chainClient, false)
-		o.logger.Info().Any("result", result).Msg("Sending success")
+		o.logger.Info().Any("result", result).Msg("sending success")
 	}
 }
 
@@ -378,7 +378,7 @@ func (o *Observer) signAndSendToMapRelay(txIn *types.TxIn) error {
 		if err != nil {
 			return fmt.Errorf("fail to send the tx to thorchain: %w", err)
 		}
-		o.logger.Info().Str("mapHash", txID).Msg("Sign and send to map relay successfully")
+		o.logger.Info().Str("mapHash", txID).Msg("sign and send to map relay successfully")
 		txIn.MapRelayHash = txID
 		return nil
 	}, bf)
@@ -388,14 +388,14 @@ func (o *Observer) checkTxConfirmation() {
 	for {
 		select {
 		case <-o.stopChan:
-			o.logger.Info().Msg("Stopping check tx confirmation")
+			o.logger.Info().Msg("stopping check tx confirmation")
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
 				tmp := deck
 				err := o.bridge.TxStatus(tmp.MapRelayHash)
 				if err != nil {
-					o.logger.Error().Err(err).Msg("Failed to check tx confirmation")
+					o.logger.Error().Err(err).Msg("failed to check tx confirmation")
 					tmp.PendingCount += 1
 					if tmp.PendingCount >= 10 {
 						tmp.PendingCount = 0
@@ -417,7 +417,7 @@ func (o *Observer) removeConfirmedTx(k txInKey) {
 	if deck, ok := o.onDeck[k]; !ok {
 		delete(o.onDeck, k)
 		if err := o.storage.RemoveTx(deck, 0); err != nil {
-			o.logger.Error().Err(err).Msg("Fail to remove tx from storage")
+			o.logger.Error().Err(err).Msg("fail to remove tx from storage")
 		}
 	}
 }
@@ -470,7 +470,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	if err == nil {
 		txIn.ConfirmationRequired = chainClient.GetConfirmationCount(txIn)
 	} else {
-		o.logger.Error().Err(err).Msg("Fail to get chain client for confirmation count")
+		o.logger.Error().Err(err).Msg("fail to get chain client for confirmation count")
 	}
 	// Here we distinguish between calling bridgein and bridgeOut
 	var (
@@ -523,8 +523,10 @@ func (o *Observer) addToOnDeck(txIn *types.TxIn) {
 			for _, txInItemDeck := range in.TxArray {
 				if txInItemDeck.Equals(txInItem) {
 					foundTx = true
-					o.logger.Warn().Str("id", txInItem.Tx).Str("chain", in.Chain.String()).
-						Int64("height", txInItem.Height.Int64()).Msg("Dropping duplicate observation tx")
+					o.logger.Warn().Str("id", txInItem.Tx).
+						Str("chain", in.Chain.String()).
+						Int64("height", txInItem.Height.Int64()).
+						Msg("dropping duplicate observation tx")
 					break
 				}
 			}
@@ -532,14 +534,14 @@ func (o *Observer) addToOnDeck(txIn *types.TxIn) {
 				newTxs = append(newTxs, txInItem)
 			}
 		}
-		o.logger.Debug().Msgf("Dedupe took %s", time.Since(dedupeStart))
+		o.logger.Debug().Msgf("dedupe took %s", time.Since(dedupeStart))
 		if len(newTxs) > 0 {
 			in.TxArray = append(in.TxArray, newTxs...)
 			setDeckStart := time.Now()
 			if err := o.storage.AddOrUpdateTx(in); err != nil {
-				o.logger.Error().Err(err).Msg("Fail to add tx to storage")
+				o.logger.Error().Err(err).Msg("fail to add tx to storage")
 			}
-			o.logger.Debug().Msgf("AddOrUpdateTx existing took %s", time.Since(setDeckStart))
+			o.logger.Debug().Msgf("addOrUpdateTx existing took %s", time.Since(setDeckStart))
 		}
 
 		return
@@ -548,9 +550,9 @@ func (o *Observer) addToOnDeck(txIn *types.TxIn) {
 
 	setDeckStart := time.Now()
 	if err := o.storage.AddOrUpdateTx(txIn); err != nil {
-		o.logger.Error().Err(err).Msg("Fail to add tx to storage")
+		o.logger.Error().Err(err).Msg("fail to add tx to storage")
 	}
-	o.logger.Debug().Msgf("AddOrUpdateTx new took %s", time.Since(setDeckStart))
+	o.logger.Debug().Msgf("addOrUpdateTx new took %s", time.Since(setDeckStart))
 }
 
 func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
@@ -560,24 +562,24 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 			return
 		case ele := <-o.globalNetworkFeeQueue:
 			if err := ele.Valid(); err != nil {
-				o.logger.Error().Err(err).Msgf("Invalid network fee - %s", ele.String())
+				o.logger.Error().Err(err).Msgf("invalid network fee - %s", ele.String())
 				continue
 			}
 
 			txId, err := o.bridge.PostNetworkFee(ctx, ele.Height, ele.ChainId, ele.TransactionSize, ele.TransactionSwapSize, ele.TransactionRate)
 			if err != nil {
-				o.logger.Err(err).Msg("Fail to send network fee to map")
+				o.logger.Err(err).Msg("fail to send network fee to map")
 				continue
 			}
-			o.logger.Info().Msg(fmt.Sprintf("Successfully sent network fee to map, txHash=%s", txId))
+			o.logger.Info().Msg(fmt.Sprintf("successfully sent network fee to map, txHash=%s", txId))
 		}
 	}
 }
 
 // Stop the observer
 func (o *Observer) Stop() error {
-	o.logger.Debug().Msg("Request to stop observer")
-	defer o.logger.Debug().Msg("Observer stopped")
+	o.logger.Debug().Msg("request to stop observer")
+	defer o.logger.Debug().Msg("observer stopped")
 
 	for _, chain := range o.chains {
 		chain.Stop()
@@ -585,10 +587,10 @@ func (o *Observer) Stop() error {
 
 	close(o.stopChan)
 	if err := o.pubkeyMgr.Stop(); err != nil {
-		o.logger.Error().Err(err).Msg("Fail to stop pool address manager")
+		o.logger.Error().Err(err).Msg("fail to stop pool address manager")
 	}
 	if err := o.storage.Close(); err != nil {
-		o.logger.Err(err).Msg("Fail to close observer storage")
+		o.logger.Err(err).Msg("fail to close observer storage")
 	}
 	return o.m.Stop()
 }
