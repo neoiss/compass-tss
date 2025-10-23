@@ -295,7 +295,8 @@ func (o *Observer) sendDeck(ctx context.Context) {
 	for _, deck := range o.onDeck {
 		chainClient, err := o.getChain(deck.Chain)
 		if err != nil {
-			o.logger.Error().Err(err).Str("chain", deck.Chain.String()).Msg("fail to retrieve chain client")
+			o.logger.Error().Err(err).Any("txHash", deck.TxArray[0].Tx).
+				Str("chain", deck.Chain.String()).Msg("fail to retrieve chain client")
 			continue
 		}
 
@@ -481,6 +482,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	// Here we distinguish between calling bridgein and bridgeOut
 	var (
 		bridgeIn = types.TxIn{
+			Chain:                txIn.Chain,
 			MemPool:              txIn.MemPool,
 			Filtered:             txIn.Filtered,
 			ConfirmationRequired: txIn.ConfirmationRequired,
@@ -488,6 +490,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			TxArray:              []*types.TxInItem{},
 		}
 		bridgeOut = types.TxIn{
+			Chain:                txIn.Chain,
 			MemPool:              txIn.MemPool,
 			Filtered:             txIn.Filtered,
 			ConfirmationRequired: txIn.ConfirmationRequired,
