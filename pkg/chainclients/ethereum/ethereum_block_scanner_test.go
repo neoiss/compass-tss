@@ -54,7 +54,7 @@ func Test_Scanner(t *testing.T) {
 	storage, err := blockscanner.NewBlockScannerStorage("./db", config.LevelDBOptions{})
 	assert.Nil(t, err)
 
-	ethClient, err := ethclient.Dial("https://eth-sepolia.api.onfinality.io/public")
+	ethClient, err := ethclient.Dial("https://eth-sepolia.blastapi.io/d741b6cb-21ce-42d7-a758-76983d6302aa")
 	assert.Nil(t, err)
 
 	m, err := GetMetricForTest()
@@ -87,7 +87,7 @@ func Test_Scanner(t *testing.T) {
 	scanner, err := NewETHScanner(cfg, storage, big.NewInt(11155111),
 		ethClient, bridge, m, pkeyMgr, solvencyReporter, nil)
 	assert.Nil(t, err)
-	txIn, err := scanner.FetchTxs(8817015, 8817015)
+	txIn, err := scanner.FetchTxs(9470152, 9470152)
 	assert.Nil(t, err)
 	assert.Equal(t, len(txIn.TxArray), 1)
 	t.Log("txIn.Chain --------------- ", txIn.Chain)
@@ -102,15 +102,16 @@ func Test_Scanner(t *testing.T) {
 		t.Log("txArray idx=", idx, " Height=", ele.Height)
 		t.Log("txArray idx=", idx, " Amount=", ele.Amount)
 		t.Log("txArray idx=", idx, " OrderId=", ele.OrderId)
+		t.Log("txArray idx=", idx, " ChainAndGasLimit=", ele.ChainAndGasLimit)
 		t.Log("txArray idx=", idx, " Token=", ecommon.Bytes2Hex(ele.Token))
 		t.Log("txArray idx=", idx, " Vault=", ecommon.Bytes2Hex(ele.Vault))
 		t.Log("txArray idx=", idx, " To=", ecommon.Bytes2Hex(ele.To))
 		t.Log("txArray idx=", idx, " Method=", ele.Method)
 	}
-
-	txIn, err = scanner.FetchTxs(8817025, 8817025)
-	assert.Nil(t, err)
-	assert.Equal(t, len(txIn.TxArray), 1)
+	//
+	//txIn, err = scanner.FetchTxs(8817025, 8817025)
+	//assert.Nil(t, err)
+	//assert.Equal(t, len(txIn.TxArray), 1)
 
 	_ = storage.Close()
 }

@@ -39,7 +39,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 				seq = big.NewInt(0)
 			}
 			args = append(args, structure.VoteTxIn{
-				Height:     ele.Height,
+				Height:     ele.Height.Uint64(),
 				OrderId:    ele.OrderId,
 				RefundAddr: ele.RefundAddr,
 				BridgeItem: structure.BridgeItem{

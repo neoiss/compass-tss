@@ -436,9 +436,9 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "uint128",
+                        "internalType": "uint64",
                         "name": "height",
-                        "type": "uint128"
+                        "type": "uint64"
                     },
                     {
                         "internalType": "bytes",
@@ -518,9 +518,9 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "uint128",
+                        "internalType": "uint64",
                         "name": "height",
-                        "type": "uint128"
+                        "type": "uint64"
                     },
                     {
                         "internalType": "uint128",
@@ -1089,9 +1089,9 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "uint128",
+                        "internalType": "uint64",
                         "name": "height",
-                        "type": "uint128"
+                        "type": "uint64"
                     },
                     {
                         "internalType": "bytes",
@@ -1171,9 +1171,9 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "uint128",
+                        "internalType": "uint64",
                         "name": "height",
-                        "type": "uint128"
+                        "type": "uint64"
                     },
                     {
                         "internalType": "uint128",

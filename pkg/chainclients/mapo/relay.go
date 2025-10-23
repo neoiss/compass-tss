@@ -30,8 +30,8 @@ func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error)
 // GetTxByBlockNumber retrieves txout from this block height from mapBridge
 func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 	// get block
-	if blockHeight%100 == 0 {
-		b.logger.Info().Int64("height", blockHeight).Msg("Fetching txs for height")
+	if blockHeight%1000 == 0 {
+		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")
 	}
 
 	block, err := b.ethRpc.GetBlock(blockHeight)
