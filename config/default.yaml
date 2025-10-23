@@ -170,7 +170,7 @@ bifrost:
         observation_flexibility_blocks: 20
         max_gas_limit: 100000
         max_contract_tx_logs: 50
-        start_block_height: 8866200
+        start_block_height: 9470030
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -194,7 +194,7 @@ bifrost:
         observation_flexibility_blocks: 80
         max_gas_limit: 100000
         max_contract_tx_logs: 50
-        start_block_height: 59917675
+        start_block_height: 69788523
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
           - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
