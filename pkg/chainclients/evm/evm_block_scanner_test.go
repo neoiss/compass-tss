@@ -29,6 +29,7 @@ import (
 
 func getConfigForNativeTest() config.BifrostBlockScannerConfiguration {
 	return config.BifrostBlockScannerConfiguration{
+		ChainID:                    "BSC",
 		StartBlockHeight:           1,
 		BlockScanProcessors:        1,
 		HTTPRequestTimeout:         time.Second,
