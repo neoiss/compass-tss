@@ -315,6 +315,9 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainc
 
 	for _, txIn := range o.chunkify(deck) {
 		tmp := txIn
+		if tmp.MapRelayHash != "" { // already sent
+			continue
+		}
 		if err := o.signAndSendToMapRelay(&tmp); err != nil {
 			o.logger.Error().Err(err).Str("orderId", txIn.TxArray[0].OrderId.String()).
 				Msg("fail to send to MAP")
@@ -392,10 +395,13 @@ func (o *Observer) checkTxConfirmation() {
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
+				if deck.MapRelayHash == "" {
+					continue
+				}
 				tmp := deck
 				err := o.bridge.TxStatus(tmp.MapRelayHash)
 				if err != nil {
-					o.logger.Error().Err(err).Msg("failed to check tx confirmation")
+					o.logger.Error().Any("txHash", tmp.MapRelayHash).Err(err).Msg("failed to check tx confirmation")
 					tmp.PendingCount += 1
 					if tmp.PendingCount >= 10 {
 						tmp.PendingCount = 0
