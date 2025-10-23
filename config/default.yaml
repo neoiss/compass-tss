@@ -36,18 +36,6 @@ bifrost:
     token_registry: "0x52a95bf759641711C8060291b21565a3b3B08e0F"
     view_controller: "0x1281a83F7c23f1a5E9de5e993ADc2a25BB87A9ff"
     addr: ""
-  attestation_gossip:
-    observe_reconcile_interval: 15s
-    late_observe_timeout: 5m
-    non_quorum_timeout: 10h
-    min_time_between_attestations: 30s
-    ask_peers: 3
-    ask_peers_delay: 5s
-    max_batch_size: 100
-    batch_interval: 2s
-    peer_timeout: 20s
-    peer_concurrent_sends: 4
-    peer_concurrent_receives: 5
   signer:
     backup_keyshares: true
     signer_db_path: ./build/signer_db

@@ -22,68 +22,36 @@ type TxIn struct {
 	ConfirmationRequired int64        `json:"confirmation_required"`
 	// whether this originated from a "instant observation" - e.g. by a member of the signing party
 	// immediately after signing, and also has incorrect gas, requiring a re-observation to correct.
-	AllowFutureObservation bool `json:"allow_future_observation"`
-	// outHash
-	Method       string
-	MapRelayHash string
-	PendingCount int
+	AllowFutureObservation bool   `json:"allow_future_observation"`
+	Method                 string `json:"method"`
+	MapRelayHash           string `json:"map_relay_hash"`
+	PendingCount           int    `json:"pending_count"`
 }
 
 type TxInItem struct {
-	Tx        string `json:"tx"`
-	Memo      string `json:"memo"`
-	Sender    string `json:"sender"`
-	FromChain *big.Int
-	ToChain   *big.Int
-	Height    *big.Int
-	Amount    *big.Int
-	OrderId   ecommon.Hash
-	GasUsed   *big.Int
-	Token     []byte
-	Vault     []byte
-	From      []byte
-	To        []byte
-	Payload   []byte
-	Method    string
-	LogIndex  uint // index of the log in the block
-	// bridgeOut add new fields
-	ChainAndGasLimit *big.Int
-	TxOutType        uint8
-	RefundAddr       []byte
-	// bridgeIn add new fields
-	Sequence *big.Int
+	Tx               string       `json:"tx"`
+	Memo             string       `json:"memo"`
+	Sender           string       `json:"sender"`
+	FromChain        *big.Int     `json:"from_chain"`
+	ToChain          *big.Int     `json:"to_chain"`
+	Height           *big.Int     `json:"height"`
+	Amount           *big.Int     `json:"amount"`
+	OrderId          ecommon.Hash `json:"order_id"`
+	GasUsed          *big.Int     `json:"gas_used"`
+	Token            []byte       `json:"token"`
+	Vault            []byte       `json:"vault"`
+	From             []byte       `json:"from"`
+	To               []byte       `json:"to"`
+	Payload          []byte       `json:"payload"`
+	Method           string       `json:"method"`
+	LogIndex         uint         `json:"log_index"`
+	ChainAndGasLimit *big.Int     `json:"chain_and_gas_limit"` // bridgeOut add new fields
+	TxOutType        uint8        `json:"tx_out_type"`
+	RefundAddr       []byte       `json:"refund_addr"`
+	Sequence         *big.Int     `json:"sequence"` // bridgeIn add new fields
 }
 
 type TxInStatus byte
-
-//func NewTxInItem(
-//	blockHeight int64,
-//	tx string,
-//	memo string,
-//	sender string,
-//	to string,
-//	coins common.Coins,
-//	gas common.Gas,
-//	observedVaultPubKey common.PubKey,
-//	aggregator string,
-//	aggregatorTarget string,
-//	aggregatorTargetLimit *cosmos.Uint,
-//) *TxInItem {
-//	return &TxInItem{
-//		BlockHeight:           blockHeight,
-//		Tx:                    tx,
-//		Memo:                  memo,
-//		Sender:                sender,
-//		To:                    to,
-//		Coins:                 coins,
-//		Gas:                   gas,
-//		ObservedVaultPubKey:   observedVaultPubKey,
-//		Aggregator:            aggregator,
-//		AggregatorTarget:      aggregatorTarget,
-//		AggregatorTargetLimit: aggregatorTargetLimit,
-//		CommittedUnFinalised:  false, // stateful parameter used internally in the observer
-//	}
-//}
 
 const (
 	Processing TxInStatus = iota

@@ -477,11 +477,10 @@ type MAPO struct {
 // -------------------------------------------------------------------------------------
 
 type Bifrost struct {
-	Signer            BifrostSignerConfiguration     `mapstructure:"signer"`
-	MAPRelay          BifrostClientConfiguration     `mapstructure:"map_relay"`
-	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
-	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
-	Chains            struct {
+	Signer   BifrostSignerConfiguration  `mapstructure:"signer"`
+	MAPRelay BifrostClientConfiguration  `mapstructure:"map_relay"`
+	Metrics  BifrostMetricsConfiguration `mapstructure:"metrics"`
+	Chains   struct {
 		BSC BifrostChainConfiguration `mapstructure:"bsc"`
 		BTC BifrostChainConfiguration `mapstructure:"btc"`
 		ETH BifrostChainConfiguration `mapstructure:"eth"`

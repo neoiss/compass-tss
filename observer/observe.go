@@ -312,6 +312,7 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainc
 		Filtered:             true,
 		MemPool:              deck.MemPool,
 		ConfirmationRequired: deck.ConfirmationRequired,
+		Method:               deck.Method,
 	}
 
 	for _, txIn := range o.chunkify(deck) {
@@ -322,7 +323,6 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainc
 		if err := o.signAndSendToMapRelay(&tmp); err != nil {
 			o.logger.Error().Err(err).Str("orderId", txIn.TxArray[0].OrderId.String()).
 				Msg("fail to send to MAP")
-			// tx failed to be forward to THORChain will be added back to queue , and retry later
 			newTxIn.TxArray = append(newTxIn.TxArray, txIn.TxArray...)
 			continue
 		}

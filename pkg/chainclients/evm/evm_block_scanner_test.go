@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mapprotocol/compass-tss/constants"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -103,10 +101,8 @@ func Test_Scanner(t *testing.T) {
 	scanner, err := NewEVMScanner(cfg, storage, big.NewInt(97),
 		ethClient, rpcClient, bridge, m, pkeyMgr, solvencyReporter, nil)
 	assert.Nil(t, err)
-	txIn, err := scanner.FetchTxs(68901869, 68901869)
+	txIn, err := scanner.FetchTxs(69790423, 69790423)
 	assert.Nil(t, err)
-	t.Log("bridgeOut", constants.EventOfBridgeOut.GetTopic().String())
-	t.Log("bridgeIn", constants.EventOfBridgeIn.GetTopic().String())
 	assert.Equal(t, len(txIn.TxArray), 1)
 	t.Log("txIn.Chain --------------- ", txIn.Chain)
 	t.Log("txIn.Count --------------- ", txIn.Count)

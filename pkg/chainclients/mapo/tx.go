@@ -75,6 +75,8 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			})
 		}
 		input, err = b.tssAbi.Pack(constants.VoteTxOut, args)
+	default:
+		return nil, fmt.Errorf("unsupported method: (%s)", txIn.Method)
 	}
 
 	if err != nil {
