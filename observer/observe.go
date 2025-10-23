@@ -352,6 +352,9 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 			MemPool:              txIn.MemPool,
 			Filtered:             txIn.Filtered,
 			ConfirmationRequired: txIn.ConfirmationRequired,
+			Method:               txIn.Method,
+			MapRelayHash:         txIn.MapRelayHash,
+			PendingCount:         txIn.PendingCount,
 		}
 		if len(txIn.TxArray) > maxTxArrayLen {
 			newTx.Count = fmt.Sprintf("%d", maxTxArrayLen)
