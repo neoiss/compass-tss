@@ -34,6 +34,10 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	case constants.VoteTxIn:
 		args := make([]structure.VoteTxIn, 0)
 		for _, ele := range txIn.TxArray {
+			seq := ele.Sequence
+			if seq == nil {
+				seq = big.NewInt(0)
+			}
 			args = append(args, structure.VoteTxIn{
 				Height:     ele.Height,
 				OrderId:    ele.OrderId,
@@ -42,7 +46,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 					ChainAndGasLimit: ele.ChainAndGasLimit,
 					Vault:            ele.Vault,
 					TxType:           ele.TxOutType,
-					Sequence:         ele.Sequence,
+					Sequence:         seq,
 					Token:            ele.Token,
 					Amount:           ele.Amount,
 					From:             ele.From,
