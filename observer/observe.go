@@ -503,8 +503,12 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	// Now acquire a write lock for modifying the onDeck slice
 	o.lock.Lock()
 	defer o.lock.Unlock()
-	o.addToOnDeck(&bridgeIn)
-	o.addToOnDeck(&bridgeOut)
+	if len(bridgeIn.TxArray) > 0 {
+		o.addToOnDeck(&bridgeIn)
+	}
+	if len(bridgeOut.TxArray) > 0 {
+		o.addToOnDeck(&bridgeOut)
+	}
 }
 
 func (o *Observer) addToOnDeck(txIn *types.TxIn) {

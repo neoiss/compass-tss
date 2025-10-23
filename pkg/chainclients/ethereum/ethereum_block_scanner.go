@@ -254,11 +254,11 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		e.lastReportedGasPrice = tcGasPrice
 	}
 
-	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(currentHeight); err != nil {
-			e.logger.Err(err).Msg("fail to report Solvency info to THORNode")
-		}
-	}
+	// if e.solvencyReporter != nil {
+	// 	if err = e.solvencyReporter(currentHeight); err != nil {
+	// 		e.logger.Err(err).Msg("fail to report Solvency info to relay")
+	// 	}
+	// }
 	return txIn, nil
 }
 
@@ -816,7 +816,7 @@ func (e *ETHScanner) getAssetFromTokenAddress(token string) (common.Asset, error
 
 // getTxInFromSmartContract returns txInItem
 func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
-	e.logger.Debug().Msg("Parse tx from smart contract")
+	e.logger.Debug().Msg("parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
 		Tx:     ll.TxHash.Hex()[2:],
 		Height: big.NewInt(0).SetUint64(ll.BlockNumber),
@@ -826,7 +826,7 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 
 	// 1 is Transaction success state
 	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Info().Msgf("Find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
+		e.logger.Info().Msgf("find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
 		return nil, nil
 	}
 	p := evm.NewSmartContractLogParser(e.gatewayABI)
@@ -838,10 +838,10 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
 	txGasPrice := receipt.EffectiveGasPrice
 
-	e.logger.Info().Msgf("Find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
+	e.logger.Info().Msgf("find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
 		txInItem.Tx, txGasPrice.String(), receipt.GasUsed, ll.Index)
 
-	e.logger.Debug().Msgf("Tx in item: %+v", txInItem)
+	e.logger.Debug().Msgf("tx in item: %+v", txInItem)
 	return txInItem, nil
 }
 
