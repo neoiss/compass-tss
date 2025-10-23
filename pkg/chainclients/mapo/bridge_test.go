@@ -2,6 +2,7 @@ package mapo
 
 import (
 	"math/big"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -33,6 +34,7 @@ func GetMetricForTest() (*metrics.Metrics, error) {
 func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 	m, err := GetMetricForTest()
 	assert.Nil(t, err)
+	os.Setenv("KEYSTORE_PASSWORD", "123456")
 
 	bridgeCfg := config.BifrostClientConfiguration{
 		ChainID:         "map",
@@ -45,7 +47,7 @@ func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 
 	name := "test-eth"
 	//  dont push
-	keyStorePath := "$HOME/UTC--2025-07-17T09-26-18.738548000Z--testuser.key.json"
+	keyStorePath := "/Users/zmm/Library/Ethereum/keystore/UTC--2025-09-23T07-18-09.804272000Z--69a99844d11bea5c6b73c84166e3c6b62cd870f5"
 	kb, keyStore, err := keys.GetKeyringKeybase(keyStorePath, name)
 	assert.Nil(t, err)
 

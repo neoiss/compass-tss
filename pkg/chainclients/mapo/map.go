@@ -202,8 +202,3 @@ func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
 	key := fmt.Sprintf(template, ref)
 	return b.GetMimir(key)
 }
-
-func (b *Bridge) SetObserverCache(key, value string) error {
-
-	return nil
-}

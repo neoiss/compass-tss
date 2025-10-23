@@ -76,6 +76,15 @@ func init() {
 
 			return nil
 		},
+		func(b *Bridge) error {
+			view, err := abi.JSON(strings.NewReader(viewABI))
+			if err != nil {
+				return fmt.Errorf("failed to parse view abi: %w", err)
+			}
+			b.viewAbi = &view
+
+			return nil
+		},
 	)
 }
 

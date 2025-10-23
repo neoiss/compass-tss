@@ -167,7 +167,7 @@ func (b *Bridge) PostNetworkFee(ctx context.Context, height int64, chainId *big.
 		return "", fmt.Errorf("fail to pack input: %w", err)
 	}
 
-	tx, err := b.assemblyTx(ctx, input, 2000000, b.cfg.TssManager, false)
+	tx, err := b.assemblyTx(ctx, input, 2000000, b.cfg.TssManager)
 	if err != nil {
 		return "", fmt.Errorf("fail to assembly tx: %w", err)
 	}

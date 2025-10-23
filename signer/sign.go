@@ -754,11 +754,8 @@ func (s *Signer) storageList() []TxOutStoreItem {
 }
 
 func (s *Signer) processTransaction(item TxOutStoreItem) {
-	s.logger.Info().
-		Int64("height", item.Height).
-		Int("status", int(item.Status)).
-		Interface("tx", item.TxOutItem).
-		Msg("Signing transaction")
+	s.logger.Info().Int64("height", item.Height).Int("status", int(item.Status)).
+		Interface("tx", item.TxOutItem).Msg("Signing transaction")
 
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

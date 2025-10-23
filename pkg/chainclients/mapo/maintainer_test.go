@@ -42,9 +42,8 @@ func TestBridge_genHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
 			var b Bridge
-			got, gotErr := b.genHash(tt.epoch, tt.members)
+			got, gotErr := b.genHash(tt.epoch, tt.members, 100)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("genHash() failed: %v", gotErr)

@@ -186,17 +186,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			p.vaultChainLock[vc] = make(chan struct{}, 1)
 		}
 
-		// // get vault to determine vault status
-		// vault, err := bridge.GetVault(item.TxOutItem.VaultPubKey.String())
-		// if err != nil {
-		// 	log.Err(err).
-		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
-		// 		Msg("Failed to get tx out item vault")
-		// 	return
-		// }
-
 		// check if the vault status semaphore has capacity
-		// todo next
 		if availableCapacities[types.VaultStatus_ActiveVault] == 0 {
 			continue
 		}

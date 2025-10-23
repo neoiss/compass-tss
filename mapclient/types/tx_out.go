@@ -135,6 +135,8 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		From:             tx.From,
 		Data:             tx.Data,
 		HashData:         tx.Hash,
+		Sender:           tx.Sender,
+		Signature:        tx.Signature,
 	}
 }
 

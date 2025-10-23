@@ -24,8 +24,8 @@ const (
 
 // src or dst chain event
 const (
-	EventOfBridgeOut EventSig = "BridgeOut(bytes32,uint256,uint8,bytes,address,uint256,address,bytes,bytes)"                // -> tss_manager 合约 voteTxIn
-	EventOfBridgeIn  EventSig = "BridgeIn(bytes32,uint256,uint8,bytes,uint256,address,address,uint256,bytes,address,bytes)" // -> tss_manager 合约 voteTxOut
+	EventOfBridgeOut EventSig = "BridgeOut(bytes32,uint256,uint8,bytes,address,uint256,address,address,bytes,bytes)"  // -> tss_manager 合约 voteTxIn
+	EventOfBridgeIn  EventSig = "BridgeIn(bytes32,uint256,uint8,bytes,uint256,address,address,uint256,address,bytes)" // -> tss_manager 合约 voteTxOut
 )
 
 type TxInType uint8

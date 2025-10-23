@@ -2,10 +2,11 @@ package pubkeymanager
 
 import (
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"strings"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -269,8 +270,8 @@ func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 }
 
 func (pkm *PubKeyManager) updatePubKeys() {
-	pkm.logger.Info().Msg("start to update pub keys")
-	defer pkm.logger.Info().Msg("stop to update pub keys")
+	pkm.logger.Info().Msg("Start to update pub keys")
+	defer pkm.logger.Info().Msg("Stop to update pub keys")
 	for i := 1; ; i++ {
 		select {
 		case <-pkm.stopChan:

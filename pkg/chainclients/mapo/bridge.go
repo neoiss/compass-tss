@@ -17,7 +17,6 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -27,7 +26,6 @@ import (
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/ctx"
 	keys2 "github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -39,46 +37,41 @@ import (
 
 // Endpoint urls
 const (
-	AuthAccountEndpoint      = "/cosmos/auth/v1beta1/accounts"
-	LastBlockEndpoint        = "/mapBridge/lastblock"
-	NodeAccountEndpoint      = "/mapBridge/node"
 	SignerMembershipEndpoint = "/mapBridge/vaults/%s/signers"
 	StatusEndpoint           = "/status"
 	VaultEndpoint            = "/mapBridge/vault/%s"
 	AsgardVault              = "/mapBridge/vaults/asgard"
 	PubKeysEndpoint          = "/mapBridge/vaults/pubkeys"
 	ThorchainConstants       = "/mapBridge/constants"
-	RagnarokEndpoint         = "/mapBridge/ragnarok"
 	MimirEndpoint            = "/mapBridge/mimir"
 	ChainVersionEndpoint     = "/mapBridge/version"
 	InboundAddressesEndpoint = "/mapBridge/inbound_addresses"
 	PoolsEndpoint            = "/mapBridge/pools"
-	THORNameEndpoint         = "/mapBridge/thorname/%s"
 )
 
 // Bridge will be used to send tx to THORChain
 type Bridge struct {
-	logger                                           zerolog.Logger
-	cfg                                              config.BifrostClientConfiguration
-	keys                                             *keys2.Keys
-	errCounter                                       *prometheus.CounterVec
-	m                                                *metrics.Metrics
-	blockHeight                                      int64
-	chainID                                          *big.Int
-	httpClient                                       *retryablehttp.Client
-	broadcastLock                                    *sync.RWMutex
-	ethClient                                        *ethclient.Client
-	blockScanner                                     *MapChainBlockScan
-	stopChan                                         chan struct{}
-	wg                                               *sync.WaitGroup
-	gasPrice                                         *big.Int
-	gasCache                                         []*big.Int
-	ethPriKey                                        *ecdsa.PrivateKey
-	kw                                               *evm.KeySignWrapper
-	ethRpc                                           *evm.EthRPC
-	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry *abi.ABI
-	epoch                                            *big.Int
-	epochHash                                        ecommon.Hash
+	logger                                                    zerolog.Logger
+	cfg                                                       config.BifrostClientConfiguration
+	keys                                                      *keys2.Keys
+	errCounter                                                *prometheus.CounterVec
+	m                                                         *metrics.Metrics
+	blockHeight                                               int64
+	chainID                                                   *big.Int
+	httpClient                                                *retryablehttp.Client
+	broadcastLock                                             *sync.RWMutex
+	ethClient                                                 *ethclient.Client
+	blockScanner                                              *MapChainBlockScan
+	stopChan                                                  chan struct{}
+	wg                                                        *sync.WaitGroup
+	gasPrice                                                  *big.Int
+	gasCache                                                  []*big.Int
+	ethPriKey                                                 *ecdsa.PrivateKey
+	kw                                                        *evm.KeySignWrapper
+	ethRpc                                                    *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi *abi.ABI
+	epoch                                                     *big.Int
+	epochHash                                                 ecommon.Hash
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -275,28 +268,6 @@ func (b *Bridge) getThorChainURL(path string) string {
 	return uri.String()
 }
 
-// getAccountNumberAndSequenceNumber returns account and Sequence number required to post into mapBridge
-func (b *Bridge) getAccountNumberAndSequenceNumber() (uint64, uint64, error) {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to get signer address: %w", err)
-	}
-	path := fmt.Sprintf("%s/%s", AuthAccountEndpoint, signerAddr)
-
-	body, _, err := b.getWithPath(path)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to get auth accounts: %w", err)
-	}
-
-	var resp types.AccountResp
-	if err = json.Unmarshal(body, &resp); err != nil {
-		return 0, 0, fmt.Errorf("failed to unmarshal account resp: %w", err)
-	}
-	acc := resp.Account
-
-	return acc.AccountNumber, acc.Sequence, nil
-}
-
 // GetConfig return the configuration
 func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 	return b.cfg
@@ -305,32 +276,6 @@ func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 // PostKeysignFailure generate and  post a keysign fail tx to thorchan
 func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
 	return b.Broadcast([]byte{})
-}
-
-// GetErrataMsg get errata tx from params
-func (b *Bridge) GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg {
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		panic(err)
-	}
-	return stypes.NewMsgErrataTx(txID, chain, signerAddr)
-}
-
-// GetSolvencyMsg create MsgSolvency from the given parameters
-func (b *Bridge) GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency {
-	// To prevent different MsgSolvency ID incompatibility between nodes with different coin-observation histories,
-	// only report coins for which the amounts are not currently 0.
-	coins = coins.NoneEmpty()
-	signerAddr, err := b.keys.GetSignerInfo().GetAddress()
-	if err != nil {
-		panic(err)
-	}
-	msg, err := stypes.NewMsgSolvency(chain, pubKey, coins, height, signerAddr)
-	if err != nil {
-		b.logger.Err(err).Msg("fail to create MsgSolvency")
-		return nil
-	}
-	return msg
 }
 
 // GetInboundOutbound separate the txs into inbound and outbound
@@ -428,13 +373,13 @@ func (b *Bridge) HeartBeat() error {
 			select {
 			case <-b.stopChan:
 				b.logger.Info().Msg("Stop heartbeat")
-			default:
+			case <-time.After(time.Minute):
 				input, err := b.mainAbi.Pack(constants.Heartbeat)
 				if err != nil {
 					b.logger.Error().Err(err).Msg("Fail to pack heartbeat input")
 					continue
 				}
-				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer, false)
+				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer)
 				if err != nil {
 					b.logger.Error().Err(err).Msg("Fail to assembly heartbeat tx")
 					continue
@@ -444,8 +389,7 @@ func (b *Bridge) HeartBeat() error {
 					b.logger.Error().Err(err).Msg("Fail to broadcast heartbeat tx")
 					continue
 				}
-				b.logger.Info().Msgf("Broadcast heartbeat tx %s", txId)
-				time.Sleep(time.Minute)
+				b.logger.Debug().Msgf("Broadcast heartbeat tx %s", txId)
 			}
 		}
 	}()
@@ -571,35 +515,17 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 	// todo temp code, will next 200
 	return []shareTypes.PubKeyContractAddressPair{
 		{
-			PubKey: "029038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754",
+			PubKey: "04b0a5b39ead06ffde6848822532f9a34c4ab350fa241e09646166abd4e3836bd2c8e7a83bf4c7cf91f921e06719d94941fd53ab1486fe2fe8d394833fecb9d547",
 		},
 	}, nil
 }
-
-// RagnarokInProgress is to query mapBridge to check whether ragnarok had been triggered
-func (b *Bridge) RagnarokInProgress() (bool, error) {
-	buf, s, err := b.getWithPath(RagnarokEndpoint)
-	if err != nil {
-		return false, fmt.Errorf("fail to get ragnarok status: %w", err)
-	}
-	if s != http.StatusOK {
-		return false, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var ragnarok bool
-	if err = json.Unmarshal(buf, &ragnarok); err != nil {
-		return false, fmt.Errorf("fail to unmarshal ragnarok status: %w", err)
-	}
-	return ragnarok, nil
-}
-
-// PubKeyContractAddressPair is an entry to map pubkey and contract addresses
 
 // GetContractAddress retrieve the contract address from asgard
 func (b *Bridge) GetContractAddress() ([]shareTypes.PubKeyContractAddressPair, error) {
 	return nil, nil
 }
 
-// GetPools get pools from THORChain
+// GetPools get pools from relay
 func (b *Bridge) GetPools() (stypes.Pools, error) {
 	buf, s, err := b.getWithPath(PoolsEndpoint)
 	if err != nil {
@@ -613,23 +539,6 @@ func (b *Bridge) GetPools() (stypes.Pools, error) {
 		return nil, fmt.Errorf("fail to unmarshal pools from json: %w", err)
 	}
 	return pools, nil
-}
-
-// GetTHORName get THORName from THORChain
-func (b *Bridge) GetTHORName(name string) (stypes.THORName, error) {
-	p := fmt.Sprintf(THORNameEndpoint, name)
-	buf, s, err := b.getWithPath(p)
-	if err != nil {
-		return stypes.THORName{}, fmt.Errorf("fail to get THORName: %w", err)
-	}
-	if s != http.StatusOK {
-		return stypes.THORName{}, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var tn stypes.THORName
-	if err = json.Unmarshal(buf, &tn); err != nil {
-		return stypes.THORName{}, fmt.Errorf("fail to unmarshal THORNames from json: %w", err)
-	}
-	return tn, nil
 }
 
 // GetChain returns the chain.

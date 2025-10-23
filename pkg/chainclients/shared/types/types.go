@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/internal/ctx"
 	"github.com/mapprotocol/compass-tss/internal/structure"
@@ -95,12 +94,10 @@ type Bridge interface {
 	GetConstants() (map[string]int64, error)
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
-	GetTHORName(name string) (stypes.THORName, error)
 	GetMapVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)
 	PostNetworkFee(ctx context.Context, height int64, chainId *big.Int, transactionSize, transactionSizeWithCall, transactionRate uint64) (string, error)
-	RagnarokInProgress() (bool, error)
 	GetAsgardPubKeys() ([]PubKeyContractAddressPair, error)
 	IsSyncing() (bool, error)
 	WaitSync() error
@@ -110,13 +107,11 @@ type Bridge interface {
 	GetConfig() config.BifrostClientConfiguration
 	GetContext() ctx.Context
 	GetTxByBlockNumber(blockHeight int64) (types.TxOut, error)
-	GetErrataMsg(txID common.TxID, chain common.Chain) sdk.Msg
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
 		members []ecommon.Address) (string, error)
 	GetKeyShare() ([]byte, []byte, error)
 	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
 	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
-	GetSolvencyMsg(height int64, chain common.Chain, pubKey common.PubKey, coins common.Coins) *stypes.MsgSolvency
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 	GetChainID(name string) (*big.Int, error)

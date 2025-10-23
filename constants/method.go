@@ -59,3 +59,7 @@ const (
 )
 
 var ZeroHash = "0x0000000000000000000000000000000000000000"
+
+const (
+	GetPublickeys = "getPublickeys"
+)

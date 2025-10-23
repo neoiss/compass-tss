@@ -32,9 +32,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 
 	switch txIn.Method {
 	case constants.VoteTxIn:
-		arg := make([]*structure.VoteTxIn, 0)
+		args := make([]structure.VoteTxIn, 0)
 		for _, ele := range txIn.TxArray {
-			arg = append(arg, &structure.VoteTxIn{
+			args = append(args, structure.VoteTxIn{
 				Height:     ele.Height,
 				OrderId:    ele.OrderId,
 				RefundAddr: ele.RefundAddr,
@@ -52,11 +52,11 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			})
 		}
 
-		input, err = b.tssAbi.Pack(constants.VoteTxIn, arg)
+		input, err = b.tssAbi.Pack(constants.VoteTxIn, args)
 	case constants.VoteTxOut:
-		arg := make([]*structure.VoteTxOut, 0)
+		args := make([]structure.VoteTxOut, 0)
 		for _, ele := range txIn.TxArray {
-			arg = append(arg, &structure.VoteTxOut{
+			args = append(args, structure.VoteTxOut{
 				Height:  ele.Height,
 				GasUsed: ele.GasUsed,
 				OrderId: ele.OrderId,
@@ -74,19 +74,18 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 				},
 			})
 		}
-		input, err = b.tssAbi.Pack(constants.VoteTxOut, arg)
+		input, err = b.tssAbi.Pack(constants.VoteTxOut, args)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("fail to method(%s) pack input: %w", txIn.Method, err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager, true)
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
 }
 
 // GetOracleStdTx Here we construct tx according to method， and return tx hex bytes
 func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
-	//  check
 	if txOut == nil {
 		return nil, nil
 	}
@@ -109,7 +108,11 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 			Vault:            txOut.Vault,
 		},
 	)
-	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], "") // todo next 1
+	if err != nil {
+		return nil, fmt.Errorf("fail to pack relayData: %w", err)
+	}
+
+	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], ecommon.Bytes2Hex(txOut.Vault)) // check
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to sign tx")
 	}
@@ -119,11 +122,11 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager, true) // todo this add is error
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
 }
 
 func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64,
-	addr string, cache bool) ([]byte, error) {
+	addr string) ([]byte, error) {
 	// estimate gas
 	gasFeeCap := b.gasPrice
 	fromAddr, _ := b.keys.GetEthAddress()
@@ -182,10 +185,6 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 	ret, err := b.kw.LocalSign(td)
 	if err != nil {
 		return nil, fmt.Errorf("fail to sign transaction: %w", err)
-	}
-	if cache {
-		// todo handler this
-		// b.AddSignedTxItem(td.Hash(), ret)
 	}
 
 	return ret, nil
