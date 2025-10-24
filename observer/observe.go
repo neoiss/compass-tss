@@ -154,21 +154,6 @@ func (o *Observer) Start(ctx context.Context) error {
 	return nil
 }
 
-// ObserveSigned is called when a tx is signed by the signer and returns an observation that should be immediately submitted.
-// Observations passed to this method with 'allowFutureObservation' false will be cached in memory and skipped if they are later observed in the mempool or block.
-func (o *Observer) ObserveSigned(txIn types.TxIn) {
-	if !txIn.AllowFutureObservation {
-		// add all transaction ids to the signed tx out cache
-		o.signedTxOutCacheMu.Lock()
-		for _, tx := range txIn.TxArray {
-			o.signedTxOutCache.Add(tx.Tx, nil)
-		}
-		o.signedTxOutCacheMu.Unlock()
-	}
-
-	o.globalTxsQueue <- txIn
-}
-
 // restoreDeck initializes the memory cache with the ondeck txs from the storage
 func (o *Observer) restoreDeck() {
 	onDeckTxs, err := o.storage.GetOnDeckTxs()
@@ -308,7 +293,6 @@ func (o *Observer) sendDeck(ctx context.Context) {
 }
 
 func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chainclients.ChainClient, finalised bool) *types.TxIn {
-	// for _, txIn := range o.chunkify(deck) {
 	tmp := deck
 	if tmp.MapRelayHash != "" { // already sent
 		return deck
@@ -402,7 +386,7 @@ func (o *Observer) checkTxConfirmation() {
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
-				if deck.IsRemove || deck.PendingCount >= 10 {
+				if deck.IsRemove {
 					o.logger.Info().Any("isRemove", deck.IsRemove).
 						Any("pendingCount", deck.PendingCount).
 						Any("mapHash", deck.MapRelayHash).
@@ -418,8 +402,14 @@ func (o *Observer) checkTxConfirmation() {
 				if err != nil {
 					o.logger.Error().Any("txHash", deck.MapRelayHash).Err(err).Msg("failed to check tx confirmation")
 					deck.PendingCount += 1
+					if deck.PendingCount >= 10 {
+						deck.PendingCount = 0
+						deck.MapRelayHash = ""
+					}
 					continue
 				}
+				k := TxInKey(deck)
+				o.removeConfirmedTx(k)
 			}
 		}
 	}
