@@ -232,7 +232,7 @@ func (b *Bridge) TxStatus(txHash string) error {
 		return errors.Wrap(err, "fail to get tx by hash")
 	}
 	if pending {
-		b.logger.Info().Str("tx", txHash).Msg("Tx is still pending")
+		b.logger.Info().Str("tx", txHash).Msg("tx is still pending")
 		return errors.New("tx is pending")
 	}
 
@@ -242,7 +242,7 @@ func (b *Bridge) TxStatus(txHash string) error {
 	}
 
 	if receipt.Status == etypes.ReceiptStatusSuccessful {
-		b.logger.Info().Str("hash", txHash).Msg("Tx receipt status is success")
+		b.logger.Info().Str("hash", txHash).Msg("tx receipt status is success")
 		return nil
 	}
 	return fmt.Errorf("txHash(%s), status not success, current status is (%d)", txHash, receipt.Status)

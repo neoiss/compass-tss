@@ -230,11 +230,6 @@ func (e *EVMScanner) GetTokens() ([]*evmtypes.TokenMeta, error) {
 
 // FetchTxs extracts all relevant transactions from the block at the provided height.
 func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, error) {
-	// log currentHeight every 100 blocks
-	if currentHeight%100 == 0 {
-		e.logger.Info().Int64("currentHeight", currentHeight).Msg("Fetching txs for currentHeight")
-	}
-
 	logs, err := e.ethClient.FilterLogs(context.Background(), ethereum.FilterQuery{
 		FromBlock: big.NewInt(currentHeight),
 		ToBlock:   big.NewInt(currentHeight),

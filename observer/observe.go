@@ -302,42 +302,33 @@ func (o *Observer) sendDeck(ctx context.Context) {
 		}
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
-		result := o.chunkifyAndSendToMapRelay(*deck, chainClient, false)
+		result := o.chunkifyAndSendToMapRelay(deck, chainClient, false)
 		o.logger.Info().Any("result", result).Msg("sending success")
 	}
 }
 
-func (o *Observer) chunkifyAndSendToMapRelay(deck types.TxIn, chainClient chainclients.ChainClient, finalised bool) types.TxIn {
-	newTxIn := types.TxIn{
-		Chain:                deck.Chain,
-		Filtered:             true,
-		MemPool:              deck.MemPool,
-		ConfirmationRequired: deck.ConfirmationRequired,
-		Method:               deck.Method,
+func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chainclients.ChainClient, finalised bool) *types.TxIn {
+	// for _, txIn := range o.chunkify(deck) {
+	tmp := deck
+	if tmp.MapRelayHash != "" { // already sent
+		return deck
+	}
+	if err := o.signAndSendToMapRelay(tmp); err != nil {
+		o.logger.Error().Err(err).Str("orderId", tmp.TxArray[0].OrderId.String()).
+			Msg("fail to send to MAP")
+		return deck
 	}
 
-	for _, txIn := range o.chunkify(deck) {
-		tmp := txIn
-		if tmp.MapRelayHash != "" { // already sent
-			continue
-		}
-		if err := o.signAndSendToMapRelay(&tmp); err != nil {
-			o.logger.Error().Err(err).Str("orderId", txIn.TxArray[0].OrderId.String()).
-				Msg("fail to send to MAP")
-			newTxIn.TxArray = append(newTxIn.TxArray, txIn.TxArray...)
-			continue
-		}
-
-		i, ok := chainClient.(interface {
-			OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
-		})
-		if ok {
-			for _, item := range txIn.TxArray {
-				i.OnObservedTxIn(*item, item.Height.Int64()) // notice srcChain
-			}
+	i, ok := chainClient.(interface {
+		OnObservedTxIn(txIn types.TxInItem, blockHeight int64)
+	})
+	if ok {
+		for _, item := range tmp.TxArray {
+			i.OnObservedTxIn(*item, item.Height.Int64()) // notice srcChain
 		}
 	}
-	return newTxIn
+
+	return tmp
 }
 
 const maxTxArrayLen = 100
@@ -530,10 +521,18 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 	if len(bridgeIn.TxArray) > 0 {
-		o.addToOnDeck(&bridgeIn)
+		result := o.chunkify(bridgeIn)
+		for _, ele := range result {
+			tmp := ele
+			o.addToOnDeck(&tmp)
+		}
 	}
 	if len(bridgeOut.TxArray) > 0 {
-		o.addToOnDeck(&bridgeOut)
+		result := o.chunkify(bridgeOut)
+		for _, ele := range result {
+			tmp := ele
+			o.addToOnDeck(&tmp)
+		}
 	}
 }
 
@@ -597,7 +596,7 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 				o.logger.Err(err).Msg("fail to send network fee to map")
 				continue
 			}
-			o.logger.Info().Msg(fmt.Sprintf("successfully sent network fee to map, txHash=%s", txId))
+			o.logger.Debug().Msg(fmt.Sprintf("successfully sent network fee to map, txHash=%s", txId))
 		}
 	}
 }
