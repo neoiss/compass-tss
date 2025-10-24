@@ -26,6 +26,8 @@ type TxIn struct {
 	Method                 string `json:"method"`
 	MapRelayHash           string `json:"map_relay_hash"`
 	PendingCount           int    `json:"pending_count"`
+	IsRemove               bool   `json:"is_remove"` // indicate whether this txin is used to remove the tx from mempool
+	RemoveReason           string `json:"remove_reason"`
 }
 
 type TxInItem struct {

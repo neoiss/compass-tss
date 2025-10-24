@@ -153,3 +153,8 @@ const (
 	TssStatusCompleted
 	TssStatusFailed
 )
+
+var ToMapIgnoreError = map[string]struct{}{
+	"0x2dd1d0c8":  {}, // order exist
+	"0x7ce72949a": {}, // order_executed
+}

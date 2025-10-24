@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -355,6 +356,8 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 			Method:               txIn.Method,
 			MapRelayHash:         txIn.MapRelayHash,
 			PendingCount:         txIn.PendingCount,
+			IsRemove:             txIn.IsRemove,
+			RemoveReason:         txIn.RemoveReason,
 		}
 		if len(txIn.TxArray) > maxTxArrayLen {
 			newTx.Count = fmt.Sprintf("%d", maxTxArrayLen)
@@ -373,6 +376,15 @@ func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 func (o *Observer) signAndSendToMapRelay(txIn *types.TxIn) error {
 	txBytes, err := o.bridge.GetObservationsStdTx(txIn)
 	if err != nil {
+		for e := range constants.ToMapIgnoreError {
+			if strings.Contains(err.Error(), e) {
+				o.logger.Info().Str("id", txIn.TxArray[0].Tx).Str("method", txIn.Method).
+					Msgf("ignore This Error, Continue to the next: %s", err.Error())
+				txIn.IsRemove = true
+				txIn.RemoveReason = fmt.Sprintf("ignore error: %s", err.Error())
+				return nil
+			}
+		}
 		return fmt.Errorf("fail to get the tx: %w", err)
 	}
 	if len(txBytes) == 0 {
@@ -383,9 +395,9 @@ func (o *Observer) signAndSendToMapRelay(txIn *types.TxIn) error {
 	return backoff.Retry(func() error {
 		txID, err := o.bridge.Broadcast(txBytes)
 		if err != nil {
-			return fmt.Errorf("fail to send the tx to thorchain: %w", err)
+			return fmt.Errorf("fail to send the tx to relay: %w", err)
 		}
-		o.logger.Info().Str("mapHash", txID).Msg("sign and send to map relay successfully")
+		o.logger.Info().Str("srcTxHash", txIn.TxArray[0].Tx).Str("method", txIn.Method).Str("mapHash", txID).Msg("send to relay successfully")
 		txIn.MapRelayHash = txID
 		return nil
 	}, bf)
@@ -399,22 +411,24 @@ func (o *Observer) checkTxConfirmation() {
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
+				if deck.IsRemove || deck.PendingCount >= 10 {
+					o.logger.Info().Any("isRemove", deck.IsRemove).
+						Any("pendingCount", deck.PendingCount).
+						Any("mapHash", deck.MapRelayHash).
+						Msg("removing tx from onDeck ")
+					k := TxInKey(deck)
+					o.removeConfirmedTx(k)
+					continue
+				}
 				if deck.MapRelayHash == "" {
 					continue
 				}
-				tmp := deck
-				err := o.bridge.TxStatus(tmp.MapRelayHash)
+				err := o.bridge.TxStatus(deck.MapRelayHash)
 				if err != nil {
-					o.logger.Error().Any("txHash", tmp.MapRelayHash).Err(err).Msg("failed to check tx confirmation")
-					tmp.PendingCount += 1
-					if tmp.PendingCount >= 10 {
-						tmp.PendingCount = 0
-						tmp.MapRelayHash = ""
-					}
+					o.logger.Error().Any("txHash", deck.MapRelayHash).Err(err).Msg("failed to check tx confirmation")
+					deck.PendingCount += 1
 					continue
 				}
-				k := TxInKey(deck)
-				o.removeConfirmedTx(k)
 			}
 		}
 	}
