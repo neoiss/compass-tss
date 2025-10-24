@@ -419,7 +419,7 @@ func (o *Observer) removeConfirmedTx(k txInKey) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
-	if deck, ok := o.onDeck[k]; !ok {
+	if deck, ok := o.onDeck[k]; ok {
 		delete(o.onDeck, k)
 		if err := o.storage.RemoveTx(deck, 0); err != nil {
 			o.logger.Error().Err(err).Msg("fail to remove tx from storage")

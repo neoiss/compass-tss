@@ -716,6 +716,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 func (e *EVMScanner) reportNetworkFee(height int64) {
 	gasPrice := e.GetGasPrice()
 
+	fmt.Println("gasPrice ------------- ", gasPrice)
 	// skip posting if there is not yet a fee
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		return
