@@ -101,7 +101,8 @@ func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 	ret := make([]shareTypes.PubKeyContractAddressPair, 0, len(vaults))
 	for _, ele := range vaults {
 		vault := shareTypes.PubKeyContractAddressPair{
-			PubKey: common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
+			PubKey:    common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
+			Contracts: make(map[common.Chain]common.Address),
 		}
 		for _, router := range ele.Routers {
 			chain, ok := common.GetChainName(router.Chain)
@@ -125,7 +126,8 @@ func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, err
 	ret := make([]shareTypes.PubKeyContractAddressPair, 0, len(vaults))
 	for _, ele := range vaults {
 		vault := shareTypes.PubKeyContractAddressPair{
-			PubKey: common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
+			PubKey:    common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
+			Contracts: make(map[common.Chain]common.Address),
 		}
 		for _, router := range ele.Routers {
 			chain, ok := common.GetChainName(router.Chain)
