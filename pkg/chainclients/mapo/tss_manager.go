@@ -126,13 +126,13 @@ type TSSManagerKeyShare struct {
 }
 
 func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
-	var ret TSSManagerKeyShare
 	method := constants.GetKeyShare
 	signerAddr, _ := b.keys.GetEthAddress()
 	input, err := b.tssAbi.Pack(method, signerAddr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "fail to pack input")
 	}
+	var ret TSSManagerKeyShare
 	err = b.callContract(&ret, b.cfg.TssManager, method, input, b.tssAbi)
 	if err != nil {
 		return nil, nil, err

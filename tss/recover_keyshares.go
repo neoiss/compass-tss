@@ -33,7 +33,7 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 
 	keyShare, pubKey, err := mapchain.GetKeyShare()
 	if err != nil {
-		return fmt.Errorf("fail to get current epoch info: %w", err)
+		return fmt.Errorf("fail to get keyshare: %w", err)
 	}
 	if len(pubKey) <= 0 {
 		log.Info().Msg("pk is empty, skipping key shares recovery")

@@ -167,6 +167,8 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 		}
 	}
 
+	fmt.Println("e.cfg.ObservationFlexibilityBlocks -------------- ", cfg.ObservationFlexibilityBlocks)
+
 	return &EVMScanner{
 		cfg:                  cfg,
 		logger:               log.Logger.With().Stringer("chain", cfg.ChainID).Logger(),

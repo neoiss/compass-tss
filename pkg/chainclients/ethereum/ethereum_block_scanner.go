@@ -268,12 +268,6 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 	if len(priorityFees) == 0 {
 		return
 	}
-	fmt.Println("baseFee ------------- ", baseFee)
-	priorityFeeStr := ""
-	for _, ele := range priorityFees {
-		priorityFeeStr = priorityFeeStr + "," + ele.String()
-	}
-	fmt.Println("priorityFeeStr ------------- ", priorityFeeStr)
 
 	// find the 25th percentile priority fee in the block
 	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 }) //
