@@ -94,11 +94,8 @@ func (b *MapChainBlockScan) GetHeight() (int64, error) {
 	return b.mapBridge.GetBlockHeight()
 }
 
-// GetNetworkFee : MapChainBlockScan's only exists to satisfy the Fetcher interface
-// and should never be called, since broadcast network fees are for external chains' observed fees.
 func (b *MapChainBlockScan) GetNetworkFee() (transactionSize, transactionSwapSize, transactionFeeRate uint64) {
-	b.logger.Error().Msg("MapChainBlockScan GetNetworkFee was called (which should never happen)")
-	return 0, 0, 0
+	return b.cfg.MaxGasLimit, b.cfg.MaxSwapGasLimit, b.mapBridge.GetGasPrice().Uint64()
 }
 
 func (b *MapChainBlockScan) FetchMemPool(height int64) (types.TxIn, error) {

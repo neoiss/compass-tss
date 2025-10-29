@@ -327,20 +327,6 @@ func getTokenAddressFromAsset(asset common.Asset) string {
 func (c *Client) getSmartContractAddr(pubkey common.PubKey) common.Address {
 	return c.pubkeyMgr.GetContract(common.ETHChain, pubkey)
 }
-
-func (c *Client) getSmartContractByAddress(addr common.Address) common.Address {
-	for _, pk := range c.pubkeyMgr.GetPubKeys() {
-		ethAddr, err := pk.GetAddress(common.ETHChain)
-		if err != nil {
-			return common.NoAddress
-		}
-		if ethAddr.Equals(addr) {
-			return c.pubkeyMgr.GetContract(common.ETHChain, pk)
-		}
-	}
-	return common.NoAddress
-}
-
 func (c *Client) convertSigningAmount(amt *big.Int, token string) *big.Int {
 	// convert 1e8 to 1e18
 	amt = c.convertThorchainAmountToWei(amt)
@@ -961,67 +947,68 @@ func (c *Client) ReportSolvency(ethBlockHeight int64) error {
 		return nil
 	}
 
-	// fetch all asgard vaults
-	asgardVaults, err := c.bridge.GetAsgards()
-	if err != nil {
-		return fmt.Errorf("fail to get asgards,err: %w", err)
-	}
+	// // todo this report dont need
+	// // fetch all asgard vaults
+	// asgardVaults, err := c.bridge.GetAsgards()
+	// if err != nil {
+	// 	return fmt.Errorf("fail to get asgards,err: %w", err)
+	// }
 
-	currentGasFee := cosmos.NewUint(3 * c.cfg.BlockScanner.MaxGasLimit * c.ethScanner.lastReportedGasPrice)
+	// currentGasFee := cosmos.NewUint(3 * c.cfg.BlockScanner.MaxGasLimit * c.ethScanner.lastReportedGasPrice)
 
-	// report insolvent asgard vaults,
-	// or else all if the chain is halted and all are solvent
-	msgs := make([]stypes.Solvency, 0, len(asgardVaults))
-	solventMsgs := make([]stypes.Solvency, 0, len(asgardVaults))
-	for i := range asgardVaults {
-		var acct common.Account
-		acct, err = c.GetAccount(asgardVaults[i].PubKey, new(big.Int).SetInt64(ethBlockHeight))
-		if err != nil {
-			c.logger.Err(err).Msgf("fail to get account balance")
-			continue
-		}
+	// // report insolvent asgard vaults,
+	// // or else all if the chain is halted and all are solvent
+	// msgs := make([]stypes.Solvency, 0, len(asgardVaults))
+	// solventMsgs := make([]stypes.Solvency, 0, len(asgardVaults))
+	// for i := range asgardVaults {
+	// 	var acct common.Account
+	// 	acct, err = c.GetAccount(asgardVaults[i].PubKey, new(big.Int).SetInt64(ethBlockHeight))
+	// 	if err != nil {
+	// 		c.logger.Err(err).Msgf("fail to get account balance")
+	// 		continue
+	// 	}
 
-		msg := stypes.Solvency{
-			Height: ethBlockHeight,
-			Chain:  common.ETHChain,
-			PubKey: asgardVaults[i].PubKey,
-			Coins:  acct.Coins,
-		}
+	// 	msg := stypes.Solvency{
+	// 		Height: ethBlockHeight,
+	// 		Chain:  common.ETHChain,
+	// 		PubKey: asgardVaults[i].PubKey,
+	// 		Coins:  acct.Coins,
+	// 	}
 
-		if runners.IsVaultSolvent(acct, asgardVaults[i], currentGasFee) {
-			solventMsgs = append(solventMsgs, msg) // Solvent-vault message
-			continue
-		}
-		msgs = append(msgs, msg) // Insolvent-vault message
-	}
+	// 	if runners.IsVaultSolvent(acct, asgardVaults[i], currentGasFee) {
+	// 		solventMsgs = append(solventMsgs, msg) // Solvent-vault message
+	// 		continue
+	// 	}
+	// 	msgs = append(msgs, msg) // Insolvent-vault message
+	// }
 
-	// Only if the block scanner is unhealthy (e.g. solvency-halted) and all vaults are solvent,
-	// report that all the vaults are solvent.
-	// If there are any insolvent vaults, report only them.
-	// Not reporting both solvent and insolvent vaults is to avoid noise (spam):
-	// Reporting both could halt-and-unhalt SolvencyHalt in the same THOR block
-	// (resetting its height), plus making it harder to know at a glance from solvency reports which vaults were insolvent.
-	solvent := false
-	if !c.IsBlockScannerHealthy() && len(solventMsgs) == len(asgardVaults) {
-		msgs = solventMsgs
-		solvent = true
-	}
+	// // Only if the block scanner is unhealthy (e.g. solvency-halted) and all vaults are solvent,
+	// // report that all the vaults are solvent.
+	// // If there are any insolvent vaults, report only them.
+	// // Not reporting both solvent and insolvent vaults is to avoid noise (spam):
+	// // Reporting both could halt-and-unhalt SolvencyHalt in the same THOR block
+	// // (resetting its height), plus making it harder to know at a glance from solvency reports which vaults were insolvent.
+	// solvent := false
+	// if !c.IsBlockScannerHealthy() && len(solventMsgs) == len(asgardVaults) {
+	// 	msgs = solventMsgs
+	// 	solvent = true
+	// }
 
-	for i := range msgs {
-		c.logger.Info().
-			Stringer("asgard", msgs[i].PubKey).
-			Interface("coins", msgs[i].Coins).
-			Bool("solvent", solvent).
-			Msg("reporting solvency")
+	// for i := range msgs {
+	// 	c.logger.Info().
+	// 		Stringer("asgard", msgs[i].PubKey).
+	// 		Interface("coins", msgs[i].Coins).
+	// 		Bool("solvent", solvent).
+	// 		Msg("reporting solvency")
 
-		// send solvency to relay via global queue consumed by the observer
-		select {
-		case c.globalSolvencyQueue <- msgs[i]:
-		case <-time.After(constants.MAPRelayChainBlockTime):
-			c.logger.Info().Msgf("fail to send solvency info to relay, timeout")
-		}
-	}
-	c.lastSolvencyCheckHeight = ethBlockHeight
+	// 	// send solvency to relay via global queue consumed by the observer
+	// 	select {
+	// 	case c.globalSolvencyQueue <- msgs[i]:
+	// 	case <-time.After(constants.MAPRelayChainBlockTime):
+	// 		c.logger.Info().Msgf("fail to send solvency info to relay, timeout")
+	// 	}
+	// }
+	// c.lastSolvencyCheckHeight = ethBlockHeight
 	return nil
 }
 

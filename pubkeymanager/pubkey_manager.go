@@ -239,17 +239,17 @@ func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 		pubkeys = append(pubkeys, pk.PubKey)
 	}
 	pkm.updateContractAddresses(addressPairs)
-	vaults, err := pkm.bridge.GetAsgards()
-	if err != nil {
-		return
-	}
+	// vaults, err := pkm.bridge.GetAsgards()
+	// if err != nil {
+	// 	return
+	// }
 
-	for _, vault := range vaults {
-		if vault.GetMembership().Contains(pkm.GetNodePubKey()) {
-			pkm.AddPubKey(vault.PubKey, true)
-			pubkeys = append(pubkeys, vault.PubKey)
-		}
-	}
+	// for _, vault := range vaults {
+	// 	if vault.GetMembership().Contains(pkm.GetNodePubKey()) {
+	// 		pkm.AddPubKey(vault.PubKey, true)
+	// 		pubkeys = append(pubkeys, vault.PubKey)
+	// 	}
+	// }
 
 	if prune {
 		pkm.rwMutex.Lock()
@@ -270,8 +270,8 @@ func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 }
 
 func (pkm *PubKeyManager) updatePubKeys() {
-	pkm.logger.Info().Msg("Start to update pub keys")
-	defer pkm.logger.Info().Msg("Stop to update pub keys")
+	pkm.logger.Info().Msg("start to update pub keys")
+	defer pkm.logger.Info().Msg("stop to update pub keys")
 	for i := 1; ; i++ {
 		select {
 		case <-pkm.stopChan:

@@ -235,9 +235,9 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 	// gas price to 1e8 from 1e18
 	gasPrice := e.GetGasPrice()
-	tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10)).Uint64()
+	tcGasPrice := gasPrice.Uint64()
 	if tcGasPrice == 0 {
-		tcGasPrice = 1
+		tcGasPrice = 1000000000
 	}
 
 	// post to thorchain if there is a fee and it has changed
@@ -268,19 +268,25 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 	if len(priorityFees) == 0 {
 		return
 	}
+	fmt.Println("baseFee ------------- ", baseFee)
+	priorityFeeStr := ""
+	for _, ele := range priorityFees {
+		priorityFeeStr = priorityFeeStr + "," + ele.String()
+	}
+	fmt.Println("priorityFeeStr ------------- ", priorityFeeStr)
 
 	// find the 25th percentile priority fee in the block
 	sort.Slice(priorityFees, func(i, j int) bool { return priorityFees[i].Cmp(priorityFees[j]) == -1 }) //
 	priorityFee := priorityFees[len(priorityFees)/4]                                                    //
 
 	// consider gas price as base fee + 25th percentile priority fee
-	gasPriceWei := new(big.Int).Add(baseFee, priorityFee) // 20000
+	gasPriceWei := new(big.Int).Add(baseFee, priorityFee)
 
 	// round the price up to nearest configured resolution
-	resolution := big.NewInt(e.cfg.GasPriceResolution)                        // 10000
-	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1))) // 20000 + 9999
-	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)                    // 29999 / 9999 = 3
-	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)                    // 3 * 9999
+	resolution := big.NewInt(e.cfg.GasPriceResolution)
+	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1)))
+	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)
+	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)
 
 	// add to the cache
 	e.gasCache = append(e.gasCache, gasPriceWei)
@@ -305,19 +311,15 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 	// avg
 	mean := new(big.Int).Quo(sum, big.NewInt(int64(e.cfg.GasCacheBlocks)))
 
-	// compute the standard deviation of cache
-	// 标准值
 	std := new(big.Int)
 	for _, fee := range e.gasCache {
-		v := new(big.Int).Sub(fee, mean) // 每个值在减去平均值, 4 - 2
-		v.Mul(v, v)                      // 2*2
-		std.Add(std, v)                  // 4 +4 +4+ 4  16
+		v := new(big.Int).Sub(fee, mean)
+		v.Mul(v, v)
+		std.Add(std, v)
 	}
-	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks))) // 在除以缓存长度 16/4 = 4
-	std.Sqrt(std)                                         // std开根号 2
+	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks)))
+	std.Sqrt(std)
 
-	// mean + 3x standard deviation over cache blocks
-	// 2 + 2*3 = 8
 	e.gasPrice = mean.Add(mean, std.Mul(std, big.NewInt(3)))
 
 	// record metrics

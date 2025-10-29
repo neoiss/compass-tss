@@ -85,12 +85,10 @@ type Bridge interface {
 	GetNodeAccounts([]ecommon.Address) ([]structure.MaintainerInfo, error)
 	GetKeygenBlock() (*structure.KeyGen, error)
 	GetPools() (stypes.Pools, error) //
-	GetVault(pubkey string) (stypes.Vault, error)
+	GetVault(pubkey []byte) (*Vault, error)
 	GetPubKeys() ([]PubKeyContractAddressPair, error)
-	GetContractAddress() ([]PubKeyContractAddressPair, error)
 	GetLastObservedInHeight(chain common.Chain) (int64, error)
-	GetLastSignedOutHeight(chain common.Chain) (int64, error)
-	GetAsgards() (stypes.Vaults, error)
+	GetAsgards() (Vaults, error)
 	GetConstants() (map[string]int64, error)
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
@@ -111,7 +109,6 @@ type Bridge interface {
 		members []ecommon.Address) (string, error)
 	GetKeyShare() ([]byte, []byte, error)
 	GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error)
-	GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error)
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 	GetChainID(name string) (*big.Int, error)
@@ -119,6 +116,7 @@ type Bridge interface {
 	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
 	GetOracleStdTx(txIn *types.TxOutItem) ([]byte, error)
 	TxStatus(txHash string) error
+	GetGasPrice() *big.Int
 }
 
 type BridgeOption func(Bridge) error
@@ -126,4 +124,27 @@ type BridgeOption func(Bridge) error
 type PubKeyContractAddressPair struct {
 	PubKey    common.PubKey
 	Contracts map[common.Chain]common.Address // todo will next 100
+}
+
+// Vaults a list of vault
+type Vaults []Vault
+
+type Vault struct {
+	PubKey       []byte
+	Members      []ecommon.Address
+	Chains       []*big.Int
+	RouterTokens []routerTokens
+}
+
+type routerTokens struct {
+	Chain  *big.Int
+	Router []byte
+	Token  []coins
+}
+
+type coins struct {
+	Token      []byte
+	Balance    *big.Int
+	PendingOut *big.Int
+	Decimals   *big.Int
 }

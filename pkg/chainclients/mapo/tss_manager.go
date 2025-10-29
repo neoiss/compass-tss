@@ -121,8 +121,8 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 }
 
 type TSSManagerKeyShare struct {
-	Pubkey   []byte `json:"pubkey,omitempty"`
-	KeyShare []byte `json:"keyShare,omitempty"`
+	Pubkey   []byte
+	KeyShare []byte
 }
 
 func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {

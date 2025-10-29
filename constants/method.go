@@ -60,6 +60,12 @@ const (
 
 var ZeroHash = "0x0000000000000000000000000000000000000000"
 
+// -----------------------------------------------------------------
+// Method of View
+// -----------------------------------------------------------------
 const (
-	GetPublickeys = "getPublickeys"
+	GetPublickeys      = "getPublickeys"
+	GetLastTxOutHeight = "getLastTxOutHeight"
+	GetLastTxInHeight  = "getLastTxInHeight"
+	GetVault           = "getVault"
 )

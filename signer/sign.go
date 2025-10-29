@@ -535,7 +535,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		tx.Checkpoint = item.Checkpoint
 	}
 
-	// todo utxo
+	//  utxo
 	pubKeys, _ := s.mapBridge.GetAsgardPubKeys()
 	tx.VaultPubKey = pubKeys[0].PubKey
 
@@ -641,28 +641,6 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		s.m.GetHistograms(metrics.SignAndBroadcastDuration(chain.GetChain())).Observe(time.Since(start).Seconds())
 	}()
 
-	// if !tx.OutHash.IsEmpty() {
-	// 	s.logger.Info().Str("OutHash", tx.OutHash.String()).Msg("Tx had been sent out before")
-	// 	return nil, nil, nil // return nil and discard item
-	// }
-
-	// We get the keysign object from thorchain again to ensure it hasn't
-	// been signed already, and we can skip. This helps us not get stuck on
-	// a task that we'll never sign, because 2/3rds already has and will
-	// never be available to sign again.
-	// txOut, err := s.mapBridge.GetTxByBlockNumber(height, tx.VaultPubKey.String())
-	// if err != nil {
-	// 	s.logger.Error().Err(err).Msg("fail to get keysign items")
-	// 	return nil, nil, err
-	// }
-	// for _, txArray := range txOut.TxArray {
-	// 	if txArray.TxOutItem(item.TxOutItem.Height).Equals(tx) && !txArray.OutHash.IsEmpty() {
-	// 		// already been signed, we can skip it
-	// 		s.logger.Info().Str("tx_id", tx.OutHash.String()).Msgf("Already signed. skipping...")
-	// 		return nil, nil, nil
-	// 	}
-	// }
-
 	// If this is a UTXO chain, lock the vault around sign and broadcast to avoid
 	// consolidate transactions from using the same UTXOs.
 	if utxoClient, ok := chain.(*utxo.Client); ok {
@@ -699,38 +677,32 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// broadcast the transaction
 	hash, err := chain.BroadcastTx(tx, signedTx)
 	if err != nil {
-		s.logger.Error().Err(err).Str("memo", tx.Memo).Msg("Fail to broadcast tx to chain")
+		s.logger.Error().Err(err).Str("memo", tx.Memo).Msg("fail to broadcast tx to chain")
 
 		// store the signed tx for the next retry
 		item.SignedTx = signedTx
 		item.Observation = observation
 		if storeErr := s.storage.Set(item); storeErr != nil {
-			s.logger.Error().Err(storeErr).Msg("Fail to update tx out store item with signed tx")
+			s.logger.Error().Err(storeErr).Msg("fail to update tx out store item with signed tx")
 		}
 
 		return nil, observation, err
 	}
-	s.logger.Info().Str("txId", hash).Str("memo", tx.Memo).Msg("Broadcasted tx to chain")
+	s.logger.Info().Str("txId", hash).Str("memo", tx.Memo).Msg("broadcasted tx to chain")
 
-	// if s.isTssKeysign(tx.VaultPubKey) {
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
-	// }
 
 	return nil, observation, nil
 }
 
-func (s *Signer) isTssKeysign(pubKey common.PubKey) bool {
-	return !s.localPubKey.Equals(pubKey)
-}
-
 // Stop the signer process
 func (s *Signer) Stop() error {
-	s.logger.Info().Msg("Receive request to stop signer")
-	defer s.logger.Info().Msg("Signer stopped successfully")
+	s.logger.Info().Msg("receive request to stop signer")
+	defer s.logger.Info().Msg("signer stopped successfully")
 	close(s.stopChan)
 	s.wg.Wait()
 	if err := s.m.Stop(); err != nil {
-		s.logger.Error().Err(err).Msg("Fail to stop metric server")
+		s.logger.Error().Err(err).Msg("fail to stop metric server")
 	}
 	s.blockScanner.Stop()
 	return s.storage.Close()
@@ -755,7 +727,7 @@ func (s *Signer) storageList() []TxOutStoreItem {
 
 func (s *Signer) processTransaction(item TxOutStoreItem) {
 	s.logger.Info().Int64("height", item.Height).Int("status", int(item.Status)).
-		Interface("tx", item.TxOutItem).Msg("Signing transaction")
+		Interface("tx", item.TxOutItem).Msg("signing transaction")
 
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

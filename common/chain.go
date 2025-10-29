@@ -217,44 +217,6 @@ func (c Chain) GetGasAsset() Asset {
 	}
 }
 
-// GetGasUnits returns name of the gas unit for each chain
-func (c Chain) GetGasUnits() string {
-	switch c {
-	case AVAXChain:
-		return "nAVAX"
-	case BTCChain:
-		return "satsperbyte"
-	case BCHChain:
-		return "satsperbyte"
-	case DOGEChain:
-		return "satsperbyte"
-	case ETHChain, BSCChain, BASEChain:
-		return "gwei"
-	case GAIAChain:
-		return "uatom"
-	case LTCChain:
-		return "satsperbyte"
-	case XRPChain:
-		return "drop"
-	default:
-		return ""
-	}
-}
-
-// GetGasAssetDecimal returns decimals for the gas asset of the given chain. Currently
-// Gaia is 1e6 and all others are 1e8. If an external chain's gas asset is larger than
-// 1e8, just return cosmos.DefaultCoinDecimals.
-func (c Chain) GetGasAssetDecimal() int64 {
-	switch c {
-	case GAIAChain:
-		return 6
-	case XRPChain:
-		return 6
-	default:
-		return cosmos.DefaultCoinDecimals
-	}
-}
-
 // IsValidAddress make sure the address is correct for the chain
 // And this also make sure mocknet doesn't use mainnet address vice versa
 func (c Chain) IsValidAddress(addr Address) bool {

@@ -739,8 +739,9 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 		}
 	}
 
-	// gas price to 1e8 from 1e18
-	tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10))
+	// dont need this step
+	// // gas price to 1e8 from 1e18
+	// tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10))
 
 	// post to map
 	cId, _ := e.cfg.ChainID.ChainID()
@@ -749,7 +750,7 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 		Height:              height,
 		TransactionSize:     e.cfg.MaxGasLimit,
 		TransactionSwapSize: e.cfg.MaxSwapGasLimit,
-		TransactionRate:     tcGasPrice.Uint64(),
+		TransactionRate:     gasPrice.Uint64(),
 	}
 
 	e.lastReportedGasPrice = gasPrice.Uint64()
@@ -833,34 +834,4 @@ func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	e.logger.Debug().Msg("TxInItem parsed from smart contract")
 
 	return txInItem, nil
-}
-
-// getTxInFromFailedTransaction when a transaction failed due to out of gas, this method
-// will check whether the transaction is an outbound it fake a txInItem if the failed
-// transaction is an outbound , and report it back to thornode, thus the gas fee can be
-// subsidised need to know that this will also cause the vault that send
-// out the outbound to be slashed 1.5x gas it is for security purpose
-func (e *EVMScanner) getTxInFromFailedTransaction(tx *etypes.Transaction, receipt *etypes.Receipt) *stypes.TxInItem {
-	if receipt.Status == etypes.ReceiptStatusSuccessful {
-		e.logger.Info().Str("hash", tx.Hash().String()).Msg("success transaction should not get into getTxInFromFailedTransaction")
-		return nil
-	}
-	fromAddr, err := e.eipSigner.Sender(tx)
-	if err != nil {
-		e.logger.Err(err).Msg("failed to get from address")
-		return nil
-	}
-	ok, cif := e.pubkeyMgr.IsValidPoolAddress(fromAddr.String(), e.cfg.ChainID)
-	if !ok || cif.IsEmpty() {
-		return nil
-	}
-	//txGasPrice := tx.GasPrice()
-	txHash := tx.Hash().Hex()[2:]
-	return &stypes.TxInItem{
-		Tx:     txHash,
-		Sender: strings.ToLower(fromAddr.String()),
-		//To:     strings.ToLower(tx.To().String()),
-		//Coins:  common.NewCoins(common.NewCoin(e.cfg.ChainID.GetGasAsset(), cosmos.NewUint(1))),
-		//Gas:    common.MakeEVMGas(e.cfg.ChainID, txGasPrice, receipt.GasUsed, receipt.L1Fee),
-	}
 }

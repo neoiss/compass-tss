@@ -3,7 +3,6 @@ package mapo
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -57,20 +56,18 @@ type Bridge struct {
 	errCounter                                                *prometheus.CounterVec
 	m                                                         *metrics.Metrics
 	blockHeight                                               int64
-	chainID                                                   *big.Int
+	chainID, gasPrice, epoch                                  *big.Int
 	httpClient                                                *retryablehttp.Client
 	broadcastLock                                             *sync.RWMutex
 	ethClient                                                 *ethclient.Client
 	blockScanner                                              *MapChainBlockScan
 	stopChan                                                  chan struct{}
 	wg                                                        *sync.WaitGroup
-	gasPrice                                                  *big.Int
 	gasCache                                                  []*big.Int
 	ethPriKey                                                 *ecdsa.PrivateKey
 	kw                                                        *evm.KeySignWrapper
 	ethRpc                                                    *evm.EthRPC
 	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi *abi.ABI
-	epoch                                                     *big.Int
 	epochHash                                                 ecommon.Hash
 }
 
@@ -278,63 +275,6 @@ func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo strin
 	return b.Broadcast([]byte{})
 }
 
-// GetInboundOutbound separate the txs into inbound and outbound
-func (b *Bridge) GetInboundOutbound(txIns common.ObservedTxs) (common.ObservedTxs, common.ObservedTxs, error) {
-	if len(txIns) == 0 {
-		return nil, nil, nil
-	}
-	inbound := common.ObservedTxs{}
-	outbound := common.ObservedTxs{}
-
-	// spilt our txs into inbound vs outbound txs
-	for _, tx := range txIns {
-		chain := common.EmptyChain
-		if len(tx.Tx.Coins) > 0 {
-			chain = tx.Tx.Coins[0].Asset.Chain
-		}
-
-		obAddr, err := tx.ObservedPubKey.GetAddress(chain)
-		if err != nil {
-			b.logger.Err(err).Msgf("fail to parse observed pool address: %s", tx.ObservedPubKey.String())
-			continue
-		}
-		vaultToAddress := tx.Tx.ToAddress.Equals(obAddr)
-		vaultFromAddress := tx.Tx.FromAddress.Equals(obAddr)
-		var inInboundArray, inOutboundArray bool
-		if vaultToAddress {
-			inInboundArray = inbound.Contains(tx)
-		}
-		if vaultFromAddress {
-			inOutboundArray = outbound.Contains(tx)
-		}
-		// for consolidate UTXO tx, both From & To address will be the asgard address
-		// thus here we need to make sure that one add to inbound , the other add to outbound
-		switch {
-		case !vaultToAddress && !vaultFromAddress:
-			// Neither ToAddress nor FromAddress matches obAddr, so drop it.
-			b.logger.Error().Msgf("chain (%s) tx (%s) observedaddress (%s) does not match its toaddress (%s) or fromaddress (%s)", tx.Tx.Chain, tx.Tx.ID, obAddr, tx.Tx.ToAddress, tx.Tx.FromAddress)
-		case vaultToAddress && !inInboundArray:
-			inbound = append(inbound, tx)
-		case vaultFromAddress && !inOutboundArray:
-			outbound = append(outbound, tx)
-		case inInboundArray && inOutboundArray:
-			// It's already in both arrays, so drop it.
-			b.logger.Error().Msgf("vault-to-vault chain (%s) tx (%s) is already in both inbound and outbound arrays", tx.Tx.Chain, tx.Tx.ID)
-		case !vaultFromAddress && inInboundArray:
-			// It's already in its only (inbound) array, so drop it.
-			b.logger.Error().Msgf("observed tx in for chain (%s) tx (%s) is already in the inbound array", tx.Tx.Chain, tx.Tx.ID)
-		case !vaultToAddress && inOutboundArray:
-			// It's already in its only (outbound) array, so drop it.
-			b.logger.Error().Msgf("observed tx out for chain (%s) tx (%s) is already in the outbound array", tx.Tx.Chain, tx.Tx.ID)
-		default:
-			// This should never happen; rather than dropping it, return an error.
-			return nil, nil, fmt.Errorf("could not determine if chain (%s) tx (%s) was inbound or outbound", tx.Tx.Chain, tx.Tx.ID)
-		}
-	}
-
-	return inbound, outbound, nil
-}
-
 // EnsureNodeWhitelistedWithTimeout check node is whitelisted with timeout retry
 func (b *Bridge) EnsureNodeWhitelistedWithTimeout() error {
 	for {
@@ -398,16 +338,7 @@ func (b *Bridge) HeartBeat() error {
 
 // GetKeysignParty call into mapBridge to get the node accounts that should be join together to sign the message
 func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, error) {
-	p := fmt.Sprintf(SignerMembershipEndpoint, vaultPubKey.String())
-	result, _, err := b.getWithPath(p)
-	if err != nil {
-		return common.PubKeys{}, fmt.Errorf("fail to get key sign party from mapBridge: %w", err)
-	}
-	var keys common.PubKeys
-	if err = json.Unmarshal(result, &keys); err != nil {
-		return common.PubKeys{}, fmt.Errorf("fail to unmarshal result to pubkeys:%w", err)
-	}
-	return keys, nil
+	return common.PubKeys{}, nil
 }
 
 // IsSyncing returns bool for if map relay is catching up to the rest of the
@@ -438,107 +369,6 @@ func (b *Bridge) WaitSync() error {
 		time.Sleep(constants.MAPRelayChainBlockTime)
 	}
 	return nil
-}
-
-// GetAsgards retrieve all the asgard vaults from mapBridge
-func (b *Bridge) GetAsgards() (stypes.Vaults, error) {
-	buf, s, err := b.getWithPath(AsgardVault)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code %d", s)
-	}
-	var vaults stypes.Vaults
-	if err = json.Unmarshal(buf, &vaults); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal asgard vaults from json: %w", err)
-	}
-	return vaults, nil
-}
-
-// GetVault retrieves a specific vault from mapBridge.
-func (b *Bridge) GetVault(pubkey string) (stypes.Vault, error) {
-	buf, s, err := b.getWithPath(fmt.Sprintf(VaultEndpoint, pubkey))
-	if err != nil {
-		return stypes.Vault{}, fmt.Errorf("fail to get vault: %w", err)
-	}
-	if s != http.StatusOK {
-		return stypes.Vault{}, fmt.Errorf("unexpected status code %d", s)
-	}
-	var vault stypes.Vault
-	if err = json.Unmarshal(buf, &vault); err != nil {
-		return stypes.Vault{}, fmt.Errorf("fail to unmarshal vault from json: %w", err)
-	}
-	return vault, nil
-}
-
-func (b *Bridge) getVaultPubkeys() ([]byte, error) {
-	return nil, nil
-	//buf, s, err := b.getWithPath(PubKeysEndpoint)
-	//if err != nil {
-	//	return nil, fmt.Errorf("fail to get asgard vaults: %w", err)
-	//}
-	//if s != http.StatusOK {
-	//	return nil, fmt.Errorf("unexpected status code %d", s)
-	//}
-	//return buf, nil
-}
-
-// GetPubKeys retrieve vault pub keys and their relevant smart contracts
-func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	//// todo handler
-	//buf, err := b.getVaultPubkeys()
-	//if err != nil {
-	//	return nil, fmt.Errorf("fail to get vault pubkeys ,err: %w", err)
-	//}
-	//var result openapi.VaultPubkeysResponse
-	//if err = json.Unmarshal(buf, &result); err != nil {
-	//	return nil, fmt.Errorf("fail to unmarshal pubkeys: %w", err)
-	//}
-	//var addressPairs []shareTypes.PubKeyContractAddressPair
-	//for _, v := range append(result.Asgard, result.Inactive...) {
-	//	kp := shareTypes.PubKeyContractAddressPair{
-	//		PubKey:    common.PubKey(v.PubKey),
-	//		Contracts: make(map[common.Chain]common.Address),
-	//	}
-	//	for _, item := range v.Routers {
-	//		kp.Contracts[common.Chain(*item.Chain)] = common.Address(*item.Router)
-	//	}
-	//	addressPairs = append(addressPairs, kp)
-	//}
-	//return addressPairs, nil
-	return nil, nil
-}
-
-// GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
-func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	// todo temp code, will next 200
-	return []shareTypes.PubKeyContractAddressPair{
-		{
-			PubKey: "04b0a5b39ead06ffde6848822532f9a34c4ab350fa241e09646166abd4e3836bd2c8e7a83bf4c7cf91f921e06719d94941fd53ab1486fe2fe8d394833fecb9d547",
-		},
-	}, nil
-}
-
-// GetContractAddress retrieve the contract address from asgard
-func (b *Bridge) GetContractAddress() ([]shareTypes.PubKeyContractAddressPair, error) {
-	return nil, nil
-}
-
-// GetPools get pools from relay
-func (b *Bridge) GetPools() (stypes.Pools, error) {
-	buf, s, err := b.getWithPath(PoolsEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pools addresses: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var pools stypes.Pools
-	if err = json.Unmarshal(buf, &pools); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal pools from json: %w", err)
-	}
-	return pools, nil
 }
 
 // GetChain returns the chain.

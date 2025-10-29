@@ -297,7 +297,7 @@ func (b *BlockScanner) scanBlocks() {
 // does not match the fee published to THORNode. This can be called periodically to
 // ensure fee changes find consensus despite raciness on the observation height.
 func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
-	// Only broadcast MsgNetworkFee if the chain isn't THORChain
+	// Only broadcast MsgNetworkFee if the chain isn't relay
 	// and the scanner is healthy.
 	if !b.healthy.Load() {
 		return

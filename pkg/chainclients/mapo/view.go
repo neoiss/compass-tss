@@ -1,11 +1,128 @@
 package mapo
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
+	"net/http"
 
+	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/pkg/errors"
 )
+
+// GetLastObservedInHeight returns the lastobservedin value for the chain past in
+func (b *Bridge) GetLastObservedInHeight(chain common.Chain) (int64, error) {
+	// todo handler
+	lastblock, err := b.getLastBlock(chain)
+	if err != nil {
+		return 0, err
+	}
+	if lastblock == nil {
+		return 0, nil
+	}
+
+	return lastblock.LastObservedIn, nil
+}
+
+// GetBlockHeight returns the current height for mapBridge blocks
+func (b *Bridge) GetBlockHeight() (int64, error) {
+	return b.ethRpc.GetBlockHeight()
+}
+
+type LastBlock struct {
+	Chain          string `json:"chain"`
+	LastObservedIn int64  `json:"last_observed_in"`
+	Relay          int64  `json:"relay"`
+}
+
+func (b *Bridge) getLastBlock(chain common.Chain) (*LastBlock, error) {
+	method := constants.GetLastTxOutHeight
+	input, err := b.viewAbi.Pack(method)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack txOut failed")
+	}
+
+	var relayHeight *big.Int
+	err = b.callContract(&relayHeight, b.cfg.ViewController, method, input, b.viewAbi)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to call contract")
+	}
+
+	method = constants.GetLastTxInHeight
+	cId, _ := chain.ChainID()
+	input, err = b.viewAbi.Pack(method, cId)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack txIn failed")
+	}
+
+	var otherHeight *big.Int
+	err = b.callContract(&otherHeight, b.cfg.ViewController, method, input, b.viewAbi)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to call contract")
+	}
+
+	return &LastBlock{
+		Chain:          chain.String(),
+		LastObservedIn: otherHeight.Int64(),
+		Relay:          relayHeight.Int64(),
+	}, nil
+}
+
+// GetAsgards retrieve all the asgard vaults from mapBridge
+func (b *Bridge) GetAsgards() (shareTypes.Vaults, error) {
+	vault, err := b.getPublickeys()
+	if err != nil {
+		return nil, err
+	}
+
+	ret, err := b.GetVault(vault.PubKey)
+	if err != nil {
+		return nil, err
+	}
+	return shareTypes.Vaults{*ret}, nil
+}
+
+// GetPubKeys retrieve vault pub keys and their relevant smart contracts
+func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
+	vault, err := b.getPublickeys()
+	if err != nil {
+		return nil, err
+	}
+	ret := shareTypes.PubKeyContractAddressPair{
+		PubKey: common.PubKey("04" + ecommon.Bytes2Hex(vault.PubKey)),
+	}
+	for _, router := range vault.Routers {
+		chain, ok := common.GetChainName(router.Chain)
+		if !ok {
+			continue
+		}
+		ret.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+	}
+	return []shareTypes.PubKeyContractAddressPair{ret}, nil
+}
+
+// GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
+func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
+	vault, err := b.getPublickeys()
+	if err != nil {
+		return nil, err
+	}
+	ret := shareTypes.PubKeyContractAddressPair{
+		PubKey: common.PubKey("04" + ecommon.Bytes2Hex(vault.PubKey)),
+	}
+	for _, router := range vault.Routers {
+		chain, ok := common.GetChainName(router.Chain)
+		if !ok {
+			continue
+		}
+		ret.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+	}
+	return []shareTypes.PubKeyContractAddressPair{ret}, nil
+}
 
 type VaultInfo struct {
 	PubKey  []byte
@@ -31,4 +148,35 @@ func (b *Bridge) getPublickeys() (*VaultInfo, error) {
 	}
 
 	return &ret, nil
+}
+
+func (b *Bridge) GetVault(pubkey []byte) (*shareTypes.Vault, error) {
+	method := constants.GetVault
+	input, err := b.viewAbi.Pack(method, pubkey)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := shareTypes.Vault{}
+	err = b.callContract(&ret, b.cfg.ViewController, method, input, b.viewAbi)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to call %s", method)
+	}
+	return &ret, nil
+}
+
+// GetPools get pools from relay
+func (b *Bridge) GetPools() (stypes.Pools, error) {
+	buf, s, err := b.getWithPath(PoolsEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get pools addresses: %w", err)
+	}
+	if s != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", s)
+	}
+	var pools stypes.Pools
+	if err = json.Unmarshal(buf, &pools); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal pools from json: %w", err)
+	}
+	return pools, nil
 }

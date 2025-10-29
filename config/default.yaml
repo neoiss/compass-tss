@@ -52,6 +52,8 @@ bifrost:
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
       max_http_request_retry: "10"
+      max_gas_limit: 100000
+      max_swap_gas_limit: 150000
     leveldb: *default-leveldb
     keygen_timeout: 5m
     keysign_timeout: 45s
@@ -115,7 +117,6 @@ bifrost:
         db_path: ./build/observer
         scan_mempool: true
         max_contract_tx_logs: 0
-
         # the following defaults must be defined to override with environment
         start_block_height: 263889
         cosmos_grpc_host: ""
@@ -124,7 +125,8 @@ bifrost:
         whitelist_tokens: []
         whitelist_cosmos_assets: []
         concurrency: 0
-        max_gas_limit: 0
+        max_gas_limit: 100000
+        max_swap_gas_limit: 150000
         fixed_gas_rate: 0
         gas_price_resolution: 10_000_000_000 # 10 gwei
         max_resume_block_lag: 24h
