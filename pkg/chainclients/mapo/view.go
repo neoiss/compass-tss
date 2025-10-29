@@ -74,54 +74,71 @@ func (b *Bridge) getLastBlock(chain common.Chain) (*LastBlock, error) {
 
 // GetAsgards retrieve all the asgard vaults from mapBridge
 func (b *Bridge) GetAsgards() (shareTypes.Vaults, error) {
-	vault, err := b.getPublickeys()
+	vaults, err := b.getPublickeys()
 	if err != nil {
 		return nil, err
 	}
 
-	ret, err := b.GetVault(vault.PubKey)
-	if err != nil {
-		return nil, err
+	ret := make(shareTypes.Vaults, 0, len(vaults))
+	for _, ele := range vaults {
+		vault, err := b.GetVault(ele.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, *vault)
 	}
-	return shareTypes.Vaults{*ret}, nil
+
+	return ret, nil
 }
 
 // GetPubKeys retrieve vault pub keys and their relevant smart contracts
 func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	vault, err := b.getPublickeys()
+	vaults, err := b.getPublickeys()
 	if err != nil {
 		return nil, err
 	}
-	ret := shareTypes.PubKeyContractAddressPair{
-		PubKey: common.PubKey("04" + ecommon.Bytes2Hex(vault.PubKey)),
-	}
-	for _, router := range vault.Routers {
-		chain, ok := common.GetChainName(router.Chain)
-		if !ok {
-			continue
+
+	ret := make([]shareTypes.PubKeyContractAddressPair, 0, len(vaults))
+	for _, ele := range vaults {
+		vault := shareTypes.PubKeyContractAddressPair{
+			PubKey: common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
 		}
-		ret.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+		for _, router := range ele.Routers {
+			chain, ok := common.GetChainName(router.Chain)
+			if !ok {
+				continue
+			}
+			vault.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+		}
+		ret = append(ret, vault)
 	}
-	return []shareTypes.PubKeyContractAddressPair{ret}, nil
+
+	return ret, nil
 }
 
 // GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
 func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
-	vault, err := b.getPublickeys()
+	vaults, err := b.getPublickeys()
 	if err != nil {
 		return nil, err
 	}
-	ret := shareTypes.PubKeyContractAddressPair{
-		PubKey: common.PubKey("04" + ecommon.Bytes2Hex(vault.PubKey)),
-	}
-	for _, router := range vault.Routers {
-		chain, ok := common.GetChainName(router.Chain)
-		if !ok {
-			continue
+	ret := make([]shareTypes.PubKeyContractAddressPair, 0, len(vaults))
+	for _, ele := range vaults {
+		vault := shareTypes.PubKeyContractAddressPair{
+			PubKey: common.PubKey("04" + ecommon.Bytes2Hex(ele.PubKey)),
 		}
-		ret.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+		for _, router := range ele.Routers {
+			chain, ok := common.GetChainName(router.Chain)
+			if !ok {
+				continue
+			}
+			vault.Contracts[chain] = common.Address(ecommon.BytesToAddress(router.Router).String())
+		}
+
+		ret = append(ret, vault)
 	}
-	return []shareTypes.PubKeyContractAddressPair{ret}, nil
+
+	return ret, nil
 }
 
 type VaultInfo struct {
@@ -134,20 +151,20 @@ type VaultRouter struct {
 	Router []byte
 }
 
-func (b *Bridge) getPublickeys() (*VaultInfo, error) {
+func (b *Bridge) getPublickeys() ([]VaultInfo, error) {
 	method := constants.GetPublickeys
 	input, err := b.viewAbi.Pack(method)
 	if err != nil {
 		return nil, err
 	}
 
-	ret := VaultInfo{}
+	var ret []VaultInfo
 	err = b.callContract(&ret, b.cfg.ViewController, method, input, b.viewAbi)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to call %s", method)
 	}
 
-	return &ret, nil
+	return ret, nil
 }
 
 func (b *Bridge) GetVault(pubkey []byte) (*shareTypes.Vault, error) {

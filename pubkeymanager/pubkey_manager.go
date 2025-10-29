@@ -72,7 +72,7 @@ func NewPubKeyManager(bridge shareTypes.Bridge, m *metrics.Metrics) (*PubKeyMana
 func (pkm *PubKeyManager) Start() error {
 	pubkeys, err := pkm.getPubkeys()
 	if err != nil {
-		return fmt.Errorf("fail to get pubkeys from thorchain: %w", err)
+		return fmt.Errorf("fail to get pubkeys from relay: %w", err)
 	}
 	for _, pk := range pubkeys {
 		pkm.AddPubKey(pk.PubKey, false)
@@ -230,7 +230,7 @@ func (pkm *PubKeyManager) removePubKeyInternal(pk common.PubKey) {
 func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 	addressPairs, err := pkm.getPubkeys()
 	if err != nil {
-		pkm.logger.Error().Err(err).Msg("fail to get pubkeys from THORChain")
+		pkm.logger.Error().Err(err).Msg("fail to get pubkeys from relay")
 		return
 	}
 	var pubkeys common.PubKeys
