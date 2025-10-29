@@ -494,25 +494,6 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 	return txInbound, nil
 }
 
-// TODO: This is only used by unit tests now, but covers receiptToTxInItem internally -
-// refactor so this logic is only in test code.
-func (e *EVMScanner) getTxInItem(tx *etypes.Transaction) (*stypes.TxInItem, error) {
-	//if tx == nil || tx.To() == nil {
-	//	return nil, nil
-	//}
-	//
-	//receipt, err := e.ethRpc.GetReceipt(tx.Hash().Hex())
-	//if err != nil {
-	//	if errors.Is(err, ethereum.NotFound) {
-	//		return nil, nil
-	//	}
-	//	return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
-	//}
-	//
-	//return e.receiptToTxInItem(tx, receipt)
-	return nil, nil
-}
-
 func (e *EVMScanner) receiptToTxInItem(ll *etypes.Log, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
 	if receipt.Status != etypes.ReceiptStatusSuccessful {
 		e.logger.Debug().Stringer("txid", ll.TxHash).Uint64("status", receipt.Status).Msg("tx failed")
@@ -680,6 +661,12 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 		return
 	}
 
+	priceStr := ""
+	for _, ele := range prices {
+		priceStr = priceStr + ele.String() + ","
+	}
+	fmt.Println("priceStr ------------- ", priceStr)
+
 	// find the median gas price in the block
 	sort.Slice(prices, func(i, j int) bool { return prices[i].Cmp(prices[j]) == -1 })
 	gasPrice := prices[len(prices)/2]
@@ -706,6 +693,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	median.Add(median, new(big.Int).Sub(resolution, big.NewInt(1)))
 	median = median.Div(median, resolution)
 	median = median.Mul(median, resolution)
+	fmt.Println("median ---------------- ", median)
 	e.gasPrice = median
 
 	// record metrics
@@ -718,7 +706,6 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 func (e *EVMScanner) reportNetworkFee(height int64) {
 	gasPrice := e.GetGasPrice()
 
-	fmt.Println("gasPrice ------------- ", gasPrice)
 	// skip posting if there is not yet a fee
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		return

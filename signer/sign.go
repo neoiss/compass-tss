@@ -274,8 +274,8 @@ func (s *Signer) processTransactions() {
 
 // processTxnOut processes outbound TxOuts and save them to storage
 func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
-	s.logger.Info().Msg("Start to process tx out")
-	defer s.logger.Info().Msg("Stop to process tx out")
+	s.logger.Info().Msg("start to process tx out")
+	defer s.logger.Info().Msg("stop to process tx out")
 	defer s.wg.Done()
 	for {
 		select {
@@ -285,14 +285,14 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 			if !more {
 				return
 			}
-			s.logger.Info().Msgf("Received a TxOut Array of %v from the MAP", txOut)
+			s.logger.Info().Msgf("received a TxOut Array of %v from the MAP", txOut)
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
 				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
 			}
 			if err := s.storage.Batch(items); err != nil {
-				s.logger.Error().Err(err).Msg("Fail to save tx out items to storage")
+				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
 			}
 		}
 	}
@@ -311,15 +311,15 @@ func (s *Signer) processKeygen(ch <-chan *structure.KeyGen) {
 				return
 			}
 
-			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("Received a keygen block from map relay")
+			s.logger.Info().Interface("keygenBlock", keygenBlock).Msg("received a keygen block from map relay")
 			s.processKeygenBlock(keygenBlock)
 		}
 	}
 }
 
 func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
-	s.logger.Info().Msg("Start to cache tx oracle")
-	defer s.logger.Info().Msg("Stop to cache tx oracle")
+	s.logger.Info().Msg("start to cache tx oracle")
+	defer s.logger.Info().Msg("stop to cache tx oracle")
 	defer s.wg.Done()
 
 	for {
@@ -330,22 +330,22 @@ func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
 			if !ok {
 				return
 			}
-			s.logger.Info().Msgf("Oracle Received a TxOut Array of %v from the MAPRelay", txOut)
+			s.logger.Info().Msgf("oracle Received a TxOut Array of %v from the MAPRelay", txOut)
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
 				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
 			}
 			if err := s.oracleStorage.Batch(items); err != nil {
-				s.logger.Error().Err(err).Msg("Fail to save tx out items to storage")
+				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
 			}
 		}
 	}
 }
 
 func (s *Signer) processOracle() {
-	s.logger.Info().Msg("Start to process tx oracle")
-	defer s.logger.Info().Msg("Stop to process tx oracle")
+	s.logger.Info().Msg("start to process tx oracle")
+	defer s.logger.Info().Msg("stop to process tx oracle")
 	defer s.wg.Done()
 	for {
 		select {
@@ -356,7 +356,7 @@ func (s *Signer) processOracle() {
 			for _, item := range list {
 				txBytes, err := s.mapBridge.GetOracleStdTx(&item.TxOutItem)
 				if err != nil {
-					s.logger.Error().Err(err).Msg("Fail to get oracle std tx")
+					s.logger.Error().Err(err).Msg("fail to get oracle std tx")
 					continue
 				}
 
@@ -373,15 +373,15 @@ func (s *Signer) processOracle() {
 						return fmt.Errorf("fail to send the tx to thorchain: %w", err)
 					}
 					s.oracleStorage.Remove(tmp)
-					s.logger.Info().Str("mapHash", txID).Msg("Oracle tx sent successfully")
+					s.logger.Info().Str("mapHash", txID).Msg("oracle tx sent successfully")
 					return nil
 				}, bf)
 				if err != nil {
-					s.logger.Error().Err(err).Msg("Fail to broadcast tx")
+					s.logger.Error().Err(err).Msg("fail to broadcast tx")
 					continue
 				}
 
-				s.logger.Info().Interface("item", item).Msg("Processing oracle item")
+				s.logger.Info().Interface("item", item).Msg("processing oracle item")
 			}
 		}
 	}
@@ -389,7 +389,7 @@ func (s *Signer) processOracle() {
 
 func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	if len(keygenBlock.Ms) <= 0 {
-		s.logger.Info().Msg("Processing keygen block, members is zero")
+		s.logger.Info().Msg("processing keygen block, members is zero")
 		return
 	}
 	members := make(common.PubKeys, 0, len(keygenBlock.Ms))
@@ -407,15 +407,15 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Epoch.Int64(), members)
 	if !blame.IsEmpty() {
 		s.logger.Error().Str("reason", blame.FailReason).
-			Interface("nodes", blame.BlameNodes).Msg("Keygen blame")
+			Interface("nodes", blame.BlameNodes).Msg("keygen blame")
 	}
 	keygenTime := time.Since(keygenStart).Milliseconds()
 	if err != nil {
 		s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()
-		s.logger.Error().Err(err).Msg("Fail to generate new pubkey")
+		s.logger.Error().Err(err).Msg("fail to generate new pubkey")
 	}
 
-	s.logger.Info().Int64("keygenTime", keygenTime).Msg("ProcessKeygenBlock keyGen time")
+	s.logger.Info().Int64("keygenTime", keygenTime).Msg("processKeygenBlock keyGen time")
 	secp256k1Sig := make([]byte, 0)
 	if len(pubKey.Secp256k1.String()) > 0 {
 		secp256k1Sig = s.secp256k1VerificationSignature(pubKey.Secp256k1)
@@ -433,7 +433,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 	err = s.sendKeygenToMap(keygenBlock.Epoch, pubKey.Secp256k1, blames, memberAddrs, secp256k1Sig)
 	if err != nil { // handler blame
 		s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()
-		s.logger.Error().Err(err).Msg("Fail to broadcast keygen")
+		s.logger.Error().Err(err).Msg("fail to broadcast keygen")
 	}
 
 	// monitor the new pubkey and any new members
@@ -453,7 +453,7 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	// create keysign instance
 	ks, err := tss.NewKeySign(s.tssServer, s.mapBridge)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Fail to create keySign for secp256k1 check signing")
+		s.logger.Error().Err(err).Msg("fail to create keySign for secp256k1 check signing")
 		return nil
 	}
 	ks.Start()
@@ -471,7 +471,7 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	sigBytes, v, err := ks.RemoteSign(dataHash[:], pk.String())
 	if err != nil {
 		// this is expected in some cases if we were not in the signing party
-		s.logger.Info().Err(err).Msg("Fail secp256k1 check signing")
+		s.logger.Info().Err(err).Msg("fail secp256k1 check signing")
 		return nil
 
 	} else if sigBytes == nil {
@@ -490,10 +490,10 @@ func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	}
 
 	if !signature.Verify(dataHash[:], spk) {
-		s.logger.Error().Msg("Secp256k1 check signature verification failed")
+		s.logger.Error().Msg("secp256k1 check signature verification failed")
 		return nil
 	} else {
-		s.logger.Info().Msg("Secp256k1 check signature verified")
+		s.logger.Info().Msg("secp256k1 check signature verified")
 	}
 
 	return append(sigBytes, v[0]+27)
@@ -508,7 +508,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 			os.Getenv("SIGNER_SEED_PHRASE"),
 		)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("Fail to encrypt keyShares")
+			s.logger.Error().Err(err).Msg("fail to encrypt keyShares")
 		}
 	}
 
@@ -517,7 +517,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}
 
-	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("Send keygen tx to relay")
+	s.logger.Info().Str("txId", txID).Int64("epoch", epoch.Int64()).Msg("send keygen tx to relay")
 	return nil
 }
 
@@ -587,34 +587,34 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// outbound if within configured blocks of reschedule
 	if !item.Round7Retry || inactiveVaultRound7Retry {
 		if blockHeight-signingTransactionPeriod > height-s.cfg.Signer.RescheduleBufferBlocks {
-			s.logger.Error().Msgf("Tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
+			s.logger.Error().Msgf("tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
 			return nil, nil, nil
 		}
 	}
 
 	chain, err := s.getChain(tx.Chain)
 	if err != nil {
-		s.logger.Error().Err(err).Msgf("Not supported %s", tx.Chain.String())
+		s.logger.Error().Err(err).Msgf("not supported %s", tx.Chain.String())
 		return nil, nil, err
 	}
 	mimirKey := "HALTSIGNING"
 	haltSigningGlobalMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
+		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningGlobalMimir > 0 && haltSigningGlobalMimir < blockHeight {
-		s.logger.Info().Msg("Signing has been halted globally")
+		s.logger.Info().Msg("signing has been halted globally")
 		return nil, nil, nil
 	}
 	mimirKey = fmt.Sprintf("HALTSIGNING%s", tx.Chain)
 	haltSigningMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("Fail to get %s", mimirKey)
+		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningMimir > 0 && haltSigningMimir < blockHeight {
-		s.logger.Info().Msgf("Signing for %s is halted", tx.Chain)
+		s.logger.Info().Msgf("signing for %s is halted", tx.Chain)
 		return nil, nil, nil
 	}
 	// if !s.shouldSign(tx) {
@@ -670,7 +670,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	// looks like the transaction is already signed
 	if len(signedTx) == 0 {
-		s.logger.Warn().Msgf("Signed transaction is empty")
+		s.logger.Warn().Msgf("signed transaction is empty")
 		return nil, nil, nil
 	}
 
@@ -739,15 +739,15 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		// mark the txout on round 7 failure to block other txs for the chain / pubkey
 		ksErr := tss.KeysignError{}
 		if errors.As(err, &ksErr) && ksErr.IsRound7() {
-			s.logger.Error().Err(err).Interface("tx", item.TxOutItem).Msg("Round 7 signing error")
+			s.logger.Error().Err(err).Interface("tx", item.TxOutItem).Msg("round 7 signing error")
 			item.Round7Retry = true
 			item.Checkpoint = checkpoint
 			if storeErr := s.storage.Set(item); storeErr != nil {
-				s.logger.Error().Err(storeErr).Msg("Fail to update tx out store item with round 7 retry")
+				s.logger.Error().Err(storeErr).Msg("fail to update tx out store item with round 7 retry")
 			}
 		}
 
-		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("Fail to sign and broadcast tx out store item")
+		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("fail to sign and broadcast tx out store item")
 		cancel()
 		return
 		// The 'item' for loop should not be items[0],
