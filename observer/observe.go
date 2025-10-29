@@ -586,7 +586,7 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 				o.logger.Err(err).Msg("fail to send network fee to map")
 				continue
 			}
-			o.logger.Debug().Msg(fmt.Sprintf("successfully sent network fee to map, txHash=%s", txId))
+			o.logger.Info().Any("gas", ele).Any("txId", txId).Msg("successfully sent gas fee to map")
 		}
 	}
 }
