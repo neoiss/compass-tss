@@ -568,6 +568,11 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
 	}
 
+	pbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
+	}
+
 	chainAndGasLimit := make([]byte, 32)
 	fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 	toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
@@ -585,7 +590,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		OrderId:          generateOrderID(chainID.String(), tx.Txid),
 		GasUsed:          big.NewInt(0),
 		Token:            tokenAddress,
-		Vault:            nil,
+		Vault:            pbuKey,
 		From:             fromBytes,
 		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
 		Method:           constants.VoteTxIn,
