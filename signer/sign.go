@@ -201,8 +201,8 @@ func (s *Signer) Start() error {
 // signTransactions - looks for work to do by getting a list of all unsigned
 // transactions stored in the storage
 func (s *Signer) signTransactions() {
-	s.logger.Info().Msg("Start to sign transactions")
-	defer s.logger.Info().Msg("Stop to sign transactions")
+	s.logger.Info().Msg("start to sign transactions")
+	defer s.logger.Info().Msg("stop to sign transactions")
 	defer s.wg.Done()
 	for {
 		select {
@@ -212,7 +212,7 @@ func (s *Signer) signTransactions() {
 			// When map relay chain is catching up , bifrost might get stale data from compass-tss , thus it shall pause signing
 			catchingUp, err := s.mapBridge.IsSyncing()
 			if err != nil {
-				s.logger.Error().Err(err).Msg("Fail to get thorchain sync status")
+				s.logger.Error().Err(err).Msg("fail to get thorchain sync status")
 				time.Sleep(constants.MAPRelayChainBlockTime)
 				break // this will break select
 			}
@@ -244,7 +244,7 @@ func runWithContext(ctx context.Context, fn func() ([]byte, *types.TxInItem, err
 func (s *Signer) processTransactions() {
 	signerConcurrency, err := s.mapBridge.GetMimir(constants.SignerConcurrency.String())
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Fail to get signer concurrency mimir")
+		s.logger.Error().Err(err).Msg("fail to get signer concurrency mimir")
 		return
 	}
 
@@ -263,7 +263,7 @@ func (s *Signer) processTransactions() {
 	if s.pipeline == nil {
 		s.pipeline, err = newPipeline(signerConcurrency)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("Fail to create new pipeline")
+			s.logger.Error().Err(err).Msg("fail to create new pipeline")
 			return
 		}
 	}

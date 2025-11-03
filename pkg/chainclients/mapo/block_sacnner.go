@@ -130,8 +130,6 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {
-			// custom error (to be dropped and not logged) because the block is
-			// available yet
 			return btypes.ErrUnavailableBlock
 		}
 		return fmt.Errorf("fail to get keysign from block scanner: %w", err)
@@ -155,7 +153,7 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	for _, ele := range tx.TxArray {
 		tmp := ele
 		switch ele.Method {
-		case constants.BridgeIn:
+		case constants.RelaySigned:
 			toChain, ok := common.GetChainName(ele.ToChain)
 			if !ok {
 				continue
@@ -167,7 +165,7 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 			default:
 				oracleTx.TxArray = append(oracleTx.TxArray, tmp)
 			}
-		default: // relaySigned
+		default: // bridgeIn
 			txOut.TxArray = append(txOut.TxArray, tmp)
 		}
 

@@ -111,7 +111,7 @@ func (t *TssServer) Stop() {
 		t.logger.Error().Msgf("error in shutdown the p2p server")
 	}
 	t.partyCoordinator.Stop()
-	t.logger.Info().Msg("The tss and p2p server has been stopped successfully")
+	t.logger.Info().Msg("the tss and p2p server has been stopped successfully")
 }
 
 func (t *TssServer) setJoinPartyChan(jpc chan struct{}) {

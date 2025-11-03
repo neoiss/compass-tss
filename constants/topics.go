@@ -17,15 +17,15 @@ func (es EventSig) String() string {
 
 // relay event
 const (
-	EventOfBridgeRelay       EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,uint256,bytes,uint256,bytes,bytes,bytes)" // -> dst gateway 合约 transferAllowance
-	EventOfBridgeCompleted   EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"               // -> dst gateway 合约 transferOut
-	EventOfBridgeRelaySigned EventSig = "BridgeRelaySigned(bytes32,uint256,bytes,bytes,bytes)"                             // 目标链是map，弹出此事件
+	EventOfBridgeRelay       EventSig = "BridgeRelay(bytes32,uint256,uint8,bytes,bytes,bytes,uint256,uint256,bytes32,bytes,bytes)"
+	EventOfBridgeCompleted   EventSig = "BridgeCompleted(bytes32,uint256,uint8,bytes,uint256,address,bytes)"
+	EventOfBridgeRelaySigned EventSig = "BridgeRelaySigned(bytes32,uint256,bytes,bytes,bytes)"
 )
 
 // src or dst chain event
 const (
-	EventOfBridgeOut EventSig = "BridgeOut(bytes32,uint256,uint8,bytes,address,uint256,address,address,bytes,bytes)"  // -> tss_manager 合约 voteTxIn
-	EventOfBridgeIn  EventSig = "BridgeIn(bytes32,uint256,uint8,bytes,uint256,address,address,uint256,address,bytes)" // -> tss_manager 合约 voteTxOut
+	EventOfBridgeOut EventSig = "BridgeOut(bytes32,uint256,uint8,bytes,address,uint256,address,address,bytes,bytes)"  // -> tss_manager voteTxIn
+	EventOfBridgeIn  EventSig = "BridgeIn(bytes32,uint256,uint8,bytes,uint256,address,address,uint256,address,bytes)" // -> tss_manager voteTxOut
 )
 
 type TxInType uint8
