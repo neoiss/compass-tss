@@ -118,6 +118,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to pack relayData: %w", err)
 	}
 
+	fmt.Println("vault ---------- ", ecommon.Bytes2Hex(txOut.Vault))
 	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], ecommon.Bytes2Hex(txOut.Vault)) // check
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to sign tx")
