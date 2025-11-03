@@ -484,6 +484,9 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
+	if len(memo) <= 0 {
+		return types.TxInItem{}, nil
+	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
@@ -737,6 +740,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 			continue
 		}
 		if txInItem.IsEmpty() {
+			c.log.Debug().Int64("height", block.Height).Err(err).Msg("not found tx in")
 			continue
 		}
 		//if txInItem.Coins.IsEmpty() {
