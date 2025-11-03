@@ -661,12 +661,6 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 		return
 	}
 
-	priceStr := ""
-	for _, ele := range prices {
-		priceStr = priceStr + ele.String() + ","
-	}
-	fmt.Println("priceStr ------------- ", priceStr)
-
 	// find the median gas price in the block
 	sort.Slice(prices, func(i, j int) bool { return prices[i].Cmp(prices[j]) == -1 })
 	gasPrice := prices[len(prices)/2]
@@ -693,7 +687,6 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	median.Add(median, new(big.Int).Sub(resolution, big.NewInt(1)))
 	median = median.Div(median, resolution)
 	median = median.Mul(median, resolution)
-	fmt.Println("median ---------------- ", median)
 	e.gasPrice = median
 
 	// record metrics
@@ -727,10 +720,6 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 			return
 		}
 	}
-
-	// dont need this step
-	// // gas price to 1e8 from 1e18
-	// tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10))
 
 	// post to map
 	cId, _ := e.cfg.ChainID.ChainID()
