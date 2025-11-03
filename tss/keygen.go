@@ -85,7 +85,6 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 
 	var keys []string
 	for _, item := range pKeys {
-		fmt.Println("pKeys ------------ ", item.String())
 		keys = append(keys, item.String())
 	}
 	keyGenReq := keygen.Request{
