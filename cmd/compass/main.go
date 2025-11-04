@@ -160,6 +160,9 @@ func main() {
 		log.Err(err).Msg("fail to start tss instance")
 	}
 
+	if err = mapBridge.SetTssKeyManager(tssIns); err != nil {
+		log.Fatal().Err(err).Msg("fail to set tss to bridge")
+	}
 	cfgChains := cfg.GetChains()
 
 	// ensure we have a protocol for chain RPC Hosts

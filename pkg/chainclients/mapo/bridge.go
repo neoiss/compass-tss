@@ -28,6 +28,8 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/tss"
+	gotss "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -111,14 +113,7 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	if err != nil {
 		return nil, fmt.Errorf("fail to get private key: %w", err)
 	}
-	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
-	if err != nil {
-		return nil, fmt.Errorf("fail to get tm pub key: %w", err)
-	}
-	pk, err := common.NewPubKeyFromCrypto(temp)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pub key: %w", err)
-	}
+
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
 		return nil, err
@@ -129,11 +124,6 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		return nil, err
 	}
 	logger.Info().Any("addr", signerAddr).Msg("Map signer address retrieved")
-
-	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
-	if err != nil {
-		return nil, fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
-	}
 
 	rpcClient, err := evm.NewEthRPC(
 		ethClient,
@@ -157,7 +147,6 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 		stopChan:      make(chan struct{}),
 		wg:            &sync.WaitGroup{},
 		ethPriKey:     ethPrivateKey,
-		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
 		epoch:         big.NewInt(0),
 		gasPrice:      big.NewInt(0),
@@ -169,6 +158,33 @@ func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *key
 	}
 
 	return ret, nil
+}
+
+func (b *Bridge) SetTssKeyManager(server *gotss.TssServer) error {
+	priv, err := b.keys.GetPrivateKey()
+	if err != nil {
+		return fmt.Errorf("fail to get private key: %w", err)
+	}
+	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
+	if err != nil {
+		return fmt.Errorf("fail to get tm pub key: %w", err)
+	}
+	pk, err := common.NewPubKeyFromCrypto(temp)
+	if err != nil {
+		return fmt.Errorf("fail to get pub key: %w", err)
+	}
+
+	tssKm, err := tss.NewKeySign(server, b)
+	if err != nil {
+		return fmt.Errorf("fail to create tss signer: %w", err)
+	}
+
+	keySignWrapper, err := evm.NewKeySignWrapper(b.ethPriKey, pk, tssKm, b.chainID, string(common.MAPChain))
+	if err != nil {
+		return fmt.Errorf("fail to create ETH key sign wrapper: %w", err)
+	}
+	b.kw = keySignWrapper
+	return nil
 }
 
 // GetContext return a valid context with all relevant values set

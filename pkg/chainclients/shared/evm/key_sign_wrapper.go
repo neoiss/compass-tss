@@ -27,13 +27,13 @@ func GetPrivateKey(key cryptotypes.PrivKey) (*ecdsa.PrivateKey, error) {
 type KeySignWrapper struct {
 	privKey       *ecdsa.PrivateKey
 	pubKey        common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	logger        zerolog.Logger
 	signer        etypes.Signer
 }
 
 // NewKeySignWrapper create a new instance of keysign wrapper
-func NewKeySignWrapper(privateKey *ecdsa.PrivateKey, pubKey common.PubKey, keyManager tss.ThorchainKeyManager, chainID *big.Int, chain string) (*KeySignWrapper, error) {
+func NewKeySignWrapper(privateKey *ecdsa.PrivateKey, pubKey common.PubKey, keyManager tss.RelayKeyManager, chainID *big.Int, chain string) (*KeySignWrapper, error) {
 	return &KeySignWrapper{
 		privKey:       privateKey,
 		pubKey:        pubKey,
@@ -117,6 +117,7 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 }
 
 func (w *KeySignWrapper) SignCustomTSS(hash []byte, ethPk string) ([]byte, error) {
+	fmt.Println("tssKeyManager --------- ", w.tssKeyManager)
 	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], ethPk)
 	if err != nil || sig == nil {
 		return nil, fmt.Errorf("fail to TSS sign: %w", err)

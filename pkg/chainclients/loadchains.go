@@ -30,7 +30,7 @@ type ChainClient = types.ChainClient
 func LoadChains(thorKeys *keys.Keys,
 	cfg map[common.Chain]config.BifrostChainConfiguration,
 	server *tss.TssServer,
-	thorchainBridge shareTypes.Bridge,
+	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubKeyValidator pubkeymanager.PubKeyValidator,
 	poolMgr mapo.PoolManager,
@@ -44,13 +44,13 @@ func LoadChains(thorKeys *keys.Keys,
 	loadChain := func(chain config.BifrostChainConfiguration) (ChainClient, error) {
 		switch chain.ChainID {
 		case common.ETHChain:
-			return ethereum.NewClient(thorKeys, chain, server, thorchainBridge, m, pubKeyValidator, poolMgr)
+			return ethereum.NewClient(thorKeys, chain, server, bridge, m, pubKeyValidator, poolMgr)
 		case common.BSCChain: // ,common.BASEChain:
-			return evm.NewEVMClient(thorKeys, chain, server, thorchainBridge, m, pubKeyValidator, poolMgr)
+			return evm.NewEVMClient(thorKeys, chain, server, bridge, m, pubKeyValidator, poolMgr)
 		//case common.GAIAChain:
 		//	return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)
 		case common.BTCChain, common.DOGEChain:
-			return utxo.NewClient(thorKeys, chain, server, thorchainBridge, m)
+			return utxo.NewClient(thorKeys, chain, server, bridge, m)
 		//case common.XRPChain:
 		//	return xrp.NewClient(thorKeys, chain, server, thorchainBridge, m)
 		default:

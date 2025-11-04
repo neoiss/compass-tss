@@ -12,6 +12,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	gotss "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 )
 
 // ChainClient is the interface for chain clients.
@@ -117,6 +118,7 @@ type Bridge interface {
 	GetOracleStdTx(txIn *types.TxOutItem) ([]byte, error)
 	TxStatus(txHash string) error
 	GetGasPrice() *big.Int
+	SetTssKeyManager(server *gotss.TssServer) error
 }
 
 type BridgeOption func(Bridge) error
