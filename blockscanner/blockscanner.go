@@ -316,10 +316,11 @@ func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
 
 	cId, _ := b.cfg.ChainID.ChainID()
 	b.globalNetworkFeeQueue <- types.NetworkFee{
-		ChainId:         cId,
-		Height:          currentBlock,
-		TransactionSize: transactionSize,
-		TransactionRate: transactionFeeRate,
+		ChainId:             cId,
+		Height:              currentBlock,
+		TransactionSize:     transactionSize,
+		TransactionSwapSize: transactionSwapSize,
+		TransactionRate:     transactionFeeRate,
 	}
 
 	b.logger.Info().Int64("height", currentBlock).Uint64("size", transactionSize).

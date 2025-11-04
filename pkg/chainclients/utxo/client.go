@@ -61,7 +61,7 @@ type Client struct {
 	// ---------- signing ----------
 	nodePubKey         common.PubKey
 	nodePrivKey        *btcec.PrivateKey
-	tssKeySigner       tss.ThorchainKeyManager
+	tssKeySigner       tss.RelayKeyManager
 	signerCacheManager *signercache.CacheManager
 
 	// ---------- sync ----------

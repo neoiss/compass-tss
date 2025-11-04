@@ -25,8 +25,8 @@ type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
-// ThorchainKeyManager it is a composite of binance chain keymanager
-type ThorchainKeyManager interface {
+// RelayKeyManager it is a composite of binance chain keymanager
+type RelayKeyManager interface {
 	GetPrivKey() crypto.PrivKey
 	GetAddr() types.AccAddress
 

@@ -93,9 +93,7 @@ func main() {
 	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
 		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
 	}
-	if err = mapBridge.HeartBeat(); err != nil {
-		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
-	}
+
 	// PubKey Manager
 	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(mapBridge, m)
 	if err != nil {
@@ -160,6 +158,12 @@ func main() {
 		log.Err(err).Msg("fail to start tss instance")
 	}
 
+	if err = mapBridge.SetTssKeyManager(tssIns); err != nil {
+		log.Fatal().Err(err).Msg("fail to set tss to bridge")
+	}
+	if err = mapBridge.HeartBeat(); err != nil {
+		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
+	}
 	cfgChains := cfg.GetChains()
 
 	// ensure we have a protocol for chain RPC Hosts
