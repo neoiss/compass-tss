@@ -2,6 +2,7 @@ package utxo
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -467,14 +468,15 @@ func (c *Client) isRBFEnabled(tx *btcjson.TxRawResult) bool {
 }
 
 func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, vinZeroTxs map[string]*btcjson.TxRawResult) (types.TxInItem, error) {
-	c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("get tx in")
+	c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
-		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx not matching format")
+		b, _ := json.Marshal(tx)
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")
 		return types.TxInItem{}, nil
 	}
 	// RBF enabled transaction will not be observed until committed to block
 	if c.isRBFEnabled(tx) && isMemPool {
-		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore RBF enabled tx in mempool")
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore RBF enabled tx in mempool")
 		return types.TxInItem{}, nil
 	}
 	sender, err := c.getSender(tx, vinZeroTxs)
@@ -486,7 +488,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
 	if len(memo) <= 0 {
-		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx with empty memo")
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx with empty memo")
 		return types.TxInItem{}, nil
 	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
@@ -494,11 +496,11 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 	m, err := mem.ParseMemo(memo)
 	if err != nil {
-		c.log.Debug().Err(err).Str("memo", memo).Msg("fail to parse memo")
+		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
 		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
 	}
 	if !m.IsValid() {
-		c.log.Debug().Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
+		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
 		return types.TxInItem{}, fmt.Errorf("invalid memo")
 	}
 
