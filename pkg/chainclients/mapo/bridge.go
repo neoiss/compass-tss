@@ -178,6 +178,7 @@ func (b *Bridge) SetTssKeyManager(server *gotss.TssServer) error {
 	if err != nil {
 		return fmt.Errorf("fail to create tss signer: %w", err)
 	}
+	tssKm.Start()
 
 	keySignWrapper, err := evm.NewKeySignWrapper(b.ethPriKey, pk, tssKm, b.chainID, string(common.MAPChain))
 	if err != nil {

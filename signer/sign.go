@@ -448,7 +448,7 @@ func (s *Signer) processKeygenBlock(keygenBlock *structure.KeyGen) {
 // secp256k1VerificationSignature will make a best effort to sign the public key with
 // its own private key as a sanity check to ensure parties are able to sign. The
 // signature will be included in the TssPool message if successful, and verified by
-// THORNode before the keygen is accepted.
+// relay before the keygen is accepted.
 func (s *Signer) secp256k1VerificationSignature(pk common.PubKey) []byte {
 	// create keysign instance
 	ks, err := tss.NewKeySign(s.tssServer, s.mapBridge)
