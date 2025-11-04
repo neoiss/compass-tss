@@ -467,6 +467,7 @@ func (c *Client) isRBFEnabled(tx *btcjson.TxRawResult) bool {
 }
 
 func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, vinZeroTxs map[string]*btcjson.TxRawResult) (types.TxInItem, error) {
+	c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
 		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx not matching format")
 		return types.TxInItem{}, nil
@@ -485,6 +486,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
 	if len(memo) <= 0 {
+		c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx with empty memo")
 		return types.TxInItem{}, nil
 	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
@@ -740,7 +742,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 			continue
 		}
 		if txInItem.IsEmpty() {
-			c.log.Debug().Int64("height", block.Height).Err(err).Msg("not found tx in")
+			c.log.Debug().Str("txid", tx.Txid).Err(err).Msg("not found tx in")
 			continue
 		}
 		//if txInItem.Coins.IsEmpty() {
