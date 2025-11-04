@@ -351,7 +351,7 @@ func (s *Signer) processOracle() {
 		select {
 		case <-s.stopChan:
 			return
-		default:
+		case <-time.After(time.Second * 5):
 			list := s.oracleStorage.List() // this will trigger the storage to load all items
 			for _, item := range list {
 				txBytes, err := s.mapBridge.GetOracleStdTx(&item.TxOutItem)

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -58,11 +59,14 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 		Height:  blockHeight,
 		TxArray: make([]types.TxArrayItem, 0, len(logs)),
 	}
+	mapCId, _ := common.MAPChain.ChainID()
 
 	// handler parse coins & gas
 	for _, ele := range logs {
 		tmp := ele
-		item := &types.TxArrayItem{}
+		item := &types.TxArrayItem{
+			Chain: mapCId,
+		}
 		p := evm.NewSmartContractLogParser(b.relayAbi)
 		err = p.GetTxOutItem(&tmp, item)
 		if err != nil {

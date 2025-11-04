@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog"
@@ -115,20 +116,13 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 	return result, nil
 }
 
-func (w *KeySignWrapper) SignCustomTSS(hash []byte, poolPubKey string) ([]byte, error) {
-	pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, poolPubKey)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pub key: %w", err)
-	}
-	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], poolPubKey)
+func (w *KeySignWrapper) SignCustomTSS(hash []byte, ethPk string) ([]byte, error) {
+	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], ethPk)
 	if err != nil || sig == nil {
 		return nil, fmt.Errorf("fail to TSS sign: %w", err)
 	}
-	secpPubKey, err := codec.ToCmtPubKeyInterface(pk)
-	if err != nil {
-		return nil, err
-	}
-	if ecrypto.VerifySignature(secpPubKey.Bytes(), hash[:], sig) {
+
+	if ecrypto.VerifySignature(ecommon.Hex2Bytes("04"+ethPk), hash[:], sig) {
 		w.logger.Info().Msg("We can successfully verify the bytes")
 	} else {
 		w.logger.Error().Msg("Oops! we cannot verify the bytes")
