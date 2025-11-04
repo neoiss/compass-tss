@@ -75,7 +75,7 @@ func NewSigner(cfg config.Bifrost,
 		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
 	}
 
-	oracleStorage, err := NewSignerStore(cfg.Signer.OracleDbPath, cfg.Signer.LevelDB)
+	oracleStorage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
 	}
