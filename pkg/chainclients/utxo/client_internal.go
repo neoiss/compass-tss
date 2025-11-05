@@ -580,6 +580,11 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
 	}
 
+	payload, err := utxo.EncodePayload(nil, nil, nil) // todo utxo
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
+	}
+
 	chainAndGasLimit := make([]byte, 32)
 	fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 	toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
@@ -589,7 +594,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	txIn := types.TxInItem{
 		Tx:               tx.Txid,
 		Memo:             memo,
-		TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
+		Sender:           sender,
 		FromChain:        chainID,
 		ToChain:          destChainID,
 		Height:           big.NewInt(height),
@@ -600,12 +605,13 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		Vault:            pbuKey,
 		From:             fromBytes,
 		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
+		Payload:          payload,
 		Method:           constants.VoteTxIn,
 		LogIndex:         0,
 		ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
+		TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
 		RefundAddr:       fromBytes,
 	}
-	fmt.Println("============================== tx in: ", common.JSON(txIn))
 	return txIn, nil
 }
 
