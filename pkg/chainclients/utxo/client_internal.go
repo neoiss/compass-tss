@@ -570,7 +570,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
 	}
-	fromBytes, err := hex.DecodeString(strings.TrimPrefix("0x", from))
+	fromBytes, err := hex.DecodeString(strings.TrimPrefix(from, "0x"))
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
 	}
