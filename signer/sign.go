@@ -161,12 +161,12 @@ func NewSigner(cfg config.Bifrost,
 func (s *Signer) getChain(chainID *big.Int) (chainclients.ChainClient, error) {
 	chainName, ok := common.GetChainName(chainID)
 	if !ok {
-		s.logger.Debug().Str("chain", chainID.String()).Msg("Is not supported yet")
+		s.logger.Debug().Str("chain", chainID.String()).Msg("is not supported yet")
 		return nil, errors.New("not supported")
 	}
 	chain, ok := s.chains[chainName]
 	if !ok {
-		s.logger.Debug().Str("chain", chainID.String()).Msg("Is not supported yet")
+		s.logger.Debug().Str("chain", chainID.String()).Msg("is not supported yet")
 		return nil, errors.New("not supported")
 	}
 	return chain, nil
@@ -732,7 +732,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	checkpoint, _, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
-		// todo will next 400
+		// will next 400
 		return s.signAndBroadcast(item)
 	})
 	if err != nil {

@@ -129,7 +129,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, errors.Wrap(err, "fail to sign tx")
 	}
 
-	input, err = packAbi.Pack(constants.RelaySigned, txOut.OrderId, relayData, sign)
+	input, err = b.relayAbi.Pack(constants.RelaySigned, txOut.OrderId, relayData, sign)
 	if err != nil {
 		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
 	}

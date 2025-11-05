@@ -118,7 +118,7 @@ type TxArrayItem struct {
 // TxOutItem convert the information to TxOutItem
 func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 	return TxOutItem{
-		Chain:            tx.Chain,
+		Chain:            tx.ToChain,
 		Memo:             tx.Memo,
 		Height:           height,
 		OrderId:          tx.OrderId,

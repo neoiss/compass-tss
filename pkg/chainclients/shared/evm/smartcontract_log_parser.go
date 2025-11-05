@@ -165,6 +165,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	if err != nil {
 		return fmt.Errorf("failed to parse chain and gas limit, err: %w", err)
 	}
+	fmt.Println("GetTxOutItem cgl ", cgl, "txHash", ll.TxHash.String())
 	txOutItem.ToChain = cgl.ToChain
 
 	switch ll.Topics[0].String() {

@@ -95,7 +95,7 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 	peerGroup, ok := pc.peersGroup[requestMsg.ID]
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
-		pc.logger.Info().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("This party is not ready")
+		pc.logger.Debug().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
 		return
 	}
 	remotePeer := stream.Conn().RemotePeer()
@@ -312,7 +312,7 @@ func (pc *PartyCoordinator) joinPartyMember(msgID string, peerGroup *peerStatus,
 				return
 			default:
 				pc.logger.Trace().Msg("sending request message to leader")
-				pc.logger.Info().Any("msgID", msgID).Msg("sending request message to leader")
+				pc.logger.Trace().Any("msgID", msgID).Msg("sending request message to leader")
 				err := pc.sendRequestToLeader(&msg, leaderID)
 				if err != nil {
 					pc.logger.Error().Err(err).Msg("error sending request to leader")
