@@ -471,7 +471,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
 		b, _ := json.Marshal(tx)
-		fmt.Println("============================== ignore tx: ", tx.Txid, string(b))
 		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")
 		return types.TxInItem{}, nil
 	}
@@ -509,7 +508,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	output, err := c.getOutput(sender, tx, false)
 	if err != nil {
 		if errors.Is(err, btypes.ErrFailOutputMatchCriteria) {
-			c.log.Debug().Int64("height", height).Str("txid", tx.Hash).Msg("ignore tx not matching format")
+			c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx not matching format")
 			return types.TxInItem{}, nil
 		}
 		return types.TxInItem{}, fmt.Errorf("fail to get output from tx: %w", err)
@@ -828,6 +827,9 @@ func (c *Client) getOutput(sender string, tx *btcjson.TxRawResult, consolidate b
 		if c.cfg.ChainID.Equals(common.BCHChain) {
 			receiver = c.stripBCHAddress(receiver)
 		}
+		c.log.Debug().Bool("isSenderAsgard", isSenderAsgard).
+			Bool("isReceiverAsgard", c.isAsgardAddress(receiver)).
+			Str("sender", sender).Str("receiver", receiver).Msg("get output")
 		// To be observed, either the sender or receiver must be an observed THORChain vault;
 		// if the sender is a vault then assume the first Vout is the output (and a later Vout could be change).
 		// If the sender isn't a vault, then do do not for instance
