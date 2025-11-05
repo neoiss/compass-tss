@@ -471,6 +471,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
 		b, _ := json.Marshal(tx)
+		fmt.Println("============================== ignore tx: ", tx.Txid, string(b))
 		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")
 		return types.TxInItem{}, nil
 	}
