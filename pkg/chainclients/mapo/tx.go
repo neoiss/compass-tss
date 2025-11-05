@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
@@ -118,8 +119,12 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to pack relayData: %w", err)
 	}
 
-	fmt.Println("vault ---------- ", ecommon.Bytes2Hex(txOut.Vault))
-	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], ecommon.Bytes2Hex(txOut.Vault)) // check
+	cpk, err := b.compressPubkey(txOut.Vault)
+	if err != nil {
+		return nil, fmt.Errorf("fail to compress pubkey: %w", err)
+	}
+
+	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], cpk) // check
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to sign tx")
 	}
@@ -130,6 +135,15 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 	}
 
 	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
+}
+
+func (b *Bridge) compressPubkey(pks []byte) (string, error) {
+	pk, err := ecrypto.UnmarshalPubkey(append([]byte{4}, pks...))
+	if err != nil {
+		return "", err
+	}
+	cpkBytes := ecrypto.CompressPubkey(pk)
+	return ecommon.Bytes2Hex(cpkBytes), nil
 }
 
 func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64,
