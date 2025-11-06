@@ -161,7 +161,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	txOutItem.LogIndex = ll.Index // add this
 	txOutItem.TxHash = ll.TxHash.String()
 	// parse chain and gas limit
-	cgl, err := parseChainAndGasLimit(ll.Topics[2])
+	cgl, err := ParseChainAndGasLimit(ll.Topics[2])
 	if err != nil {
 		return fmt.Errorf("failed to parse chain and gas limit, err: %w", err)
 	}
@@ -229,7 +229,7 @@ type ChainAndGasLimit struct {
 	End       *big.Int
 }
 
-func parseChainAndGasLimit(cgl ecommon.Hash) (*ChainAndGasLimit, error) {
+func ParseChainAndGasLimit(cgl ecommon.Hash) (*ChainAndGasLimit, error) {
 	if cgl.Hex() == constants.ZeroHash {
 		return nil, errors.New("chainAndGasLimit is nil")
 	}

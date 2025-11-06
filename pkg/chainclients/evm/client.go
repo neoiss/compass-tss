@@ -12,13 +12,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/go-multierror"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -38,7 +39,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ type EVMClient struct {
 	evmScanner              *EVMScanner
 	bridge                  shareTypes.Bridge
 	blockScanner            *blockscanner.BlockScanner
-	vaultABI                *abi.ABI
+	gatewayAbi              *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
 	poolMgr                 mapo.PoolManager
 	tssKeySigner            *tss.KeySign
@@ -68,7 +68,7 @@ type EVMClient struct {
 
 // NewEVMClient creates a new EVMClient.
 func NewEVMClient(
-	thorKeys *keys.Keys,
+	relayKey *keys.Keys,
 	cfg config.BifrostChainConfiguration,
 	server *tssp.TssServer,
 	bridge shareTypes.Bridge,
@@ -77,7 +77,7 @@ func NewEVMClient(
 	poolMgr mapo.PoolManager,
 ) (*EVMClient, error) {
 	// check required arguments
-	if thorKeys == nil {
+	if relayKey == nil {
 		return nil, fmt.Errorf("failed to create EVM client, thor keys empty")
 	}
 	if bridge == nil {
@@ -95,7 +95,7 @@ func NewEVMClient(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tss signer: %w", err)
 	}
-	priv, err := thorKeys.GetPrivateKey()
+	priv, err := relayKey.GetPrivateKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key: %w", err)
 	}
@@ -118,7 +118,6 @@ func NewEVMClient(
 	var ethClient *ethclient.Client
 	switch {
 	case cfg.AuthorizationBearer != "":
-
 		clog.Info().Msg("initializing evm client with bearer token")
 		authFn := func(h http.Header) error {
 			h.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.AuthorizationBearer))
@@ -198,7 +197,7 @@ func NewEVMClient(
 		localPubKey:  pk,
 		kw:           keysignWrapper,
 		bridge:       bridge,
-		vaultABI:     vaultABI,
+		gatewayAbi:   vaultABI,
 		pubkeyMgr:    pubkeyMgr,
 		poolMgr:      poolMgr,
 		tssKeySigner: tssKm,
@@ -434,7 +433,8 @@ func (c *EVMClient) GetGasPrice() *big.Int {
 // --------------------------------- build transaction ---------------------------------
 
 // getOutboundTxData generates the tx data and tx value of the outbound Router Contract call, and checks if the router contract has been updated
-func (c *EVMClient) getOutboundTxData(txOutItem stypes.TxOutItem, memo mem.Memo, contractAddr common.Address) ([]byte, bool, *big.Int, error) {
+func (c *EVMClient) getOutboundTxData(txOutItem stypes.TxOutItem) ([]byte, bool, *big.Int, error) {
+	// todo will next 2
 	// var data []byte
 	// //var err error
 	// var tokenAddr string
@@ -456,148 +456,80 @@ func (c *EVMClient) getOutboundTxData(txOutItem stypes.TxOutItem, memo mem.Memo,
 	return nil, false, nil, nil
 }
 
-func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, memo mem.Memo, nonce uint64) (*etypes.Transaction, error) {
-	// contractAddr := c.getSmartContractAddr(txOutItem.VaultPubKey)
-	// if contractAddr.IsEmpty() {
-	// 	if contractAddr.IsEmpty() {
-	// 		return nil, fmt.Errorf("can't sign tx, fail to get smart contract address")
-	// 	}
-	// }
+func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*etypes.Transaction, error) {
+	fromAddr, err := c.localPubKey.GetAddress(c.cfg.ChainID)
+	if err != nil {
+		return nil, err
+	}
 
-	// fromAddr, err := txOutItem.VaultPubKey.GetAddress(c.cfg.ChainID)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("fail to get EVM address for pub key(%s): %w", txOutItem.VaultPubKey, err)
-	// }
+	txData, _, evmValue, err := c.getOutboundTxData(txOutItem)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get outbound tx data %w", err)
+	}
+	if evmValue == nil {
+		evmValue = cosmos.ZeroUint().BigInt()
+	}
 
-	// txData, _, evmValue, err := c.getOutboundTxData(txOutItem, memo, contractAddr)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get outbound tx data %w", err)
-	// }
-	// if evmValue == nil {
-	// 	evmValue = cosmos.ZeroUint().BigInt()
-	// }
+	gasRate := c.GetGasPrice()
+	if c.cfg.BlockScanner.FixedGasRate > 0 {
+		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
+		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
+	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
+		// todo will next 2
+	}
 
-	// gasRate := c.GetGasPrice()
-	// if c.cfg.BlockScanner.FixedGasRate > 0 || gasRate.Cmp(big.NewInt(0)) == 0 {
-	// 	// if chain gas is zero we are still filling our gas price buffer, use outbound rate
-	// 	gasRate = convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate))
-	// } else {
-	// 	// MAPO uses a gas rate 1.5x the reported network fee for the rate and computed
-	// 	// max gas to ensure the rate is sufficient when it is signed later. Since we now know
-	// 	// the more recent rate, we will use our current rate with a lower bound on 2/3 the
-	// 	// outbound rate (the original rate we reported to MAPO in the network fee).
-	// 	lowerBound := convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate))
-	// 	lowerBound.Mul(lowerBound, big.NewInt(2))
-	// 	lowerBound.Div(lowerBound, big.NewInt(3))
+	c.logger.Info().Str("inHash", txOutItem.InTxHash).
+		// Str("outboundRate", convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate)).String()).
+		Str("currentRate", c.GetGasPrice().String()).
+		Str("effectiveRate", gasRate.String()).
+		Msg("gas rate")
 
-	// 	// round current rate to avoid consensus trouble, same rounding implied in outbound
-	// 	gasRate.Div(gasRate, big.NewInt(common.One*100))
-	// 	if gasRate.Cmp(big.NewInt(0)) == 0 { // floor at 1 like in network fee reporting
-	// 		gasRate = big.NewInt(1)
-	// 	}
-	// 	gasRate.Mul(gasRate, big.NewInt(common.One*100))
+	// outbound tx always send to smart contract address
+	createdTx := etypes.NewTransaction(nonce, ecommon.HexToAddress(c.cfg.BlockScanner.Mos), big.NewInt(0), c.cfg.BlockScanner.MaxGasLimit, gasRate, txData)
+	estimatedGas, err := c.evmScanner.ethRpc.EstimateGas(fromAddr.String(), createdTx)
+	if err != nil {
+		c.logger.Err(err).Msg("fail to estimate gas")
+		return nil, err
+	}
+	cgl, err := evm.ParseChainAndGasLimit(ecommon.Hash(txOutItem.ChainAndGasLimit.Bytes()))
+	if err != nil {
+		c.logger.Err(err).Msg("fail to parse chain and gas limit")
+		return nil, err
+	}
 
-	// 	// if the gas rate is less than the lower bound, use the lower bound
-	// 	if gasRate.Cmp(lowerBound) < 0 {
-	// 		gasRate = lowerBound
-	// 	}
-	// }
+	// if estimated gas is more than the planned gas, abort and let thornode reschedule
+	if estimatedGas > cgl.End.Uint64() {
+		c.logger.Warn().
+			Str("in_hash", txOutItem.InTxHash).
+			Stringer("rate", gasRate).
+			Uint64("estimated_gas_units", estimatedGas).
+			Uint64("max_gas_units", cgl.End.Uint64()).
+			// Str("scheduled_max_fee", scheduledMaxFee.String()).
+			Msg("max gas exceeded, aborting to let thornode reschedule")
+		return nil, nil
+	}
 
-	// c.logger.Info().
-	// 	Stringer("inHash", txOutItem.InHash).
-	// 	Str("outboundRate", convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate)).String()).
-	// 	Str("currentRate", c.GetGasPrice().String()).
-	// 	Str("effectiveRate", gasRate.String()).
-	// 	Msg("gas rate")
+	// before signing, confirm the vault has enough gas asset
+	estimatedFee := big.NewInt(int64(estimatedGas))
+	estimatedFee.Mul(estimatedFee, gasRate)
+	gasBalance, err := c.GetBalance(fromAddr.String(), evm.NativeTokenAddr, nil)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get gas asset balance: %w", err)
+	}
+	if gasBalance.Cmp(big.NewInt(0).Add(evmValue, estimatedFee)) < 0 {
+		return nil, fmt.Errorf("insufficient gas asset balance: %s < %s + %s", gasBalance.String(), evmValue.String(), estimatedFee.String())
+	}
 
-	// // outbound tx always send to smart contract address
-	// estimatedEVMValue := big.NewInt(0)
-	// if evmValue.Uint64() > 0 {
-	// 	// when the EVM value is non-zero, here override it with a fixed value to estimate gas
-	// 	// when EVM value is non-zero, if we send the real value for estimate gas, sometimes it will fail, for many reasons, a few I saw during test
-	// 	// 1. insufficient fund
-	// 	// 2. gas required exceeds allowance
-	// 	// as long as we pass in an EVM value , which we almost guarantee it will not exceed the EVM balance , so we can avoid the above two errors
-	// 	estimatedEVMValue = estimatedEVMValue.SetInt64(21000)
-	// }
-	// createdTx := etypes.NewTransaction(nonce, ecommon.HexToAddress(contractAddr.String()), estimatedEVMValue, c.cfg.BlockScanner.MaxGasLimit, gasRate, txData)
-	// estimatedGas, err := c.evmScanner.ethRpc.EstimateGas(fromAddr.String(), createdTx)
-	// if err != nil {
-	// 	// in an edge case that vault doesn't have enough fund to fulfill an outbound transaction , it will fail to estimate gas
-	// 	// the returned error is `execution reverted`
-	// 	// when this fail , chain client should skip the outbound and move on to the next. The network will reschedule the outbound
-	// 	// after 300 blocks
-	// 	c.logger.Err(err).Msg("fail to estimate gas")
-	// 	return nil, nil
-	// }
+	createdTx = etypes.NewTransaction(
+		nonce,
+		ecommon.HexToAddress(c.cfg.BlockScanner.Mos),
+		big.NewInt(0),
+		estimatedGas,
+		gasRate,
+		txData,
+	)
 
-	// scheduledMaxFee := big.NewInt(0)
-	// for _, coin := range txOutItem.MaxGas {
-	// 	scheduledMaxFee.Add(scheduledMaxFee, convertThorchainAmountToWei(coin.Amount.BigInt()))
-	// }
-
-	// if txOutItem.Aggregator != "" {
-	// 	var gasLimitForAggregator uint64
-	// 	gasLimitForAggregator, err = aggregators.FetchDexAggregatorGasLimit(
-	// 		common.LatestVersion, c.cfg.ChainID, txOutItem.Aggregator,
-	// 	)
-	// 	if err != nil {
-	// 		c.logger.Err(err).
-	// 			Str("aggregator", txOutItem.Aggregator).
-	// 			Msg("fail to get aggregator gas limit, aborting to let thornode reschdule")
-	// 		return nil, nil
-	// 	}
-
-	// 	// if the estimate gas is over the max, abort and let thornode reschedule for now
-	// 	if estimatedGas > gasLimitForAggregator {
-	// 		c.logger.Warn().
-	// 			Stringer("in_hash", txOutItem.InHash).
-	// 			Uint64("estimated_gas", estimatedGas).
-	// 			Uint64("aggregator_gas_limit", gasLimitForAggregator).
-	// 			Msg("swap out gas limit exceeded, aborting to let thornode reschedule")
-	// 		return nil, nil
-	// 	}
-
-	// 	// set limit to aggregator gas limit
-	// 	estimatedGas = gasLimitForAggregator
-
-	// 	scheduledMaxFee = scheduledMaxFee.Mul(scheduledMaxFee, big.NewInt(c.cfg.AggregatorMaxGasMultiplier))
-	// } else if !txOutItem.Coins[0].Asset.IsGasAsset() {
-	// 	scheduledMaxFee = scheduledMaxFee.Mul(scheduledMaxFee, big.NewInt(c.cfg.TokenMaxGasMultiplier))
-	// }
-
-	// // determine max gas units based on scheduled max gas (fee) and current rate
-	// maxGasUnits := new(big.Int).Div(scheduledMaxFee, gasRate).Uint64()
-
-	// // if estimated gas is more than the planned gas, abort and let thornode reschedule
-	// if estimatedGas > maxGasUnits {
-	// 	c.logger.Warn().
-	// 		Stringer("in_hash", txOutItem.InHash).
-	// 		Stringer("rate", gasRate).
-	// 		Uint64("estimated_gas_units", estimatedGas).
-	// 		Uint64("max_gas_units", maxGasUnits).
-	// 		Str("scheduled_max_fee", scheduledMaxFee.String()).
-	// 		Msg("max gas exceeded, aborting to let thornode reschedule")
-	// 	return nil, nil
-	// }
-
-	// // before signing, confirm the vault has enough gas asset
-	// estimatedFee := big.NewInt(int64(estimatedGas))
-	// estimatedFee.Mul(estimatedFee, gasRate)
-	// gasBalance, err := c.GetBalance(fromAddr.String(), evm.NativeTokenAddr, nil)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("fail to get gas asset balance: %w", err)
-	// }
-	// if gasBalance.Cmp(big.NewInt(0).Add(evmValue, estimatedFee)) < 0 {
-	// 	return nil, fmt.Errorf("insufficient gas asset balance: %s < %s + %s", gasBalance.String(), evmValue.String(), estimatedFee.String())
-	// }
-
-	// createdTx = etypes.NewTransaction(
-	// 	nonce, ecommon.HexToAddress(contractAddr.String()), evmValue, maxGasUnits, gasRate, txData,
-	// )
-
-	// return createdTx, nil
-	return nil, nil
+	return createdTx, nil
 }
 
 // --------------------------------- sign ---------------------------------
@@ -617,49 +549,35 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 	if len(tx.To) == 0 {
 		return nil, nil, nil, fmt.Errorf("to address is empty")
 	}
-	// if tx.VaultPubKey.IsEmpty() {
-	// 	return nil, nil, nil, fmt.Errorf("vault public key is empty")
-	// }
-
-	// todo memo
-	memo, err := mem.ParseMemo(tx.Memo)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("fail to parse memo(%s):%w", tx.Memo, err)
-	}
 
 	// the nonce is stored as the transaction checkpoint, if it is set deserialize it
 	// so we only retry with the same nonce to avoid double spend
-	var nonce uint64
-	// var fromAddr common.Address
-	// fromAddr, err = tx.VaultPubKey.GetAddress(c.cfg.ChainID)
-	// if tx.Checkpoint != nil {
-	// 	if err = json.Unmarshal(tx.Checkpoint, &nonce); err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("fail to unmarshal checkpoint: %w", err)
-	// 	}
-	// 	c.logger.Warn().Str("in_hash", tx.TxHash).Uint64("nonce", nonce).Msg("using checkpoint nonce")
-	// } else {
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("fail to get %s address for pub key(%s): %w", c.GetChain().String(), tx.VaultPubKey, err)
-	// 	}
-	// 	nonce, err = c.evmScanner.GetNonce(fromAddr.String())
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("fail to fetch account(%s) nonce: %w", fromAddr, err)
-	// 	}
+	var (
+		nonce    uint64
+		fromAddr common.Address
+	)
+	fromAddr, err := c.localPubKey.GetAddress(c.cfg.ChainID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	nonce, err = c.evmScanner.GetNonce(fromAddr.String())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("fail to fetch account(%s) nonce: %w", fromAddr, err)
+	}
 
-	// 	// abort signing if the pending nonce is too far in the future
-	// 	var finalizedNonce uint64
-	// 	finalizedNonce, err = c.evmScanner.GetNonceFinalized(fromAddr.String())
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("fail to fetch account(%s) finalized nonce: %w", fromAddr, err)
-	// 	}
-	// 	if (nonce - finalizedNonce) > c.cfg.MaxPendingNonces {
-	// 		c.logger.Warn().
-	// 			Uint64("nonce", nonce).
-	// 			Uint64("finalizedNonce", finalizedNonce).
-	// 			Msg("pending nonce too far in future")
-	// 		return nil, nil, nil, fmt.Errorf("pending nonce too far in future")
-	// 	}
-	// }
+	// abort signing if the pending nonce is too far in the future
+	var finalizedNonce uint64
+	finalizedNonce, err = c.evmScanner.GetNonceFinalized(fromAddr.String())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("fail to fetch account(%s) finalized nonce: %w", fromAddr, err)
+	}
+	if (nonce - finalizedNonce) > c.cfg.MaxPendingNonces {
+		c.logger.Warn().
+			Uint64("nonce", nonce).
+			Uint64("finalizedNonce", finalizedNonce).
+			Msg("pending nonce too far in future")
+		return nil, nil, nil, fmt.Errorf("pending nonce too far in future")
+	}
 
 	// serialize nonce for later
 	nonceBytes, err := json.Marshal(nonce)
@@ -667,7 +585,7 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nil, nil, fmt.Errorf("fail to marshal nonce: %w", err)
 	}
 
-	outboundTx, err := c.buildOutboundTx(tx, memo, nonce)
+	outboundTx, err := c.buildOutboundTx(tx, nonce)
 	if err != nil {
 		c.logger.Err(err).Msg("fail to build outbound tx")
 		return nil, nil, nil, err
@@ -731,24 +649,24 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 
 // sign is design to sign a given message with keysign party and keysign wrapper
 func (c *EVMClient) sign(tx *etypes.Transaction, poolPubKey common.PubKey, height int64, txOutItem stypes.TxOutItem) ([]byte, error) {
-	rawBytes, err := c.kw.Sign(tx, poolPubKey)
+	rawBytes, err := c.kw.LocalSign(tx)
 	if err == nil && rawBytes != nil {
 		return rawBytes, nil
 	}
-	var keysignError tss.KeysignError
-	if errors.As(err, &keysignError) {
-		if len(keysignError.Blame.BlameNodes) == 0 {
-			// TSS doesn't know which node to blame
-			return nil, fmt.Errorf("fail to sign tx: %w", err)
-		}
-		// key sign error forward the keysign blame to thorchain
-		txID, errPostKeysignFail := c.bridge.PostKeysignFailure(keysignError.Blame, height,
-			txOutItem.Memo, nil, common.EmptyPubKey) // txOutItem.Coins, txOutItem.VaultPubKey
-		if errPostKeysignFail != nil {
-			return nil, multierror.Append(err, errPostKeysignFail)
-		}
-		c.logger.Info().Str("tx_id", txID).Msg("post keysign failure to thorchain")
-	}
+	// var keysignError tss.KeysignError
+	// if errors.As(err, &keysignError) {
+	// 	if len(keysignError.Blame.BlameNodes) == 0 {
+	// 		// TSS doesn't know which node to blame
+	// 		return nil, fmt.Errorf("fail to sign tx: %w", err)
+	// 	}
+	// 	// key sign error forward the keysign blame to thorchain
+	// 	txID, errPostKeysignFail := c.bridge.PostKeysignFailure(keysignError.Blame, height,
+	// 		txOutItem.Memo, nil, common.EmptyPubKey) // txOutItem.Coins, txOutItem.VaultPubKey
+	// 	if errPostKeysignFail != nil {
+	// 		return nil, multierror.Append(err, errPostKeysignFail)
+	// 	}
+	// 	c.logger.Info().Str("tx_id", txID).Msg("post keysign failure to thorchain")
+	// }
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
 }
 

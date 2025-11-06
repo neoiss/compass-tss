@@ -110,7 +110,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 
 	packAbi, _ := abi.JSON(strings.NewReader(packABI))
 	fmt.Println("packAbi ------------- ", packAbi)
-	fmt.Printf("txOut ------------- \n ", txOut)
+	fmt.Printf("txOut ------------- %+v \n ", txOut)
 	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
 		&structure.BridgeItem{
 			Amount:           txOut.Amount,

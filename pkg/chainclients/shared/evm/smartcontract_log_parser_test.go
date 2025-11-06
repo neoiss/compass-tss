@@ -21,7 +21,7 @@ func Test_parseChainAndGasLimit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := parseChainAndGasLimit(tt.cgl)
+			got, gotErr := ParseChainAndGasLimit(tt.cgl)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("parseChainAndGasLimit() failed: %v", gotErr)
