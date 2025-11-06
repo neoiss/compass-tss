@@ -39,6 +39,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			if seq == nil {
 				seq = big.NewInt(0)
 			}
+
+			b.OrderExecuted(ele.OrderId, true)
+
 			args = append(args, structure.VoteTxIn{
 				Height:     ele.Height.Uint64(),
 				OrderId:    ele.OrderId,
@@ -101,7 +104,10 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		err   error
 		input []byte
 	)
+
 	packAbi, _ := abi.JSON(strings.NewReader(packABI))
+	fmt.Println("packAbi ------------- ", packAbi)
+	fmt.Printf("txOut ------------- \n ", txOut)
 	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
 		&structure.BridgeItem{
 			Amount:           txOut.Amount,
@@ -135,6 +141,20 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 	}
 
 	return b.assemblyTx(context.Background(), input, 0, b.cfg.Relay)
+}
+
+func (b *Bridge) OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error) {
+	method := constants.IsOrderExecuted
+	input, err := b.relayAbi.Pack(method, orderId, txIn)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to pack input")
+	}
+	var isExecuted bool
+	err = b.callContract(&isExecuted, b.cfg.Relay, method, input, b.relayAbi)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to call contract")
+	}
+	return isExecuted, nil
 }
 
 func (b *Bridge) compressPubkey(pks []byte) (string, error) {
