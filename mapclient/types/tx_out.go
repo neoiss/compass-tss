@@ -13,7 +13,6 @@ import (
 // TxOutItem represent the information of a tx bifrost need to process
 type TxOutItem struct {
 	Height           int64         `json:"height,omitempty"`
-	FromChain        *big.Int      `json:"from_chain,omitempty"`
 	TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
 	TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
 	InTxHash         string        `json:"in_tx_hash"`
@@ -21,23 +20,23 @@ type TxOutItem struct {
 	Checkpoint       []byte        `json:"-"`
 	Memo             string        `json:"memo,omitempty"`
 	Chain            *big.Int      // bridgeRelay add new field
-	LogIndex         uint
-	TxHash           string
-	Method           string
-	ToChain          *big.Int
-	OrderId          ecommon.Hash `json:"order_id"`
-	ChainAndGasLimit *big.Int
-	TxType           uint8
-	Vault            []byte
-	To               []byte
-	Token            []byte
-	Amount           *big.Int
-	Sequence         *big.Int
-	HashData         [32]byte
-	From             []byte
-	Data             []byte // relaySigned relayData -> data
-	Sender           []byte // bridgeCompleted event field
-	Signature        []byte // relaySigned event field
+	LogIndex         uint          `json:"log_index,omitempty"`
+	TxHash           string        `json:"tx_hash,omitempty"`
+	Method           string        `json:"method,omitempty"`
+	ToChain          *big.Int      `json:"to_chain,omitempty"` // bridgeRelay add new field
+	OrderId          ecommon.Hash  `json:"order_id"`
+	ChainAndGasLimit *big.Int      `json:"chain_and_gas_limit,omitempty"`
+	TxType           uint8         `json:"tx_type,omitempty"`
+	Vault            []byte        `json:"vault,omitempty"`
+	To               []byte        `json:"to,omitempty"`
+	Token            []byte        `json:"token,omitempty"`
+	Amount           *big.Int      `json:"amount,omitempty"`
+	Sequence         *big.Int      `json:"sequence,omitempty"`
+	HashData         [32]byte      `json:"hash_data,omitempty"`
+	From             []byte        `json:"from,omitempty"`
+	Data             []byte        `json:"data,omitempty"`      // relaySigned relayData -> data
+	Sender           []byte        `json:"sender,omitempty"`    // bridgeCompleted event field
+	Signature        []byte        `json:"signature,omitempty"` // relaySigned event field
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem
@@ -137,6 +136,7 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		HashData:         tx.Hash,
 		Sender:           tx.Sender,
 		Signature:        tx.Signature,
+		ToChain:          tx.ToChain,
 	}
 }
 

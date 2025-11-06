@@ -134,7 +134,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.Relay)
 }
 
 func (b *Bridge) compressPubkey(pks []byte) (string, error) {
