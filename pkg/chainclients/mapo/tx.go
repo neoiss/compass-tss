@@ -60,6 +60,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			})
 		}
 
+		if len(args) == 0 {
+			return nil, constants.OrderExecuted
+		}
 		input, err = b.tssAbi.Pack(constants.VoteTxIn, args)
 	case constants.VoteTxOut:
 		args := make([]structure.VoteTxOut, 0)

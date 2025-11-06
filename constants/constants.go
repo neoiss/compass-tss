@@ -4,6 +4,7 @@ package constants
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -154,7 +155,10 @@ const (
 	TssStatusFailed
 )
 
+var OrderExecuted = errors.New("order executed")
+
 var ToMapIgnoreError = map[string]struct{}{
-	"0x2dd1d0c8":  {}, // order exist
-	"0x7ce72949a": {}, // order_executed
+	"0x2dd1d0c8":          {}, // order exist
+	"0x7ce72949a":         {}, // order_executed
+	OrderExecuted.Error(): {},
 }
