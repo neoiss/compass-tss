@@ -534,10 +534,6 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nil, nil, nil
 	}
 
-	// if len(tx.To) == 0 {
-	// 	return nil, nil, nil, fmt.Errorf("to address is empty")
-	// }
-
 	// the nonce is stored as the transaction checkpoint, if it is set deserialize it
 	// so we only retry with the same nonce to avoid double spend
 	var (
@@ -589,49 +585,12 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nonceBytes, nil, fmt.Errorf("fail to sign message: %w", err)
 	}
 
-	// todo
-	//// create the observation to be sent by the signer before broadcast
-	//chainHeight, err := c.GetHeight()
-	//if err != nil { // fall back to the scanner height, thornode voter does not use height
-	//	chainHeight = c.evmScanner.currentBlockHeight
-	//}
-	//
-	//coin := tx.Coins[0]
-	//gas := common.MakeEVMGas(c.GetChain(), outboundTx.GasPrice(), outboundTx.Gas(), nil)
-	// This is the maximum gas, using the gas limit for instant-observation
-	// rather than the GasUsed which can only be gotten from the receipt when scanning.
-
-	// TODO:  For BASEChain MaxGas, what to do about the L1Fee not reflected in the GasPrice(),
-	// but which THORChain needs to allow enough for?
-	// (Not urgent as long as L1Fee is observed and the Dynamic Outbound Fee Multiplier
-	//  keeps total outbound fees inflow equal to total gas reimbursements outflow?
-	//  However, careful regarding any bond slashing for higher-gas-cost-than-permitted observed txouts.)
-
 	signedTx := &etypes.Transaction{}
 	if err = signedTx.UnmarshalJSON(rawTx); err != nil {
 		return nil, rawTx, nil, fmt.Errorf("fail to unmarshal signed tx: %w", err)
 	}
 
 	var txIn *stypes.TxInItem
-
-	//if err == nil {
-	//	txIn = stypes.NewTxInItem(
-	//		chainHeight,
-	//		signedTx.Hash().Hex()[2:],
-	//		tx.Memo,
-	//		fromAddr.String(),
-	//		tx.ToAddress.String(),
-	//		common.NewCoins(
-	//			coin,
-	//		),
-	//		gas,
-	//		tx.VaultPubKey,
-	//		"",
-	//		"",
-	//		nil,
-	//	)
-	//}
-
 	return rawTx, nil, txIn, nil
 }
 

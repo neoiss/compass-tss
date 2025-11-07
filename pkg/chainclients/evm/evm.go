@@ -13,5 +13,4 @@ var gatewayContractABI string
 
 const (
 	defaultDecimals = 18 // evm chains consolidate all decimals to 18 (wei)
-	tenGwei         = 10000000000
 )

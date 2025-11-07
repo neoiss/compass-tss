@@ -731,7 +731,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 			}
 		}
 
-		fmt.Println("item.TxOutItem ------------ ", ecommon.Bytes2Hex(item.TxOutItem.To))
+		s.logger.Error().Str("txHash", item.TxOutItem.TxHash).Str("toAddress", ecommon.Bytes2Hex(item.TxOutItem.To)).Err(err).Msg("fail to sign and broadcast tx out store item")
 		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("fail to sign and broadcast tx out store item")
 		cancel()
 		return
