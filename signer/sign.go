@@ -330,7 +330,7 @@ func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
 			if !ok {
 				return
 			}
-			s.logger.Info().Msgf("oracle Received a TxOut Array of %v from the MAPRelay", txOut)
+			s.logger.Info().Msgf("oracle Received a TxOut Array of %+v from the MAPRelay", txOut)
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
@@ -570,17 +570,6 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 				Msg("round 7 retry outbound tx has reached max outbound attempts")
 			return nil, nil, nil
 		}
-
-		// // determine if the round 7 retry is for an inactive vault
-		// var vault ttypes.Vault
-		// vault, err = s.mapBridge.GetVault(item.TxOutItem.VaultPubKey.String())
-		// if err != nil {
-		// 	log.Err(err).
-		// 		Stringer("vault_pubkey", item.TxOutItem.VaultPubKey).
-		// 		Msg("failed to get tx out item vault")
-		// 	return nil, nil, err
-		// }
-		// inactiveVaultRound7Retry = vault.Status == ttypes.VaultStatus_InactiveVault
 	}
 
 	// if not in round 7 retry or the round 7 retry is on an inactive vault, discard
@@ -622,16 +611,11 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// 	return nil, nil, nil
 	// }
 
-	if len(tx.To) == 0 {
-		s.logger.Info().Msg("To address is empty, map don't know where to send the fund , ignore")
-		return nil, nil, nil // return nil and discard item
-	}
+	// if len(tx.To) == 0 {
+	// 	s.logger.Info().Msg("To address is empty, map don't know where to send the fund , ignore")
+	// 	return nil, nil, nil // return nil and discard item
+	// }
 
-	// don't sign if the block scanner is unhealthy. This is because the
-	// network may not be able to detect the outbound transaction, and
-	// therefore reschedule the transaction to another signer. In a disaster
-	// scenario, the network could broadcast a transaction several times,
-	// bleeding funds.
 	if !chain.IsBlockScannerHealthy() {
 		return nil, nil, fmt.Errorf("the block scanner for chain %s is unhealthy, not signing transactions due to it", chain.GetChain())
 	}

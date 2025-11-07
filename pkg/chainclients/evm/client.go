@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -433,27 +432,23 @@ func (c *EVMClient) GetGasPrice() *big.Int {
 // --------------------------------- build transaction ---------------------------------
 
 // getOutboundTxData generates the tx data and tx value of the outbound Router Contract call, and checks if the router contract has been updated
-func (c *EVMClient) getOutboundTxData(txOutItem stypes.TxOutItem) ([]byte, bool, *big.Int, error) {
-	// todo will next 2
-	// var data []byte
-	// //var err error
-	// var tokenAddr string
-	// value := big.NewInt(0)
-	// evmValue := big.NewInt(0)
-	// hasRouterUpdated := false
+func (c *EVMClient) getOutboundTxData(sender common.Address, txOutItem stypes.TxOutItem) ([]byte, error) {
+	var (
+		err error
+		ret []byte
+	)
+	switch txOutItem.Method {
+	case constants.BridgeIn:
+		ret, err = c.gatewayAbi.Pack(constants.BridgeIn,
+			ecommon.HexToAddress(sender.String()), txOutItem.OrderId, txOutItem.Data, txOutItem.Signature)
+	default:
+		return nil, fmt.Errorf("not support method(%s)", txOutItem.Method)
+	}
+	if err != nil {
+		return nil, err
+	}
 
-	// if len(txOutItem.Coins) == 1 {
-	// 	coin := txOutItem.Coins[0]
-	// 	tokenAddr = c.getTokenAddressFromAsset(coin.Asset)
-	// 	value = value.Add(value, coin.Amount.BigInt())
-	// 	value = c.evmScanner.tokenManager.ConvertSigningAmount(value, tokenAddr)
-	// 	if strings.EqualFold(tokenAddr, evm.NativeTokenAddr) {
-	// 		evmValue = value
-	// 	}
-	// }
-
-	// return data, hasRouterUpdated, evmValue, nil
-	return nil, false, nil, nil
+	return ret, nil
 }
 
 func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*etypes.Transaction, error) {
@@ -461,39 +456,39 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	if err != nil {
 		return nil, err
 	}
+	cgl, err := evm.ParseChainAndGasLimit(ecommon.Hash(txOutItem.ChainAndGasLimit.Bytes()))
+	if err != nil {
+		c.logger.Err(err).Msg("fail to parse chain and gas limit")
+		return nil, err
+	}
 
-	txData, _, evmValue, err := c.getOutboundTxData(txOutItem)
+	txData, err := c.getOutboundTxData(fromAddr, txOutItem)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get outbound tx data %w", err)
 	}
-	if evmValue == nil {
-		evmValue = cosmos.ZeroUint().BigInt()
-	}
 
 	gasRate := c.GetGasPrice()
-	if c.cfg.BlockScanner.FixedGasRate > 0 {
+	if c.cfg.BlockScanner.FixedGasRate > 0 && gasRate.Cmp(big.NewInt(0)) == 0 {
 		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
 		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
 	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
 		// todo will next 2
 	}
 
-	c.logger.Info().Str("inHash", txOutItem.InTxHash).
-		// Str("outboundRate", convertThorchainAmountToWei(big.NewInt(txOutItem.GasRate)).String()).
-		Str("currentRate", c.GetGasPrice().String()).
-		Str("effectiveRate", gasRate.String()).
-		Msg("gas rate")
+	if gasRate.Cmp(cgl.Third) != 0 {
+		c.logger.Info().Str("inHash", txOutItem.InTxHash).
+			Str("outboundRate", cgl.Third.String()).
+			Str("currentRate", c.GetGasPrice().String()).
+			Str("effectiveRate", gasRate.String()).
+			Msg("gas rate")
+	}
 
 	// outbound tx always send to smart contract address
 	createdTx := etypes.NewTransaction(nonce, ecommon.HexToAddress(c.cfg.BlockScanner.Mos), big.NewInt(0), c.cfg.BlockScanner.MaxGasLimit, gasRate, txData)
 	estimatedGas, err := c.evmScanner.ethRpc.EstimateGas(fromAddr.String(), createdTx)
 	if err != nil {
-		c.logger.Err(err).Msg("fail to estimate gas")
-		return nil, err
-	}
-	cgl, err := evm.ParseChainAndGasLimit(ecommon.Hash(txOutItem.ChainAndGasLimit.Bytes()))
-	if err != nil {
-		c.logger.Err(err).Msg("fail to parse chain and gas limit")
+		c.logger.Err(err).Str("input", ecommon.Bytes2Hex(createdTx.Data())).
+			Msg("fail to estimate gas")
 		return nil, err
 	}
 
@@ -512,13 +507,6 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	// before signing, confirm the vault has enough gas asset
 	estimatedFee := big.NewInt(int64(estimatedGas))
 	estimatedFee.Mul(estimatedFee, gasRate)
-	gasBalance, err := c.GetBalance(fromAddr.String(), evm.NativeTokenAddr, nil)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get gas asset balance: %w", err)
-	}
-	if gasBalance.Cmp(big.NewInt(0).Add(evmValue, estimatedFee)) < 0 {
-		return nil, fmt.Errorf("insufficient gas asset balance: %s < %s + %s", gasBalance.String(), evmValue.String(), estimatedFee.String())
-	}
 
 	createdTx = etypes.NewTransaction(
 		nonce,
@@ -546,9 +534,9 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nil, nil, nil
 	}
 
-	if len(tx.To) == 0 {
-		return nil, nil, nil, fmt.Errorf("to address is empty")
-	}
+	// if len(tx.To) == 0 {
+	// 	return nil, nil, nil, fmt.Errorf("to address is empty")
+	// }
 
 	// the nonce is stored as the transaction checkpoint, if it is set deserialize it
 	// so we only retry with the same nonce to avoid double spend

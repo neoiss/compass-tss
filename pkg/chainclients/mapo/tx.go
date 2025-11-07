@@ -40,7 +40,13 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 				seq = big.NewInt(0)
 			}
 
-			b.OrderExecuted(ele.OrderId, true)
+			exist, err := b.OrderExecuted(ele.OrderId, true)
+			if err != nil {
+				return nil, err
+			}
+			if exist {
+				continue
+			}
 
 			args = append(args, structure.VoteTxIn{
 				Height:     ele.Height.Uint64(),
