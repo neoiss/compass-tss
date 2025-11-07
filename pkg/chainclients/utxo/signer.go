@@ -91,7 +91,8 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	case common.BTCChain:
 		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
+			c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
+			return nil, nil, nil, nil
 		}
 		outputAddrStr = outputAddr.(btcutil.Address).String()
 	default:

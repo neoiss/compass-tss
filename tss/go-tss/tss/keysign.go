@@ -25,7 +25,6 @@ func (t *TssServer) waitForSignatures(msgID, poolPubKey string, msgsToSign [][]b
 	// TSS keysign include both form party and keysign itself, thus we wait twice of the timeout
 	data, err := t.signatureNotifier.WaitForSignature(msgID, msgsToSign, poolPubKey, t.conf.KeySignTimeout, sigChan)
 	if err != nil {
-		fmt.Println("waitForSignatures err ---------------- ", err)
 		return keysign.Response{}, err
 	}
 	// for gg20, it wrap the signature R,S into ECSignature structure
@@ -276,7 +275,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.logger.Error().Msgf("not enough signers, threshold=%d and signers=%d", threshold, len(req.SignerPubKeys))
 		return emptyResp, errors.New("not enough signers")
 	}
-	fmt.Println("keySign  threshold ---------------- ", threshold)
+	t.logger.Debug().Msgf("keySign  threshold ------------ %d", threshold)
 
 	blameMgr := keysignInstance.GetTssCommonStruct().GetBlameMgr()
 
@@ -296,7 +295,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 			t.logger.Log().Msgf("for message %s we get the signature from the peer", msgID)
 			return
 		}
-		fmt.Println("waitForSignatures goroutine err ---------------- ", errWait)
 		t.logger.Log().Msgf("we fail to get the valid signature with error %v", errWait)
 	}()
 
@@ -307,8 +305,8 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	}()
 	wg.Wait()
 	close(sigChan)
-	fmt.Println("keySign errGen --------------------- ", errGen)
-	fmt.Println("keySign errWait --------------------- ", errWait)
+	t.logger.Debug().Msgf("keySign errGen --------------------- %v", errGen)
+	t.logger.Debug().Msgf("keySign errWait --------------------- %v", errWait)
 	keysignTime := time.Since(keysignStartTime)
 	// we received the generated verified signature, so we return
 	if errWait == nil {
