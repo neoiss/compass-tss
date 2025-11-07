@@ -214,3 +214,12 @@ func (tx Tx) ToAttributes() []cosmos.Attribute {
 		cosmos.NewAttribute("memo", tx.Memo),
 	}
 }
+
+func Completion(bytes []byte, number int) []byte {
+	ret := make([]byte, 0, number)
+	for i := 0; i < number-len(bytes); i++ {
+		ret = append(ret, byte(0))
+	}
+	ret = append(ret, bytes...)
+	return ret
+}

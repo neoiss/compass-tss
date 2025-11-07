@@ -456,7 +456,7 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	if err != nil {
 		return nil, err
 	}
-	cgl, err := evm.ParseChainAndGasLimit(ecommon.Hash(txOutItem.ChainAndGasLimit.Bytes()))
+	cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(txOutItem.ChainAndGasLimit.Bytes(), 32)))
 	if err != nil {
 		c.logger.Err(err).Msg("fail to parse chain and gas limit")
 		return nil, err
