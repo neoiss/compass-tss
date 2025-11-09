@@ -487,21 +487,16 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	createdTx := etypes.NewTransaction(nonce, ecommon.HexToAddress(c.cfg.BlockScanner.Mos), big.NewInt(0), c.cfg.BlockScanner.MaxGasLimit, gasRate, txData)
 	estimatedGas, err := c.evmScanner.ethRpc.EstimateGas(fromAddr.String(), createdTx)
 	if err != nil {
-		c.logger.Err(err).Str("input", ecommon.Bytes2Hex(createdTx.Data())).
+		c.logger.Err(err).Str("relayHash", txOutItem.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).
 			Msg("fail to estimate gas")
 		return nil, err
 	}
 
 	// if estimated gas is more than the planned gas, abort and let thornode reschedule
 	if estimatedGas > cgl.End.Uint64() {
-		c.logger.Warn().
-			Str("in_hash", txOutItem.InTxHash).
-			Stringer("rate", gasRate).
-			Uint64("estimated_gas_units", estimatedGas).
-			Uint64("max_gas_units", cgl.End.Uint64()).
-			// Str("scheduled_max_fee", scheduledMaxFee.String()).
+		c.logger.Warn().Str("relayHash", txOutItem.TxHash).Stringer("rate", gasRate).
+			Uint64("estimatedGasUnits", estimatedGas).Uint64("maxGasUnits", cgl.End.Uint64()).
 			Msg("max gas exceeded, aborting to let thornode reschedule")
-		return nil, nil
 	}
 
 	// before signing, confirm the vault has enough gas asset
