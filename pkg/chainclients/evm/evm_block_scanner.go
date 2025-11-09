@@ -207,7 +207,7 @@ func (e *EVMScanner) GetGasPrice() *big.Int {
 
 // GetNetworkFee returns current chain network fee according to Bifrost.
 func (e *EVMScanner) GetNetworkFee() (transactionSize, txSwapGasLimit, transactionFeeRate uint64) {
-	return e.cfg.MaxGasLimit, e.cfg.MaxSwapGasLimit, e.lastReportedGasPrice / 1e10 // 1e18 -> 1e8
+	return e.cfg.MaxGasLimit, e.cfg.MaxSwapGasLimit, e.lastReportedGasPrice
 }
 
 // GetNonce returns the nonce (including pending) for the given address.
