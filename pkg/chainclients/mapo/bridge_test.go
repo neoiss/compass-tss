@@ -43,11 +43,14 @@ func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 		ChainHomeFolder: "./",
 		Maintainer:      "0x0EdA5e4015448A2283662174DD7def3C3d262D38",
 		ViewController:  "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6",
+		TssManager:      "0x81F50D29166089FeB6305bec79B55eCf44448B7d",
+		Relay:           "0x88E220b62227d84B7f30aC51B314B0C318e82e62",
 	}
 
 	name := "test-eth"
+	os.Setenv("KEYSTORE_PASSWORD", "123456")
 	//  dont push
-	keyStorePath := "/Users/zmm/Library/Ethereum/keystore/UTC--2025-09-23T07-18-09.804272000Z--69a99844d11bea5c6b73c84166e3c6b62cd870f5"
+	keyStorePath := "/Users/zmm/Library/Ethereum/keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
 	kb, keyStore, err := keys.GetKeyringKeybase(keyStorePath, name)
 	assert.Nil(t, err)
 
@@ -269,4 +272,12 @@ func (s *BridgeSuite) Test_CheckOrderId(c *C) {
 	// 	ecommon.HexToHash("fabc36c8987035c7d01d7a3e8e9602b621263c0c9e286b5c408e39171037854d"), true)
 	// c.Assert(err, IsNil)
 	// c.Log("CheckOrderId -------- ", exist)
+}
+
+func Test_Bridge_KeyShare(t *testing.T) {
+	bri := getBridgeForTest(t)
+	keyShare, pubkey, err := bri.GetKeyShare()
+	assert.Nil(t, err)
+	t.Log("KeyShare: ", keyShare)
+	t.Log("Pubkey: ", pubkey)
 }

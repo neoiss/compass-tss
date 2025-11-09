@@ -194,10 +194,6 @@ func (s *Signer) Start() error {
 	return nil
 }
 
-// func (s *Signer) shouldSign(tx types.TxOutItem) bool {
-// 	return s.pubkeyMgr.HasPubKey(tx.VaultPubKey)
-// }
-
 // signTransactions - looks for work to do by getting a list of all unsigned
 // transactions stored in the storage
 func (s *Signer) signTransactions() {
@@ -563,11 +559,8 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		}
 		attempt := (blockHeight - height) / signingTransactionPeriod
 		if attempt > maxOutboundAttemptsMimir {
-			s.logger.Warn().
-				Int64("outbound_height", height).
-				Int64("current_height", blockHeight).
-				Int64("attempt", attempt).
-				Msg("round 7 retry outbound tx has reached max outbound attempts")
+			s.logger.Warn().Int64("outbound_height", height).Int64("current_height", blockHeight).
+				Int64("attempt", attempt).Msg("round 7 retry outbound tx has reached max outbound attempts")
 			return nil, nil, nil
 		}
 	}
@@ -606,15 +599,6 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		s.logger.Info().Msgf("signing for %s is halted", tx.Chain)
 		return nil, nil, nil
 	}
-	// if !s.shouldSign(tx) {
-	// 	s.logger.Info().Str("signer_address", chain.GetAddress(tx.VaultPubKey)).Msg("different pool address, ignore")
-	// 	return nil, nil, nil
-	// }
-
-	// if len(tx.To) == 0 {
-	// 	s.logger.Info().Msg("To address is empty, map don't know where to send the fund , ignore")
-	// 	return nil, nil, nil // return nil and discard item
-	// }
 
 	if !chain.IsBlockScannerHealthy() {
 		return nil, nil, fmt.Errorf("the block scanner for chain %s is unhealthy, not signing transactions due to it", chain.GetChain())
@@ -716,6 +700,9 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	checkpoint, _, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
+		if item.TxOutItem.Chain.String() == "1360095883558914" {
+			return nil, nil, nil
+		}
 		// will next 400
 		return s.signAndBroadcast(item)
 	})
