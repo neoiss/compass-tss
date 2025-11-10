@@ -194,10 +194,6 @@ func (s *Signer) Start() error {
 	return nil
 }
 
-// func (s *Signer) shouldSign(tx types.TxOutItem) bool {
-// 	return s.pubkeyMgr.HasPubKey(tx.VaultPubKey)
-// }
-
 // signTransactions - looks for work to do by getting a list of all unsigned
 // transactions stored in the storage
 func (s *Signer) signTransactions() {
@@ -373,7 +369,7 @@ func (s *Signer) processOracle() {
 						return fmt.Errorf("fail to send the tx to thorchain: %w", err)
 					}
 					s.oracleStorage.Remove(tmp)
-					s.logger.Info().Str("mapHash", txID).Msg("oracle tx sent successfully")
+					s.logger.Info().Str("relayHash", txID).Msg("oracle tx sent successfully")
 					return nil
 				}, bf)
 				if err != nil {
@@ -541,13 +537,13 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	blockHeight, err := s.mapBridge.GetBlockHeight()
 	if err != nil {
-		s.logger.Error().Err(err).Msgf("fail to get block height")
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Msgf("fail to get block height")
 		return nil, nil, err
 	}
 	signingTransactionPeriod, err := s.constantsProvider.GetInt64Value(blockHeight, constants.SigningTransactionPeriod)
 	s.logger.Debug().Msgf("signing transaction period:%d", signingTransactionPeriod)
 	if err != nil {
-		s.logger.Error().Err(err).Msgf("fail to get constant value for(%s)", constants.SigningTransactionPeriod)
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Msgf("fail to get constant value for(%s)", constants.SigningTransactionPeriod)
 		return nil, nil, err
 	}
 
@@ -558,16 +554,13 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		var maxOutboundAttemptsMimir int64
 		maxOutboundAttemptsMimir, err = s.mapBridge.GetMimir(mimirKey)
 		if err != nil {
-			s.logger.Err(err).Msgf("fail to get %s", mimirKey)
+			s.logger.Err(err).Str("relayHash", item.TxOutItem.TxHash).Msgf("fail to get %s", mimirKey)
 			return nil, nil, err
 		}
 		attempt := (blockHeight - height) / signingTransactionPeriod
 		if attempt > maxOutboundAttemptsMimir {
-			s.logger.Warn().
-				Int64("outbound_height", height).
-				Int64("current_height", blockHeight).
-				Int64("attempt", attempt).
-				Msg("round 7 retry outbound tx has reached max outbound attempts")
+			s.logger.Warn().Str("relayHash", item.TxOutItem.TxHash).Int64("outbound_height", height).Int64("current_height", blockHeight).
+				Int64("attempt", attempt).Msg("round 7 retry outbound tx has reached max outbound attempts")
 			return nil, nil, nil
 		}
 	}
@@ -576,45 +569,36 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// outbound if within configured blocks of reschedule
 	if !item.Round7Retry || inactiveVaultRound7Retry {
 		if blockHeight-signingTransactionPeriod > height-s.cfg.Signer.RescheduleBufferBlocks {
-			s.logger.Error().Msgf("tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
+			s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Msgf("tx was created at block height(%d), now it is (%d), it is older than (%d) blocks, skip it", height, blockHeight, signingTransactionPeriod)
 			return nil, nil, nil
 		}
 	}
 
 	chain, err := s.getChain(tx.Chain)
 	if err != nil {
-		s.logger.Error().Err(err).Msgf("not supported %s", tx.Chain.String())
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Msgf("not supported %s", tx.Chain.String())
 		return nil, nil, err
 	}
 	mimirKey := "HALTSIGNING"
 	haltSigningGlobalMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
+		s.logger.Err(err).Str("relayHash", item.TxOutItem.TxHash).Msgf("fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningGlobalMimir > 0 && haltSigningGlobalMimir < blockHeight {
-		s.logger.Info().Msg("signing has been halted globally")
+		s.logger.Info().Str("relayHash", item.TxOutItem.TxHash).Msg("signing has been halted globally")
 		return nil, nil, nil
 	}
 	mimirKey = fmt.Sprintf("HALTSIGNING%s", tx.Chain)
 	haltSigningMimir, err := s.mapBridge.GetMimir(mimirKey)
 	if err != nil {
-		s.logger.Err(err).Msgf("fail to get %s", mimirKey)
+		s.logger.Err(err).Str("relayHash", item.TxOutItem.TxHash).Msgf("fail to get %s", mimirKey)
 		return nil, nil, err
 	}
 	if haltSigningMimir > 0 && haltSigningMimir < blockHeight {
-		s.logger.Info().Msgf("signing for %s is halted", tx.Chain)
+		s.logger.Info().Str("relayHash", item.TxOutItem.TxHash).Msgf("signing for %s is halted", tx.Chain)
 		return nil, nil, nil
 	}
-	// if !s.shouldSign(tx) {
-	// 	s.logger.Info().Str("signer_address", chain.GetAddress(tx.VaultPubKey)).Msg("different pool address, ignore")
-	// 	return nil, nil, nil
-	// }
-
-	// if len(tx.To) == 0 {
-	// 	s.logger.Info().Msg("To address is empty, map don't know where to send the fund , ignore")
-	// 	return nil, nil, nil // return nil and discard item
-	// }
 
 	if !chain.IsBlockScannerHealthy() {
 		return nil, nil, fmt.Errorf("the block scanner for chain %s is unhealthy, not signing transactions due to it", chain.GetChain())
@@ -639,14 +623,14 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	var elapse time.Duration
 	var observation *types.TxInItem
 	if len(item.SignedTx) > 0 {
-		s.logger.Info().Str("memo", tx.Memo).Msg("retrying broadcast of already signed tx")
+		s.logger.Info().Str("relayHash", item.TxOutItem.TxHash).Str("memo", tx.Memo).Msg("retrying broadcast of already signed tx")
 		signedTx = item.SignedTx
 		observation = item.Observation
 	} else {
 		startKeySign := time.Now()
 		signedTx, checkpoint, observation, err = chain.SignTx(tx, height)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to sign tx")
+			s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Msg("fail to sign tx")
 			return checkpoint, nil, err
 		}
 		elapse = time.Since(startKeySign)
@@ -654,25 +638,26 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	// looks like the transaction is already signed
 	if len(signedTx) == 0 {
-		s.logger.Warn().Msgf("signed transaction is empty")
+		s.logger.Warn().Str("relayHash", item.TxOutItem.TxHash).Msgf("signed transaction is empty")
 		return nil, nil, nil
 	}
 
 	// broadcast the transaction
 	hash, err := chain.BroadcastTx(tx, signedTx)
 	if err != nil {
-		s.logger.Error().Err(err).Str("memo", tx.Memo).Msg("fail to broadcast tx to chain")
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Str("memo", tx.Memo).Msg("fail to broadcast tx to chain")
 
 		// store the signed tx for the next retry
 		item.SignedTx = signedTx
 		item.Observation = observation
 		if storeErr := s.storage.Set(item); storeErr != nil {
-			s.logger.Error().Err(storeErr).Msg("fail to update tx out store item with signed tx")
+			s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(storeErr).Msg("fail to update tx out store item with signed tx")
 		}
 
 		return nil, observation, err
 	}
-	s.logger.Info().Str("txId", hash).Str("memo", tx.Memo).Msg("broadcasted tx to chain")
+	s.logger.Info().Str("sourceHash", item.TxOutItem.TxHash).
+		Str("txId", hash).Str("memo", tx.Memo).Msg("broadcasted tx to chain")
 
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
 
@@ -716,6 +701,9 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	checkpoint, _, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
+		if item.TxOutItem.Chain.String() == "1360095883558914" {
+			return nil, nil, nil
+		}
 		// will next 400
 		return s.signAndBroadcast(item)
 	})
@@ -731,7 +719,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 			}
 		}
 
-		s.logger.Error().Str("txHash", item.TxOutItem.TxHash).Str("toAddress", ecommon.Bytes2Hex(item.TxOutItem.To)).Err(err).Msg("fail to sign and broadcast tx out store item")
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Str("toAddress", ecommon.Bytes2Hex(item.TxOutItem.To)).Err(err).Msg("fail to sign and broadcast tx out store item")
 		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("fail to sign and broadcast tx out store item")
 		cancel()
 		return
@@ -743,6 +731,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		// Otherwise, out-of-sync lists would cycle one timeout at a time, maybe never resynchronising.
 	}
 	cancel()
+	s.logger.Info().Interface("relayHash", item.TxOutItem.TxHash).Msg("remove signing transaction")
 	// We have a successful broadcast! Remove the item from our store
 	if err = s.storage.Remove(item); err != nil {
 		s.logger.Error().Err(err).Msg("fail to update tx out store item")

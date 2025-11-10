@@ -132,12 +132,15 @@ func (b *Bridge) GetKeyShare() ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "fail to pack input")
 	}
-	var ret TSSManagerKeyShare
+	type retStruct struct {
+		KeyShare TSSManagerKeyShare `json:"keyShare"`
+	}
+	var ret retStruct
 	err = b.callContract(&ret, b.cfg.TssManager, method, input, b.tssAbi)
 	if err != nil {
 		return nil, nil, err
 	}
-	return ret.KeyShare, ret.Pubkey, nil
+	return ret.KeyShare.KeyShare, ret.KeyShare.Pubkey, nil
 }
 
 func (b *Bridge) getTssStatus(epoch *big.Int) (constants.TssStatus, error) {
