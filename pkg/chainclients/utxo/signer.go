@@ -6,21 +6,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"strings"
 	"sync"
-
-	"github.com/hashicorp/go-multierror"
-
-	bchwire "github.com/gcash/bchd/wire"
-	"github.com/gcash/bchutil"
-	ltcwire "github.com/ltcsuite/ltcd/wire"
-	"github.com/ltcsuite/ltcutil"
 
 	"github.com/btcsuite/btcd/mempool"
 	btcwire "github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	dogewire "github.com/eager7/dogd/wire"
 	"github.com/eager7/dogutil"
+	bchwire "github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil"
+	"github.com/hashicorp/go-multierror"
+	ltcwire "github.com/ltcsuite/ltcd/wire"
+	"github.com/ltcsuite/ltcutil"
 
 	"github.com/mapprotocol/compass-tss/common"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
@@ -41,6 +41,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	if !chain.Equals(c.cfg.ChainID) {
 		return nil, nil, nil, errors.New("wrong chain")
 	}
+
+	cgl, err := parseChainAndGasLimit(tx.ChainAndGasLimit)
+	if err != nil {
+		c.log.Err(err).Msg("fail to parse chain and gas limit")
+		return nil, nil, nil, err
+	}
+	tx.TransactionRate = cgl.TxRate
+	tx.TransactionSize = cgl.TxSize
 
 	// skip outbounds without coins
 	//if tx.Coins.IsEmpty() {
@@ -350,4 +358,25 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	}
 
 	return txid, nil
+}
+
+type ChainAndGasLimit struct {
+	FromChain *big.Int
+	ToChain   *big.Int
+	TxRate    *big.Int
+	TxSize    *big.Int
+}
+
+func parseChainAndGasLimit(c *big.Int) (*ChainAndGasLimit, error) {
+	if c == nil {
+		return nil, errors.New("chain and gas limit is nil")
+	}
+
+	bs := ethcommon.LeftPadBytes(c.Bytes(), 32)
+	return &ChainAndGasLimit{
+		FromChain: new(big.Int).SetBytes(bs[0:8]),
+		ToChain:   new(big.Int).SetBytes(bs[8:16]),
+		TxRate:    new(big.Int).SetBytes(bs[16:24]),
+		TxSize:    new(big.Int).SetBytes(bs[24:32]),
+	}, nil
 }
