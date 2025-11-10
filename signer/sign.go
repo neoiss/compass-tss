@@ -701,9 +701,6 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 	// a single keysign should not take longer than 5 minutes , regardless TSS or local
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	checkpoint, _, err := runWithContext(ctx, func() ([]byte, *types.TxInItem, error) {
-		if item.TxOutItem.Chain.String() == "1360095883558914" {
-			return nil, nil, nil
-		}
 		// will next 400
 		return s.signAndBroadcast(item)
 	})
