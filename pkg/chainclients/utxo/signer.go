@@ -44,12 +44,12 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 
 	cgl, err := parseChainAndGasLimit(tx.ChainAndGasLimit)
 	if err != nil {
-		c.log.Err(err).Msg("fail to parse chain and gas limit")
+		c.log.Err(err).Str("relayHash", tx.TxHash).Msg("fail to parse chain and gas limit")
 		return nil, nil, nil, err
 	}
 	tx.TransactionRate = cgl.TxRate
 	tx.TransactionSize = cgl.TxSize
-
+	c.log.Info().Str("relayHash", tx.TxHash).Str("tx_rate", tx.TransactionRate.String()).Str("tx_size", tx.TransactionSize.String())
 	// skip outbounds without coins
 	//if tx.Coins.IsEmpty() {
 	//	return nil, nil, nil, nil
@@ -58,14 +58,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	toAddress := hex.EncodeToString(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
 		if !common.Address(toAddress).IsValidBCHAddress() {
-			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
+			c.log.Error().Str("relayHash", tx.TxHash).Msgf("to address: %s is legacy not allowed ", toAddress)
 			return nil, nil, nil, nil
 		}
 	}
 
 	// skip outbounds that have been signed
 	if c.signerCacheManager.HasSigned(tx.CacheHash()) {
-		c.log.Info().Msgf("ignoring already signed transaction: (%+v)", tx)
+		c.log.Info().Str("relayHash", tx.TxHash).Msgf("ignoring already signed transaction: (%+v)", tx)
 		return nil, nil, nil, nil
 	}
 
@@ -115,7 +115,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	//}
 	switch outputAddr.(type) {
 	case *dogutil.AddressPubKey, *bchutil.AddressPubKey, *ltcutil.AddressPubKey, *btcutil.AddressPubKey:
-		c.log.Info().Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
+		c.log.Warn().Str("relayHash", tx.TxHash).Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
 		return nil, nil, nil, nil
 	default: // keep lint happy
 	}
@@ -139,6 +139,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 			return nil, nil, nil, fmt.Errorf("fail to verify checkpoint vins: %w", err)
 		}
 		if !unspent {
+			c.log.Warn().Str("relayHash", tx.TxHash).Msgf("invalid checkpoint vins: %+v", redeemTx.TxIn)
 			return nil, nil, nil, nil
 		}
 
