@@ -98,6 +98,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 				},
 			})
 		}
+		if len(args) == 0 {
+			return nil, constants.OrderExecuted
+		}
 		input, err = b.tssAbi.Pack(constants.VoteTxOut, args)
 	default:
 		return nil, fmt.Errorf("unsupported method: (%s)", txIn.Method)
@@ -122,8 +125,6 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 	)
 
 	packAbi, _ := abi.JSON(strings.NewReader(packABI))
-	fmt.Println("packAbi ------------- ", packAbi)
-	fmt.Printf("txOut ------------- %+v \n ", txOut)
 	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
 		&structure.BridgeItem{
 			Amount:           txOut.Amount,
