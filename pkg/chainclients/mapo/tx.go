@@ -12,9 +12,11 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/pkg/errors"
 )
 
@@ -73,9 +75,14 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	case constants.VoteTxOut:
 		args := make([]structure.VoteTxOut, 0)
 		for _, ele := range txIn.TxArray {
+			cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(ele.ChainAndGasLimit.Bytes(), 32)))
+			if err != nil {
+				return nil, fmt.Errorf("fail to parse chainAndGasLimit: %w", err)
+			}
+
 			args = append(args, structure.VoteTxOut{
 				Height:  ele.Height.Uint64(),
-				GasUsed: ele.GasUsed,
+				GasUsed: cgl.End,
 				OrderId: ele.OrderId,
 				Sender:  ecommon.HexToAddress(ele.Sender),
 				BridgeItem: structure.BridgeItem{
