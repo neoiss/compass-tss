@@ -641,7 +641,7 @@ func (c *EVMClient) BroadcastTx(txOutItem stypes.TxOutItem, hexTx []byte) (strin
 
 	blockHeight, err := c.bridge.GetBlockHeight()
 	if err != nil {
-		c.logger.Err(err).Msg("fail to get current THORChain block height")
+		c.logger.Err(err).Msg("fail to get current relay block height")
 		// at this point , the tx already broadcast successfully , don't return an error
 		// otherwise will cause the same tx to retry
 	} else if err = c.AddSignedTxItem(txID, blockHeight, string(common.EmptyPubKey), &txOutItem); err != nil { //txOutItem.VaultPubKey.String()
