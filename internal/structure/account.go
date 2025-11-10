@@ -60,7 +60,7 @@ type BridgeItem struct {
 type VoteTxOut struct {
 	OrderId    [32]byte
 	BridgeItem BridgeItem
-	Height     *big.Int
+	Height     uint64
 	GasUsed    *big.Int
 	Sender     common.Address
 }

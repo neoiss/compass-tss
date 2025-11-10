@@ -74,7 +74,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 		args := make([]structure.VoteTxOut, 0)
 		for _, ele := range txIn.TxArray {
 			args = append(args, structure.VoteTxOut{
-				Height:  ele.Height,
+				Height:  ele.Height.Uint64(),
 				GasUsed: ele.GasUsed,
 				OrderId: ele.OrderId,
 				Sender:  ecommon.HexToAddress(ele.Sender),
