@@ -260,6 +260,7 @@ func (s *KeySign) toLocalTSSSigner(poolPubKey string, tasks []*tssKeySignTask) {
 	var msgToSign []string
 	for _, item := range tasks {
 		msgToSign = append(msgToSign, item.Msg)
+		s.logger.Info().Msgf("toLocalTSSSigner item msg: %s", item.Msg)
 	}
 	tssMsg := keysign.Request{
 		PoolPubKey: poolPubKey,
