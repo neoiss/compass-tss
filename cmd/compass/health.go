@@ -8,15 +8,12 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/config"
 	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/types"
 
@@ -165,6 +162,7 @@ func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 			status := ""
 			if resp != nil {
 				status = resp.Status
+				peer.Status = resp.Status
 			}
 			if err != nil {
 				peer.ReturnedPeerID = fmt.Sprintf("failed, status=\"%s\"", status)
@@ -202,53 +200,6 @@ func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 
 func (s *HealthServer) currentSigning(w http.ResponseWriter, _ *http.Request) {
 	res := make([]VaultResponse, 0)
-
-	thornode := config.GetBifrost().MAPRelay.ChainHost
-	url := fmt.Sprintf("http://%s%s", thornode, mapo.AsgardVault)
-	resp, err := http.Get(url)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get thornode status")
-	} else {
-		defer resp.Body.Close()
-
-		vaults := make([]openapi.Vault, 0)
-		if err = json.NewDecoder(resp.Body).Decode(&vaults); err != nil {
-			s.logger.Error().Err(err).Msg("fail to decode thornode status")
-		}
-		for _, vault := range vaults {
-			valRes := VaultResponse{
-				Pubkey:       common.PubKey(*vault.PubKey),
-				Status:       types.VaultStatus(types.VaultStatus_value[vault.Status]),
-				ChainDetails: make([]signingChain, 0),
-			}
-
-			for _, chain := range vault.Chains {
-				client, found := s.chains[common.Chain(strings.ToUpper(chain))]
-				if !found {
-					s.logger.Error().Msgf("failed to get bifrost chain client for %s", chain)
-					continue
-				}
-				var account common.Account
-				account, err = client.GetAccount(common.PubKey(*vault.PubKey), nil)
-				if err != nil {
-					s.logger.Error().Err(err).Msgf("failed to get account for vault:%s on chain:%s", *vault.PubKey, chain)
-					continue
-				}
-				var lastObserved, lastBroadcasted string
-				lastObserved, lastBroadcasted, err = client.GetLatestTxForVault(*vault.PubKey)
-				if err != nil {
-					s.logger.Error().Err(err).Msgf("failed to get latest tx for vault:%s on chain:%s", *vault.PubKey, chain)
-				}
-				valRes.ChainDetails = append(valRes.ChainDetails, signingChain{
-					Chain:               chain,
-					LatestBroadcastedTx: lastBroadcasted,
-					LatestObservedTx:    lastObserved,
-					CurrentSequence:     account.Sequence,
-				})
-			}
-			res = append(res, valRes)
-		}
-	}
 
 	// write the response
 	jsonBytes, err := json.MarshalIndent(res, "", "  ")

@@ -2,7 +2,6 @@ package evm
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -14,10 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -339,47 +336,23 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 	return txIn, nil
 }
 
-func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
-	// Use custom method name as it varies between implementation
-	// It should be akin to: "fetch all transaction receipts within a block", e.g. getBlockReceipts
-	// This has shown to be more efficient than getTransactionReceipt in a batch call
+func (e *EVMScanner) getTxInOptimized(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	txInbound := stypes.TxIn{
-		Chain:    e.cfg.ChainID,
-		Filtered: false,
-		MemPool:  false,
+		Chain: e.cfg.ChainID,
 	}
 
-	// tx lookup for compatibility with shared evm functions
-	logByTxHash := make(map[string]*etypes.Log)
-	for _, ele := range logs {
-		// best effort remove the tx from the signed txs (ok if it does not exist)
-		if err := e.blockMetaAccessor.RemoveSignedTxItem(ele.TxHash.String()); err != nil {
-			e.logger.Err(err).Str("tx hash", ele.TxHash.String()).Msg("Failed to remove signed tx item")
-		}
-
-		tmp := ele
-		logByTxHash[ele.TxHash.String()] = &tmp
-	}
-
-	var receipts []*etypes.Receipt
-	blockNumStr := hexutil.EncodeBig(block.Number())
-	err := e.ethClient.Client().Call(&receipts, method, blockNumStr)
-	if err != nil {
-		e.logger.Error().Err(err).Msg("Failed to fetch block receipts")
-		return stypes.TxIn{}, err
-	}
-
-	for _, receipt := range receipts {
-		txForReceipt, ok := logByTxHash[receipt.TxHash.String()]
-		if !ok {
-			e.logger.Debug().Str("txHash", receipt.TxHash.String()).Uint64("blockNumber", block.NumberU64()).
-				Msg("Receipt not log, ignoring...")
-			continue
+	for _, ll := range logs {
+		if err := e.blockMetaAccessor.RemoveSignedTxItem(ll.TxHash.String()); err != nil {
+			e.logger.Err(err).Str("tx hash", ll.TxHash.String()).Msg("Failed to remove signed tx item")
 		}
 
 		// extract the txInItem
-		var txInItem *stypes.TxInItem
-		txInItem, err = e.receiptToTxInItem(txForReceipt, receipt)
+		var (
+			err      error
+			txInItem *stypes.TxInItem
+		)
+		tmp := ll
+		txInItem, err = e.getTxInFromSmartContract(&tmp)
 		if err != nil {
 			e.logger.Error().Err(err).Msg("failed to convert receipt to txInItem")
 			continue
@@ -392,10 +365,6 @@ func (e *EVMScanner) getTxInOptimized(method string, block *etypes.Block, logs [
 		if len(txInItem.To) == 0 {
 			continue
 		}
-		if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
-			continue
-		}
-
 		// add the txInItem to the txInbound
 		txInItem.Height = block.Number()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
@@ -413,7 +382,7 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 	// within a block, register it here.
 	switch e.cfg.ChainID {
 	case common.BASEChain, common.BSCChain:
-		return e.getTxInOptimized("eth_getBlockReceipts", block, logs)
+		return e.getTxInOptimized(block, logs)
 	}
 
 	txInbound := stypes.TxIn{
@@ -422,50 +391,19 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 		MemPool:  false,
 	}
 
-	// collect all relevant transactions from the block into batches
-	var rpcBatch []rpc.BatchElem
+	// process all batches
 	for _, ele := range logs {
-		// best effort remove the tx from the signed txs (ok if it does not exist)
+		// extract the txInItem
+		var (
+			err      error
+			txInItem *stypes.TxInItem
+		)
 		if err := e.blockMetaAccessor.RemoveSignedTxItem(ele.TxHash.String()); err != nil {
 			e.logger.Err(err).Str("tx hash", ele.TxHash.String()).Msg("failed to remove signed tx item")
 		}
 
-		rpcBatch = append(rpcBatch, rpc.BatchElem{
-			Method: "eth_getTransactionReceipt",
-			Args:   []interface{}{ele.TxHash.String()},
-			Result: &etypes.Receipt{},
-		})
-	}
-
-	// process all batches
-	for idx, ele := range logs {
-		// send the batch rpc request
-		err := e.ethClient.Client().BatchCall(rpcBatch)
-		if err != nil {
-			e.logger.Error().Int("size", len(rpcBatch)).Err(err).Msg("Failed to batch fetch transaction receipts")
-			return stypes.TxIn{}, err
-		}
-
-		// process the batch rpc response
-		batchEle := rpcBatch[idx]
-		if batchEle.Error != nil {
-			if !errors.Is(err, ethereum.NotFound) {
-				e.logger.Error().Err(batchEle.Error).Msg("Failed to fetch transaction receipt")
-			}
-			continue
-		}
-
-		// get the receipt
-		receipt, ok := batchEle.Result.(*etypes.Receipt)
-		if !ok {
-			e.logger.Error().Msg("Failed to cast to transaction receipt")
-			continue
-		}
-
-		// extract the txInItem
-		var txInItem *stypes.TxInItem
 		tmp := ele
-		txInItem, err = e.receiptToTxInItem(&tmp, receipt)
+		txInItem, err = e.getTxInFromSmartContract(&tmp)
 		if err != nil {
 			e.logger.Error().Err(err).Msg("Failed to convert receipt to txInItem")
 			continue
@@ -476,9 +414,6 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 			continue
 		}
 		if len(txInItem.To) == 0 {
-			continue
-		}
-		if len([]byte(txInItem.Memo)) > constants.MaxMemoSize {
 			continue
 		}
 
@@ -492,26 +427,6 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 		return stypes.TxIn{}, nil
 	}
 	return txInbound, nil
-}
-
-func (e *EVMScanner) receiptToTxInItem(ll *etypes.Log, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
-	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Debug().Stringer("txid", ll.TxHash).Uint64("status", receipt.Status).Msg("tx failed")
-
-		// remove failed transactions from signer cache so they are retried
-		if e.signerCacheManager != nil {
-			e.signerCacheManager.RemoveSigned(ll.TxHash.String())
-		}
-
-		return nil, nil
-		//return e.getTxInFromFailedTransaction(tx, receipt), nil
-	}
-
-	ret, err := e.getTxInFromSmartContract(ll, receipt, 0)
-	if err != nil {
-		return nil, err
-	}
-	return ret, nil
 }
 
 // --------------------------------- reorg ---------------------------------
@@ -736,70 +651,14 @@ func (e *EVMScanner) reportNetworkFee(height int64) {
 
 // --------------------------------- parse transaction ---------------------------------
 
-func (e *EVMScanner) getTxInFromTransaction(tx *etypes.Transaction, receipt *etypes.Receipt) (*stypes.TxInItem, error) {
-	txInItem := &stypes.TxInItem{
-		Tx: tx.Hash().Hex()[2:], // drop the "0x" prefix
-	}
-
-	sender, err := e.eipSigner.Sender(tx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get sender: %w", err)
-	}
-	txInItem.Sender = strings.ToLower(sender.String())
-	txInItem.To = tx.To().Bytes()
-
-	// on native transactions the memo is hex encoded in the data field
-	data := tx.Data()
-	if len(data) > 0 {
-		var memo []byte
-		memo, err = hex.DecodeString(string(data))
-		if err != nil {
-			txInItem.Memo = string(data)
-		} else {
-			txInItem.Memo = string(memo)
-		}
-	}
-
-	//nativeValue := e.tokenManager.ConvertAmount(evm.NativeTokenAddr, tx.Value())
-
-	return txInItem, nil
-}
-
-// isToValidContractAddress this method make sure the transaction to address is to
-// THORChain router or a whitelist address
-func (e *EVMScanner) isToValidContractAddress(addr *ecommon.Address, includeWhiteList bool) bool {
-	if addr == nil {
-		return false
-	}
-	// get the smart contract used by thornode
-	contractAddresses := e.pubkeyMgr.GetContracts(e.cfg.ChainID)
-	if includeWhiteList {
-		contractAddresses = append(contractAddresses, e.whitelistContracts...)
-	}
-
-	// combine the whitelist smart contract address
-	for _, item := range contractAddresses {
-		if strings.EqualFold(item.String(), addr.String()) {
-			return true
-		}
-	}
-	return false
-}
-
 // getTxInFromSmartContract returns txInItem
-func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
+func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log) (*stypes.TxInItem, error) {
 	txInItem := &stypes.TxInItem{
 		Tx:       ll.TxHash.String()[2:], // drop the "0x" prefix
 		LogIndex: ll.Index,
 	}
 	cId, _ := e.cfg.ChainID.ChainID()
 	txInItem.FromChain = cId
-
-	// 1 is Transaction success state
-	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Debug().Stringer("txId", ll.TxHash).Uint64("status", receipt.Status).Msg("Tx failed")
-		return nil, nil
-	}
 	p := evm.NewSmartContractLogParser(e.gatewayABI)
 
 	// txInItem will be changed in p.getTxInItem function, so if the function return an

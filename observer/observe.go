@@ -288,19 +288,21 @@ func (o *Observer) sendDeck(ctx context.Context) {
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
 		result := o.chunkifyAndSendToMapRelay(deck, chainClient, false)
-		o.logger.Info().Any("result", result).Msg("sending success")
+		if result != nil {
+			o.logger.Info().Any("result", result).Msg("sending success")
+		}
 	}
 }
 
 func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chainclients.ChainClient, finalised bool) *types.TxIn {
 	tmp := deck
 	if tmp.MapRelayHash != "" { // already sent
-		return deck
+		return nil
 	}
 	if err := o.signAndSendToMapRelay(tmp); err != nil {
 		o.logger.Error().Err(err).Str("orderId", tmp.TxArray[0].OrderId.String()).
 			Msg("fail to send to MAP")
-		return deck
+		return nil
 	}
 
 	i, ok := chainClient.(interface {
@@ -315,7 +317,7 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chain
 	return tmp
 }
 
-const maxTxArrayLen = 100
+const maxTxArrayLen = 5
 
 func (o *Observer) chunkify(txIn types.TxIn) (result []types.TxIn) {
 	// sort it by block height
