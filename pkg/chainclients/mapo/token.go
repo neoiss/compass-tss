@@ -42,6 +42,37 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	return chainID, nil
 }
 
+func (b *Bridge) GetChainName(chain *big.Int) (string, error) {
+	method := "getChainName"
+	input, err := b.tokenRegistry.Pack(method, chain)
+	if err != nil {
+		return "", err
+	}
+
+	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
+	output, err := b.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			From: constants.ZeroAddress,
+			To:   &to,
+			Data: input,
+		},
+		nil,
+	)
+
+	outputs := b.tokenRegistry.Methods[method].Outputs
+	unpack, err := outputs.Unpack(output)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to unpack output of %s", method)
+	}
+
+	var name string
+	if err = outputs.Copy(&name, unpack); err != nil {
+		return "", errors.Wrapf(err, "unable to copy output of %s", method)
+	}
+	return name, nil
+}
+
 func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) {
 	method := "getTokenAddressByNickname"
 	input, err := b.tokenRegistry.Pack(method, chainID, name)

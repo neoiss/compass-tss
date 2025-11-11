@@ -282,7 +282,11 @@ func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
 
 func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx, map[string]int64, error) {
 	// build memo
-	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.TxHash).String()
+	chainName, err := c.bridge.GetChainName(tx.FromChain)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
+	}
+	tx.Memo = mem.NewInboundMemo(chainName, tx.TxHash).String()
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
