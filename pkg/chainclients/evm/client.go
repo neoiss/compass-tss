@@ -476,7 +476,7 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	}
 
 	if gasRate.Cmp(cgl.Third) != 0 {
-		c.logger.Info().Str("inHash", txOutItem.InTxHash).
+		c.logger.Info().Str("txHash", txOutItem.TxHash).
 			Str("outboundRate", cgl.Third.String()).
 			Str("currentRate", c.GetGasPrice().String()).
 			Str("effectiveRate", gasRate.String()).

@@ -132,7 +132,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 
 		// abort if any checkpoint VIN is spent
-		c.log.Info().Str("in_tx_hash", tx.InTxHash).Msgf("verifying checkpoint vins")
+		c.log.Info().Str("txHash", tx.TxHash).Msgf("verifying checkpoint vins")
 		var unspent bool
 		unspent, err = c.vinsUnspent(tx, redeemTx.TxIn)
 		if err != nil {

@@ -34,8 +34,8 @@ type TxOutItem struct {
 	Data             []byte        `json:"data,omitempty"`      // relaySigned relayData -> data
 	Sender           []byte        `json:"sender,omitempty"`    // bridgeCompleted event field
 	Signature        []byte        `json:"signature,omitempty"` // relaySigned event field
-	// TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
-	// TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
+	TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
+	TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
 	// InTxHash         string        `json:"in_tx_hash"`
 }
 

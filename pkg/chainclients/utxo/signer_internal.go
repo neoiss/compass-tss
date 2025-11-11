@@ -126,7 +126,7 @@ func (c *Client) vinsUnspent(tx stypes.TxOutItem, vins []*wire.TxIn) (bool, erro
 	for _, vin := range vins {
 		if !unspent[vin.PreviousOutPoint.Hash.String()] {
 			c.log.Warn().
-				Str("in_hash", tx.InTxHash).
+				Str("txHash", tx.TxHash).
 				Stringer("vin", vin.PreviousOutPoint).
 				Msg("vin is spent")
 			allUnspent = false
@@ -282,7 +282,7 @@ func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
 
 func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx, map[string]int64, error) {
 	// build memo
-	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.InTxHash).String()
+	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.TxHash).String()
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
