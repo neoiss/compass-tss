@@ -92,7 +92,16 @@ func newTssSignableBTC(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManag
 }
 func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 	ts.log.Info().Msgf("msg to sign: %s", base64.StdEncoding.EncodeToString(payload))
-	result, _, err := ts.tssKeyManager.RemoteSign(payload, ts.poolPubKey.String())
+
+	decodePubKey, err := hex.DecodeString(ts.poolPubKey.String())
+	if err != nil {
+		return nil, fmt.Errorf("fail to decode tss public key: %w", err)
+	}
+	pubkey, err := common.CompressPubKey(decodePubKey)
+	if err != nil {
+		return nil, fmt.Errorf("fail to compress public key: %w", err)
+	}
+	result, _, err := ts.tssKeyManager.RemoteSign(payload, pubkey)
 	if err != nil {
 		return nil, err
 	}

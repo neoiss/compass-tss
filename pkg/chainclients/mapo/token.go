@@ -11,6 +11,9 @@ import (
 )
 
 func (b *Bridge) GetChainID(name string) (*big.Int, error) {
+	if name == "" {
+		return nil, errors.New("chain name is empty")
+	}
 	method := "getChainByName"
 	input, err := b.tokenRegistry.Pack(method, name)
 	if err != nil {
@@ -43,6 +46,9 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 }
 
 func (b *Bridge) GetChainName(chain *big.Int) (string, error) {
+	if chain == nil {
+		return "", errors.New("chain is nil")
+	}
 	method := "getChainName"
 	input, err := b.tokenRegistry.Pack(method, chain)
 	if err != nil {
@@ -74,6 +80,12 @@ func (b *Bridge) GetChainName(chain *big.Int) (string, error) {
 }
 
 func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) {
+	if chainID == nil {
+		return nil, errors.New("chainID is nil")
+	}
+	if name == "" {
+		return nil, errors.New("token name is empty")
+	}
 	method := "getTokenAddressByNickname"
 	input, err := b.tokenRegistry.Pack(method, chainID, name)
 	if err != nil {
