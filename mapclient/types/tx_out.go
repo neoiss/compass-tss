@@ -20,7 +20,8 @@ type TxOutItem struct {
 	LogIndex         uint          `json:"log_index,omitempty"`
 	TxHash           string        `json:"tx_hash,omitempty"`
 	Method           string        `json:"method,omitempty"`
-	ToChain          *big.Int      `json:"to_chain,omitempty"` // bridgeRelay add new field
+	FromChain        *big.Int      `json:"from_chain_chain,omitempty"` // bridgeRelay add new field
+	ToChain          *big.Int      `json:"to_chain,omitempty"`         // bridgeRelay add new field
 	OrderId          ecommon.Hash  `json:"order_id"`
 	ChainAndGasLimit *big.Int      `json:"chain_and_gas_limit,omitempty"`
 	TxType           uint8         `json:"tx_type,omitempty"`
@@ -98,6 +99,7 @@ type TxArrayItem struct {
 	LogIndex         uint
 	TxHash           string
 	Method           string
+	FromChain        *big.Int
 	ToChain          *big.Int
 	OrderId          ecommon.Hash `json:"order_id"` // bridgeRelay add new field
 	ChainAndGasLimit *big.Int
@@ -136,6 +138,7 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		HashData:         tx.Hash,
 		Sender:           tx.Sender,
 		Signature:        tx.Signature,
+		FromChain:        tx.Chain,
 		ToChain:          tx.ToChain,
 	}
 }

@@ -174,7 +174,6 @@ func (s *Signer) getChain(chainID *big.Int) (chainclients.ChainClient, error) {
 
 // Start signer process
 func (s *Signer) Start() error {
-	//  todo handler annotate
 	s.wg.Add(1)
 	go s.processTxnOut(s.mapChainBlockScanner.GetTxOutMessages()) // cache local
 

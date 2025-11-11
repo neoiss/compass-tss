@@ -187,6 +187,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		txOutItem.From = evt.From
 		txOutItem.Data = evt.Data
 		txOutItem.Hash = evt.Hash // sign this field
+		txOutItem.FromChain = cgl.FromChain
 
 	case constants.EventOfBridgeCompleted.GetTopic().Hex():
 		evt, err := scp.parseBridgeCompleted(*ll)
@@ -202,6 +203,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		txOutItem.Sequence = evt.Sequence
 		txOutItem.Sender = evt.Sender.Bytes()
 		txOutItem.Data = evt.Data
+		txOutItem.FromChain = cgl.FromChain
 
 	case constants.EventOfBridgeRelaySigned.GetTopic().Hex():
 		evt, err := scp.parseBridgeRelaySigned(*ll)
@@ -216,6 +218,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		txOutItem.Vault = evt.Vault
 		txOutItem.Data = evt.RelayData
 		txOutItem.Signature = evt.Signature
+		txOutItem.FromChain = cgl.FromChain
 	default:
 		return fmt.Errorf("unknown event topic: %s", ll.Topics[0].String())
 	}
