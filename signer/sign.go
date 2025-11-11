@@ -532,8 +532,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}
 
 	//  utxo
-	pubKeys, _ := s.mapBridge.GetAsgardPubKeys()
-	tx.VaultPubKey = pubKeys[0].PubKey
+	tx.VaultPubKey = common.PubKey(ecommon.Bytes2Hex(tx.Vault))
 
 	blockHeight, err := s.mapBridge.GetBlockHeight()
 	if err != nil {

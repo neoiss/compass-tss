@@ -12,31 +12,31 @@ import (
 
 // TxOutItem represent the information of a tx bifrost need to process
 type TxOutItem struct {
-	Height           int64        `json:"height,omitempty"`
-	Checkpoint       []byte       `json:"-"`
-	Memo             string       `json:"memo,omitempty"`
-	Chain            *big.Int     // bridgeRelay add new field
-	LogIndex         uint         `json:"log_index,omitempty"`
-	TxHash           string       `json:"tx_hash,omitempty"`
-	Method           string       `json:"method,omitempty"`
-	ToChain          *big.Int     `json:"to_chain,omitempty"` // bridgeRelay add new field
-	OrderId          ecommon.Hash `json:"order_id"`
-	ChainAndGasLimit *big.Int     `json:"chain_and_gas_limit,omitempty"`
-	TxType           uint8        `json:"tx_type,omitempty"`
-	Vault            []byte       `json:"vault,omitempty"`
-	To               []byte       `json:"to,omitempty"`
-	Token            []byte       `json:"token,omitempty"`
-	Amount           *big.Int     `json:"amount,omitempty"`
-	Sequence         *big.Int     `json:"sequence,omitempty"`
-	HashData         [32]byte     `json:"hash_data,omitempty"`
-	From             []byte       `json:"from,omitempty"`
-	Data             []byte       `json:"data,omitempty"`      // relaySigned relayData -> data
-	Sender           []byte       `json:"sender,omitempty"`    // bridgeCompleted event field
-	Signature        []byte       `json:"signature,omitempty"` // relaySigned event field
+	Height           int64         `json:"height,omitempty"`
+	Checkpoint       []byte        `json:"-"`
+	Memo             string        `json:"memo,omitempty"`
+	Chain            *big.Int      // bridgeRelay add new field
+	VaultPubKey      common.PubKey `json:"vault_pubkey"`
+	LogIndex         uint          `json:"log_index,omitempty"`
+	TxHash           string        `json:"tx_hash,omitempty"`
+	Method           string        `json:"method,omitempty"`
+	ToChain          *big.Int      `json:"to_chain,omitempty"` // bridgeRelay add new field
+	OrderId          ecommon.Hash  `json:"order_id"`
+	ChainAndGasLimit *big.Int      `json:"chain_and_gas_limit,omitempty"`
+	TxType           uint8         `json:"tx_type,omitempty"`
+	Vault            []byte        `json:"vault,omitempty"`
+	To               []byte        `json:"to,omitempty"`
+	Token            []byte        `json:"token,omitempty"`
+	Amount           *big.Int      `json:"amount,omitempty"`
+	Sequence         *big.Int      `json:"sequence,omitempty"`
+	HashData         [32]byte      `json:"hash_data,omitempty"`
+	From             []byte        `json:"from,omitempty"`
+	Data             []byte        `json:"data,omitempty"`      // relaySigned relayData -> data
+	Sender           []byte        `json:"sender,omitempty"`    // bridgeCompleted event field
+	Signature        []byte        `json:"signature,omitempty"` // relaySigned event field
 	// TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
 	// TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
 	// InTxHash         string        `json:"in_tx_hash"`
-	// VaultPubKey      common.PubKey `json:"vault_pubkey"`
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem
