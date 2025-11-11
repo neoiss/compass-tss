@@ -138,7 +138,7 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		HashData:         tx.Hash,
 		Sender:           tx.Sender,
 		Signature:        tx.Signature,
-		FromChain:        tx.Chain,
+		FromChain:        tx.FromChain,
 		ToChain:          tx.ToChain,
 	}
 }
