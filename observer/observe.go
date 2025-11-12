@@ -300,8 +300,7 @@ func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chain
 		return nil
 	}
 	if err := o.signAndSendToMapRelay(tmp); err != nil {
-		o.logger.Error().Err(err).Str("orderId", tmp.TxArray[0].OrderId.String()).
-			Msg("fail to send to MAP")
+		o.logger.Error().Err(err).Str("srcHash", tmp.TxArray[0].Tx).Msg("fail to send to MAP")
 		return nil
 	}
 

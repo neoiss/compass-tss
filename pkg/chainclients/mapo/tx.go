@@ -12,6 +12,7 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
@@ -198,6 +199,9 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 	})
 	if err != nil {
 		b.logger.Error().Any("err", err).Str("input", ecommon.Bytes2Hex(input)).Msg("estimate failed")
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return nil, fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData())
+		}
 		return nil, err
 	}
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {

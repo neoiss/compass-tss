@@ -222,7 +222,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.logger.Debug().Msgf("no MsgID %s found for this message", wrappedMsg.MessageType)
 			return
 		}
-		fmt.Println("insert tss message")
+		c.logger.Debug().Msg("insert tss message")
 		channel <- &Message{
 			PeerID:  stream.Conn().RemotePeer(),
 			Payload: dataBuf,
