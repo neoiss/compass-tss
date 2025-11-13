@@ -93,15 +93,7 @@ func newTssSignableBTC(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManag
 func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 	ts.log.Info().Msgf("msg to sign: %s", base64.StdEncoding.EncodeToString(payload))
 
-	decodePubKey, err := hex.DecodeString(ts.poolPubKey.String())
-	if err != nil {
-		return nil, fmt.Errorf("fail to decode tss public key: %w", err)
-	}
-	pubkey, err := common.CompressPubKey(decodePubKey)
-	if err != nil {
-		return nil, fmt.Errorf("fail to compress public key: %w", err)
-	}
-	result, _, err := ts.tssKeyManager.RemoteSign(payload, pubkey)
+	result, _, err := ts.tssKeyManager.RemoteSign(payload, ts.poolPubKey.String())
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +112,14 @@ func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 }
 
 func (ts *tssSignableBTC) GetPubKey() *btcec.PublicKey {
+	ts.log.Info().Str("pubkey", ts.poolPubKey.String()).Msg("get public key")
 	pubKey, err := hex.DecodeString(ts.poolPubKey.String())
 	if err != nil {
 		ts.log.Err(err).Msg("fail to decode public key")
 		return nil
 	}
 	//newPubkey, err := btcec.ParsePubKey(secpPubKey.Bytes(), btcec.S256())
-	newPubkey, err := btcec.ParsePubKey(append([]byte{4}, pubKey...), btcec.S256())
+	newPubkey, err := btcec.ParsePubKey(pubKey, btcec.S256())
 	if err != nil {
 		ts.log.Err(err).Msg("fail to parse public key")
 		return nil
