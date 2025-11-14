@@ -471,12 +471,12 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	c.log.Info().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
 		b, _ := json.Marshal(tx)
-		c.log.Warn().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")
 		return types.TxInItem{}, nil
 	}
 	// RBF enabled transaction will not be observed until committed to block
 	if c.isRBFEnabled(tx) && isMemPool {
-		c.log.Error().Int64("height", height).Str("txid", tx.Txid).Msg("ignore RBF enabled tx in mempool")
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore RBF enabled tx in mempool")
 		return types.TxInItem{}, nil
 	}
 	sender, err := c.getSender(tx, vinZeroTxs)
@@ -488,7 +488,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
 	if len(memo) <= 0 {
-		c.log.Warn().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx with empty memo")
+		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx with empty memo")
 		return types.TxInItem{}, nil
 	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
@@ -496,11 +496,11 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 	m, err := mem.ParseMemo(memo)
 	if err != nil {
-		c.log.Error().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
+		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
 		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
 	}
 	if !m.IsValid() {
-		c.log.Warn().Str("txid", tx.Txid).Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
+		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
 		return types.TxInItem{}, fmt.Errorf("invalid memo")
 	}
 
@@ -746,7 +746,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		txInItem, err = c.getTxIn(&block.Tx[idx], block.Height, false, vinZeroTxs)
 		if err != nil {
 			// expected since vouts below dust threshold are skipped for vinZeroTxs
-			c.log.Warn().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
+			c.log.Debug().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
 			continue
 		}
 		if txInItem.IsEmpty() {
@@ -833,9 +833,9 @@ func (c *Client) getOutput(sender string, tx *btcjson.TxRawResult, consolidate b
 		if c.cfg.ChainID.Equals(common.BCHChain) {
 			receiver = c.stripBCHAddress(receiver)
 		}
-		c.log.Info().Bool("isSenderAsgard", isSenderAsgard).
+		c.log.Debug().Bool("isSenderAsgard", isSenderAsgard).
 			Bool("isReceiverAsgard", c.isAsgardAddress(receiver)).
-			Str("txid", tx.Txid).Str("sender", sender).Str("receiver", receiver).Msg("get output")
+			Str("sender", sender).Str("receiver", receiver).Msg("get output")
 		// To be observed, either the sender or receiver must be an observed THORChain vault;
 		// if the sender is a vault then assume the first Vout is the output (and a later Vout could be change).
 		// If the sender isn't a vault, then do do not for instance

@@ -24,15 +24,7 @@ func GetAsgardAddress(chain common.Chain, bridge shareTypes.Bridge) ([]common.Ad
 	newAddresses := make([]common.Address, 0)
 	for _, v := range vaults {
 		var addr common.Address
-		pk, err := hex.DecodeString(strings.TrimPrefix(v.PubKey.String(), "04"))
-		if err != nil {
-			continue
-		}
-		compressedPubKey, err := common.CompressPubKey(pk)
-		if err != nil {
-			continue
-		}
-		addr, err = common.PubKey(compressedPubKey).GetAddress(chain)
+		addr, err = v.PubKey.GetAddress(chain)
 		if err != nil {
 			continue
 		}

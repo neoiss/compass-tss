@@ -783,6 +783,21 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	return confirm
 }
 
+func (c *Client) getAsgardAddress() ([]common.Address, error) {
+	if time.Since(c.lastAsgard) < constants.MAPRelayChainBlockTime && c.asgardAddresses != nil {
+		return c.asgardAddresses, nil
+	}
+	newAddresses, err := utxo.GetAsgardAddress(common.ETHChain, c.bridge)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get asgards : %w", err)
+	}
+	if len(newAddresses) > 0 { // ensure we don't overwrite with empty list
+		c.asgardAddresses = newAddresses
+	}
+	c.lastAsgard = time.Now()
+	return c.asgardAddresses, nil
+}
+
 // OnObservedTxIn gets called from observer when we have a valid observation
 func (c *Client) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 	c.ethScanner.onObservedTxIn(txIn, blockHeight)
