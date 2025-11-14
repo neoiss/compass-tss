@@ -336,7 +336,7 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	case common.DOGEChain, common.BCHChain:
 		maxFee = true // "allowHighFees"
 	case common.LTCChain, common.BTCChain:
-		maxFee = 10_000_000 // todo ensure by wugs
+		maxFee = 0.1 // todo utxo
 	}
 
 	// broadcast tx
