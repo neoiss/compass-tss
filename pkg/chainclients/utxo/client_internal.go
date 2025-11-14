@@ -612,6 +612,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
 		RefundAddr:       fromBytes,
 	}
+	c.log.Info().Int64("height", height).Str("txid", tx.Txid).Interface("txIn", txIn).Msg("got tx in")
 	return txIn, nil
 }
 
