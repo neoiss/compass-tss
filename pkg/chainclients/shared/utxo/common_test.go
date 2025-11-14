@@ -8,7 +8,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -48,41 +47,41 @@ func getBridgeForTest(t *testing.T) types.Bridge {
 	return bridge
 }
 
-func TestGetAsgardAddress2PubKeyMapped(t *testing.T) {
-	type args struct {
-		chain string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    map[common.Address][]byte
-		wantErr bool
-	}{
-		{
-			name: "t-1",
-			args: args{
-				chain: "212",
-			},
-			want:    nil,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			bridge := getBridgeForTest(t)
-			chain, err := common.NewChain(tt.args.chain)
-			if err != nil {
-				t.Errorf("NewChain() error = %v", err)
-				return
-			}
-			got, err := GetAsgardAddress2PubKeyMapped(chain, bridge)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAsgardAddress2PubKeyMapped() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAsgardAddress2PubKeyMapped() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+//func TestGetAsgardAddress2PubKeyMapped(t *testing.T) {
+//	type args struct {
+//		chain string
+//	}
+//	tests := []struct {
+//		name    string
+//		args    args
+//		want    map[common.Address][]byte
+//		wantErr bool
+//	}{
+//		{
+//			name: "t-1",
+//			args: args{
+//				chain: "212",
+//			},
+//			want:    nil,
+//			wantErr: false,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			bridge := getBridgeForTest(t)
+//			chain, err := common.NewChain(tt.args.chain)
+//			if err != nil {
+//				t.Errorf("NewChain() error = %v", err)
+//				return
+//			}
+//			got, err := GetAsgardAddress2PubKeyMapped(chain, bridge)
+//			if (err != nil) != tt.wantErr {
+//				t.Errorf("GetAsgardAddress2PubKeyMapped() error = %v, wantErr %v", err, tt.wantErr)
+//				return
+//			}
+//			if !reflect.DeepEqual(got, tt.want) {
+//				t.Errorf("GetAsgardAddress2PubKeyMapped() got = %v, want %v", got, tt.want)
+//			}
+//		})
+//	}
+//}

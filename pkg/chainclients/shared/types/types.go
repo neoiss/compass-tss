@@ -125,8 +125,9 @@ type Bridge interface {
 type BridgeOption func(Bridge) error
 
 type PubKeyContractAddressPair struct {
-	PubKey    common.PubKey
-	Contracts map[common.Chain]common.Address // todo will next 100
+	PubKey           common.PubKey
+	CompressedPubKey common.PubKey
+	Contracts        map[common.Chain]common.Address // todo will next 100
 }
 
 // Vaults a list of vault

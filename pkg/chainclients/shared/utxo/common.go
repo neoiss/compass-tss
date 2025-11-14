@@ -24,7 +24,7 @@ func GetAsgardAddress(chain common.Chain, bridge shareTypes.Bridge) ([]common.Ad
 	newAddresses := make([]common.Address, 0)
 	for _, v := range vaults {
 		var addr common.Address
-		addr, err = v.PubKey.GetAddress(chain)
+		addr, err = v.CompressedPubKey.GetAddress(chain)
 		if err != nil {
 			continue
 		}
@@ -40,7 +40,7 @@ func GetAsgardPubKeyByAddress(chain common.Chain, bridge shareTypes.Bridge, addr
 	}
 
 	for _, v := range vaults {
-		addr, err := v.PubKey.GetAddress(chain)
+		addr, err := v.CompressedPubKey.GetAddress(chain)
 		if err != nil {
 			continue
 		}
@@ -57,26 +57,26 @@ func GetAsgardPubKeyByAddress(chain common.Chain, bridge shareTypes.Bridge, addr
 	return nil, fmt.Errorf("fail to get asgard pub key by address(%s)", address)
 }
 
-func GetAsgardAddress2PubKeyMapped(chain common.Chain, bridge shareTypes.Bridge) (map[common.Address][]byte, error) {
-	vaults, err := bridge.GetAsgardPubKeys()
-	if err != nil {
-		return nil, fmt.Errorf("fail to get asgards : %w", err)
-	}
-
-	addr2pub := make(map[common.Address][]byte, 0)
-	for _, v := range vaults {
-		addr, err := v.PubKey.GetAddress(chain)
-		if err != nil {
-			continue
-		}
-		pubKey, err := hex.DecodeString(strings.TrimPrefix(v.PubKey.String(), "04"))
-		if err != nil {
-			continue
-		}
-		addr2pub[addr] = pubKey
-	}
-	return addr2pub, nil
-}
+//func GetAsgardAddress2PubKeyMapped(chain common.Chain, bridge shareTypes.Bridge) (map[common.Address][]byte, error) {
+//	vaults, err := bridge.GetAsgardPubKeys()
+//	if err != nil {
+//		return nil, fmt.Errorf("fail to get asgards : %w", err)
+//	}
+//
+//	addr2pub := make(map[common.Address][]byte, 0)
+//	for _, v := range vaults {
+//		addr, err := v.CompressedPubKey.GetAddress(chain)
+//		if err != nil {
+//			continue
+//		}
+//		pubKey, err := hex.DecodeString(strings.TrimPrefix(v.PubKey.String(), "04"))
+//		if err != nil {
+//			continue
+//		}
+//		addr2pub[addr] = pubKey
+//	}
+//	return addr2pub, nil
+//}
 
 func EncodePayload(affiliateData, relayData, targetData []byte) ([]byte, error) {
 	args := abi.Arguments{
