@@ -285,3 +285,40 @@ func Test_PubKeyToBitcoinAddress(t *testing.T) {
 	t.Log("address: ", address.String())                                   // tb1q2a22ld4ymgmvxrkwk5tuydrv2wn2yjemvs3szq
 	t.Log("script address: ", hex.EncodeToString(address.ScriptAddress())) // 5754afb6a4da36c30eceb517c2346c53a6a24b3b
 }
+
+func TestScriptAddress(t *testing.T) {
+	compressedPubKeyHex := "03b0a5b39ead06ffde6848822532f9a34c4ab350fa241e09646166abd4e3836bd2"
+	addr1, err := PubKey(compressedPubKeyHex).GetAddress("BTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("address: ", addr1)
+
+	address1, err := btcutil.DecodeAddress(addr1.String(), &chaincfg.SigNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("script address : ", hex.EncodeToString(address1.ScriptAddress()))
+
+	//uncompressedPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(compressedPubKeyHex))
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//uncompressedPubKeyHex := hex.EncodeToString(ecrypto.FromECDSAPub(uncompressedPubKey))
+	//
+	//t.Log("uncompressed pub key", uncompressedPubKeyHex)
+
+	//addr2, err := PubKey(uncompressedPubKeyHex).GetAddress(Chain("BTC"))
+	addr2, err := PubKey("b0a5b39ead06ffde6848822532f9a34c4ab350fa241e09646166abd4e3836bd2c8e7a83bf4c7cf91f921e06719d94941fd53ab1486fe2fe8d394833fecb9d547").GetAddress(Chain("BTC"))
+	//addr2, err := PubKey("04b0a5b39ead06ffde6848822532f9a34c4ab350fa241e09646166abd4e3836bd2c8e7a83bf4c7cf91f921e06719d94941fd53ab1486fe2fe8d394833fecb9d547").GetAddress("BTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("address: ", addr2)
+
+	address2, err := btcutil.DecodeAddress(addr2.String(), &chaincfg.SigNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("script address : ", hex.EncodeToString(address2.ScriptAddress()))
+}

@@ -531,7 +531,12 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}
 
 	//  utxo
-	tx.VaultPubKey = common.PubKey(ecommon.Bytes2Hex(tx.Vault))
+	pubKey, err := common.CompressPubKey(tx.Vault)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fail to compress vault public key: %w", err)
+	}
+	tx.VaultPubKey = common.PubKey(pubKey)
+	s.logger.Info().Str("pubKey", tx.VaultPubKey.String()).Msg("sign and broadcast")
 
 	blockHeight, err := s.mapBridge.GetBlockHeight()
 	if err != nil {

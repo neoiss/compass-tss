@@ -125,17 +125,8 @@ func (c *Client) signUTXOBTC(redeemTx *btcwire.MsgTx, tx stypes.TxOutItem, amoun
 	if tx.VaultPubKey.Equals(c.nodePubKey) {
 		signable = btctxscript.NewPrivateKeySignable(c.nodePrivKey)
 	} else {
-		decodePubKey, err := hex.DecodeString(tx.VaultPubKey.String())
-		if err != nil {
-			return fmt.Errorf("fail to decode vault public key: %w", err)
-		}
-		pubKey, err := common.CompressPubKey(decodePubKey)
-		if err != nil {
-			return fmt.Errorf("fail to compress vault public key: %w", err)
-		}
-		c.log.Info().Str("pubKey", pubKey).Msg("sign utxo btc")
-
-		signable = newTssSignableBTC(common.PubKey(pubKey), c.tssKeySigner, c.log)
+		c.log.Info().Str("pubKey", tx.VaultPubKey.String()).Msg("sign utxo btc")
+		signable = newTssSignableBTC(tx.VaultPubKey, c.tssKeySigner, c.log)
 	}
 
 	witness, err := btctxscript.WitnessSignature(redeemTx, sigHashes, idx, amount, sourceScript, btctxscript.SigHashAll, signable, true)
