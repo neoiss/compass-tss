@@ -51,6 +51,8 @@ type TxInItem struct {
 	TxOutType        uint8        `json:"tx_out_type"`
 	RefundAddr       []byte       `json:"refund_addr"`
 	Sequence         *big.Int     `json:"sequence"` // bridgeIn add new fields
+	Topic            string       `json:"topic"`
+	Timestamp        int64        `json:"timestamp"`
 }
 
 type TxInStatus byte
