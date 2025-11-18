@@ -120,7 +120,6 @@ bifrost:
         max_contract_tx_logs: 0
         # the following defaults must be defined to override with environment
         start_block_height: 263889
-        cosmos_grpc_host: ""
         cosmos_grpc_tls: false
         gas_cache_blocks: 0
         whitelist_tokens: []
@@ -138,7 +137,6 @@ bifrost:
       chain_host: ""
       chain_network: ""
       rpc_host: "https://rpc.bitlayer.org"
-      cosmos_grpc_host: ""
       cosmos_grpc_tls: false
       opt_to_retire: false
       solvency_blocks: 0

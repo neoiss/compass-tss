@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/cross"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
@@ -69,14 +69,11 @@ type Observer struct {
 	bridge                shareTypes.Bridge
 	storage               *ObserverStorage
 	tssKeysignMetricMgr   *metrics.TssKeysignMetricMgr
-
-	// signedTxOutCache is a cache to keep track of observations for outbounds which were
-	// manually observed after completion of signing and should be filtered from future
-	// mempool and block observations.
-	signedTxOutCache   *lru.Cache
-	signedTxOutCacheMu sync.Mutex
-	observerWorkers    int
-	lastNodeStatus     stypes.NodeStatus
+	signedTxOutCache      *lru.Cache
+	signedTxOutCacheMu    sync.Mutex
+	observerWorkers       int
+	lastNodeStatus        stypes.NodeStatus
+	crossStorage          *cross.CrossStorage
 }
 
 // NewObserver create a new instance of Observer for chain
@@ -85,6 +82,7 @@ func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 	bridge shareTypes.Bridge,
 	m *metrics.Metrics, dataPath string,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
+	crossStorage *cross.CrossStorage,
 ) (*Observer, error) {
 	logger := log.Logger.With().Str("module", "observer").Logger()
 
@@ -129,6 +127,7 @@ func NewObserver(pubkeyMgr *pubkeymanager.PubKeyManager,
 		tssKeysignMetricMgr:   tssKeysignMetricMgr,
 		signedTxOutCache:      signedTxOutCache,
 		observerWorkers:       observerWorkers,
+		crossStorage:          crossStorage,
 	}, nil
 }
 
@@ -177,86 +176,6 @@ func (o *Observer) deck(ctx context.Context) {
 			o.sendDeck(ctx)
 		}
 	}
-}
-
-// handleObservedTxCommitted will be called when an observed tx has been committed to thorchain,
-// notified via AttestationGossip's grpc subscription to thornode..
-func (o *Observer) handleObservedTxCommitted(tx common.ObservedTx) {
-	madeChanges := false
-
-	isFinal := tx.IsFinal()
-
-	o.lock.Lock()
-	defer o.lock.Unlock()
-
-	k := txInKey{
-		chain:  tx.Tx.Chain,
-		height: tx.FinaliseHeight,
-	}
-
-	deck, ok := o.onDeck[k]
-	if !ok {
-		return
-	}
-
-	for j, txInItem := range deck.TxArray {
-		if !txInItem.EqualsObservedTx(tx) {
-			continue
-		}
-		if isFinal {
-			o.logger.Debug().Msgf("tx final %s - %s removing from tx array", tx.Tx.Chain, tx.Tx.ID)
-			// if the tx is in the tx array, and it is final, remove it from the tx array.
-			deck.TxArray = slices.Delete(deck.TxArray, j, j+1)
-			if len(deck.TxArray) == 0 {
-				o.logger.Debug().Msgf("deck is empty, removing from ondeck")
-
-				// if the deck is empty after removing, remove it from ondeck.
-				delete(o.onDeck, k)
-				if err := o.storage.RemoveTx(deck, tx.FinaliseHeight); err != nil {
-					o.logger.Error().Err(err).Msg("fail to remove tx from storage")
-				}
-			} else {
-				if err := o.storage.AddOrUpdateTx(deck); err != nil {
-					o.logger.Error().Err(err).Msg("fail to update tx in storage")
-				}
-			}
-		} else {
-			// if the tx is not final, set tx.CommittedUnFinalised to true to indicate that it has been committed to thorchain but not finalised yet.
-			// todo
-			//txInItem.CommittedUnFinalised = true
-			if err := o.storage.AddOrUpdateTx(deck); err != nil {
-				o.logger.Error().Err(err).Msg("fail to update tx in storage")
-			}
-		}
-
-		chain, err := o.getChain(deck.Chain)
-		if err != nil {
-			o.logger.Error().Err(err).Msg("chain not found")
-		} else {
-			chain.OnObservedTxIn(*txInItem, txInItem.Height.Int64())
-		}
-
-		madeChanges = true
-		break
-	}
-
-	if !madeChanges {
-		o.logger.Debug().Msgf("no changes made to ondeck, size: %d", len(o.onDeck))
-		return
-	}
-
-	o.logger.Debug().
-		Int("ondeck_size", len(o.onDeck)).
-		Str("id", tx.Tx.ID.String()).
-		Str("chain", tx.Tx.Chain.String()).
-		Int64("height", tx.BlockHeight).
-		Str("from", tx.Tx.FromAddress.String()).
-		Str("to", tx.Tx.ToAddress.String()).
-		Str("memo", tx.Tx.Memo).
-		Str("coins", tx.Tx.Coins.String()).
-		Str("gas", common.Coins(tx.Tx.Gas).String()).
-		Str("observed_vault_pubkey", tx.ObservedPubKey.String()).
-		Msg("observed tx committed to mapRelay")
 }
 
 func (o *Observer) sendDeck(ctx context.Context) {
@@ -388,10 +307,8 @@ func (o *Observer) checkTxConfirmation() {
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
 				if deck.IsRemove {
-					o.logger.Info().Any("isRemove", deck.IsRemove).
-						Any("pendingCount", deck.PendingCount).
-						Any("mapHash", deck.MapRelayHash).
-						Msg("removing tx from onDeck ")
+					o.logger.Info().Any("isRemove", deck.IsRemove).Any("pendingCount", deck.PendingCount).
+						Any("mapHash", deck.MapRelayHash).Msg("removing tx from onDeck ")
 					k := TxInKey(deck)
 					o.removeConfirmedTx(k)
 					continue
@@ -411,6 +328,19 @@ func (o *Observer) checkTxConfirmation() {
 				}
 				k := TxInKey(deck)
 				o.removeConfirmedTx(k)
+
+				tmp := deck
+				go func(list *types.TxIn) {
+					// add in cross-chain storage
+					for _, ele := range list.TxArray {
+						tmp2 := ele
+						err = o.crossStorage.AddOrUpdateTx(tmp2, cross.TypeOfRelayChain)
+						if err != nil {
+							o.logger.Error().Str("txHash", tmp2.Tx).Err(err).
+								Msg("fail to add relay tx in cross storage")
+						}
+					}
+				}(tmp)
 			}
 		}
 	}
@@ -500,9 +430,9 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 	for _, ele := range txIn.TxArray {
 		switch ele.Method {
 		case constants.VoteTxIn:
-			bridgeIn.TxArray = append(bridgeIn.TxArray, ele)
+			bridgeIn.TxArray = append(bridgeIn.TxArray, ele) // src tx
 		case constants.VoteTxOut:
-			bridgeOut.TxArray = append(bridgeOut.TxArray, ele)
+			bridgeOut.TxArray = append(bridgeOut.TxArray, ele) // dst tx
 		}
 	}
 	bridgeIn.Count = fmt.Sprintf("%d", len(bridgeIn.TxArray))
@@ -516,6 +446,17 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 		for _, ele := range result {
 			tmp := ele
 			o.addToOnDeck(&tmp)
+			go func(list types.TxIn) {
+				// add in cross-chain storage
+				for _, ele := range ele.TxArray {
+					tmp2 := ele
+					err = o.crossStorage.AddOrUpdateTx(tmp2, cross.TypeOfSrcChain)
+					if err != nil {
+						o.logger.Error().Str("txHash", tmp2.Tx).Err(err).
+							Msg("fail to add src tx in cross storage")
+					}
+				}
+			}(tmp)
 		}
 	}
 	if len(bridgeOut.TxArray) > 0 {
@@ -523,6 +464,17 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 		for _, ele := range result {
 			tmp := ele
 			o.addToOnDeck(&tmp)
+			go func(list types.TxIn) {
+				// add in cross-chain storage
+				for _, ele := range ele.TxArray {
+					tmp2 := ele
+					err = o.crossStorage.AddOrUpdateTx(tmp2, cross.TypeOfDstChain)
+					if err != nil {
+						o.logger.Error().Str("txHash", tmp2.Tx).Err(err).
+							Msg("fail to add dst tx in cross storage")
+					}
+				}
+			}(tmp)
 		}
 	}
 }

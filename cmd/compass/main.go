@@ -14,6 +14,7 @@ import (
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/cross"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
@@ -30,7 +31,7 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// THORNode define version / revision here , so THORNode could inject the version from CI pipeline if THORNode want to
+// relay define version / revision here , so relay could inject the version from CI pipeline if relay want to
 var (
 	version  string
 	revision string
@@ -71,9 +72,7 @@ func main() {
 	if len(cfg.MAPRelay.SignerName) == 0 {
 		log.Fatal().Msg("signer name is empty")
 	}
-	// if len(cfg.MAPRelay.SignerPasswd) == 0 {
-	// 	log.Fatal().Msg("signer password is empty")
-	// }
+
 	kb, keyStore, err := keys.GetKeyringKeybase(cfg.MAPRelay.KeystorePath, cfg.MAPRelay.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
@@ -193,9 +192,14 @@ func main() {
 		}
 	}()
 
+	crossStorage, err := cross.NewStorage(cfg.MAPRelay.CrossDataPath, cfg.ObserverLevelDB)
+	if err != nil {
+		log.Fatal().Err(err).Msg("fail to create cross storage")
+	}
+
 	ctx := context.Background()
 	// start observer
-	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr)
+	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, crossStorage)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create observer")
 	}
@@ -204,7 +208,7 @@ func main() {
 	}
 
 	// start signer
-	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs)
+	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs, crossStorage)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create instance of signer")
 	}

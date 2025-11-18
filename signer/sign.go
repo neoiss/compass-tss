@@ -18,6 +18,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/cross"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
@@ -57,6 +58,7 @@ type Signer struct {
 	tssKeysignMetricMgr  *metrics.TssKeysignMetricMgr
 	observer             *observer.Observer
 	pipeline             *pipeline
+	crossStorage         *cross.CrossStorage
 }
 
 // NewSigner create a new instance of signer
@@ -69,6 +71,7 @@ func NewSigner(cfg config.Bifrost,
 	m *metrics.Metrics,
 	tssKeysignMetricMgr *metrics.TssKeysignMetricMgr,
 	obs *observer.Observer,
+	crossStorage *cross.CrossStorage,
 ) (*Signer, error) {
 	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB)
 	if err != nil {
@@ -155,6 +158,7 @@ func NewSigner(cfg config.Bifrost,
 		localPubKey:          selfKey,
 		tssKeysignMetricMgr:  tssKeysignMetricMgr,
 		observer:             obs,
+		crossStorage:         crossStorage,
 	}, nil
 }
 
@@ -664,6 +668,15 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
 
+	// add in cross-chain storage
+	err = s.crossStorage.AddOrUpdateTx(&types.TxInItem{
+		Tx:      hash,
+		OrderId: item.TxOutItem.OrderId,
+	}, cross.TypeOfSendDst)
+	if err != nil {
+		s.logger.Error().Str("txHash", hash).Err(err).Msg("fail to add broadcast in cross storage")
+	}
+
 	return nil, observation, nil
 }
 
@@ -723,12 +736,6 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		s.logger.Error().Interface("tx", item.TxOutItem).Err(err).Msg("fail to sign and broadcast tx out store item")
 		cancel()
 		return
-		// The 'item' for loop should not be items[0],
-		// because problems which return 'nil, nil' should be skipped over instead of blocking others.
-		// When signAndBroadcast returns an error (such as from a keysign timeout),
-		// a 'return' and not a 'continue' should be used so that nodes can all restart the list,
-		// for when the keysign failure was from a loss of list synchrony.
-		// Otherwise, out-of-sync lists would cycle one timeout at a time, maybe never resynchronising.
 	}
 	cancel()
 	s.logger.Info().Interface("relayHash", item.TxOutItem.TxHash).Msg("remove signing transaction")

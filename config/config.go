@@ -185,14 +185,6 @@ func Init() {
 		"BCH_START_BLOCK_HEIGHT",
 	))
 	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.cosmos_grpc_host",
-		"GAIA_GRPC_HOST",
-	))
-	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.block_scanner.cosmos_grpc_host",
-		"GAIA_GRPC_HOST",
-	))
-	assert(viper.BindEnv(
 		"bifrost.chains.GAIA.cosmos_grpc_tls",
 		"GAIA_GRPC_TLS",
 	))
@@ -603,8 +595,6 @@ type BifrostChainConfiguration struct {
 	UserName            string                           `mapstructure:"username"`
 	Password            string                           `mapstructure:"password"`
 	RPCHost             string                           `mapstructure:"rpc_host"`
-	CosmosGRPCHost      string                           `mapstructure:"cosmos_grpc_host"`
-	CosmosGRPCTLS       bool                             `mapstructure:"cosmos_grpc_tls"`
 	HTTPostMode         bool                             `mapstructure:"http_post_mode"` // Bitcoin core only supports HTTP POST mode
 	DisableTLS          bool                             `mapstructure:"disable_tls"`    // Bitcoin core does not provide TLS by default
 	OptToRetire         bool                             `mapstructure:"opt_to_retire"`  // don't emit support for this chain during keygen process
@@ -723,14 +713,6 @@ type BifrostBlockScannerConfiguration struct {
 	// ScanBlocks indicates whether mempool transactions should be scanned.
 	ScanMemPool bool `mapstructure:"scan_mempool"`
 
-	// The following configuration values apply only to a subset of chains.
-
-	// CosmosGRPCHost is the <host>:<port> of the gRPC endpoint of the Cosmos SDK chain.
-	CosmosGRPCHost string `mapstructure:"cosmos_grpc_host"`
-
-	// CosmosGRPCTLS is a boolean value indicating whether the gRPC host is using TLS.
-	CosmosGRPCTLS bool `mapstructure:"cosmos_grpc_tls"`
-
 	// GasCacheBlocks is the number of blocks worth of gas price data cached to determine
 	// the gas price reported to Thorchain.
 	GasCacheBlocks int `mapstructure:"gas_cache_blocks"`
@@ -811,8 +793,9 @@ type BifrostClientConfiguration struct {
 	TokenRegistry   string       `mapstructure:"token_registry"`
 	Relay           string       `mapstructure:"relay"`
 	GasService      string       `mapstructure:"gas_service"`
-	SignerPasswd    string
-	Addr            string `mapstructure:"addr"`
+	SignerPasswd    string       `mapstructure:"signer_passwd"`
+	Addr            string       `mapstructure:"addr"`
+	CrossDataPath   string       `mapstructure:"cross_data_path"`
 }
 
 type BifrostMetricsConfiguration struct {
@@ -881,7 +864,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 			continue
 		}
 		res.Body.Close()
-		fmt.Println("GetBootstrapPeers 3333 ", string(body))
 
 		// format the multiaddr
 		peerMultiAddr := fmt.Sprintf("/ip4/%s/tcp/5040/ipfs/%s", ip, string(body))
@@ -892,7 +874,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 			continue
 		}
 
-		fmt.Println("GetBootstrapPeers add 4444  ", addr)
 		addrs = append(addrs, addr)
 	}
 
