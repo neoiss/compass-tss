@@ -448,7 +448,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			o.addToOnDeck(&tmp)
 			go func(list types.TxIn) {
 				// add in cross-chain storage
-				for _, ele := range ele.TxArray {
+				for _, ele := range list.TxArray {
 					tmp2 := ele
 					err = o.crossStorage.AddOrUpdateTx(tmp2, cross.TypeOfSrcChain)
 					if err != nil {
@@ -466,7 +466,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			o.addToOnDeck(&tmp)
 			go func(list types.TxIn) {
 				// add in cross-chain storage
-				for _, ele := range ele.TxArray {
+				for _, ele := range list.TxArray {
 					tmp2 := ele
 					err = o.crossStorage.AddOrUpdateTx(tmp2, cross.TypeOfDstChain)
 					if err != nil {
