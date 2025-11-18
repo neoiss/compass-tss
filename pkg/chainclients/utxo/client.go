@@ -63,6 +63,8 @@ type Client struct {
 	nodePrivKey        *btcec.PrivateKey
 	tssKeySigner       tss.RelayKeyManager
 	signerCacheManager *signercache.CacheManager
+	sentTxStorage      *utxo.TransactionStorage
+	confirmedTxStorage *utxo.TransactionStorage
 
 	// ---------- sync ----------
 	wg                    *sync.WaitGroup
@@ -191,6 +193,12 @@ func NewClient(
 		return nil, fmt.Errorf("fail to create signer cache manager, err: %w", err)
 	}
 	c.signerCacheManager = signerCacheManager
+
+	sentTxStorage, err := utxo.NewTransactionSStorage(storage.GetInternalDb())
+	if err != nil {
+		return nil, fmt.Errorf("fail to create broadcast storage, err: %w", err)
+	}
+	c.sentTxStorage = sentTxStorage
 	c.updateNetworkInfo()
 
 	return c, nil
@@ -775,4 +783,41 @@ func (c *Client) ReportSolvency(height int64) error {
 
 	// c.lastSolvencyCheckHeight = height
 	return nil
+}
+
+func (c *Client) CheckTxStatus() {
+	txs := c.sentTxStorage.List()
+	for _, tx := range txs {
+		result, err := c.rpc.GetRawTransactionVerbose(tx.TxHash)
+		if err != nil {
+			c.log.Err(err).Msg("fail to get tx raw transaction")
+			continue
+		}
+		if result.Confirmations > 0 {
+			c.log.Info().Str("hash", tx.TxHash).Msg("tx is confirmed")
+			if err := c.confirmedTxStorage.SetTxStatus(tx.TxHash, utxo.TxStatusConfirmed); err != nil {
+				c.log.Err(err).Str("hash", tx.TxHash).Msg("fail to set tx status to confirmed")
+				continue
+			}
+
+			if err := c.sentTxStorage.SetTxStatus(tx.TxHash, utxo.TxStatusConfirmed); err != nil {
+				c.log.Err(err).Str("hash", tx.TxHash).Msg("fail to set tx status to confirmed")
+			}
+		}
+	}
+	time.Sleep(time.Second * 10)
+}
+
+func (c *Client) Callback() {
+	txs := c.confirmedTxStorage.List()
+	for _, tx := range txs {
+		// callback
+
+		c.log.Info().Str("hash", tx.TxHash).Msg("tx is confirmed")
+		if err := c.confirmedTxStorage.Remove(tx.TxHash); err != nil {
+			c.log.Err(err).Str("hash", tx.TxHash).Msg("fail to remove confirmed tx")
+			continue
+		}
+	}
+	time.Sleep(time.Second * 10)
 }
