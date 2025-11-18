@@ -357,9 +357,7 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	if err = c.signerCacheManager.SetSigned(txOut.CacheHash(), txOut.CacheVault(c.GetChain()), txid); err != nil {
 		c.log.Err(err).Msgf("fail to mark tx out item (%+v) as signed", txOut)
 	}
-	if err = c.sentTxStorage.SetTxStatus(txid, utxo.TxStatusSent); err != nil {
-		c.log.Err(err).Msgf("fail to set tx status for tx %s", txid)
-	}
+
 	return txid, nil
 }
 
