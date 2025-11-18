@@ -286,7 +286,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
 	}
-	tx.Memo = mem.NewInboundMemo(chainName, tx.TxHash).String()
+	tx.Memo = mem.NewInboundMemo(chainName, tx.OrderId.String()).String()
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {

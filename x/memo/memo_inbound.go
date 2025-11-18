@@ -6,21 +6,23 @@ import (
 
 type InboundMemo struct {
 	MemoBase
-	Chain  string
-	TxHash string
+	Chain   string
+	OrderID string
 }
 
-func (m InboundMemo) GetTxHash() string { return m.TxHash }
+func (m InboundMemo) GetOrderID() string { return m.OrderID }
 
+// String returns a string representation of the memo
+// format: M>|from chain|order id
 func (m InboundMemo) String() string {
-	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.TxHash)
+	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.OrderID)
 }
 
-func NewInboundMemo(chain, txHash string) InboundMemo {
+func NewInboundMemo(chain, orderID string) InboundMemo {
 	return InboundMemo{
 		MemoBase: MemoBase{TxType: TxInbound},
 		Chain:    chain,
-		TxHash:   txHash,
+		OrderID:  orderID,
 	}
 }
 
