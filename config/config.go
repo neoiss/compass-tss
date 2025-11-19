@@ -780,22 +780,23 @@ type BifrostBlockScannerConfiguration struct {
 }
 
 type BifrostClientConfiguration struct {
-	ChainID         common.Chain `mapstructure:"chain_id" `
-	ChainHost       string       `mapstructure:"chain_host"`
-	ChainRPC        string       `mapstructure:"chain_rpc"`
-	ChainEBifrost   string       `mapstructure:"chain_ebifrost"`
-	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
-	SignerName      string       `mapstructure:"signer_name"`
-	KeystorePath    string       `mapstructure:"keystore_path"`
-	Maintainer      string       `mapstructure:"maintainer"`
-	TssManager      string       `mapstructure:"tss_manager"`
-	ViewController  string       `mapstructure:"view_controller"`
-	TokenRegistry   string       `mapstructure:"token_registry"`
-	Relay           string       `mapstructure:"relay"`
-	GasService      string       `mapstructure:"gas_service"`
-	SignerPasswd    string       `mapstructure:"signer_passwd"`
-	Addr            string       `mapstructure:"addr"`
-	CrossDataPath   string       `mapstructure:"cross_data_path"`
+	ChainID          common.Chain `mapstructure:"chain_id" `
+	ChainHost        string       `mapstructure:"chain_host"`
+	ChainRPC         string       `mapstructure:"chain_rpc"`
+	ChainEBifrost    string       `mapstructure:"chain_ebifrost"`
+	ChainHomeFolder  string       `mapstructure:"chain_home_folder"`
+	SignerName       string       `mapstructure:"signer_name"`
+	KeystorePath     string       `mapstructure:"keystore_path"`
+	Maintainer       string       `mapstructure:"maintainer"`
+	TssManager       string       `mapstructure:"tss_manager"`
+	ViewController   string       `mapstructure:"view_controller"`
+	TokenRegistry    string       `mapstructure:"token_registry"`
+	Relay            string       `mapstructure:"relay"`
+	GasService       string       `mapstructure:"gas_service"`
+	SignerPasswd     string       `mapstructure:"signer_passwd"`
+	Addr             string       `mapstructure:"addr"`
+	CrossDataPath    string       `mapstructure:"cross_data_path"`
+	CrossDataAddress string       `mapstructure:"cross_data_address"`
 }
 
 type BifrostMetricsConfiguration struct {

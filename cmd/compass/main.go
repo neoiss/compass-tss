@@ -197,6 +197,14 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to create cross storage")
 	}
 
+	crossServer := NewCrossServer(cfg.MAPRelay.CrossDataAddress, crossStorage)
+	go func() {
+		defer log.Info().Msg("cross server exit")
+		if err = crossServer.Start(); err != nil {
+			log.Error().Err(err).Msg("fail to start cross server")
+		}
+	}()
+
 	ctx := context.Background()
 	// start observer
 	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, crossStorage)
