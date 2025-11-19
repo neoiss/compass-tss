@@ -78,14 +78,26 @@ func (s *CrossStorage) createTxKey(txIn *types.TxInItem) string {
 // AddOrUpdateTx adds or updates a single TxIn in storage
 func (s *CrossStorage) AddOrUpdateTx(txIn *types.TxInItem, _type string) error {
 	key := s.createTxKey(txIn)
+	height := int64(0)
+	if txIn.Height != nil {
+		height = txIn.Height.Int64()
+	}
+	fromChain := ""
+	if txIn.FromChain != nil {
+		fromChain = txIn.FromChain.String()
+	}
+	cgl := ""
+	if txIn.ChainAndGasLimit != nil {
+		cgl = txIn.ChainAndGasLimit.String()
+	}
 	insertData := &CrossData{
 		TxHash:           txIn.Tx,
 		Topic:            txIn.Topic,
-		Height:           txIn.Height.Int64(),
+		Height:           height,
 		OrderId:          txIn.OrderId.String(),
 		LogIndex:         txIn.LogIndex,
-		Chain:            txIn.FromChain.String(),
-		ChainAndGasLimit: txIn.ChainAndGasLimit.String(),
+		Chain:            fromChain,
+		ChainAndGasLimit: cgl,
 		Timestamp:        txIn.Timestamp,
 	}
 
