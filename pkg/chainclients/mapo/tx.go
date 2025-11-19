@@ -76,14 +76,18 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	case constants.VoteTxOut:
 		args := make([]structure.VoteTxOut, 0)
 		for _, ele := range txIn.TxArray {
-			cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(ele.ChainAndGasLimit.Bytes(), 32)))
-			if err != nil {
-				return nil, fmt.Errorf("fail to parse chainAndGasLimit: %w", err)
+			gasUsed := ele.GasUsed
+			if gasUsed == nil {
+				cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(ele.ChainAndGasLimit.Bytes(), 32)))
+				if err != nil {
+					return nil, fmt.Errorf("fail to parse chainAndGasLimit: %w", err)
+				}
+				gasUsed = cgl.End
 			}
 
 			args = append(args, structure.VoteTxOut{
 				Height:  ele.Height.Uint64(),
-				GasUsed: cgl.End,
+				GasUsed: gasUsed,
 				OrderId: ele.OrderId,
 				Sender:  ecommon.HexToAddress(ele.Sender),
 				BridgeItem: structure.BridgeItem{
