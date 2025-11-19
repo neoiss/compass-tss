@@ -670,8 +670,14 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 
 	// add in cross-chain storage
 	err = s.crossStorage.AddOrUpdateTx(&types.TxInItem{
-		Tx:      hash,
-		OrderId: item.TxOutItem.OrderId,
+		Tx:               hash,
+		FromChain:        item.TxOutItem.FromChain,
+		Height:           big.NewInt(0),
+		OrderId:          item.TxOutItem.OrderId,
+		LogIndex:         0,
+		ChainAndGasLimit: big.NewInt(0),
+		Topic:            "",
+		Timestamp:        0,
 	}, cross.TypeOfSendDst)
 	if err != nil {
 		s.logger.Error().Str("txHash", hash).Err(err).Msg("fail to add broadcast in cross storage")
