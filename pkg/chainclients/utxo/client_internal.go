@@ -573,6 +573,16 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			return types.TxInItem{}, fmt.Errorf("fail to parse amount(%f): %w", tx.Vout[0].Value, err)
 		}
 
+		chainAndGasLimit := make([]byte, 32)
+		toChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
+		copy(chainAndGasLimit[8:16], toChain)
+		//copy(chainAndGasLimit[24:32], big.NewInt(int64(fee)).Bytes())
+
+		var txOutType = constants.TRANSFER
+		if m.GetType() == mem.TxAdd {
+			txOutType = constants.DEPOSIT
+		}
+
 		txIn := types.TxInItem{
 			Tx: tx.Txid,
 			//Sender:           sender,
@@ -587,8 +597,8 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			Payload:          payload,
 			Method:           constants.VoteTxOut,
 			LogIndex:         0,
-			ChainAndGasLimit: big.NewInt(0),
-			TxOutType:        uint8(constants.DEPOSIT),
+			ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
+			TxOutType:        uint8(txOutType),
 			Sequence:         big.NewInt(0),
 			Topic:            constants.EventOfBridgeIn.GetTopic().String(),
 			Timestamp:        tx.Blocktime,
