@@ -139,6 +139,11 @@
     },
     {
         "inputs": [],
+        "name": "expired",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "invalid_in_tx_type",
         "type": "error"
     },
@@ -220,18 +225,6 @@
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes",
-                "name": "from",
-                "type": "bytes"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
             },
             {
                 "indexed": false,
@@ -415,6 +408,19 @@
             {
                 "indexed": false,
                 "internalType": "address",
+                "name": "_transferFailedReceiver",
+                "type": "address"
+            }
+        ],
+        "name": "SetTransferFailedReceiver",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
                 "name": "_wToken",
                 "type": "address"
             }
@@ -507,6 +513,19 @@
     },
     {
         "inputs": [],
+        "name": "activeTss",
+        "outputs": [
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "activeTssAddress",
         "outputs": [
             {
@@ -590,6 +609,11 @@
                 "internalType": "bytes",
                 "name": "payload",
                 "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
             }
         ],
         "name": "bridgeOut",
@@ -624,6 +648,11 @@
                 "internalType": "address",
                 "name": "refundAddr",
                 "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
             }
         ],
         "name": "deposit",
@@ -635,25 +664,6 @@
             }
         ],
         "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "failedHash",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -851,6 +861,19 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "_transferFailedReceiver",
+                "type": "address"
+            }
+        ],
+        "name": "setTransferFailedReceiver",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes",
                 "name": "_tss",
                 "type": "bytes"
@@ -895,22 +918,22 @@
     },
     {
         "inputs": [],
-        "name": "trigger",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "transferFailedReceiver",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "tss",
-        "outputs": [
-            {
-                "internalType": "bytes",
-                "name": "",
-                "type": "bytes"
-            }
-        ],
-        "stateMutability": "view",
+        "name": "trigger",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {

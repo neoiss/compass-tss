@@ -128,6 +128,11 @@
   },
   {
     "inputs": [],
+    "name": "invalid_pubkey",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "maintainer_not_enough",
     "type": "error"
   },
@@ -281,7 +286,13 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "user",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "maintaierAddr",
         "type": "address"
       },
       {
@@ -357,7 +368,13 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "user",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "maintainerAddr",
         "type": "address"
       },
       {
@@ -688,6 +705,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "maintainerToValidator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "orchestrate",
     "outputs": [],
@@ -736,6 +772,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "maintainerAddr",
+        "type": "address"
+      },
+      {
         "internalType": "bytes",
         "name": "secp256Pubkey",
         "type": "bytes"
@@ -752,19 +793,6 @@
       }
     ],
     "name": "register",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "addr",
-        "type": "address"
-      }
-    ],
-    "name": "releaseFromJail",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -842,6 +870,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "maintainerAddr",
+        "type": "address"
+      },
       {
         "internalType": "bytes",
         "name": "secp256Pubkey",

@@ -12,6 +12,7 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
@@ -231,6 +232,10 @@ func (b *Bridge) callContract(ret interface{}, addr, method string, input []byte
 		Data: input,
 	}, nil)
 	if err != nil {
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return errors.Wrapf(fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData()),
+				"unable to call contract %s", method)
+		}
 		return errors.Wrapf(err, "unable to call contract %s", method)
 	}
 

@@ -164,11 +164,12 @@ func (s *CrossServer) Start() error {
 }
 
 func (s *CrossServer) Stop() error {
+	s.logger.Info().Msg("shutting down cross server...")
 	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := s.s.Shutdown(c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to shutdown the Tss server gracefully")
+		s.logger.Error().Err(err).Msg("failed to shutdown the Cross server gracefully")
 	}
 	return err
 }

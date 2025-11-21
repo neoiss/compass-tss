@@ -546,8 +546,8 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 
 // Stop the observer
 func (o *Observer) Stop() error {
-	o.logger.Debug().Msg("request to stop observer")
-	defer o.logger.Debug().Msg("observer stopped")
+	o.logger.Info().Msg("request to stop observer")
+	defer o.logger.Info().Msg("observer stopped")
 
 	for _, chain := range o.chains {
 		chain.Stop()

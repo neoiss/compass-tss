@@ -246,6 +246,9 @@ func main() {
 	if err = healthServer.Stop(); err != nil {
 		log.Fatal().Err(err).Msg("fail to stop health server")
 	}
+	if err = crossServer.Stop(); err != nil {
+		log.Fatal().Err(err).Msg("fail to stop cross server")
+	}
 }
 
 func initLog(level string, pretty bool) {

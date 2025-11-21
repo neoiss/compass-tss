@@ -150,11 +150,11 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "_periphery",
+        "name": "_registry",
         "type": "address"
       }
     ],
-    "name": "SetPeriphery",
+    "name": "SetRegistry",
     "type": "event"
   },
   {
@@ -301,7 +301,7 @@
   },
   {
     "inputs": [],
-    "name": "getPublickeys",
+    "name": "getPublicKeys",
     "outputs": [
       {
         "components": [
@@ -383,9 +383,9 @@
                     "type": "bytes"
                   },
                   {
-                    "internalType": "uint256",
+                    "internalType": "int256",
                     "name": "balance",
-                    "type": "uint256"
+                    "type": "int256"
                   },
                   {
                     "internalType": "uint256",
@@ -457,12 +457,12 @@
   },
   {
     "inputs": [],
-    "name": "periphery",
+    "name": "proxiableUUID",
     "outputs": [
       {
-        "internalType": "contract IPeriphery",
+        "internalType": "bytes32",
         "name": "",
-        "type": "address"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -470,12 +470,12 @@
   },
   {
     "inputs": [],
-    "name": "proxiableUUID",
+    "name": "registry",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "contract IRegistry",
         "name": "",
-        "type": "bytes32"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -511,11 +511,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_periphery",
+        "name": "_registry",
         "type": "address"
       }
     ],
-    "name": "setPeriphery",
+    "name": "setRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

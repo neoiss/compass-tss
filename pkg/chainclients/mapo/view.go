@@ -173,7 +173,7 @@ func (b *Bridge) getPublickeys() ([]VaultInfo, error) {
 	var ret []VaultInfo
 	err = b.callContract(&ret, b.cfg.ViewController, method, input, b.viewAbi)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to call %s", method)
+		return nil, err
 	}
 
 	return ret, nil

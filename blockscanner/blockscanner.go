@@ -385,8 +385,8 @@ func (b *BlockScanner) FetchLastHeight() (int64, error) {
 }
 
 func (b *BlockScanner) Stop() {
-	b.logger.Debug().Msg("receive stop request")
-	defer b.logger.Debug().Msg("common block scanner stopped")
+	b.logger.Info().Msg("receive stop request")
+	defer b.logger.Info().Msg("common block scanner stopped")
 	close(b.stopChan)
 	b.wg.Wait()
 }
