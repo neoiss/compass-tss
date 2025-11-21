@@ -29,12 +29,12 @@ bifrost:
     chain_host: https://testnet-rpc.maplabs.io
     signer_name: "first_cosmos"
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
-    maintainer: "0x5673E37B38f50e2C2CE16a71e8eE98D7BcE8a967"
-    tss_manager: "0x81F50D29166089FeB6305bec79B55eCf44448B7d"
-    relay: "0x88E220b62227d84B7f30aC51B314B0C318e82e62"
-    gas_service: "0xeA6B6Ae985A9b51BF544A59e020071a0B51Ea267"
-    token_registry: "0x52a95bf759641711C8060291b21565a3b3B08e0F"
-    view_controller: "0x1281a83F7c23f1a5E9de5e993ADc2a25BB87A9ff"
+    maintainer: "0x606A45f78D3A706F7a621fF03Dd62C513fa13b2c"
+    tss_manager: "0x650e730F93AFC4ea7d2724D5237a4292aEF49F78"
+    relay: "0x42D64eD9381bF456697b0C360e8acE139F176a80"
+    gas_service: "0xf9A825A2B9d62550610cDC5a9d05417bC35FF524"
+    token_registry: "0xF67db5535c337261e4EFff49ed956397e8F00078"
+    view_controller: "0xb79bAe710F69f5D9B53098aB16B57A26a762c7BF"
     addr: ""
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
@@ -153,7 +153,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
-        mos: 0x297A54b40e48D1d3d8A2e91f77dE08a78a4ab10D
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
         max_reorg_rescan_blocks: 96 # 3 epochs
         gas_cache_blocks: 40
         concurrency: 1
@@ -177,7 +177,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
-        mos: 0xB449B28f0f3f569E90A65a1caeB612E3A9ca2051
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
         chain_id: BSC
