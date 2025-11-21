@@ -21,7 +21,7 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 	members []ecommon.Address) (string, error) {
 	var txID string
 	if epoch.Cmp(b.epoch) == 0 {
-		b.logger.Info().Any("epoch", epoch).Msg("The epoch is the same as the last one, skip sending keygen tx")
+		b.logger.Debug().Any("epoch", epoch).Msg("The epoch is the same as the last one, skip sending keygen tx")
 		return "", nil
 	}
 
@@ -67,7 +67,6 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		return "", fmt.Errorf("pending nonce too far in future")
 	}
 
-	fmt.Println(" input ----------- ", ecommon.Bytes2Hex(input))
 	gasFeeCap := b.gasPrice
 	to := ecommon.HexToAddress(b.cfg.TssManager)
 	createdTx := ethereum.CallMsg{

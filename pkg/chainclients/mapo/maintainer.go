@@ -114,7 +114,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 	if idx == -1 {
 		b.epoch = epoch
-		b.logger.Info().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
+		b.logger.Debug().Any("self", selfAddr).Any("elect", ms).Msg("This node is not in the election period")
 		return nil, nil
 	}
 
@@ -124,7 +124,7 @@ func (b *Bridge) GetKeygenBlock() (*structure.KeyGen, error) {
 	}
 	// chech hash
 	if strings.EqualFold(b.epochHash.Hex(), currEpochHash.Hex()) {
-		b.logger.Info().Any("epoch", epoch).Any("history", b.epochHash.Hex()).
+		b.logger.Debug().Any("epoch", epoch).Any("history", b.epochHash.Hex()).
 			Any("curEpoch", currEpochHash).Msg("The epoch is same")
 		return nil, nil
 	}
