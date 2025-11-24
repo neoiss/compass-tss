@@ -406,9 +406,9 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	}
 
 	gasRate := c.GetGasPrice()
-	if c.cfg.BlockScanner.FixedGasRate > 0 && gasRate.Cmp(big.NewInt(0)) == 0 {
+	if c.cfg.BlockScanner.FixedGasRate > 0 || gasRate.Cmp(big.NewInt(0)) == 0 {
 		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
-		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
+		gasRate = big.NewInt(cgl.Third.Int64())
 	}
 
 	// tip cap at configured percentage of max fee
@@ -454,11 +454,8 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	if c.cfg.BlockScanner.FixedGasRate == 0 {
 		// if estimated gas is more than the planned gas, abort and let thornode reschedule
 		if estimatedGas > cgl.End.Uint64() {
-			c.logger.Warn().
-				Str("in_hash", tx.TxHash).
-				Stringer("rate", gasRate).
-				Uint64("estimated_gas_units", estimatedGas).
-				Uint64("max_gas_units", cgl.End.Uint64()).
+			c.logger.Warn().Str("in_hash", tx.TxHash).Stringer("rate", gasRate).
+				Uint64("estimated_gas_units", estimatedGas).Uint64("max_gas_units", cgl.End.Uint64()).
 				Msg("max gas exceeded, aborting to let thornode reschedule")
 		}
 
