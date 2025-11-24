@@ -417,7 +417,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	if uint64(gasRate.Cmp(cgl.Third)) != 0 {
 		c.logger.Info().Str("inHash", tx.TxHash).Str("outboundRate", cgl.Third.String()).
 			Str("currentRate", c.GetGasPrice().String()).Str("effectiveRate", gasRate.String()).
-			Msg("gas rate")
+			Str("tipCap", tipCap.String()).Msg("gas rate")
 	}
 
 	to := c.cfg.BlockScanner.Mos
@@ -433,6 +433,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 			Nonce:     nonce,
 			To:        &to,
 			Value:     big.NewInt(0),
+			Gas:       gasRate.Uint64(),
 			GasFeeCap: gasRate, // maxFeePerGas
 			GasTipCap: tipCap,  // maxPriorityFeePerGas
 			Data:      data,
