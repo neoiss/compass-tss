@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -445,8 +446,11 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 
 	estimatedGas, err := c.estimateGas(fromAddr.String(), createdTx)
 	if err != nil {
-		c.logger.Err(err).Str("inHash", tx.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).Msgf("fail to estimate gas")
-		return nil, nil, nil, nil
+		c.logger.Error().Any("err", err).Str("inHash", tx.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).Msgf("fail to estimate gas")
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return nil, nil, nil, fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData())
+		}
+		return nil, nil, nil, err
 	}
 	c.logger.Info().Msgf("memo:%s estimated gas unit: %d", tx.Memo, estimatedGas)
 

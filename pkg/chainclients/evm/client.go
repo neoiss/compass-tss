@@ -487,8 +487,11 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	createdTx := etypes.NewTransaction(nonce, ecommon.HexToAddress(c.cfg.BlockScanner.Mos), big.NewInt(0), c.cfg.BlockScanner.MaxGasLimit, gasRate, txData)
 	estimatedGas, err := c.evmScanner.ethRpc.EstimateGas(fromAddr.String(), createdTx)
 	if err != nil {
-		c.logger.Err(err).Str("relayHash", txOutItem.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).
+		c.logger.Error().Any("err", err).Str("relayHash", txOutItem.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).
 			Msg("fail to estimate gas")
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return nil, fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData())
+		}
 		return nil, err
 	}
 
