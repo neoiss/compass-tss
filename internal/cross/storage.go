@@ -2,6 +2,7 @@ package cross
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/mapprotocol/compass-tss/config"
@@ -130,7 +131,7 @@ func (s *CrossStorage) AddOrUpdateTx(txIn *types.TxInItem, _type string) error {
 
 func (s *CrossStorage) GetCrossData(key string) (*CrossSet, error) {
 	retBytes, err := s.db.Get([]byte(key), nil)
-	if err != nil {
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
 	}
 	ret := &CrossSet{}
