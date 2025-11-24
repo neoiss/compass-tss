@@ -415,11 +415,8 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	tipCap := new(big.Int).Mul(gasRate, big.NewInt(int64(c.cfg.MaxGasTipPercentage)))
 	tipCap.Div(tipCap, big.NewInt(100))
 	if uint64(gasRate.Cmp(cgl.Third)) != 0 {
-		c.logger.Info().
-			Str("inHash", tx.TxHash).
-			Str("outboundRate", cgl.Third.String()).
-			Str("currentRate", c.GetGasPrice().String()).
-			Str("effectiveRate", gasRate.String()).
+		c.logger.Info().Str("inHash", tx.TxHash).Str("outboundRate", cgl.Third.String()).
+			Str("currentRate", c.GetGasPrice().String()).Str("effectiveRate", gasRate.String()).
 			Msg("gas rate")
 	}
 
