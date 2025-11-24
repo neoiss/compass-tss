@@ -447,7 +447,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 
 	estimatedGas, err := c.estimateGas(fromAddr.String(), createdTx)
 	if err != nil {
-		c.logger.Err(err).Msgf("fail to estimate gas")
+		c.logger.Err(err).Str("inHash", tx.TxHash).Str("input", ecommon.Bytes2Hex(createdTx.Data())).Msgf("fail to estimate gas")
 		return nil, nil, nil, nil
 	}
 	c.logger.Info().Msgf("memo:%s estimated gas unit: %d", tx.Memo, estimatedGas)

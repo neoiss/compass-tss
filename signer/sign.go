@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -727,6 +728,14 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		return s.signAndBroadcast(item)
 	})
 	if err != nil {
+		for e := range constants.ToMapIgnoreError {
+			if strings.Contains(err.Error(), e) {
+				s.logger.Info().Str("relayHash", item.TxOutItem.TxHash).
+					Msgf("ignore This Error, Continue to the next: %s", err.Error())
+				goto final
+			}
+		}
+
 		// mark the txout on round 7 failure to block other txs for the chain / pubkey
 		ksErr := tss.KeysignError{}
 		if errors.As(err, &ksErr) && ksErr.IsRound7() {
@@ -743,6 +752,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		cancel()
 		return
 	}
+final:
 	cancel()
 	s.logger.Info().Interface("relayHash", item.TxOutItem.TxHash).Msg("remove signing transaction")
 	// We have a successful broadcast! Remove the item from our store

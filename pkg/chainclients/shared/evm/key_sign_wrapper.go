@@ -117,7 +117,6 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 }
 
 func (w *KeySignWrapper) SignCustomTSS(hash []byte, ethPk string) ([]byte, error) {
-	fmt.Println("tssKeyManager --------- ", w.tssKeyManager)
 	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], ethPk)
 	if err != nil || sig == nil {
 		return nil, fmt.Errorf("fail to TSS sign: %w", err)
