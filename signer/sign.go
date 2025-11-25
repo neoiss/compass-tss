@@ -356,7 +356,7 @@ func (s *Signer) processOracle() {
 			for _, item := range list {
 				txBytes, err := s.mapBridge.GetOracleStdTx(&item.TxOutItem)
 				if err != nil {
-					s.logger.Error().Err(err).Msg("fail to get oracle std tx")
+					s.logger.Error().Str("txHash", item.TxOutItem.TxHash).Err(err).Msg("fail to get oracle std tx")
 					continue
 				}
 
@@ -373,7 +373,7 @@ func (s *Signer) processOracle() {
 						return fmt.Errorf("fail to send the tx to relay: %w", err)
 					}
 					s.oracleStorage.Remove(tmp)
-					s.logger.Info().Str("relayHash", txID).Msg("oracle tx sent successfully")
+					s.logger.Info().Str("txHash", tmp.TxOutItem.TxHash).Str("relayHash", txID).Msg("oracle tx sent successfully")
 					return nil
 				}, bf)
 				if err != nil {
@@ -381,7 +381,8 @@ func (s *Signer) processOracle() {
 					continue
 				}
 
-				s.logger.Info().Interface("item", item).Msg("processing oracle item")
+				s.logger.Info().Str("txHash", tmp.TxOutItem.TxHash).
+					Str("orderId", tmp.TxOutItem.OrderId.Hex()).Msg("processing oracle item")
 			}
 		}
 	}
