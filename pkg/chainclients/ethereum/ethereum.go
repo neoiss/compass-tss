@@ -353,7 +353,7 @@ func (c *Client) convertThorchainAmountToWei(amt *big.Int) *big.Int {
 
 func (c *Client) OrderExecuted(orderId ecommon.Hash) (bool, error) {
 	method := constants.IsOrderExecuted
-	input, err := c.gatewayABI.Pack(method, orderId)
+	input, err := c.gatewayABI.Pack(method, orderId, false)
 	if err != nil {
 		return false, err
 	}

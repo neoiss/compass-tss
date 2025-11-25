@@ -625,7 +625,7 @@ func (c *EVMClient) sign(tx *etypes.Transaction, poolPubKey common.PubKey, heigh
 
 func (c *EVMClient) OrderExecuted(orderId ecommon.Hash) (bool, error) {
 	method := constants.IsOrderExecuted
-	input, err := c.gatewayAbi.Pack(method, orderId)
+	input, err := c.gatewayAbi.Pack(method, orderId, false)
 	if err != nil {
 		return false, err
 	}
