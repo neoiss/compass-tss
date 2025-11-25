@@ -140,6 +140,15 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		input []byte
 	)
 
+	exist, err := b.OrderExecuted(txOut.OrderId, false)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		b.logger.Info().Str("txHash", txOut.TxHash).Str("orderId", txOut.OrderId.Hex()).
+			Msg("voteTxOut ignore this tx, beasuce order exectued is ture")
+		return nil, constants.ErrorOfOrderExecuted
+	}
 	isSign, err := b.OrderInfos(txOut.OrderId)
 	if err != nil {
 		return nil, err

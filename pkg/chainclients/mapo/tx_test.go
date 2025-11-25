@@ -70,3 +70,42 @@ func TestBridge_GetObservationsStdTx(t *testing.T) {
 		})
 	}
 }
+
+func TestBridge_OrderInfos(t *testing.T) {
+	b := getBridgeForTest(t)
+	bri, _ := b.(*Bridge)
+
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		orderId ecommon.Hash
+		want    bool
+		wantErr bool
+	}{
+		{
+			name:    "test",
+			orderId: ecommon.HexToHash("0x9010b9f1a6347ad5cf47f16de0a26802073568304afdefdba8d54a5658ead036"),
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			got, gotErr := bri.OrderInfos(tt.orderId)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("OrderInfos() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("OrderInfos() succeeded unexpectedly")
+			}
+			// TODO: update the condition below to compare got with tt.want.
+			if true {
+				t.Errorf("OrderInfos() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

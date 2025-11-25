@@ -354,8 +354,14 @@ func (s *Signer) processOracle() {
 		case <-time.After(time.Second * 5):
 			list := s.oracleStorage.List() // this will trigger the storage to load all items
 			for _, item := range list {
+				tmp := item
 				txBytes, err := s.mapBridge.GetOracleStdTx(&item.TxOutItem)
 				if err != nil {
+					if errors.Is(err, constants.ErrorOfOrderExecuted) {
+						s.oracleStorage.Remove(tmp)
+						s.logger.Error().Str("txHash", item.TxOutItem.TxHash).Err(err).Msg("ignore oracle tx")
+						continue
+					}
 					s.logger.Error().Str("txHash", item.TxOutItem.TxHash).Err(err).Msg("fail to get oracle std tx")
 					continue
 				}
@@ -364,7 +370,6 @@ func (s *Signer) processOracle() {
 					continue
 				}
 
-				tmp := item
 				bf := backoff.NewExponentialBackOff()
 				bf.MaxElapsedTime = 5 * time.Second
 				err = backoff.Retry(func() error {
