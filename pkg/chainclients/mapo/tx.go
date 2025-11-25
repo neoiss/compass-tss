@@ -202,7 +202,7 @@ func (b *Bridge) OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error) {
 type OrderInfoResp struct {
 	Signed      bool
 	Height      uint64
-	GasToken    common.Address
+	GasToken    ecommon.Address
 	EstimateGas *big.Int
 	Hash        [32]byte
 }
