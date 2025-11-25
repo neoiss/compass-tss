@@ -4,20 +4,14 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/hashicorp/go-multierror"
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecore "github.com/ethereum/go-ethereum/core"
@@ -25,26 +19,27 @@ import (
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
-
-	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-
+	"github.com/hashicorp/go-multierror"
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
+	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -356,6 +351,46 @@ func (c *Client) convertThorchainAmountToWei(amt *big.Int) *big.Int {
 	return big.NewInt(0).Mul(amt, big.NewInt(common.One*100))
 }
 
+func (c *Client) OrderExecuted(orderId ecommon.Hash) (bool, error) {
+	method := constants.IsOrderExecuted
+	input, err := c.gatewayABI.Pack(method, orderId)
+	if err != nil {
+		return false, err
+	}
+	var isExecuted bool
+	err = c.callContract(&isExecuted, c.cfg.BlockScanner.Mos, method, input, c.gatewayABI)
+	if err != nil {
+		return false, err
+	}
+	return isExecuted, nil
+}
+func (c *Client) callContract(ret interface{}, addr, method string, input []byte, abi *abi.ABI) error {
+	to := ecommon.HexToAddress(addr)
+	outPut, err := c.client.CallContract(context.Background(), ethereum.CallMsg{
+		From: constants.ZeroAddress,
+		To:   &to,
+		Data: input,
+	}, nil)
+	if err != nil {
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return errors.Wrapf(fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData()),
+				"unable to call contract %s", method)
+		}
+		return errors.Wrapf(err, "unable to call contract %s", method)
+	}
+
+	outputs := abi.Methods[method].Outputs
+	unpack, err := outputs.Unpack(outPut)
+	if err != nil {
+		return errors.Wrap(err, "unpack output")
+	}
+
+	if err = outputs.Copy(ret, unpack); err != nil {
+		return errors.Wrap(err, "copy output")
+	}
+	return nil
+}
+
 // SignTx sign the the given TxArrayItem
 func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *stypes.TxInItem, error) {
 	selfId, _ := c.cfg.ChainID.ChainID()
@@ -366,6 +401,16 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 	if c.signerCacheManager.HasSigned(tx.CacheHash()) {
 		c.logger.Info().Msgf("transaction(%+v), signed before , ignore", tx)
 		return nil, nil, nil, nil
+	}
+
+	exist, err := c.OrderExecuted(tx.OrderId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if exist {
+		c.logger.Info().Str("txHash", tx.TxHash).Str("orderId", tx.OrderId.Hex()).
+			Msg("voteTxIn ignore this tx, beasuce order exectued is ture")
+		return nil, nil, nil, constants.ErrorOfOrderExecuted
 	}
 
 	cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(tx.ChainAndGasLimit.Bytes(), 32)))

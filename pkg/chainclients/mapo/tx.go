@@ -21,8 +21,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrOfOrderExist = errors.New("order already exist")
-
 func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	//  check
 	if txIn == nil {
@@ -48,6 +46,8 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 				return nil, err
 			}
 			if exist {
+				b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.Hex()).
+					Msg("voteTxIn ignore this tx, beasuce order exectued is ture")
 				continue
 			}
 
@@ -70,12 +70,23 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 		}
 
 		if len(args) == 0 {
-			return nil, constants.OrderExecuted
+			return nil, constants.ErrorOfOrderExecuted
 		}
 		input, err = b.tssAbi.Pack(constants.VoteTxIn, args)
 	case constants.VoteTxOut:
 		args := make([]structure.VoteTxOut, 0)
 		for _, ele := range txIn.TxArray {
+
+			exist, err := b.OrderExecuted(ele.OrderId, false)
+			if err != nil {
+				return nil, err
+			}
+			if exist {
+				b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.Hex()).
+					Msg("voteTxOut ignore this tx, beasuce order exectued is ture")
+				continue
+			}
+
 			gasUsed := ele.GasUsed
 			if gasUsed == nil {
 				cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(ele.ChainAndGasLimit.Bytes(), 32)))
@@ -104,7 +115,7 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 			})
 		}
 		if len(args) == 0 {
-			return nil, constants.OrderExecuted
+			return nil, constants.ErrorOfOrderExecuted
 		}
 		input, err = b.tssAbi.Pack(constants.VoteTxOut, args)
 	default:
@@ -128,6 +139,15 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		err   error
 		input []byte
 	)
+
+	isSign, err := b.OrderInfos(txOut.OrderId)
+	if err != nil {
+		return nil, err
+	}
+	if isSign {
+		b.logger.Info().Any("txHash", txOut.TxHash).Msg("is signed, ignore this tx")
+		return nil, nil
+	}
 
 	packAbi, _ := abi.JSON(strings.NewReader(packABI))
 	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
@@ -177,6 +197,28 @@ func (b *Bridge) OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error) {
 		return false, errors.Wrap(err, "fail to call contract")
 	}
 	return isExecuted, nil
+}
+
+type OrderInfoResp struct {
+	Signed      bool
+	Height      uint64
+	GasToken    common.Address
+	EstimateGas *big.Int
+	Hash        [32]byte
+}
+
+func (b *Bridge) OrderInfos(orderId ecommon.Hash) (bool, error) {
+	method := constants.OrderInfos
+	input, err := b.relayAbi.Pack(method, orderId)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to pack input")
+	}
+	var ret OrderInfoResp
+	err = b.callContract(&ret, b.cfg.Relay, method, input, b.relayAbi)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to call contract")
+	}
+	return ret.Signed, nil
 }
 
 func (b *Bridge) compressPubkey(pks []byte) (string, error) {

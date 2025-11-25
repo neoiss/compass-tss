@@ -38,16 +38,10 @@ import (
 
 // Endpoint urls
 const (
-	SignerMembershipEndpoint = "/mapBridge/vaults/%s/signers"
-	StatusEndpoint           = "/status"
-	VaultEndpoint            = "/mapBridge/vault/%s"
-	AsgardVault              = "/mapBridge/vaults/asgard"
-	PubKeysEndpoint          = "/mapBridge/vaults/pubkeys"
-	ThorchainConstants       = "/mapBridge/constants"
-	MimirEndpoint            = "/mapBridge/mimir"
-	ChainVersionEndpoint     = "/mapBridge/version"
-	InboundAddressesEndpoint = "/mapBridge/inbound_addresses"
-	PoolsEndpoint            = "/mapBridge/pools"
+	AsgardVault          = "/mapBridge/vaults/asgard"
+	MimirEndpoint        = "/mapBridge/mimir"
+	ChainVersionEndpoint = "/mapBridge/version"
+	PoolsEndpoint        = "/mapBridge/pools"
 )
 
 // Bridge will be used to send tx to THORChain
@@ -215,8 +209,12 @@ func (b *Bridge) GetContext() ctx.Context {
 	return ctx
 }
 
+func (b *Bridge) GetBlockScannerHeight() int64 {
+	return b.blockHeight
+}
+
 func (b *Bridge) getWithPath(path string) ([]byte, int, error) {
-	return b.get(b.getThorChainURL(path))
+	return b.get(b.getRelayChainURL(path))
 }
 
 // get handle all the low level http GET calls using retryablehttp.Bridge
@@ -268,8 +266,8 @@ func (b *Bridge) get(url string) ([]byte, int, error) {
 	return buf, resp.StatusCode, nil
 }
 
-// getThorChainURL with the given path
-func (b *Bridge) getThorChainURL(path string) string {
+// getRelayChainURL with the given path
+func (b *Bridge) getRelayChainURL(path string) string {
 	if strings.HasPrefix(b.cfg.ChainHost, "http") {
 		return fmt.Sprintf("%s/%s", b.cfg.ChainHost, path)
 	}

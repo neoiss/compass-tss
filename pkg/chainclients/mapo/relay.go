@@ -81,6 +81,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 		ret.TxArray = append(ret.TxArray, *item)
 	}
 
+	b.blockHeight = blockHeight
 	return ret, nil
 }
 

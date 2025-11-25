@@ -5,39 +5,37 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
-
+	"github.com/mapprotocol/compass-tss/internal/keys"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -532,13 +530,23 @@ func (c *EVMClient) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *
 		return nil, nil, nil, nil
 	}
 
+	exist, err := c.OrderExecuted(tx.OrderId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if exist {
+		c.logger.Info().Str("txHash", tx.TxHash).Str("orderId", tx.OrderId.Hex()).
+			Msg("voteTxIn ignore this tx, beasuce order exectued is ture")
+		return nil, nil, nil, constants.ErrorOfOrderExecuted
+	}
+
 	// the nonce is stored as the transaction checkpoint, if it is set deserialize it
 	// so we only retry with the same nonce to avoid double spend
 	var (
 		nonce    uint64
 		fromAddr common.Address
 	)
-	fromAddr, err := c.localPubKey.GetAddress(c.cfg.ChainID)
+	fromAddr, err = c.localPubKey.GetAddress(c.cfg.ChainID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -613,6 +621,46 @@ func (c *EVMClient) sign(tx *etypes.Transaction, poolPubKey common.PubKey, heigh
 	// 	c.logger.Info().Str("tx_id", txID).Msg("post keysign failure to thorchain")
 	// }
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
+}
+
+func (c *EVMClient) OrderExecuted(orderId ecommon.Hash) (bool, error) {
+	method := constants.IsOrderExecuted
+	input, err := c.gatewayAbi.Pack(method, orderId)
+	if err != nil {
+		return false, err
+	}
+	var isExecuted bool
+	err = c.callContract(&isExecuted, c.cfg.BlockScanner.Mos, method, input, c.gatewayAbi)
+	if err != nil {
+		return false, err
+	}
+	return isExecuted, nil
+}
+func (c *EVMClient) callContract(ret interface{}, addr, method string, input []byte, abi *abi.ABI) error {
+	to := ecommon.HexToAddress(addr)
+	outPut, err := c.ethClient.CallContract(context.Background(), ethereum.CallMsg{
+		From: constants.ZeroAddress,
+		To:   &to,
+		Data: input,
+	}, nil)
+	if err != nil {
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return errors.Wrapf(fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData()),
+				"unable to call contract %s", method)
+		}
+		return errors.Wrapf(err, "unable to call contract %s", method)
+	}
+
+	outputs := abi.Methods[method].Outputs
+	unpack, err := outputs.Unpack(outPut)
+	if err != nil {
+		return errors.Wrap(err, "unpack output")
+	}
+
+	if err = outputs.Copy(ret, unpack); err != nil {
+		return errors.Wrap(err, "copy output")
+	}
+	return nil
 }
 
 // --------------------------------- broadcast ---------------------------------

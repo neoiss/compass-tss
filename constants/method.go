@@ -19,6 +19,7 @@ const (
 const (
 	RelaySigned     = "relaySigned"
 	IsOrderExecuted = "isOrderExecuted"
+	OrderInfos      = "orderInfos"
 )
 
 // -----------------------------------------------------------------

@@ -155,10 +155,10 @@ const (
 	TssStatusFailed
 )
 
-var OrderExecuted = errors.New("order executed")
+var ErrorOfOrderExecuted = errors.New("order executed")
 
 var ToMapIgnoreError = map[string]struct{}{
-	"0x2dd1d0c8":          {}, // order exist
-	"0x7ce72949":          {}, // order_executed
-	OrderExecuted.Error(): {},
+	"0x2dd1d0c8":                 {}, // order exist
+	"0x7ce72949":                 {}, // order_executed
+	ErrorOfOrderExecuted.Error(): {},
 }

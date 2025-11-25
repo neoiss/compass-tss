@@ -370,7 +370,7 @@ func (s *Signer) processOracle() {
 				err = backoff.Retry(func() error {
 					txID, err := s.mapBridge.Broadcast(txBytes)
 					if err != nil {
-						return fmt.Errorf("fail to send the tx to thorchain: %w", err)
+						return fmt.Errorf("fail to send the tx to relay: %w", err)
 					}
 					s.oracleStorage.Remove(tmp)
 					s.logger.Info().Str("relayHash", txID).Msg("oracle tx sent successfully")
@@ -533,6 +533,15 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// set the checkpoint on the tx out item if it was stored
 	if item.Checkpoint != nil {
 		tx.Checkpoint = item.Checkpoint
+	}
+	exist, err := s.mapBridge.OrderExecuted(item.TxOutItem.OrderId, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if exist {
+		s.logger.Info().Any("txHash", item.TxOutItem.TxHash).
+			Any("orderId", item.TxOutItem.OrderId.Hex()).Msg("ignore this tx, beasuce is executed")
+		return nil, nil, constants.ErrorOfOrderExecuted
 	}
 
 	//  utxo

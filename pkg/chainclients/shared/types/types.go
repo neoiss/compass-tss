@@ -76,7 +76,6 @@ type SolvencyReporter func(height int64) error
 
 // Bridge is compass 2 map
 type Bridge interface {
-	Register() error
 	HeartBeat() error
 	EnsureNodeWhitelisted() error
 	EnsureNodeWhitelistedWithTimeout() error
@@ -120,6 +119,9 @@ type Bridge interface {
 	TxStatus(txHash string) error
 	GetGasPrice() *big.Int
 	SetTssKeyManager(server *gotss.TssServer) error
+	GetBlockScannerHeight() int64
+	GetChain() common.Chain
+	OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error)
 }
 
 type BridgeOption func(Bridge) error

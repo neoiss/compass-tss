@@ -14,6 +14,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	openapi "github.com/mapprotocol/compass-tss/openapi/gen"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/mapprotocol/compass-tss/x/types"
 
@@ -76,14 +77,16 @@ type HealthServer struct {
 	s         *http.Server
 	tssServer tss.Server
 	chains    map[common.Chain]chainclients.ChainClient
+	bridge    shareTypes.Bridge
 }
 
 // NewHealthServer create a new instance of health server
-func NewHealthServer(addr string, tssServer tss.Server, chains map[common.Chain]chainclients.ChainClient) *HealthServer {
+func NewHealthServer(addr string, tssServer tss.Server, chains map[common.Chain]chainclients.ChainClient, bridge shareTypes.Bridge) *HealthServer {
 	hs := &HealthServer{
 		logger:    log.With().Str("module", "http").Logger(),
 		tssServer: tssServer,
 		chains:    chains,
+		bridge:    bridge,
 	}
 	s := &http.Server{
 		Addr:              addr,
@@ -101,7 +104,6 @@ func (s *HealthServer) newHandler() http.Handler {
 	router.Handle("/p2pid", http.HandlerFunc(s.getP2pIDHandler)).Methods(http.MethodGet)
 	router.Handle("/status/p2p", http.HandlerFunc(s.p2pStatus)).Methods(http.MethodGet)
 	router.Handle("/status/scanner", http.HandlerFunc(s.chainScanner)).Methods(http.MethodGet)
-	router.Handle("/status/signing", http.HandlerFunc(s.currentSigning)).Methods(http.MethodGet)
 	return router
 }
 
@@ -198,22 +200,6 @@ func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (s *HealthServer) currentSigning(w http.ResponseWriter, _ *http.Request) {
-	res := make([]VaultResponse, 0)
-
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
-}
-
 func (s *HealthServer) chainScanner(w http.ResponseWriter, _ *http.Request) {
 	res := make(map[string]ScannerResponse)
 
@@ -257,6 +243,28 @@ func (s *HealthServer) chainScanner(w http.ResponseWriter, _ *http.Request) {
 			mu.Unlock()
 		}()
 	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		height, err := s.bridge.GetBlockHeight()
+		if err != nil {
+			height = -1
+		}
+		blockScannerHeight := s.bridge.GetBlockScannerHeight()
+		var scannerHeightDiff int64
+		if height < 0 || blockScannerHeight < 0 {
+			scannerHeightDiff = -1
+		} else {
+			scannerHeightDiff = height - blockScannerHeight
+		}
+		res[common.MAPChain.String()] = ScannerResponse{
+			Chain:              s.bridge.GetChain().String(),
+			ChainHeight:        height,
+			BlockScannerHeight: blockScannerHeight,
+			ScannerHeightDiff:  scannerHeightDiff,
+		}
+
+	}()
 	wg.Wait()
 
 	// write the response
