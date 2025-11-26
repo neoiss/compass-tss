@@ -259,6 +259,10 @@ func (b *BlockScanner) scanBlocks() {
 				b.updateStaleNetworkFee(currentBlock)
 			}
 
+			if b.cfg.ChainID.Equals(common.MAPChain) {
+				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
+					Int("txs", len(txIn.TxArray)).Msg("update gas")
+			}
 			// determine how often we print a info log line for scanner
 			// progress. General goal is about once per minute
 			// enable this one , so we could see how far it is behind
@@ -278,6 +282,10 @@ func (b *BlockScanner) scanBlocks() {
 			}
 			b.logger.Debug().Msgf("the gap is %d , healthy: %+v", latestHeight-currentBlock, b.healthy.Load())
 
+			if b.cfg.ChainID.Equals(common.MAPChain) {
+				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
+					Msg("update gas after")
+			}
 			b.metrics.GetCounter(metrics.TotalBlockScanned).Inc()
 			if len(txIn.TxArray) > 0 {
 				select {
@@ -285,6 +293,10 @@ func (b *BlockScanner) scanBlocks() {
 					return
 				case b.globalTxsQueue <- txIn:
 				}
+			}
+			if b.cfg.ChainID.Equals(common.MAPChain) {
+				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
+					Msg("txArray sent to global queue")
 			}
 			if err = b.scannerStorage.SetScanPos(b.previousBlock); err != nil {
 				b.logger.Error().Err(err).Msg("fail to save block scan pos")

@@ -158,6 +158,7 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
+		fmt.Println(" key ------ ", string(key), " value ", string(value))
 		ele := &CrossSet{}
 		err := json.Unmarshal(value, ele)
 		if err != nil {

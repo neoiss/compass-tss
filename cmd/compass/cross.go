@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/internal/cross"
@@ -73,22 +73,16 @@ type CrossListResponse struct {
 }
 
 func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
-	reqData, err := io.ReadAll(request.Body)
+	key := request.Form.Get("key")
+	limit := request.Form.Get("limit")
+	limitNum, err := strconv.ParseInt(limit, 10, 64)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to read request body")
+		s.logger.Error().Err(err).Msg("fail to parse limit")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	req := &CrossListRequest{}
-	err = json.Unmarshal(reqData, req)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to unmarshal request")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	crossData, err := s.dbStorage.Range(req.Key, req.Limit)
+	crossData, err := s.dbStorage.Range(key, limitNum)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -112,22 +106,9 @@ func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
 }
 
 func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) {
-	reqData, err := io.ReadAll(request.Body)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to read request body")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	req := &CrossSignelRequest{}
-	err = json.Unmarshal(reqData, req)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to unmarshal request")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	crossData, err := s.dbStorage.GetCrossData(req.Key)
+	key := request.Form.Get("key")
+	s.logger.Info().Any("key", key).Msg("get cross signel")
+	crossData, err := s.dbStorage.GetCrossData(key)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
 		w.WriteHeader(http.StatusInternalServerError)
