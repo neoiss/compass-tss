@@ -50,8 +50,14 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 			constants.EventOfBridgeRelaySigned.GetTopic(),
 		}},
 	})
-	if len(logs) == 0 {
+	defer func() {
+		b.blockHeight = blockHeight
+	}()
+	if err != nil {
 		return types.TxOut{}, err
+	}
+	if len(logs) == 0 {
+		return types.TxOut{}, nil
 	}
 	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
 
@@ -81,7 +87,6 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 		ret.TxArray = append(ret.TxArray, *item)
 	}
 
-	b.blockHeight = blockHeight
 	return ret, nil
 }
 

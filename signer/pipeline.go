@@ -178,6 +178,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 		// check if the vault/chain is locked
 		if lockedVaultChains[vc] {
+			log.Info().Msgf("skill %s a tx", item.TxOutItem.TxHash)
 			continue
 		}
 
@@ -188,6 +189,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 		// check if the vault status semaphore has capacity
 		if availableCapacities[types.VaultStatus_ActiveVault] == 0 {
+			log.Info().Msgf("availableCapacities skill %s a tx", item.TxOutItem.TxHash)
 			continue
 		}
 
@@ -195,6 +197,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 		availableCapacities[types.VaultStatus_ActiveVault]--
 		p.vaultChainLock[vc] <- struct{}{}
 		lockedVaultChains[vc] = true
+		log.Info().Msgf("will handler  %s a tx", item.TxOutItem.TxHash)
 
 		// spawn signing routine
 		go func(item TxOutStoreItem, vaultStatus types.VaultStatus) {
