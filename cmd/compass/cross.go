@@ -75,6 +75,10 @@ type CrossListResponse struct {
 func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
 	key := request.Form.Get("key")
 	limit := request.Form.Get("limit")
+	if limit == "" {
+		limit = "10"
+	}
+	fmt.Println("limit ", limit, "key", key)
 	limitNum, err := strconv.ParseInt(limit, 10, 64)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to parse limit")

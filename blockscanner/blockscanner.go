@@ -245,11 +245,6 @@ func (b *BlockScanner) scanBlocks() {
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			if b.cfg.ChainID.Equals(common.MAPChain) {
-				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
-					Int("txs", len(txIn.TxArray)).Msg("fetched Txs")
-			}
-
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
 			// determine how often we compare MAP network fee to Bifrost network fee.
@@ -259,14 +254,10 @@ func (b *BlockScanner) scanBlocks() {
 				b.updateStaleNetworkFee(currentBlock)
 			}
 
-			if b.cfg.ChainID.Equals(common.MAPChain) {
-				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
-					Int("txs", len(txIn.TxArray)).Msg("update gas")
-			}
 			// determine how often we print a info log line for scanner
 			// progress. General goal is about once per minute
 			// enable this one , so we could see how far it is behind
-			if currentBlock%100 == 0 { // || !b.healthy.Load()
+			if currentBlock%100 == 0 || !b.healthy.Load() {
 				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
 					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
 					Msg("scan block progressing")
@@ -282,10 +273,6 @@ func (b *BlockScanner) scanBlocks() {
 			}
 			b.logger.Debug().Msgf("the gap is %d , healthy: %+v", latestHeight-currentBlock, b.healthy.Load())
 
-			if b.cfg.ChainID.Equals(common.MAPChain) {
-				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
-					Msg("update gas after")
-			}
 			b.metrics.GetCounter(metrics.TotalBlockScanned).Inc()
 			if len(txIn.TxArray) > 0 {
 				select {
@@ -293,10 +280,6 @@ func (b *BlockScanner) scanBlocks() {
 					return
 				case b.globalTxsQueue <- txIn:
 				}
-			}
-			if b.cfg.ChainID.Equals(common.MAPChain) {
-				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
-					Msg("txArray sent to global queue")
 			}
 			if err = b.scannerStorage.SetScanPos(b.previousBlock); err != nil {
 				b.logger.Error().Err(err).Msg("fail to save block scan pos")
@@ -317,13 +300,17 @@ func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
 		return
 	}
 
+	if b.cfg.ChainID.Equals(common.MAPChain) {
+		return
+	}
+
 	transactionSize, transactionSwapSize, transactionFeeRate := b.chainScanner.GetNetworkFee()
 	onlineTxSize, onlineTxSwapSize, onlineTxFeeRate, err := b.bridge.GetNetworkFee(b.cfg.ChainID)
 	if err != nil {
 		b.logger.Error().Err(err).Msg("fail to get map network fee")
 		return
 	}
-	// Do not broadcast a regularly-timed network fee if the THORNode network fee is already consistent with the scanner's.
+	// Do not broadcast a regularly-timed network fee if the relay network fee is already consistent with the scanner's.
 	if onlineTxSize == transactionSize && onlineTxFeeRate == transactionFeeRate && onlineTxSwapSize == transactionSwapSize {
 		return
 	}
