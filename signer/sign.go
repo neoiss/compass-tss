@@ -283,6 +283,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 			return
 		case txOut, more := <-ch:
 			if !more {
+				s.logger.Info().Msg("tx out channel is closed")
 				return
 			}
 			s.logger.Info().Msgf("received a TxOut Array of %v from the MAP", txOut)
@@ -328,6 +329,7 @@ func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
 			return
 		case txOut, ok := <-ch:
 			if !ok {
+				s.logger.Info().Msg("oracle channel is closed")
 				return
 			}
 			s.logger.Info().Msgf("oracle Received a TxOut Array of %+v from the MAPRelay", txOut)

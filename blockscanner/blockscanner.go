@@ -251,7 +251,7 @@ func (b *BlockScanner) scanBlocks() {
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
 			// determine how often we compare MAP network fee to Bifrost network fee.
-			// General goal is about once per day.
+			// General goal is about once hour.
 			mod := ((60 * 60 * 1000) + ms - 1) / ms
 			if currentBlock%mod == 0 {
 				b.updateStaleNetworkFee(currentBlock)
