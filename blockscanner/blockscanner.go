@@ -245,8 +245,10 @@ func (b *BlockScanner) scanBlocks() {
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			b.logger.Debug().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
-				Int("txs", len(txIn.TxArray)).Msg("fetched Txs")
+			if b.cfg.ChainID.Equals(common.MAPChain) {
+				b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).
+					Int("txs", len(txIn.TxArray)).Msg("fetched Txs")
+			}
 
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
