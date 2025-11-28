@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/db"
@@ -38,14 +39,14 @@ const (
 )
 
 type CrossData struct {
-	TxHash           string
-	Topic            string
-	Height           int64
-	OrderId          string
-	LogIndex         uint
-	Chain            string
-	ChainAndGasLimit string
-	Timestamp        int64 // tx time
+	TxHash           string `json:"tx_hash"`
+	Topic            string `json:"topic"`
+	Height           int64  `json:"height"`
+	OrderId          string `json:"order_id"`
+	LogIndex         uint   `json:"log_index"`
+	Chain            string `json:"chain"`
+	ChainAndGasLimit string `json:"chain_and_gas_limit"`
+	Timestamp        int64  `json:"timestamp"`
 }
 
 type CrossSet struct {
@@ -72,13 +73,11 @@ func NewStorage(path string, opts config.LevelDBOptions) (*CrossStorage, error) 
 }
 
 // createTxKey creates a unique key for a TxIn based on prefix, chain, mempool, blockheight
-func (s *CrossStorage) createTxKey(txIn *types.TxInItem) string {
-	return fmt.Sprintf("%s:%s", CrossChainPrefix, txIn.OrderId.String())
+func (s *CrossStorage) createTxKey(orderId string) string {
+	return fmt.Sprintf("%s:%s", CrossChainPrefix, orderId)
 }
 
-// AddOrUpdateTx adds or updates a single TxIn in storage
-func (s *CrossStorage) AddOrUpdateTx(txIn *types.TxInItem, _type string) error {
-	key := s.createTxKey(txIn)
+func TxInConvertCross(txIn *types.TxInItem) *CrossData {
 	height := int64(0)
 	if txIn.Height != nil {
 		height = txIn.Height.Int64()
@@ -91,7 +90,7 @@ func (s *CrossStorage) AddOrUpdateTx(txIn *types.TxInItem, _type string) error {
 	if txIn.ChainAndGasLimit != nil {
 		cgl = txIn.ChainAndGasLimit.String()
 	}
-	insertData := &CrossData{
+	return &CrossData{
 		TxHash:           txIn.Tx,
 		Topic:            txIn.Topic,
 		Height:           height,
@@ -99,9 +98,26 @@ func (s *CrossStorage) AddOrUpdateTx(txIn *types.TxInItem, _type string) error {
 		LogIndex:         txIn.LogIndex,
 		Chain:            fromChain,
 		ChainAndGasLimit: cgl,
-		Timestamp:        txIn.Timestamp,
+		Timestamp:        time.Now().Unix(),
 	}
+}
 
+func TxOutConvertCross(txOut *types.TxOutItem) *CrossData {
+	return &CrossData{
+		TxHash:           txOut.Tx,
+		Topic:            txOut.Topic,
+		Height:           txOut.Height,
+		OrderId:          txOut.OrderId.String(),
+		LogIndex:         txOut.LogIndex,
+		Chain:            txOut.Chain.String(),
+		ChainAndGasLimit: txOut.ChainAndGasLimit.String(),
+		Timestamp:        time.Now().Unix(),
+	}
+}
+
+// AddOrUpdateTx adds or updates a single TxIn in storage
+func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error {
+	key := s.createTxKey(insertData.OrderId)
 	ret, err := s.GetCrossData(key)
 	if err != nil {
 		return fmt.Errorf("fail to get crossData: %w", err)
@@ -158,7 +174,6 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
-		fmt.Println(" key ------ ", string(key), " value ", string(value))
 		ele := &CrossSet{}
 		err := json.Unmarshal(value, ele)
 		if err != nil {
@@ -178,8 +193,8 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 	return ret, nil
 }
 
-func (s *CrossStorage) DeleteTx(txIn *types.TxInItem) error {
-	key := s.createTxKey(txIn)
+func (s *CrossStorage) DeleteTx(orderId string) error {
+	key := s.createTxKey(orderId)
 	return s.db.Delete([]byte(key), nil)
 }
 

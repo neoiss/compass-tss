@@ -291,6 +291,17 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 
 			for i, tx := range txOut.TxArray {
 				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
+				tmp := tx
+				go func(ele *types.TxArrayItem) {
+					// add in cross-chain storage
+					param := ele.TxOutItem(0)
+					err := s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param),
+						cross.TypeOfRelayChain)
+					if err != nil {
+						s.logger.Error().Str("txHash", ele.TxHash).Err(err).
+							Msg("fail to add relay tx in cross storage")
+					}
+				}(&tmp)
 			}
 			if err := s.storage.Batch(items); err != nil {
 				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
@@ -687,15 +698,11 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
 
 	// add in cross-chain storage
-	err = s.crossStorage.AddOrUpdateTx(&types.TxInItem{
-		Tx:               hash,
-		FromChain:        item.TxOutItem.FromChain,
-		Height:           big.NewInt(0),
-		OrderId:          item.TxOutItem.OrderId,
-		LogIndex:         0,
-		ChainAndGasLimit: big.NewInt(0),
-		Topic:            "",
-		Timestamp:        0,
+	err = s.crossStorage.AddOrUpdateTx(&cross.CrossData{
+		Chain:     item.TxOutItem.ToChain.String(),
+		TxHash:    hash,
+		OrderId:   item.TxOutItem.OrderId.Hex(),
+		Timestamp: time.Now().Unix(),
 	}, cross.TypeOfSendDst)
 	if err != nil {
 		s.logger.Error().Str("txHash", hash).Err(err).Msg("fail to add broadcast in cross storage")

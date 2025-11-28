@@ -106,19 +106,18 @@ func (b *MapChainBlockScan) FetchTxs(height, _ int64) (types.TxIn, error) {
 	if err := b.processTxOutBlock(height); err != nil {
 		return types.TxIn{}, err
 	}
-	if err := b.processKeygenBlock(height); err != nil {
+	if err := b.processKeygenBlock(); err != nil {
 		return types.TxIn{}, err
 	}
 	return types.TxIn{}, nil
 }
 
-func (b *MapChainBlockScan) processKeygenBlock(height int64) error {
+func (b *MapChainBlockScan) processKeygenBlock() error {
 	// done
 	keygen, err := b.mapBridge.GetKeygenBlock()
 	if err != nil {
 		return fmt.Errorf("fail to get keygen from mapBridge: %w", err)
 	}
-	b.logger.Info().Any("keygen", keygen).Int64("height", height).Msg("got keygen:")
 	if keygen == nil {
 		return nil
 	}

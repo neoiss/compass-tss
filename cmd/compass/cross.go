@@ -80,6 +80,12 @@ func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
 	}
 	fmt.Println("limit ", limit, "key", key)
 	limitNum, err := strconv.ParseInt(limit, 10, 64)
+	if limitNum < 0 {
+		limitNum = 10
+	}
+	if limitNum > 50 {
+		limitNum = 50
+	}
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to parse limit")
 		w.WriteHeader(http.StatusBadRequest)
