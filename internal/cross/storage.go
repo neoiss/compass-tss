@@ -104,8 +104,8 @@ func TxInConvertCross(txIn *types.TxInItem) *CrossData {
 
 func TxOutConvertCross(txOut *types.TxOutItem) *CrossData {
 	return &CrossData{
-		TxHash:           txOut.Tx,
-		Topic:            txOut.Topic,
+		TxHash:           txOut.TxHash,
+		Topic:            txOut.Topics,
 		Height:           txOut.Height,
 		OrderId:          txOut.OrderId.String(),
 		LogIndex:         txOut.LogIndex,

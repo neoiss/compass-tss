@@ -160,6 +160,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	}
 	txOutItem.LogIndex = ll.Index // add this
 	txOutItem.TxHash = ll.TxHash.String()
+	txOutItem.Topics = string(ll.Topics[0].Hex())
 	// parse chain and gas limit
 	cgl, err := ParseChainAndGasLimit(ll.Topics[2])
 	if err != nil {

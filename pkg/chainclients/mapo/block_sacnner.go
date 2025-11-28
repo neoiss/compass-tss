@@ -173,16 +173,11 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 	}
 
 	if len(txOut.TxArray) > 0 {
-		b.logger.Info().Int64("block", blockHeight).Int("len", len(txOut.TxArray)).Msg("insert tx out")
 		b.txOutChan <- txOut
-		b.logger.Info().Int64("block", blockHeight).Int("len", len(txOut.TxArray)).Msg("insert tx out finish")
 	}
 
 	if len(oracleTx.TxArray) > 0 {
-		b.logger.Info().Int64("block", blockHeight).Int("len", len(txOut.TxArray)).Msg("insert oracle")
 		b.oracleChan <- oracleTx
-		b.logger.Info().Int64("block", blockHeight).Int("len", len(txOut.TxArray)).Msg("insert oracle finish")
 	}
-	b.logger.Info().Int64("block", blockHeight).Msg("mapo block scanned")
 	return nil
 }

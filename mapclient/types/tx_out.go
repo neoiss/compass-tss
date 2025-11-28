@@ -19,6 +19,7 @@ type TxOutItem struct {
 	VaultPubKey      common.PubKey `json:"vault_pubkey"`
 	LogIndex         uint          `json:"log_index,omitempty"`
 	TxHash           string        `json:"tx_hash,omitempty"`
+	Topics           string        `json:"topics,omitempty"`
 	Method           string        `json:"method,omitempty"`
 	FromChain        *big.Int      `json:"from_chain_chain,omitempty"` // bridgeRelay add new field
 	ToChain          *big.Int      `json:"to_chain,omitempty"`         // bridgeRelay add new field
@@ -98,6 +99,7 @@ type TxArrayItem struct {
 	Chain            *big.Int
 	LogIndex         uint
 	TxHash           string
+	Topics           string
 	Method           string
 	FromChain        *big.Int
 	ToChain          *big.Int
@@ -129,6 +131,7 @@ func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 		Amount:           tx.Amount,
 		LogIndex:         tx.LogIndex,
 		TxHash:           tx.TxHash,
+		Topics:           tx.Topics,
 		Method:           tx.Method,
 		ChainAndGasLimit: tx.ChainAndGasLimit,
 		TxType:           tx.TxType,
