@@ -184,6 +184,9 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 			Key:      string(key),
 			CrossSet: ele,
 		})
+		if len(ret) >= int(limit) {
+			break
+		}
 	}
 
 	if err := iter.Error(); err != nil {

@@ -73,8 +73,8 @@ type CrossListResponse struct {
 }
 
 func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
-	key := request.Form.Get("key")
-	limit := request.Form.Get("limit")
+	key := request.URL.Query().Get("key")
+	limit := request.URL.Query().Get("limit")
 	if limit == "" {
 		limit = "10"
 	}
@@ -116,7 +116,7 @@ func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
 }
 
 func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) {
-	key := request.Form.Get("key")
+	key := request.URL.Query().Get("key")
 	s.logger.Info().Any("key", key).Msg("get cross signel")
 	crossData, err := s.dbStorage.GetCrossData(key)
 	if err != nil {
