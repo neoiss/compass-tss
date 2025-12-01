@@ -155,7 +155,7 @@ func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.T
 
 func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types.TxArrayItem) error {
 	if ll == nil {
-		scp.logger.Info().Msg("Tx logs are empty return nil")
+		scp.logger.Info().Msg("tx logs are empty return nil")
 		return nil
 	}
 	txOutItem.LogIndex = ll.Index // add this
@@ -166,7 +166,6 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 	if err != nil {
 		return fmt.Errorf("failed to parse chain and gas limit, err: %w", err)
 	}
-	fmt.Println("GetTxOutItem cgl ", cgl, "txHash", ll.TxHash.String())
 	txOutItem.ToChain = cgl.ToChain
 
 	switch ll.Topics[0].String() {
@@ -198,7 +197,7 @@ func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types
 		}
 		txOutItem.OrderId = evt.OrderId
 		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
-		txOutItem.Method = constants.BridgeCompleted // todo
+		txOutItem.Method = constants.Completed
 		txOutItem.TxType = evt.TxOutType
 		txOutItem.Vault = evt.Vault
 		txOutItem.Sequence = evt.Sequence

@@ -78,7 +78,7 @@ func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
 	if limit == "" {
 		limit = "10"
 	}
-	fmt.Println("limit ", limit, "key", key)
+
 	limitNum, err := strconv.ParseInt(limit, 10, 64)
 	if limitNum < 0 {
 		limitNum = 10

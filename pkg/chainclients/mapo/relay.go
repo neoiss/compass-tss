@@ -46,7 +46,7 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 		Addresses: []ecommon.Address{ecommon.HexToAddress(b.cfg.Relay)}, // done
 		Topics: [][]ecommon.Hash{{
 			constants.EventOfBridgeRelay.GetTopic(),
-			// constants.EventOfBridgeCompleted.GetTopic(), // todo
+			constants.EventOfBridgeCompleted.GetTopic(),
 			constants.EventOfBridgeRelaySigned.GetTopic(),
 		}},
 	})

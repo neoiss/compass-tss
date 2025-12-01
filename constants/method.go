@@ -20,6 +20,7 @@ const (
 	RelaySigned     = "relaySigned"
 	IsOrderExecuted = "isOrderExecuted"
 	OrderInfos      = "orderInfos"
+	Completed       = "completed" // custom method
 )
 
 // -----------------------------------------------------------------

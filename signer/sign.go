@@ -290,18 +290,24 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
-				items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
+				_type := cross.TypeOfRelayChain
+				switch tx.Method {
+				case constants.BridgeIn:
+					items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
+				default:
+					_type = cross.TypeOfDstChain
+				}
+
 				tmp := tx
-				go func(ele *types.TxArrayItem) {
+				param := tmp.TxOutItem(txOut.Height)
+				go func(ele *types.TxOutItem, _type string) {
 					// add in cross-chain storage
-					param := ele.TxOutItem(0)
-					err := s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param),
-						cross.TypeOfRelayChain)
+					err := s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(ele), _type)
 					if err != nil {
 						s.logger.Error().Str("txHash", ele.TxHash).Err(err).
 							Msg("fail to add relay tx in cross storage")
 					}
-				}(&tmp)
+				}(&param, _type)
 			}
 			if err := s.storage.Batch(items); err != nil {
 				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
