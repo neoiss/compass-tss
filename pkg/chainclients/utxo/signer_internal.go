@@ -447,7 +447,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	balance := totalAmt - redeemTxOut.Value - int64(gasAmt)
 	c.log.Info().Msgf("total: %d, to customer: %d, gas: %d", totalAmt, redeemTxOut.Value, int64(gasAmt))
 	if balance < 0 {
-		return nil, nil, fmt.Errorf("not enough balance to pay customer: %d", balance)
+		return nil, nil, fmt.Errorf("(%s)not enough balance to pay customer: %d", tx.VaultPubKey, balance)
 	}
 	if balance > 0 {
 		c.log.Info().Msgf("send %d back to self", balance)
