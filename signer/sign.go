@@ -309,6 +309,9 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 					}
 				}(&param, _type)
 			}
+			if len(items) <= 0 {
+				continue
+			}
 			if err := s.storage.Batch(items); err != nil {
 				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
 			}
