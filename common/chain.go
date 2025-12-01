@@ -271,7 +271,8 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 func (c Chain) DustThreshold() cosmos.Uint {
 	switch c {
 	case BTCChain, LTCChain, BCHChain:
-		return cosmos.NewUint(10_000)
+		//return cosmos.NewUint(10_000)
+		return cosmos.NewUint(1_000) // todo utxo
 	case DOGEChain:
 		return cosmos.NewUint(100_000_000)
 	case ETHChain, AVAXChain, GAIAChain, BSCChain, BASEChain:
