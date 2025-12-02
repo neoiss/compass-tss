@@ -135,7 +135,6 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		return fmt.Errorf("fail to get keysign from block scanner: %w", err)
 	}
 
-	b.logger.Info().Int64("block", blockHeight).Int("txArray", len(tx.TxArray)).Msg("process map block")
 	if len(tx.TxArray) == 0 {
 		b.logger.Debug().Int64("block", blockHeight).Msg("Nothing to process")
 		return nil

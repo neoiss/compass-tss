@@ -292,10 +292,10 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 			for i, tx := range txOut.TxArray {
 				_type := cross.TypeOfRelayChain
 				switch tx.Method {
-				case constants.BridgeIn:
-					items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
-				default:
+				case constants.Completed:
 					_type = cross.TypeOfDstChain
+				default:
+					items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
 				}
 
 				tmp := tx
