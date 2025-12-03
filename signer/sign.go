@@ -300,6 +300,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 
 				tmp := tx
 				param := tmp.TxOutItem(txOut.Height)
+				param.Chain, _ = common.MAPChain.ChainID()
 				go func(ele *types.TxOutItem, _type string) {
 					// add in cross-chain storage
 					err := s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(ele), _type)

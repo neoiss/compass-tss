@@ -163,6 +163,7 @@ bifrost:
         max_swap_gas_limit: 150000
         max_contract_tx_logs: 50
         start_block_height: 9470030
+        gas_price_resolution: 1
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -182,7 +183,7 @@ bifrost:
         concurrency: 1
         chain_id: BSC
         gas_cache_blocks: 40
-        gas_price_resolution: 10_000_000_000 # 10 gwei
+        gas_price_resolution: 1 # 10 gwei
         observation_flexibility_blocks: 80
         max_gas_limit: 100000
         max_swap_gas_limit: 150000

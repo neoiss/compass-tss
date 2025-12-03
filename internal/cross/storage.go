@@ -32,10 +32,11 @@ const (
 )
 
 const (
-	TypeOfSrcChain   = "src"
-	TypeOfRelayChain = "relay"
-	TypeOfSendDst    = "send_dst"
-	TypeOfDstChain   = "dst"
+	TypeOfSrcChain    = "src"
+	TypeOfRelayChain  = "relay"
+	TypeOfSendDst     = "send_dst"
+	TypeOfDstChain    = "dst"
+	TypeOfMapDstChain = "map_dst"
 )
 
 type CrossData struct {
@@ -53,6 +54,7 @@ type CrossSet struct {
 	Src    *CrossData    `json:"src"`
 	Relay  *CrossData    `json:"relay"`
 	Dest   *CrossData    `json:"dest"`
+	MapDst *CrossData    `json:"map_dest"`
 	Now    int64         `json:"now"`
 	Status StatusOfCross `json:"status"`
 }
@@ -127,6 +129,9 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 		ret.Src = insertData
 		ret.Status = StatusOfInit
 	case TypeOfRelayChain:
+		if ret.Src == nil { // map sending tx
+			ret.Src = insertData
+		}
 		ret.Relay = insertData
 		ret.Status = StatusOfPending
 	case TypeOfSendDst:
@@ -134,6 +139,9 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 		ret.Status = StatusOfSend
 	case TypeOfDstChain:
 		ret.Dest = insertData
+		ret.Status = StatusOfCompleted
+	case TypeOfMapDstChain:
+		ret.MapDst = insertData
 		ret.Status = StatusOfCompleted
 	default:
 		return fmt.Errorf("invalid type:%s", _type)
