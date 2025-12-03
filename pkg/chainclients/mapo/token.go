@@ -3,6 +3,7 @@ package mapo
 import (
 	"context"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
@@ -87,7 +88,7 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 		return nil, errors.New("token name is empty")
 	}
 	method := "getTokenAddressByNickname"
-	input, err := b.tokenRegistry.Pack(method, chainID, name)
+	input, err := b.tokenRegistry.Pack(method, chainID, strings.ToUpper(name))
 	if err != nil {
 		return nil, err
 	}

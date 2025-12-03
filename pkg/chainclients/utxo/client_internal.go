@@ -494,13 +494,13 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
-	m, err := mem.ParseMemo(memo)
+	parsedMemo, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
 		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
 	}
-	if !m.IsValid() {
-		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", m.GetType().String()).Msg("invalid memo")
+	if !parsedMemo.IsValid() {
+		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", parsedMemo.GetType().String()).Msg("invalid memo")
 		return types.TxInItem{}, fmt.Errorf("invalid memo")
 	}
 
@@ -527,8 +527,12 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		toAddr = c.stripBCHAddress(toAddr)
 	}
 
+	payload, err := utxo.EncodePayload(nil, nil, nil) // todo utxo
+	if err != nil {
+		return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
+	}
 	if c.isAsgardAddress(sender) {
-		token := string(common.BTCAsset.Symbol)
+		token := constants.BTCToken
 		tokenAddress, err := c.bridge.GetTokenAddress(chainID, token)
 		if err != nil {
 			return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, token)
@@ -555,11 +559,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", to, err)
 		}
 
-		payload, err := utxo.EncodePayload(nil, nil, nil) // todo utxo
-		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
-		}
-
 		amount, err := btcutil.NewAmount(tx.Vout[0].Value)
 		if err != nil {
 			return types.TxInItem{}, fmt.Errorf("fail to parse amount(%f): %w", tx.Vout[0].Value, err)
@@ -577,18 +576,12 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		toChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 		copy(chainAndGasLimit[8:16], toChain)
 		//copy(chainAndGasLimit[24:32], big.NewInt(int64(fee)).Bytes())
-
-		var txOutType = constants.TRANSFER
-		if m.GetType() == mem.TxAdd {
-			txOutType = constants.DEPOSIT
-		}
-
 		txIn := types.TxInItem{
 			Tx: tx.Txid,
 			//Sender:           sender,
 			Height:           new(big.Int).SetInt64(height),
 			Amount:           big.NewInt(int64(amount)),
-			OrderId:          ethcommon.HexToHash(m.GetOrderID()),
+			OrderId:          ethcommon.HexToHash(parsedMemo.GetOrderID()),
 			GasUsed:          big.NewInt(int64(fee)),
 			Token:            tokenAddress,
 			Vault:            vaultPbuKey,
@@ -598,7 +591,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			Method:           constants.VoteTxOut,
 			LogIndex:         0,
 			ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
-			TxOutType:        uint8(txOutType),
+			TxOutType:        uint8(constants.TRANSFER),
 			Sequence:         big.NewInt(0),
 			Topic:            constants.EventOfBridgeIn.GetTopic().String(),
 			Timestamp:        tx.Blocktime,
@@ -623,28 +616,31 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	//if err != nil {
 	//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
 	//}
-	// todo utxo get chain id from map chain ???
-	destChainID, err := common.Chain(m.GetChain()).ChainID()
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, m.GetChain())
+	var (
+		destToken   string
+		txOutType   constants.TxInType
+		destChainID = big.NewInt(0)
+	)
+	if parsedMemo.GetType() == mem.TxOutbound {
+		destToken = parsedMemo.GetToken()
+		txOutType = constants.TRANSFER
+		destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+		}
+	} else if parsedMemo.GetType() == mem.TxAdd {
+		destToken = constants.BTCToken
+		txOutType = constants.DEPOSIT
+	} else {
+		return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
 	}
 
-	//chainID, err := c.GetChain().ChainID()
-	//if err != nil {
-	//	return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, c.GetChain())
-	//}
-
-	tokenAddress, err := c.bridge.GetTokenAddress(chainID, m.GetToken())
+	tokenAddress, err := c.bridge.GetTokenAddress(chainID, destToken)
 	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, m.GetToken())
+		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, parsedMemo.GetToken())
 	}
 	if len(tokenAddress) == 0 {
-		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, m.GetToken())
-	}
-
-	var txOutType = constants.TRANSFER
-	if m.GetType() == mem.TxAdd {
-		txOutType = constants.DEPOSIT
+		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, parsedMemo.GetToken())
 	}
 
 	address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
@@ -663,11 +659,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	pbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
-	}
-
-	payload, err := utxo.EncodePayload(nil, nil, nil) // todo utxo
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
 	}
 
 	chainAndGasLimit := make([]byte, 32)
@@ -689,7 +680,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		Token:            tokenAddress,
 		Vault:            pbuKey,
 		From:             fromBytes,
-		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(m.GetDestination())),
+		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(parsedMemo.GetDestination())),
 		Payload:          payload,
 		Method:           constants.VoteTxIn,
 		LogIndex:         0,
@@ -868,7 +859,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 // ignoreTx checks if we can already ignore a tx according to preset rules
 // Allow up to 10 Vouts with value and 2 OP_RETURN Vouts (for getMemo appending).
 func (c *Client) ignoreTx(tx *btcjson.TxRawResult, height int64) bool {
-	if len(tx.Vin) == 0 || len(tx.Vout) == 0 || len(tx.Vout) > 12 {
+	if len(tx.Vin) == 0 || len(tx.Vout) == 0 || len(tx.Vout) > 12 { // todo utxo
 		return true
 	}
 	if tx.Vin[0].Txid == "" {
@@ -891,7 +882,7 @@ func (c *Client) ignoreTx(tx *btcjson.TxRawResult, height int64) bool {
 		return true
 	}
 	// there are more than ten outputs with value in them, not THORChain format
-	if countWithOutput > 10 {
+	if countWithOutput > 10 { // todo utxo
 		return true
 	}
 	return false

@@ -162,3 +162,7 @@ var ToMapIgnoreError = map[string]struct{}{
 	"0x7ce72949":                 {}, // order_executed
 	ErrorOfOrderExecuted.Error(): {},
 }
+
+const (
+	BTCToken = "BTC"
+)
