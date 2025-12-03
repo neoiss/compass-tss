@@ -293,7 +293,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 				_type := cross.TypeOfRelayChain
 				switch tx.Method {
 				case constants.Completed:
-					_type = cross.TypeOfDstChain
+					_type = cross.TypeOfMapDstChain
 				default:
 					items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
 				}

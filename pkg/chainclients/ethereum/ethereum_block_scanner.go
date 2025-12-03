@@ -315,6 +315,7 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 	std.Sqrt(std)
 
 	e.gasPrice = mean.Add(mean, std.Mul(std, big.NewInt(3)))
+	fmt.Println("e.gasPrice --------------- ", e.gasPrice)
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(e.gasPrice.Int64()).Float64()
