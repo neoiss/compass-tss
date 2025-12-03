@@ -656,6 +656,7 @@ func (e *EVMScanner) getTxInFromSmartContract(ll *etypes.Log) (*stypes.TxInItem,
 	txInItem := &stypes.TxInItem{
 		Tx:       ll.TxHash.String()[2:], // drop the "0x" prefix
 		LogIndex: ll.Index,
+		Topic:    ll.Topics[0].Hex(),
 	}
 	cId, _ := e.cfg.ChainID.ChainID()
 	txInItem.FromChain = cId
