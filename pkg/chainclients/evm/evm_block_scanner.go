@@ -296,11 +296,6 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 		MemPool:  false,
 	}
 
-	// skip empty blocks
-	if len(logs) == 0 {
-		return txIn, nil
-	}
-
 	// collect gas prices of txs in current block
 	var txsGas []*big.Int
 	for _, tx := range block.Transactions() {
@@ -325,6 +320,10 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 		}
 	}
 
+	// skip empty blocks
+	if len(logs) == 0 {
+		return txIn, nil
+	}
 	// collect all relevant transactions from the block
 	txInBlock, err := e.getTxIn(block, logs)
 	if err != nil {
@@ -603,6 +602,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	median = median.Div(median, resolution)
 	median = median.Mul(median, resolution)
 	e.gasPrice = median
+	fmt.Println("evm e.gasPrice -------------- ", e.gasPrice)
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(e.gasPrice.Int64()).Float64()

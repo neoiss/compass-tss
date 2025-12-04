@@ -141,6 +141,12 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 		ret.Dest = insertData
 		ret.Status = StatusOfCompleted
 	case TypeOfMapDstChain:
+		if ret.Relay == nil {
+			ret.Relay = insertData
+		}
+		if ret.Dest == nil { // map dst tx
+			ret.Dest = insertData
+		}
 		ret.MapDst = insertData
 		ret.Status = StatusOfCompleted
 	default:
