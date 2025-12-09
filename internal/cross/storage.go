@@ -144,7 +144,7 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 		if ret.Relay == nil {
 			ret.Relay = insertData
 		}
-		if ret.Dest == nil { // map dst tx
+		if ret.Dest == nil { // send to map
 			ret.Dest = insertData
 		}
 		ret.MapDst = insertData

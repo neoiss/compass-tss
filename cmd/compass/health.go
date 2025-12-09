@@ -257,13 +257,14 @@ func (s *HealthServer) chainScanner(w http.ResponseWriter, _ *http.Request) {
 		} else {
 			scannerHeightDiff = height - blockScannerHeight
 		}
+		mu.Lock()
 		res[common.MAPChain.String()] = ScannerResponse{
 			Chain:              s.bridge.GetChain().String(),
 			ChainHeight:        height,
 			BlockScannerHeight: blockScannerHeight,
 			ScannerHeightDiff:  scannerHeightDiff,
 		}
-
+		mu.Unlock()
 	}()
 	wg.Wait()
 
