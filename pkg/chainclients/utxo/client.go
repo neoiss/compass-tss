@@ -61,7 +61,7 @@ type Client struct {
 	// ---------- signing ----------
 	nodePubKey         common.PubKey
 	nodePrivKey        *btcec.PrivateKey
-	tssKeySigner       tss.ThorchainKeyManager
+	tssKeySigner       tss.RelayKeyManager
 	signerCacheManager *signercache.CacheManager
 
 	// ---------- sync ----------
@@ -711,67 +711,68 @@ func (c *Client) ReportSolvency(height int64) error {
 		return nil
 	}
 
-	// fetch all asgard vaults
-	asgardVaults, err := c.bridge.GetAsgards()
-	if err != nil {
-		return fmt.Errorf("fail to get asgards: %w", err)
-	}
+	// todo this report dont need
+	// // fetch all asgard vaults
+	// asgardVaults, err := c.bridge.GetAsgards()
+	// if err != nil {
+	// 	return fmt.Errorf("fail to get asgards: %w", err)
+	// }
 
-	currentGasFee := cosmos.NewUint(3 * c.cfg.UTXO.EstimatedAverageTxSize * c.lastFeeRate)
+	// currentGasFee := cosmos.NewUint(3 * c.cfg.UTXO.EstimatedAverageTxSize * c.lastFeeRate)
 
-	// report insolvent asgard vaults,
-	// or else all if the chain is halted and all are solvent
-	msgs := make([]types.Solvency, 0, len(asgardVaults))
-	solventMsgs := make([]types.Solvency, 0, len(asgardVaults))
-	for i := range asgardVaults {
-		var acct common.Account
-		acct, err = c.GetAccount(asgardVaults[i].PubKey, nil)
-		if err != nil {
-			c.log.Err(err).Msgf("fail to get account balance")
-			continue
-		}
+	// // report insolvent asgard vaults,
+	// // or else all if the chain is halted and all are solvent
+	// msgs := make([]types.Solvency, 0, len(asgardVaults))
+	// solventMsgs := make([]types.Solvency, 0, len(asgardVaults))
+	// for i := range asgardVaults {
+	// 	var acct common.Account
+	// 	acct, err = c.GetAccount(asgardVaults[i].PubKey, nil)
+	// 	if err != nil {
+	// 		c.log.Err(err).Msgf("fail to get account balance")
+	// 		continue
+	// 	}
 
-		msg := types.Solvency{
-			Height: height,
-			Chain:  c.cfg.ChainID,
-			PubKey: asgardVaults[i].PubKey,
-			Coins:  acct.Coins,
-		}
+	// 	msg := types.Solvency{
+	// 		Height: height,
+	// 		Chain:  c.cfg.ChainID,
+	// 		PubKey: asgardVaults[i].PubKey,
+	// 		Coins:  acct.Coins,
+	// 	}
 
-		if runners.IsVaultSolvent(acct, asgardVaults[i], currentGasFee) {
-			solventMsgs = append(solventMsgs, msg) // Solvent-vault message
-			continue
-		}
-		msgs = append(msgs, msg) // Insolvent-vault message
-	}
+	// 	if runners.IsVaultSolvent(acct, asgardVaults[i], currentGasFee) {
+	// 		solventMsgs = append(solventMsgs, msg) // Solvent-vault message
+	// 		continue
+	// 	}
+	// 	msgs = append(msgs, msg) // Insolvent-vault message
+	// }
 
-	// Only if the block scanner is unhealthy (e.g. solvency-halted) and all vaults are solvent,
-	// report that all the vaults are solvent.
-	// If there are any insolvent vaults, report only them.
-	// Not reporting both solvent and insolvent vaults is to avoid noise (spam):
-	// Reporting both could halt-and-unhalt SolvencyHalt in the same THOR block
-	// (resetting its height), plus making it harder to know at a glance from solvency reports which vaults were insolvent.
-	solvent := false
-	if !c.IsBlockScannerHealthy() && len(solventMsgs) == len(asgardVaults) {
-		msgs = solventMsgs
-		solvent = true
-	}
+	// // Only if the block scanner is unhealthy (e.g. solvency-halted) and all vaults are solvent,
+	// // report that all the vaults are solvent.
+	// // If there are any insolvent vaults, report only them.
+	// // Not reporting both solvent and insolvent vaults is to avoid noise (spam):
+	// // Reporting both could halt-and-unhalt SolvencyHalt in the same THOR block
+	// // (resetting its height), plus making it harder to know at a glance from solvency reports which vaults were insolvent.
+	// solvent := false
+	// if !c.IsBlockScannerHealthy() && len(solventMsgs) == len(asgardVaults) {
+	// 	msgs = solventMsgs
+	// 	solvent = true
+	// }
 
-	for i := range msgs {
-		c.log.Info().
-			Stringer("asgard", msgs[i].PubKey).
-			Interface("coins", msgs[i].Coins).
-			Bool("solvent", solvent).
-			Msg("reporting solvency")
+	// for i := range msgs {
+	// 	c.log.Info().
+	// 		Stringer("asgard", msgs[i].PubKey).
+	// 		Interface("coins", msgs[i].Coins).
+	// 		Bool("solvent", solvent).
+	// 		Msg("reporting solvency")
 
-		// send solvency to thorchain via global queue consumed by the observer
-		select {
-		case c.globalSolvencyQueue <- msgs[i]:
-		case <-time.After(constants.MAPRelayChainBlockTime):
-			c.log.Warn().Msgf("timeout sending solvency to thorchain")
-		}
-	}
+	// 	// send solvency to thorchain via global queue consumed by the observer
+	// 	select {
+	// 	case c.globalSolvencyQueue <- msgs[i]:
+	// 	case <-time.After(constants.MAPRelayChainBlockTime):
+	// 		c.log.Warn().Msgf("timeout sending solvency to thorchain")
+	// 	}
+	// }
 
-	c.lastSolvencyCheckHeight = height
+	// c.lastSolvencyCheckHeight = height
 	return nil
 }

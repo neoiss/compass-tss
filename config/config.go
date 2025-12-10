@@ -185,14 +185,6 @@ func Init() {
 		"BCH_START_BLOCK_HEIGHT",
 	))
 	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.cosmos_grpc_host",
-		"GAIA_GRPC_HOST",
-	))
-	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.block_scanner.cosmos_grpc_host",
-		"GAIA_GRPC_HOST",
-	))
-	assert(viper.BindEnv(
 		"bifrost.chains.GAIA.cosmos_grpc_tls",
 		"GAIA_GRPC_TLS",
 	))
@@ -268,7 +260,7 @@ func InitBifrost() {
 	}
 
 	// set signer password explicitly from environment variable
-	config.Bifrost.Thorchain.SignerPasswd = os.Getenv("SIGNER_PASSWD")
+	config.Bifrost.MAPRelay.SignerPasswd = os.Getenv("SIGNER_PASSWD")
 
 	// set bootstrap peers from seeds endpoint if unset
 	if len(config.Bifrost.TSS.BootstrapPeers) == 0 {
@@ -477,11 +469,10 @@ type MAPO struct {
 // -------------------------------------------------------------------------------------
 
 type Bifrost struct {
-	Signer            BifrostSignerConfiguration     `mapstructure:"signer"`
-	Thorchain         BifrostClientConfiguration     `mapstructure:"map_relay"`
-	AttestationGossip BifrostAttestationGossipConfig `mapstructure:"attestation_gossip"`
-	Metrics           BifrostMetricsConfiguration    `mapstructure:"metrics"`
-	Chains            struct {
+	Signer   BifrostSignerConfiguration  `mapstructure:"signer"`
+	MAPRelay BifrostClientConfiguration  `mapstructure:"map_relay"`
+	Metrics  BifrostMetricsConfiguration `mapstructure:"metrics"`
+	Chains   struct {
 		BSC BifrostChainConfiguration `mapstructure:"bsc"`
 		BTC BifrostChainConfiguration `mapstructure:"btc"`
 		ETH BifrostChainConfiguration `mapstructure:"eth"`
@@ -495,8 +486,8 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
 		common.BSCChain: b.Chains.BSC,
-		//common.BTCChain: b.Chains.BTC,
-		common.ETHChain: b.Chains.ETH,
+		common.BTCChain: b.Chains.BTC,
+		// common.ETHChain: b.Chains.ETH,
 	}
 }
 
@@ -542,6 +533,7 @@ func (b LevelDBOptions) Options() *opt.Options {
 type BifrostSignerConfiguration struct {
 	BackupKeyshares bool                             `mapstructure:"backup_keyshares"`
 	SignerDbPath    string                           `mapstructure:"signer_db_path"`
+	OracleDbPath    string                           `mapstructure:"oracle_db_path"`
 	BlockScanner    BifrostBlockScannerConfiguration `mapstructure:"block_scanner"`
 	RetryInterval   time.Duration                    `mapstructure:"retry_interval"`
 
@@ -549,10 +541,6 @@ type BifrostSignerConfiguration struct {
 	// attempting to sign and broadcast (for outbounds not in round 7 retry).
 	RescheduleBufferBlocks int64          `mapstructure:"reschedule_buffer_blocks"`
 	LevelDB                LevelDBOptions `mapstructure:"leveldb"`
-
-	// AutoObserve will automatically submit the observation for outbound transactions once
-	// they are signed - regardless of broadcast success.
-	AutoObserve bool `mapstructure:"auto_observe"`
 
 	// -------------------- tss timeouts --------------------
 
@@ -607,8 +595,6 @@ type BifrostChainConfiguration struct {
 	UserName            string                           `mapstructure:"username"`
 	Password            string                           `mapstructure:"password"`
 	RPCHost             string                           `mapstructure:"rpc_host"`
-	CosmosGRPCHost      string                           `mapstructure:"cosmos_grpc_host"`
-	CosmosGRPCTLS       bool                             `mapstructure:"cosmos_grpc_tls"`
 	HTTPostMode         bool                             `mapstructure:"http_post_mode"` // Bitcoin core only supports HTTP POST mode
 	DisableTLS          bool                             `mapstructure:"disable_tls"`    // Bitcoin core does not provide TLS by default
 	OptToRetire         bool                             `mapstructure:"opt_to_retire"`  // don't emit support for this chain during keygen process
@@ -727,14 +713,6 @@ type BifrostBlockScannerConfiguration struct {
 	// ScanBlocks indicates whether mempool transactions should be scanned.
 	ScanMemPool bool `mapstructure:"scan_mempool"`
 
-	// The following configuration values apply only to a subset of chains.
-
-	// CosmosGRPCHost is the <host>:<port> of the gRPC endpoint of the Cosmos SDK chain.
-	CosmosGRPCHost string `mapstructure:"cosmos_grpc_host"`
-
-	// CosmosGRPCTLS is a boolean value indicating whether the gRPC host is using TLS.
-	CosmosGRPCTLS bool `mapstructure:"cosmos_grpc_tls"`
-
 	// GasCacheBlocks is the number of blocks worth of gas price data cached to determine
 	// the gas price reported to Thorchain.
 	GasCacheBlocks int `mapstructure:"gas_cache_blocks"`
@@ -802,17 +780,23 @@ type BifrostBlockScannerConfiguration struct {
 }
 
 type BifrostClientConfiguration struct {
-	ChainID         common.Chain `mapstructure:"chain_id" `
-	ChainHost       string       `mapstructure:"chain_host"`
-	ChainRPC        string       `mapstructure:"chain_rpc"`
-	ChainEBifrost   string       `mapstructure:"chain_ebifrost"`
-	ChainHomeFolder string       `mapstructure:"chain_home_folder"`
-	SignerName      string       `mapstructure:"signer_name"`
-	KeystorePath    string       `mapstructure:"keystore_path"`
-	Maintainer      string       `mapstructure:"maintainer"`
-	ViewController  string       `mapstructure:"view_controller"`
-	TokenRegistry   string       `mapstructure:"token_registry"`
-	SignerPasswd    string
+	ChainID          common.Chain `mapstructure:"chain_id" `
+	ChainHost        string       `mapstructure:"chain_host"`
+	ChainRPC         string       `mapstructure:"chain_rpc"`
+	ChainEBifrost    string       `mapstructure:"chain_ebifrost"`
+	ChainHomeFolder  string       `mapstructure:"chain_home_folder"`
+	SignerName       string       `mapstructure:"signer_name"`
+	KeystorePath     string       `mapstructure:"keystore_path"`
+	Maintainer       string       `mapstructure:"maintainer"`
+	TssManager       string       `mapstructure:"tss_manager"`
+	ViewController   string       `mapstructure:"view_controller"`
+	TokenRegistry    string       `mapstructure:"token_registry"`
+	Relay            string       `mapstructure:"relay"`
+	GasService       string       `mapstructure:"gas_service"`
+	SignerPasswd     string       `mapstructure:"signer_passwd"`
+	Addr             string       `mapstructure:"addr"`
+	CrossDataPath    string       `mapstructure:"cross_data_path"`
+	CrossDataAddress string       `mapstructure:"cross_data_address"`
 }
 
 type BifrostMetricsConfiguration struct {
@@ -881,7 +865,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 			continue
 		}
 		res.Body.Close()
-		fmt.Println("GetBootstrapPeers 3333 ", string(body))
 
 		// format the multiaddr
 		peerMultiAddr := fmt.Sprintf("/ip4/%s/tcp/5040/ipfs/%s", ip, string(body))
@@ -892,7 +875,6 @@ func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) 
 			continue
 		}
 
-		fmt.Println("GetBootstrapPeers add 4444  ", addr)
 		addrs = append(addrs, addr)
 	}
 

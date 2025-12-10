@@ -222,7 +222,7 @@ func (c *Communication) handleStreamTss(stream network.Stream) {
 			c.logger.Debug().Msgf("no MsgID %s found for this message", wrappedMsg.MessageType)
 			return
 		}
-		fmt.Println("insert tss message")
+		c.logger.Debug().Msg("insert tss message")
 		channel <- &Message{
 			PeerID:  stream.Conn().RemotePeer(),
 			Payload: dataBuf,
@@ -256,7 +256,7 @@ func (c *Communication) getPeers() addr.AddrList {
 func (c *Communication) bootStrapConnectivityCheck() error {
 	bootstrapPeers := c.getPeers()
 	if len(bootstrapPeers) == 0 {
-		c.logger.Error().Msg("we do not have the bootstrap node set, quit the connectivity check")
+		c.logger.Error().Msg("We do not have the bootstrap node set, quit the connectivity check")
 		return nil
 	}
 
@@ -265,7 +265,7 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 	for _, el := range bootstrapPeers {
 		peer, err := peer.AddrInfoFromP2pAddr(el)
 		if err != nil {
-			c.logger.Error().Err(err).Msg("error in decode the bootstrap node, skip it")
+			c.logger.Error().Err(err).Msg("Error in decode the bootstrap node, skip it")
 			continue
 		}
 		wg.Add(1)
@@ -280,21 +280,21 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 					return
 				}
 				if ret.Error == nil {
-					c.logger.Debug().Msgf("bootStrapConnectivityCheck connect to peer %v with RTT %v\n", peer.ID, ret.RTT)
+					c.logger.Debug().Msgf("BootStrapConnectivityCheck connect to peer %v with RTT %v\n", peer.ID, ret.RTT)
 					atomic.AddUint32(&onlineNodes, 1)
 				}
 			case <-ctx.Done():
-				c.logger.Error().Msgf("bootStrapConnectivityCheck fail to ping the node %s within 2 seconds", peer.ID)
+				c.logger.Error().Msgf("BootStrapConnectivityCheck fail to ping the node %s within 2 seconds", peer.ID)
 			}
 		}()
 	}
 	wg.Wait()
 
 	if onlineNodes > 0 {
-		c.logger.Info().Msgf("bootStrapConnectivityCheck we have successfully ping pong %d nodes", onlineNodes)
+		c.logger.Info().Msgf("BootStrapConnectivityCheck we have successfully ping pong %d nodes", onlineNodes)
 		return nil
 	}
-	c.logger.Error().Msg("bootStrapConnectivityCheck fail to ping any bootstrap node")
+	c.logger.Error().Msg("BootStrapConnectivityCheck fail to ping any bootstrap node")
 	return errors.New("the node cannot ping any bootstrap node")
 }
 

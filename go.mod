@@ -113,7 +113,6 @@ require (
 )
 
 require (
-	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	gitlab.com/thorchain/thornode/v3 v3.5.5
 )

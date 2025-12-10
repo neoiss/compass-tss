@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/rs/zerolog"
@@ -18,65 +16,41 @@ import (
 
 const (
 	NativeTokenAddr = "0x0000000000000000000000000000000000000000"
-	VoteInMethod    = "voteTxIn"
-	VoteOutMethod   = "voteTxOut"
-)
-
-type (
-	contractAddressValidator func(addr *ecommon.Address, includeWhitelist bool) bool
-	assetResolver            func(token string) (common.Asset, error)
-	tokenDecimalResolver     func(token string) int64
-	amountConverter          func(token string, amt *big.Int) cosmos.Uint
 )
 
 type SmartContractLogParser struct {
-	addressValidator contractAddressValidator
-	assetResolver    assetResolver
-	decimalResolver  tokenDecimalResolver
-	amtConverter     amountConverter
-	logger           zerolog.Logger
-	vaultABI         *abi.ABI
-	nativeAsset      common.Asset
-	maxLogs          int64
+	logger   zerolog.Logger
+	vaultABI *abi.ABI
 }
 
-func NewSmartContractLogParser(validator contractAddressValidator,
-	resolver assetResolver,
-	decimalResolver tokenDecimalResolver,
-	amtConverter amountConverter,
-	vaultABI *abi.ABI,
-	nativeAsset common.Asset,
-	maxLogs int64,
-) SmartContractLogParser {
+func NewSmartContractLogParser(vaultABI *abi.ABI) SmartContractLogParser {
 	return SmartContractLogParser{
-		addressValidator: validator,
-		assetResolver:    resolver,
-		decimalResolver:  decimalResolver,
-		vaultABI:         vaultABI,
-		amtConverter:     amtConverter,
-		logger:           log.Logger.With().Str("module", "SmartContractLogParser").Logger(),
-		nativeAsset:      nativeAsset,
-		maxLogs:          maxLogs,
+		vaultABI: vaultABI,
+		logger:   log.Logger.With().Str("module", "SmartContractLogParser").Logger(),
 	}
 }
 
-// vaultDepositEvent represent a vault deposit
-type vaultDepositEvent struct {
-	OrderId ecommon.Hash
-	From    ecommon.Address
-	Vault   ecommon.Address
-	Token   ecommon.Address
-	Amount  *big.Int
-	To      ecommon.Address
+// bridgeOutEvent represent a bridge out event
+type bridgeOutEvent struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	TxOutType        uint8
+	Vault            []byte
+	Token            ecommon.Address
+	Amount           *big.Int
+	From             ecommon.Address
+	RefundAddr       ecommon.Address
+	To               []byte
+	Payload          []byte
 }
 
-func (scp *SmartContractLogParser) parseDeposit(log etypes.Log) (vaultDepositEvent, error) {
-	const DepositEventName = "Deposit"
-	event := vaultDepositEvent{}
-	if err := scp.unpackVaultLog(&event, DepositEventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+func (scp *SmartContractLogParser) parseBridgeOut(log etypes.Log) (*bridgeOutEvent, error) {
+	const eventName = "BridgeOut"
+	event := bridgeOutEvent{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return nil, fmt.Errorf("fail to unpack BridgeOut event: %w", err)
 	}
-	return event, nil
+	return &event, nil
 }
 
 func (scp *SmartContractLogParser) unpackVaultLog(out interface{}, event string, log etypes.Log) error {
@@ -101,297 +75,234 @@ func (scp *SmartContractLogParser) unpackVaultLog(out interface{}, event string,
 }
 
 // swapEvent represent a vault deposit
-type swapEvent struct {
-	OrderId ecommon.Hash
-	From    ecommon.Address // todo not use
-	Vault   ecommon.Address
-	Token   ecommon.Address
-	Amount  *big.Int
-	Tochain *big.Int
-	To      []byte
-	Payload []byte
+type bridgeIn struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	TxInType         uint8
+	Vault            []byte
+	Sequence         *big.Int
+	Sender           ecommon.Address
+	Token            ecommon.Address
+	Amount           *big.Int
+	From             []byte
+	To               ecommon.Address
+	Data             []byte
 }
 
-func (scp *SmartContractLogParser) parseSwap(log etypes.Log) (swapEvent, error) {
-	const SwapEventName = "Swap"
-	event := swapEvent{}
-	if err := scp.unpackVaultLog(&event, SwapEventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack swap event: %w", err)
+func (scp *SmartContractLogParser) parseBridgeIn(log etypes.Log) (*bridgeIn, error) {
+	const eventName = "BridgeIn"
+	event := bridgeIn{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return nil, fmt.Errorf("fail to unpack BridgeIn event: %w", err)
 	}
-	return event, nil
+	return &event, nil
 }
 
-type vaultTransferOutEvent struct {
-	OrderId ecommon.Hash
-	Vault   ecommon.Address
-	Token   ecommon.Address
-	Amount  *big.Int
-	To      ecommon.Address
-	Result  bool
-}
-
-func (scp *SmartContractLogParser) parseTransferOut(log etypes.Log) (vaultTransferOutEvent, error) {
-	const TransferOutEventName = "TransferOut"
-	event := vaultTransferOutEvent{}
-	if err := scp.unpackVaultLog(&event, TransferOutEventName, log); err != nil {
-		return event, fmt.Errorf("fail to parse transfer out event")
-	}
-	return event, nil
-}
-
-type vaultTransferAllowanceEvent struct {
-	OrderId    ecommon.Hash
-	FromVault  ecommon.Address
-	ToVault    ecommon.Address
-	Allowances []*evmTokenAllowance
-}
-
-type evmTokenAllowance struct {
-	Token  ecommon.Address
-	Amount *big.Int
-}
-
-func (scp *SmartContractLogParser) parseTransferAllowanceEvent(log etypes.Log) (vaultTransferAllowanceEvent, error) {
-	const TransferAllowanceEventName = "TransferAllowance"
-	event := vaultTransferAllowanceEvent{}
-	if err := scp.unpackVaultLog(&event, TransferAllowanceEventName, log); err != nil {
-		return event, fmt.Errorf("fail to parse transfer allowance event")
-	}
-	return event, nil
-}
-
-// THORChainRouterTransferOutAndCall represents a TransferOutAndCall event raised by the THORChainRouter contract.
-type THORChainRouterTransferOutAndCall struct {
-	Vault        ecommon.Address
-	Target       ecommon.Address
-	Amount       *big.Int
-	FinalAsset   ecommon.Address
-	To           ecommon.Address
-	AmountOutMin *big.Int
-	Memo         string
-}
-
-// parseTransferOutAndCall is a log parse operation binding the contract event 0xbda904e26adea40cc083dc36e80fde1641dfdd8b9a035c44022a43e713f73d36.
-func (scp *SmartContractLogParser) parseTransferOutAndCall(log etypes.Log) (*THORChainRouterTransferOutAndCall, error) {
-	const TransferOutAndCallEventName = "TransferOutAndCall"
-	event := new(THORChainRouterTransferOutAndCall)
-	if err := scp.unpackVaultLog(event, TransferOutAndCallEventName, log); err != nil {
-		return nil, err
-	}
-	return event, nil
-}
-
-func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) (bool, error) {
+func (scp *SmartContractLogParser) GetTxInItem(ll *etypes.Log, txInItem *types.TxInItem) error {
 	if ll == nil {
 		scp.logger.Info().Msg("tx logs are empty return nil")
-		return false, nil
+		return nil
 	}
-	isVaultTransfer := false
 
-	//earlyExit := false
+	txInItem.Tx = ll.TxHash.Hex()
+	txInItem.LogIndex = ll.Index
+	txInItem.Height = big.NewInt(0).SetUint64(ll.BlockNumber)
+
 	switch ll.Topics[0].String() {
-	case constants.EventOfDeposit.GetTopic().String():
+	case constants.EventOfBridgeOut.GetTopic().String():
 		// router contract , deposit function has re-entrance protection
-		depositEvt, err := scp.parseDeposit(*ll)
+		evt, err := scp.parseBridgeOut(*ll)
 		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse deposit event")
-			return false, err
+			scp.logger.Err(err).Msg("fail to parse bridge out event")
+			return err
 		}
-		txInItem.OrderId = depositEvt.OrderId
-		txInItem.To = depositEvt.To.Bytes()
-		txInItem.Method = VoteInMethod
-		txInItem.TxInType = constants.DEPOSIT
-		txInItem.Amount = depositEvt.Amount
-		txInItem.Token = depositEvt.Token.Bytes()
-		txInItem.Vault = depositEvt.Vault.Bytes()
-		txInItem.ToChain = big.NewInt(0) // deposit default zero
-		txInItem.From = depositEvt.From.Bytes()
+		txInItem.Sender = evt.From.Hex()
+		txInItem.Amount = evt.Amount
+		txInItem.OrderId = evt.OrderId
+		txInItem.Token = evt.Token.Bytes()
+		txInItem.Vault = evt.Vault
+		txInItem.From = evt.From.Bytes()
+		txInItem.To = evt.To
+		txInItem.Payload = evt.Payload
+		txInItem.Method = constants.VoteTxIn
+		txInItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txInItem.TxOutType = evt.TxOutType
+		txInItem.RefundAddr = evt.RefundAddr.Bytes() // for refund
 
-	case constants.EventOfSwap.GetTopic().Hex():
+	case constants.EventOfBridgeIn.GetTopic().Hex():
 		// it is not legal to have multiple transferOut event , transferOut event should be final
-		swapEvt, err := scp.parseSwap(*ll)
+		evt, err := scp.parseBridgeIn(*ll)
 		if err != nil {
 			scp.logger.Err(err).Msg("fail to parse swap event")
-			return false, err
+			return err
 		}
-		txInItem.OrderId = swapEvt.OrderId
-		txInItem.From = swapEvt.From.Bytes()
-		txInItem.To = swapEvt.To
-		txInItem.Method = VoteInMethod
-		txInItem.TxInType = constants.SWAP
-		txInItem.Amount = swapEvt.Amount
-		txInItem.Token = swapEvt.Token.Bytes()
-		txInItem.Vault = swapEvt.Vault.Bytes()
-		txInItem.ToChain = swapEvt.Tochain
-		txInItem.Payload = swapEvt.Payload
-
-	case constants.EventOfTransferOut.GetTopic().Hex():
-		// todo convert txOutItem
-		// there is no circumstance , router will emit multiple transferAllowance event
-		// if that does happen , it means something dodgy happened
-		transferOutEvt, err := scp.parseTransferOut(*ll)
-		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse transfer out event")
-			return false, err
-		}
-		fmt.Println(" transferOutEvt ------------- ", transferOutEvt)
-		//transferOutEvt.To
-		//txInItem.OrderId = transferOutEvt.OrderId
-		//transferOutEvt.Vault
-		//txInItem.Token = transferOutEvt.Token
-		//txInItem.Amount = transferOutEvt.Amount
-		//transferOutEvt.Result
-
-		isVaultTransfer = false
-	case constants.EventOfTransferAllowance.GetTopic().Hex():
-		// TODO vault transfer events were only fired by ygg returns
-		transferAllowanceEvt, err := scp.parseTransferAllowanceEvent(*ll)
-		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse transfer allowance event")
-			return false, err
-		}
-		fmt.Println(" transferAllowanceEvt ------------- ", transferAllowanceEvt)
-		//transferAllowanceEvt.Allowances
-		//transferAllowanceEvt.FromVault
-		//transferAllowanceEvt.ToVault
-		//txInItem.OrderId = transferAllowanceEvt.OrderId
-
+		txInItem.Amount = evt.Amount
+		txInItem.OrderId = evt.OrderId
+		txInItem.Token = evt.Token.Bytes()
+		txInItem.Vault = evt.Vault
+		txInItem.From = evt.From
+		txInItem.To = evt.To.Bytes()
+		txInItem.Method = constants.VoteTxOut
+		txInItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txInItem.TxOutType = evt.TxInType
+		txInItem.Payload = evt.Data
+		txInItem.Sender = evt.Sender.Hex()
+		txInItem.Sequence = evt.Sequence
 	}
 
-	return isVaultTransfer, nil
+	return nil
 }
 
 func (scp *SmartContractLogParser) GetTxOutItem(ll *etypes.Log, txOutItem *types.TxArrayItem) error {
 	if ll == nil {
-		scp.logger.Info().Msg("Tx logs are empty return nil")
+		scp.logger.Info().Msg("tx logs are empty return nil")
 		return nil
 	}
 	txOutItem.LogIndex = ll.Index // add this
 	txOutItem.TxHash = ll.TxHash.String()
+	txOutItem.Topics = string(ll.Topics[0].Hex())
+	// parse chain and gas limit
+	cgl, err := ParseChainAndGasLimit(ll.Topics[2])
+	if err != nil {
+		return fmt.Errorf("failed to parse chain and gas limit, err: %w", err)
+	}
+	txOutItem.ToChain = cgl.ToChain
 
 	switch ll.Topics[0].String() {
-	case constants.RelayEventOfMigration.GetTopic().String():
-		evt, err := scp.parseRelayMigration(*ll)
+	case constants.EventOfBridgeRelay.GetTopic().Hex(): // oracle
+		evt, err := scp.parseBridgeRelay(*ll)
 		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse deposit event")
+			scp.logger.Err(err).Msg("fail to parse bridgeRelay event")
 			return err
 		}
-		txOutItem.Method = constants.TransferAllowance
-		txOutItem.OrderId = evt.OrderId
-		txOutItem.Chain = evt.Chain
-		txOutItem.FromVault = evt.FromVault
-		txOutItem.ToVault = evt.ToVault
-		txOutItem.TransactionRate = evt.TransactionRate
-		txOutItem.TransactionSize = evt.TransactionSize
-		txOutItem.Allowances = make([]types.TokenAllowance, 0)
-		for _, ele := range evt.Allowances {
-			txOutItem.Allowances = append(txOutItem.Allowances, types.TokenAllowance{
-				Token:  ele.Token,
-				Amount: ele.Amount,
-			})
-		}
-		scp.logger.Info().Msgf("Parsed RelayEventOfMigration: %+v", evt)
-
-	case constants.RelayEventOfTransferOut.GetTopic().Hex():
-		// it is not legal to have multiple transferOut event , transferOut event should be final
-		evt, err := scp.parseRelayTransferOut(*ll)
-		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse swap event")
-			return err
-		}
-		txOutItem.Method = constants.TransferOut
+		txOutItem.Method = constants.RelaySigned
 		txOutItem.OrderId = evt.OrderId
 		txOutItem.Token = evt.Token
-		txOutItem.Amount = evt.Amount
-		txOutItem.Chain = evt.Chain
 		txOutItem.Vault = evt.Vault
 		txOutItem.To = evt.To
-		txOutItem.TransactionRate = evt.TransactionRate
-		txOutItem.TransactionSize = evt.TransactionSize
-		scp.logger.Info().Msgf("Parsed RelayEventOfTransferOut: %+v", evt)
+		txOutItem.Amount = evt.Amount
+		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txOutItem.TxType = evt.TxType
+		txOutItem.Sequence = evt.Sequence
+		txOutItem.From = evt.From
+		txOutItem.Data = evt.Data
+		txOutItem.Hash = evt.Hash // sign this field
+		txOutItem.FromChain = cgl.FromChain
 
-	case constants.RelayEventOfTransferCall.GetTopic().Hex():
-		evt, err := scp.parseRelayTransferCall(*ll)
+	case constants.EventOfBridgeCompleted.GetTopic().Hex():
+		evt, err := scp.parseBridgeCompleted(*ll)
 		if err != nil {
-			scp.logger.Err(err).Msg("fail to parse transfer out event")
+			scp.logger.Err(err).Msg("fail to parse bridgeCompleted event")
+			return err
+		}
+		txOutItem.OrderId = evt.OrderId
+		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
+		txOutItem.Method = constants.Completed
+		txOutItem.TxType = evt.TxOutType
+		txOutItem.Vault = evt.Vault
+		txOutItem.Sequence = evt.Sequence
+		txOutItem.Sender = evt.Sender.Bytes()
+		txOutItem.Data = evt.Data
+		txOutItem.FromChain = cgl.FromChain
+
+	case constants.EventOfBridgeRelaySigned.GetTopic().Hex():
+		evt, err := scp.parseBridgeRelaySigned(*ll)
+		if err != nil {
+			scp.logger.Err(err).Msg("fail to parse bridgeRelaySigned event")
 			return err
 		}
 
-		txOutItem.Method = constants.TransferOutCall
+		txOutItem.Method = constants.BridgeIn
 		txOutItem.OrderId = evt.OrderId
-		txOutItem.Token = evt.Token
-		txOutItem.Amount = evt.Amount
-		txOutItem.Chain = evt.Chain
+		txOutItem.ChainAndGasLimit = evt.ChainAndGasLimit
 		txOutItem.Vault = evt.Vault
-		txOutItem.To = evt.To
-		txOutItem.Payload = evt.Payload
-		txOutItem.TransactionRate = evt.TransactionRate
-		txOutItem.TransactionSize = evt.TransactionSize
-		scp.logger.Info().Msgf("Parsed RelayTransferCall: %+v", evt)
+		txOutItem.Data = evt.RelayData
+		txOutItem.Signature = evt.Signature
+		txOutItem.FromChain = cgl.FromChain
+	default:
+		return fmt.Errorf("unknown event topic: %s", ll.Topics[0].String())
 	}
 	return nil
 }
 
-type TokenAllowance struct {
-	Token  []byte
-	Amount *big.Int
-}
-type RelayMigration struct {
-	OrderId         ecommon.Hash
-	Chain           *big.Int
-	FromVault       []byte
-	ToVault         []byte
-	Allowances      []TokenAllowance
-	TransactionRate *big.Int
-	TransactionSize *big.Int
+type ChainAndGasLimit struct {
+	FromChain *big.Int
+	ToChain   *big.Int
+	Third     *big.Int
+	End       *big.Int
 }
 
-func (scp *SmartContractLogParser) parseRelayMigration(log etypes.Log) (RelayMigration, error) {
-	const eventName = "Migration"
-	event := RelayMigration{}
-	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+func ParseChainAndGasLimit(cgl ecommon.Hash) (*ChainAndGasLimit, error) {
+	if cgl.Hex() == constants.ZeroHash {
+		return nil, errors.New("chainAndGasLimit is nil")
 	}
-	return event, nil
-}
-
-type RelayTransferOut struct {
-	OrderId         ecommon.Hash
-	Token           []byte
-	Amount          *big.Int
-	Chain           *big.Int
-	Vault           []byte
-	To              []byte
-	TransactionRate *big.Int
-	TransactionSize *big.Int
-}
-
-func (scp *SmartContractLogParser) parseRelayTransferOut(log etypes.Log) (RelayTransferOut, error) {
-	const eventName = "RelayTransferOut"
-	event := RelayTransferOut{}
-	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+	bs := cgl.Bytes()
+	if len(bs) != 32 {
+		return nil, fmt.Errorf("invalid chainAndGasLimit length: %d", len(bs))
 	}
-	return event, nil
+	return &ChainAndGasLimit{
+		FromChain: big.NewInt(0).SetBytes(bs[0:8]),
+		ToChain:   big.NewInt(0).SetBytes(bs[8:16]),
+		Third:     big.NewInt(0).SetBytes(bs[16:24]),
+		End:       big.NewInt(0).SetBytes(bs[24:32]),
+	}, nil
 }
 
-type RelayTransferCall struct {
-	OrderId         ecommon.Hash
-	Token           []byte
-	Amount          *big.Int
-	Chain           *big.Int
-	Vault           []byte
-	To              []byte
-	Payload         []byte
-	TransactionRate *big.Int
-	TransactionSize *big.Int
+type BridgeRelay struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	TxType           uint8
+	Vault            []byte
+	To               []byte
+	Token            []byte
+	Amount           *big.Int
+	Sequence         *big.Int
+	Hash             [32]byte
+	From             []byte
+	Data             []byte
 }
 
-func (scp *SmartContractLogParser) parseRelayTransferCall(log etypes.Log) (RelayTransferCall, error) {
-	const eventName = "RelayTransferCall"
-	event := RelayTransferCall{}
+func (scp *SmartContractLogParser) parseBridgeRelay(log etypes.Log) (*BridgeRelay, error) {
+	const eventName = constants.BridgeRelay
+	event := BridgeRelay{}
 	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
-		return event, fmt.Errorf("fail to unpack deposit event: %w", err)
+		return nil, fmt.Errorf("fail to unpack bridge relay event: %w", err)
 	}
-	return event, nil
+	return &event, nil
+}
+
+type BridgeCompleted struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	TxOutType        uint8
+	Vault            []byte
+	Sequence         *big.Int
+	Sender           ecommon.Address
+	Data             []byte
+}
+
+func (scp *SmartContractLogParser) parseBridgeCompleted(log etypes.Log) (*BridgeCompleted, error) {
+	const eventName = constants.BridgeCompleted
+	event := BridgeCompleted{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return nil, fmt.Errorf("fail to unpack bridge completed event: %w", err)
+	}
+	return &event, nil
+}
+
+type BridgeRelaySigned struct {
+	OrderId          ecommon.Hash
+	ChainAndGasLimit *big.Int
+	Vault            []byte
+	RelayData        []byte
+	Signature        []byte
+}
+
+func (scp *SmartContractLogParser) parseBridgeRelaySigned(log etypes.Log) (*BridgeRelaySigned, error) {
+	const eventName = constants.BridgeRelaySigned
+	event := BridgeRelaySigned{}
+	if err := scp.unpackVaultLog(&event, eventName, log); err != nil {
+		return nil, fmt.Errorf("fail to unpack bridge relay signed event: %w", err)
+	}
+	return &event, nil
 }

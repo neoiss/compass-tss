@@ -17,6 +17,24 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type TxRawResult struct {
+	Hex           string         `json:"hex"`
+	Txid          string         `json:"txid"`
+	Hash          string         `json:"hash,omitempty"`
+	Size          int32          `json:"size,omitempty"`
+	Vsize         int32          `json:"vsize,omitempty"`
+	Weight        int32          `json:"weight,omitempty"`
+	Version       uint32         `json:"version"`
+	LockTime      uint32         `json:"locktime"`
+	Vin           []btcjson.Vin  `json:"vin"`
+	Vout          []btcjson.Vout `json:"vout"`
+	Fee           float64        `json:"fee,omitempty"`
+	BlockHash     string         `json:"blockhash,omitempty"`
+	Confirmations uint64         `json:"confirmations,omitempty"`
+	Time          int64          `json:"time,omitempty"`
+	Blocktime     int64          `json:"blocktime,omitempty"`
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Interfaces
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +188,12 @@ func (c *Client) GetRawMempool() ([]string, error) {
 func (c *Client) GetRawTransactionVerbose(txid string) (*btcjson.TxRawResult, error) {
 	var tx btcjson.TxRawResult
 	err := c.Call(&tx, "getrawtransaction", txid, true)
+	return &tx, extractBTCError(err)
+}
+
+func (c *Client) GetRawTransactionVerboseWithFee(txid string) (*TxRawResult, error) {
+	var tx TxRawResult
+	err := c.Call(&tx, "getrawtransaction", txid, 2)
 	return &tx, extractBTCError(err)
 }
 

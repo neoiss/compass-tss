@@ -148,7 +148,7 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	case BTCChain:
 		pubKey, err := hex.DecodeString(p.String())
 		if err != nil {
-			return NoAddress, fmt.Errorf("fail to encode pub key, err: %w", err)
+			return NoAddress, fmt.Errorf("fail to decode pub key, err: %w", err)
 		}
 		var net *chaincfg.Params
 		switch chainNetwork {
@@ -236,7 +236,7 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 }
 
 func (p PubKey) GetThorAddress() (cosmos.AccAddress, error) {
-	addr, err := p.GetAddress(THORChain)
+	addr, err := p.GetAddress(MAPChain)
 	if err != nil {
 		return nil, err
 	}

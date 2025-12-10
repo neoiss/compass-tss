@@ -11,10 +11,6 @@ import (
 	tcrypto "github.com/cometbft/cometbft/crypto"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"github.com/mapprotocol/compass-tss/p2p"
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
 	"github.com/mapprotocol/compass-tss/p2p/messages"
@@ -23,6 +19,9 @@ import (
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keygen"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/keysign"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/monitor"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // TssServer is the structure that can provide all keysign and key gen features
@@ -56,7 +55,7 @@ func NewTss(
 	preParams *bkeygen.LocalPreParams,
 ) (*TssServer, error) {
 	var err error
-	pk := priKey.PubKey().Bytes()
+	pk := priKey.PubKey().Bytes() // use this is compressed
 
 	// When using the keygen party it is recommended that you pre-compute the
 	// "safe primes" and Paillier secret beforehand because this can take some
@@ -112,7 +111,7 @@ func (t *TssServer) Stop() {
 		t.logger.Error().Msgf("error in shutdown the p2p server")
 	}
 	t.partyCoordinator.Stop()
-	t.logger.Info().Msg("The tss and p2p server has been stopped successfully")
+	t.logger.Info().Msg("the tss and p2p server has been stopped successfully")
 }
 
 func (t *TssServer) setJoinPartyChan(jpc chan struct{}) {
@@ -176,15 +175,17 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 			t.logger.Error().Msg("we fail to have any participants or passed by request")
 			return nil, "", errors.New("no participants can be found")
 		}
+		fmt.Println("joinParty participants ", participants)
 		peersID, err := conversion.GetPeerIDsFromPubKeys(participants)
 		if err != nil {
-			return nil, "", errors.New("fail to convert the public key to peer ID")
+			return nil, "", fmt.Errorf("fail to convert the public key to peer ID: %w", err)
 		}
 		var peersIDStr []string
 		for _, el := range peersID {
 			peersIDStr = append(peersIDStr, el.String())
 		}
 
+		fmt.Println("joinParty peersIDStr ", peersIDStr)
 		return t.partyCoordinator.JoinPartyWithLeader(msgID, blockHeight, peersIDStr, threshold, sigChan)
 	}
 }

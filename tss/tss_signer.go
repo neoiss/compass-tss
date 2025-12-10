@@ -101,7 +101,8 @@ func (s *KeySign) RemoteSign(msg []byte, poolPubKey string) ([]byte, []byte, err
 		Msg:        encodedMsg,
 		Resp:       make(chan tssKeySignResult, 1),
 	}
-	fmt.Println("RemoteSign --------------------- task ", task)
+	s.logger.Debug().Msgf("RemoteSign --------------------- task %v", task.Msg)
+
 	s.taskQueue <- &task
 	select {
 	case resp := <-task.Resp:
@@ -186,7 +187,7 @@ func (s *KeySign) processKeySignTasks() {
 				s.wg.Add(1)
 				signingTask := v[:totalTasks]
 				tasks[k] = v[totalTasks:]
-				fmt.Println("processKeySignTasks --------------------- k ", k, " signingTask ", signingTask)
+				s.logger.Debug().Msgf("processKeySignTasks --------------------- k %s signingTask %v", k, signingTask)
 				go s.toLocalTSSSigner(k, signingTask)
 			}
 			taskLock.Unlock()
@@ -259,6 +260,7 @@ func (s *KeySign) toLocalTSSSigner(poolPubKey string, tasks []*tssKeySignTask) {
 	var msgToSign []string
 	for _, item := range tasks {
 		msgToSign = append(msgToSign, item.Msg)
+		s.logger.Info().Msgf("toLocalTSSSigner item msg: %s", item.Msg)
 	}
 	tssMsg := keysign.Request{
 		PoolPubKey: poolPubKey,

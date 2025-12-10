@@ -3,7 +3,6 @@ package observer
 import (
 	"context"
 	"encoding/json"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"io"
 	"net/http"
 	"net/http/httptest"

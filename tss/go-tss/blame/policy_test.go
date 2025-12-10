@@ -8,6 +8,7 @@ import (
 	bkg "github.com/binance-chain/tss-lib/ecdsa/keygen"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
 
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
@@ -141,4 +142,39 @@ func (p *policyTestSuite) TestTssMissingShareBlame(c *C) {
 	results := []string{nodes[0].Pubkey, nodes[1].Pubkey}
 	sort.Strings(results)
 	c.Assert(results, DeepEquals, localTestPubKeys[2:])
+}
+
+func Test_NodeSyncBlame(t *testing.T) {
+	blameMgr := NewBlameManager()
+	p1, _ := peer.Decode("16Uiu2HAmGMDXAJ2SkJY8iTu3qTkr8QLJZrWVW9ZNWtUL5eCie4jx")
+	p2, _ := peer.Decode("16Uiu2HAmJiFAAggjvwMftkM8nGrAutb6LYqCQYeUFk23WCB2dsiQ")
+	p3, _ := peer.Decode("16Uiu2HAmN4KJgcnvkT1sJuFnEkgwEvmgVqbEgzDzGbQnBTNYop9e")
+	testCases := []struct {
+		desc        string
+		onlinePeers []peer.ID
+		keys        []string
+	}{
+		{
+			desc: "test node sync blame", // 16Uiu2HAm4EQGEiC8HChuZwt4m2nNpgFZ7kdBNifF6qVCpXzMngit
+			onlinePeers: []peer.ID{
+				p1,
+				p2,
+				p3,
+			},
+			keys: []string{
+				"0359fb9b933e036204bbe24d3e9d2215952704341159bb6d15526e195b7e250a99",
+				"0282d605d2c6bca067453ba2799141f8600f9cc3047c6287256892e55d9dac6ce1",
+				"0336e12f4a3a175086bbd983f050453194810d8afcfec4e08a898c8e59778c649f",
+				"038bb2f937fd59bbb06b87dfba427b6aa02bbda1425ce5162100aa2466818f7851",
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ret, err := blameMgr.NodeSyncBlame(tC.keys, tC.onlinePeers)
+			assert.Nil(t, err)
+			assert.Equal(t, 1, len(ret.BlameNodes))
+			assert.Equal(t, "0282d605d2c6bca067453ba2799141f8600f9cc3047c6287256892e55d9dac6ce1", ret.BlameNodes[0].Pubkey)
+		})
+	}
 }

@@ -2,23 +2,20 @@ package mapo
 
 import (
 	"math/big"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
-	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
-	selfAbi "github.com/mapprotocol/compass-tss/pkg/abi"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/pkg/contract"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
@@ -37,6 +34,7 @@ func GetMetricForTest() (*metrics.Metrics, error) {
 func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 	m, err := GetMetricForTest()
 	assert.Nil(t, err)
+	os.Setenv("KEYSTORE_PASSWORD", "123456")
 
 	bridgeCfg := config.BifrostClientConfiguration{
 		ChainID:         "map",
@@ -45,11 +43,14 @@ func getBridgeForTest(t *testing.T) shareTypes.Bridge {
 		ChainHomeFolder: "./",
 		Maintainer:      "0x0EdA5e4015448A2283662174DD7def3C3d262D38",
 		ViewController:  "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6",
+		TssManager:      "0x81F50D29166089FeB6305bec79B55eCf44448B7d",
+		Relay:           "0x88E220b62227d84B7f30aC51B314B0C318e82e62",
 	}
 
 	name := "test-eth"
+	os.Setenv("KEYSTORE_PASSWORD", "123456")
 	//  dont push
-	keyStorePath := "$HOME/UTC--2025-07-17T09-26-18.738548000Z--testuser.key.json"
+	keyStorePath := "/Users/zmm/Library/Ethereum/keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
 	kb, keyStore, err := keys.GetKeyringKeybase(keyStorePath, name)
 	assert.Nil(t, err)
 
@@ -206,19 +207,19 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	c.Assert(err, IsNil)
-	mainAbi, err := newMaintainerABi()
-	c.Assert(err, IsNil)
-	tokenRegistry, err := NewTokenRegistry()
-	c.Assert(err, IsNil)
+	// mainAbi, err := newMaintainerABi()
+	// c.Assert(err, IsNil)
+	// tokenRegistry, err := NewTokenRegistry()
+	// c.Assert(err, IsNil)
 
-	ai, err := selfAbi.New(maintainerAbi)
-	c.Assert(err, IsNil)
+	// ai, err := selfAbi.New(maintainerAbi)
+	// c.Assert(err, IsNil)
 
-	viewAi, err := selfAbi.New(viewABI)
-	c.Assert(err, IsNil)
+	// viewAi, err := selfAbi.New(viewABI)
+	// c.Assert(err, IsNil)
 
-	mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.Maintainer)}, ai)
-	viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.ViewController)}, viewAi)
+	// mainCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.Maintainer)}, ai)
+	// viewCall := contract.New(ethClient, []ecommon.Address{ecommon.HexToAddress(bridgeCfg.ViewController)}, viewAi)
 	keySignWrapper, err := evm.NewKeySignWrapper(ethPrivateKey, pk, nil, chainID, "MAP")
 	c.Assert(err, IsNil)
 
@@ -244,12 +245,12 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 		ethPriKey:     ethPrivateKey,
 		kw:            keySignWrapper,
 		ethRpc:        rpcClient,
-		mainAbi:       mainAbi,
-		tokenRegistry: tokenRegistry,
-		mainCall:      mainCall,
-		viewCall:      viewCall,
-		epoch:         big.NewInt(1),
-		gasPrice:      big.NewInt(0),
+		// mainAbi:       mainAbi,
+		// tokenRegistry: tokenRegistry,
+		// mainCall:      mainCall,
+		// viewCall: viewCall,
+		epoch:    big.NewInt(1),
+		gasPrice: big.NewInt(0),
 	}
 
 }
@@ -266,9 +267,17 @@ func (s *BridgeSuite) Benchmark_GetNetworkFee(c *C) {
 }
 
 func (s *BridgeSuite) Test_CheckOrderId(c *C) {
-	var exist bool
-	err := s.b.mainCall.Call(constants.IsOrderExecuted, &exist, 0,
-		ecommon.HexToHash("fabc36c8987035c7d01d7a3e8e9602b621263c0c9e286b5c408e39171037854d"), true)
-	c.Assert(err, IsNil)
-	c.Log("CheckOrderId -------- ", exist)
+	// var exist bool
+	// err := s.b.mainCall.Call(constants.IsOrderExecuted, &exist, 0,
+	// 	ecommon.HexToHash("fabc36c8987035c7d01d7a3e8e9602b621263c0c9e286b5c408e39171037854d"), true)
+	// c.Assert(err, IsNil)
+	// c.Log("CheckOrderId -------- ", exist)
+}
+
+func Test_Bridge_KeyShare(t *testing.T) {
+	bri := getBridgeForTest(t)
+	keyShare, pubkey, err := bri.GetKeyShare()
+	assert.Nil(t, err)
+	t.Log("KeyShare: ", keyShare)
+	t.Log("Pubkey: ", pubkey)
 }

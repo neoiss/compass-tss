@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
@@ -28,6 +30,7 @@ type MapChainBlockScan struct {
 	wg                *sync.WaitGroup
 	stopChan          chan struct{}
 	txOutChan         chan types.TxOut
+	oracleChan        chan types.TxOut
 	keygenChan        chan *structure.KeyGen
 	cfg               config.BifrostBlockScannerConfiguration
 	scannerStorage    blockscanner.ScannerStorage
@@ -64,6 +67,7 @@ func NewBlockScan(cfg config.BifrostBlockScannerConfiguration, scanStorage block
 		wg:                &sync.WaitGroup{},
 		stopChan:          make(chan struct{}),
 		txOutChan:         make(chan types.TxOut),
+		oracleChan:        make(chan types.TxOut),
 		keygenChan:        make(chan *structure.KeyGen),
 		cfg:               cfg,
 		scannerStorage:    scanStorage,
@@ -78,6 +82,10 @@ func (b *MapChainBlockScan) GetTxOutMessages() <-chan types.TxOut {
 	return b.txOutChan
 }
 
+func (b *MapChainBlockScan) GetOracleMessages() <-chan types.TxOut {
+	return b.oracleChan
+}
+
 func (b *MapChainBlockScan) GetKeygenMessages() <-chan *structure.KeyGen {
 	return b.keygenChan
 }
@@ -86,11 +94,8 @@ func (b *MapChainBlockScan) GetHeight() (int64, error) {
 	return b.mapBridge.GetBlockHeight()
 }
 
-// GetNetworkFee : MapChainBlockScan's only exists to satisfy the Fetcher interface
-// and should never be called, since broadcast network fees are for external chains' observed fees.
 func (b *MapChainBlockScan) GetNetworkFee() (transactionSize, transactionSwapSize, transactionFeeRate uint64) {
-	b.logger.Error().Msg("MapChainBlockScan GetNetworkFee was called (which should never happen)")
-	return 0, 0, 0
+	return b.cfg.MaxGasLimit, b.cfg.MaxSwapGasLimit, b.mapBridge.GetGasPrice().Uint64()
 }
 
 func (b *MapChainBlockScan) FetchMemPool(height int64) (types.TxIn, error) {
@@ -121,13 +126,10 @@ func (b *MapChainBlockScan) processKeygenBlock() error {
 	return nil
 }
 
-// todo handler
 func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
-	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight, b.cfg.Mos)
+	tx, err := b.mapBridge.GetTxByBlockNumber(blockHeight)
 	if err != nil {
 		if errors.Is(err, btypes.ErrUnavailableBlock) {
-			// custom error (to be dropped and not logged) because the block is
-			// available yet
 			return btypes.ErrUnavailableBlock
 		}
 		return fmt.Errorf("fail to get keysign from block scanner: %w", err)
@@ -137,6 +139,44 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		b.logger.Debug().Int64("block", blockHeight).Msg("Nothing to process")
 		return nil
 	}
-	b.txOutChan <- tx
+
+	var (
+		oracleTx = types.TxOut{
+			Height:  blockHeight,
+			TxArray: make([]types.TxArrayItem, 0, len(tx.TxArray)),
+		}
+		txOut = types.TxOut{
+			Height:  blockHeight,
+			TxArray: make([]types.TxArrayItem, 0, len(tx.TxArray)),
+		}
+	)
+	for _, ele := range tx.TxArray {
+		tmp := ele
+		switch ele.Method {
+		case constants.RelaySigned:
+			toChain, ok := common.GetChainName(ele.ToChain)
+			if !ok {
+				continue
+			}
+
+			switch toChain {
+			case common.BTCChain, common.XRPChain:
+				txOut.TxArray = append(txOut.TxArray, tmp)
+			default:
+				oracleTx.TxArray = append(oracleTx.TxArray, tmp)
+			}
+		default: // bridgeIn
+			txOut.TxArray = append(txOut.TxArray, tmp)
+		}
+
+	}
+
+	if len(txOut.TxArray) > 0 {
+		b.txOutChan <- txOut
+	}
+
+	if len(oracleTx.TxArray) > 0 {
+		b.oracleChan <- oracleTx
+	}
 	return nil
 }

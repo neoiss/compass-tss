@@ -34,9 +34,9 @@ func (m *MsgRunePoolDeposit) ValidateBasic() error {
 	if len(m.Tx.Coins) != 1 {
 		return cosmos.ErrInvalidCoins("coins must be length 1 (RUNE)")
 	}
-	if !m.Tx.Coins[0].Asset.Chain.IsTHORChain() {
-		return cosmos.ErrInvalidCoins("coin chain must be THORChain")
-	}
+	// if !m.Tx.Coins[0].Asset.Chain.IsTHORChain() {
+	// 	return cosmos.ErrInvalidCoins("coin chain must be THORChain")
+	// }
 	if !m.Tx.Coins[0].IsRune() {
 		return cosmos.ErrInvalidCoins("coin must be RUNE")
 	}

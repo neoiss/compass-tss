@@ -6,20 +6,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"strings"
 	"sync"
-
-	bchwire "github.com/gcash/bchd/wire"
-	"github.com/gcash/bchutil"
-	ltcwire "github.com/ltcsuite/ltcd/wire"
-	"github.com/ltcsuite/ltcutil"
 
 	"github.com/btcsuite/btcd/mempool"
 	btcwire "github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	dogewire "github.com/eager7/dogd/wire"
 	"github.com/eager7/dogutil"
+	bchwire "github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil"
+	"github.com/hashicorp/go-multierror"
+	ltcwire "github.com/ltcsuite/ltcd/wire"
+	"github.com/ltcsuite/ltcutil"
 
 	"github.com/mapprotocol/compass-tss/common"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
@@ -41,6 +42,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		return nil, nil, nil, errors.New("wrong chain")
 	}
 
+	cgl, err := parseChainAndGasLimit(tx.ChainAndGasLimit)
+	if err != nil {
+		c.log.Err(err).Str("relayHash", tx.TxHash).Msg("fail to parse chain and gas limit")
+		return nil, nil, nil, err
+	}
+	tx.TransactionRate = cgl.TxRate
+	tx.TransactionSize = cgl.TxSize
+	c.log.Info().Str("relayHash", tx.TxHash).Str("tx_rate", tx.TransactionRate.String()).Str("tx_size", tx.TransactionSize.String())
 	// skip outbounds without coins
 	//if tx.Coins.IsEmpty() {
 	//	return nil, nil, nil, nil
@@ -49,14 +58,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	toAddress := hex.EncodeToString(tx.To)
 	if c.cfg.ChainID.Equals(common.BCHChain) {
 		if !common.Address(toAddress).IsValidBCHAddress() {
-			c.log.Error().Msgf("to address: %s is legacy not allowed ", toAddress)
+			c.log.Error().Str("relayHash", tx.TxHash).Msgf("to address: %s is legacy not allowed ", toAddress)
 			return nil, nil, nil, nil
 		}
 	}
 
 	// skip outbounds that have been signed
 	if c.signerCacheManager.HasSigned(tx.CacheHash()) {
-		c.log.Info().Msgf("ignoring already signed transaction: (%+v)", tx)
+		c.log.Info().Str("relayHash", tx.TxHash).Msgf("ignoring already signed transaction: (%+v)", tx)
 		return nil, nil, nil, nil
 	}
 
@@ -90,7 +99,8 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	case common.BTCChain:
 		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
+			c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
+			return nil, nil, nil, nil
 		}
 		outputAddrStr = outputAddr.(btcutil.Address).String()
 	default:
@@ -105,7 +115,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	//}
 	switch outputAddr.(type) {
 	case *dogutil.AddressPubKey, *bchutil.AddressPubKey, *ltcutil.AddressPubKey, *btcutil.AddressPubKey:
-		c.log.Info().Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
+		c.log.Warn().Str("relayHash", tx.TxHash).Msgf("address: %s is address pubkey type, should not be used", outputAddrStr)
 		return nil, nil, nil, nil
 	default: // keep lint happy
 	}
@@ -122,13 +132,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 
 		// abort if any checkpoint VIN is spent
-		c.log.Info().Str("in_tx_hash", tx.InTxHash).Msgf("verifying checkpoint vins")
+		c.log.Info().Str("txHash", tx.TxHash).Msgf("verifying checkpoint vins")
 		var unspent bool
 		unspent, err = c.vinsUnspent(tx, redeemTx.TxIn)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("fail to verify checkpoint vins: %w", err)
 		}
 		if !unspent {
+			c.log.Warn().Str("relayHash", tx.TxHash).Msgf("invalid checkpoint vins: %+v", redeemTx.TxIn)
 			return nil, nil, nil, nil
 		}
 
@@ -325,7 +336,7 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	case common.DOGEChain, common.BCHChain:
 		maxFee = true // "allowHighFees"
 	case common.LTCChain, common.BTCChain:
-		maxFee = 10_000_000
+		maxFee = 0.1 // todo utxo
 	}
 
 	// broadcast tx
@@ -348,4 +359,25 @@ func (c *Client) BroadcastTx(txOut stypes.TxOutItem, payload []byte) (string, er
 	}
 
 	return txid, nil
+}
+
+type ChainAndGasLimit struct {
+	FromChain *big.Int
+	ToChain   *big.Int
+	TxRate    *big.Int
+	TxSize    *big.Int
+}
+
+func parseChainAndGasLimit(c *big.Int) (*ChainAndGasLimit, error) {
+	if c == nil {
+		return nil, errors.New("chain and gas limit is nil")
+	}
+
+	bs := ethcommon.LeftPadBytes(c.Bytes(), 32)
+	return &ChainAndGasLimit{
+		FromChain: new(big.Int).SetBytes(bs[0:8]),
+		ToChain:   new(big.Int).SetBytes(bs[8:16]),
+		TxRate:    new(big.Int).SetBytes(bs[16:24]),
+		TxSize:    new(big.Int).SetBytes(bs[24:32]),
+	}, nil
 }

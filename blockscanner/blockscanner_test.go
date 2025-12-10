@@ -1,18 +1,15 @@
 package blockscanner
 
 import (
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
 	mapclient "github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
@@ -202,97 +199,4 @@ func (s *BlockScannerTestSuite) TestBadConnection(c *C) {
 	cbs.Start(make(chan types.TxIn), make(chan common.NetworkFee))
 	time.Sleep(time.Second * 1)
 	cbs.Stop()
-}
-
-func (s *BlockScannerTestSuite) TestIsChainPaused(c *C) {
-	mimirMap := map[string]int{
-		"HaltETHChain":         0,
-		"SolvencyHaltETHChain": 0,
-		"HaltChainGlobal":      0,
-		"NodePauseChainGlobal": 0,
-	}
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.Logf("================>:%s", r.RequestURI)
-		switch {
-		case strings.HasPrefix(r.RequestURI, mapclient.LastBlockEndpoint):
-			if _, err := w.Write([]byte(lastBlockResult)); err != nil {
-				c.Error(err)
-			}
-		case strings.HasPrefix(r.RequestURI, mapclient.MimirEndpoint):
-			parts := strings.Split(r.RequestURI, "/key/")
-			mimirKey := parts[1]
-
-			mimirValue := 0
-			if val, found := mimirMap[mimirKey]; found {
-				mimirValue = val
-			}
-
-			if _, err := w.Write([]byte(strconv.Itoa(mimirValue))); err != nil {
-				c.Error(err)
-			}
-		}
-	})
-
-	// setup scanner
-	mss := NewMockScannerStorage()
-	server := httptest.NewServer(h)
-	defer server.Close()
-	bridge, err := mapclient.NewThorchainBridge(config.BifrostClientConfiguration{
-		ChainID:         "thorchain",
-		ChainHost:       server.Listener.Addr().String(),
-		ChainRPC:        server.Listener.Addr().String(),
-		SignerName:      "bob",
-		SignerPasswd:    "password",
-		ChainHomeFolder: ".",
-	}, s.m, s.keys)
-	c.Assert(err, IsNil)
-
-	cbs, err := NewBlockScanner(config.BifrostBlockScannerConfiguration{
-		StartBlockHeight:           1, // avoids querying thorchain for block height
-		BlockScanProcessors:        1,
-		HTTPRequestTimeout:         time.Second,
-		HTTPRequestReadTimeout:     time.Second * 30,
-		HTTPRequestWriteTimeout:    time.Second * 30,
-		MaxHTTPRequestRetry:        3,
-		BlockHeightDiscoverBackoff: time.Second,
-		BlockRetryInterval:         time.Second,
-		ChainID:                    common.ETHChain,
-	}, mss, m, bridge, DummyFetcher{})
-	c.Check(cbs, NotNil)
-	c.Check(err, IsNil)
-
-	// Should not be paused
-	isHalted := cbs.isChainPaused()
-	c.Assert(isHalted, Equals, false)
-
-	// Setting Halt<chain>Chain should pause
-	mimirMap["HaltETHChain"] = 2
-	// Wait for one block's time so as to replace the cache with an updated query.
-	time.Sleep(constants.MAPRelayChainBlockTime)
-	isHalted = cbs.isChainPaused()
-	c.Assert(isHalted, Equals, true)
-	mimirMap["HaltETHChain"] = 0
-
-	// Setting SolvencyHalt<chain>Chain should pause
-	mimirMap["SolvencyHaltETHChain"] = 2
-	// Wait for one block's time so as to replace the cache with an updated query.
-	time.Sleep(constants.MAPRelayChainBlockTime)
-	isHalted = cbs.isChainPaused()
-	c.Assert(isHalted, Equals, true)
-	mimirMap["SolvencyHaltETHChain"] = 0
-
-	// Setting HaltChainGlobal should pause
-	mimirMap["HaltChainGlobal"] = 2
-	// Wait for one block's time so as to replace the cache with an updated query.
-	time.Sleep(constants.MAPRelayChainBlockTime)
-	isHalted = cbs.isChainPaused()
-	c.Assert(isHalted, Equals, true)
-	mimirMap["HaltChainGlobal"] = 0
-
-	// Setting NodePauseChainGlobal should pause
-	mimirMap["NodePauseChainGlobal"] = 4 // node pause only halts for an hour, so pause height needs to be larger than thor height
-	// Wait for one block's time so as to replace the cache with an updated query.
-	time.Sleep(constants.MAPRelayChainBlockTime)
-	isHalted = cbs.isChainPaused()
-	c.Assert(isHalted, Equals, true)
 }

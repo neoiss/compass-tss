@@ -125,6 +125,7 @@ func (c *Client) signUTXOBTC(redeemTx *btcwire.MsgTx, tx stypes.TxOutItem, amoun
 	if tx.VaultPubKey.Equals(c.nodePubKey) {
 		signable = btctxscript.NewPrivateKeySignable(c.nodePrivKey)
 	} else {
+		c.log.Info().Str("pubKey", tx.VaultPubKey.String()).Msg("sign utxo btc")
 		signable = newTssSignableBTC(tx.VaultPubKey, c.tssKeySigner, c.log)
 	}
 

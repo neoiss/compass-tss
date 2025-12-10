@@ -25,7 +25,6 @@ func (t *TssServer) waitForSignatures(msgID, poolPubKey string, msgsToSign [][]b
 	// TSS keysign include both form party and keysign itself, thus we wait twice of the timeout
 	data, err := t.signatureNotifier.WaitForSignature(msgID, msgsToSign, poolPubKey, t.conf.KeySignTimeout, sigChan)
 	if err != nil {
-		fmt.Println("waitForSignatures err ---------------- ", err)
 		return keysign.Response{}, err
 	}
 	// for gg20, it wrap the signature R,S into ECSignature structure
@@ -230,7 +229,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	if err != nil {
 		return emptyResp, fmt.Errorf("fail to get local keygen state: %w", err)
 	}
-	fmt.Printf("localStateItem --------------------- %+v \n", localStateItem.ParticipantKeys)
 
 	var msgsToSign [][]byte
 	for _, val := range req.Messages {
@@ -264,9 +262,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		}, errors.New("fail to parse the version")
 	}
 
-	fmt.Println("req.Version ----------------- ", req.Version)
-	fmt.Println("oldJoinParty ----------------- ", oldJoinParty)
-	fmt.Println("len(req.SignerPubKeys) ----------------- ", len(req.SignerPubKeys))
 	if len(req.SignerPubKeys) == 0 && oldJoinParty {
 		return emptyResp, errors.New("empty signer pub keys")
 	}
@@ -276,12 +271,11 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.logger.Error().Err(err).Msg("fail to get the threshold")
 		return emptyResp, errors.New("fail to get threshold")
 	}
-	fmt.Println("threshold ----------------- ", threshold)
-	fmt.Println("len(localStateItem.ParticipantKeys) ----------------- ", len(localStateItem.ParticipantKeys))
 	if len(req.SignerPubKeys) <= threshold && oldJoinParty {
 		t.logger.Error().Msgf("not enough signers, threshold=%d and signers=%d", threshold, len(req.SignerPubKeys))
 		return emptyResp, errors.New("not enough signers")
 	}
+	t.logger.Debug().Msgf("keySign  threshold ------------ %d", threshold)
 
 	blameMgr := keysignInstance.GetTssCommonStruct().GetBlameMgr()
 
@@ -301,7 +295,6 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 			t.logger.Log().Msgf("for message %s we get the signature from the peer", msgID)
 			return
 		}
-		fmt.Println("waitForSignatures err ---------------- ", errWait)
 		t.logger.Log().Msgf("we fail to get the valid signature with error %v", errWait)
 	}()
 
@@ -312,8 +305,8 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	}()
 	wg.Wait()
 	close(sigChan)
-	fmt.Println("keySign errGen --------------------- ", errGen)
-	fmt.Println("keySign errWait --------------------- ", errWait)
+	t.logger.Debug().Msgf("keySign errGen --------------------- %v", errGen)
+	t.logger.Debug().Msgf("keySign errWait --------------------- %v", errWait)
 	keysignTime := time.Since(keysignStartTime)
 	// we received the generated verified signature, so we return
 	if errWait == nil {

@@ -84,7 +84,7 @@ func NewBlockScanner(cfg config.BifrostBlockScannerConfiguration, scannerStorage
 	}
 
 	scanner.previousBlock, err = scanner.FetchLastHeight()
-	logger.Info().Int64("block height", scanner.previousBlock).Err(err).Msg("Block scanner last fetch height")
+	logger.Info().Int64("block height", scanner.previousBlock).Err(err).Msg("block scanner last fetch height")
 	return scanner, err
 }
 
@@ -108,7 +108,7 @@ func (b *BlockScanner) Start(globalTxsQueue chan types.TxIn, globalNetworkFeeQue
 	b.globalNetworkFeeQueue = globalNetworkFeeQueue
 	currentPos, err := b.scannerStorage.GetScanPos()
 	if err != nil {
-		b.logger.Err(err).Msgf("Fail to get current block scan pos, %s will start from %d", b.cfg.ChainID, b.previousBlock)
+		b.logger.Err(err).Msgf("fail to get current block scan pos, %s will start from %d", b.cfg.ChainID, b.previousBlock)
 	} else if currentPos > b.previousBlock {
 		b.previousBlock = currentPos
 	}
@@ -118,12 +118,12 @@ func (b *BlockScanner) Start(globalTxsQueue chan types.TxIn, globalNetworkFeeQue
 }
 
 func (b *BlockScanner) scanMempool() {
-	b.logger.Info().Msg("Start to scan mempool")
-	defer b.logger.Info().Msg("Stop scan mempool")
+	b.logger.Info().Msg("start to scan mempool")
+	defer b.logger.Info().Msg("stop scan mempool")
 	defer b.wg.Done()
 
 	if !b.cfg.ScanMemPool {
-		b.logger.Info().Msg("MemPool scan is disabled")
+		b.logger.Info().Msg("memPool scan is disabled")
 		return
 	}
 
@@ -138,7 +138,7 @@ func (b *BlockScanner) scanMempool() {
 			currentBlock := preBlockHeight + 1
 			txInMemPool, err := b.chainScanner.FetchMemPool(currentBlock)
 			if err != nil {
-				b.logger.Error().Err(err).Msg("Fail to fetch MemPool")
+				b.logger.Error().Err(err).Msg("fail to fetch MemPool")
 			}
 			if len(txInMemPool.TxArray) > 0 {
 				select {
@@ -197,8 +197,8 @@ func (b *BlockScanner) isChainPaused() bool {
 
 // scanBlocks
 func (b *BlockScanner) scanBlocks() {
-	b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", b.previousBlock).Msg("Start to scan blocks")
-	defer b.logger.Info().Msg("Stop scan blocks")
+	b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", b.previousBlock).Msg("start to scan blocks")
+	defer b.logger.Info().Msg("stop scan blocks")
 	defer b.wg.Done()
 
 	lastMimirCheck := time.Now().Add(-constants.MAPRelayChainBlockTime)
@@ -227,7 +227,7 @@ func (b *BlockScanner) scanBlocks() {
 
 			latestHeight, err := b.chainScanner.GetHeight()
 			if err != nil {
-				b.logger.Error().Err(err).Msg("Fail to get chain block height")
+				b.logger.Error().Err(err).Msg("fail to get chain block height")
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
@@ -239,31 +239,28 @@ func (b *BlockScanner) scanBlocks() {
 			if err != nil {
 				// don't log an error if its because the block doesn't exist yet
 				if !errors.Is(err, btypes.ErrUnavailableBlock) {
-					b.logger.Error().Err(err).Int64("block height", currentBlock).Msg("Fail to get RPCBlock")
+					b.logger.Error().Err(err).Int64("block height", currentBlock).Msg("fail to get RPCBlock")
 					b.healthy.Store(false)
 				}
 				time.Sleep(b.cfg.BlockHeightDiscoverBackoff)
 				continue
 			}
-			b.logger.Info().Str("chain", b.cfg.ChainID.String()).Int64("height", currentBlock).Int("txs", len(txIn.TxArray)).Msg("Fetched Txs")
-
 			ms := b.cfg.ChainID.ApproximateBlockMilliseconds()
 
 			// determine how often we compare MAP network fee to Bifrost network fee.
-			// General goal is about once per day.
-			mod := ((24 * 60 * 60 * 1000) + ms - 1) / ms
+			// General goal is about once hour.
+			mod := ((60 * 60 * 1000) + ms - 1) / ms
 			if currentBlock%mod == 0 {
 				b.updateStaleNetworkFee(currentBlock)
 			}
 
 			// determine how often we print a info log line for scanner
 			// progress. General goal is about once per minute
-			mod = (60_000 + ms - 1) / ms
 			// enable this one , so we could see how far it is behind
-			if currentBlock%mod == 0 || !b.healthy.Load() {
+			if currentBlock%100 == 0 || !b.healthy.Load() {
 				b.logger.Info().Int64("block height", currentBlock).Int("txs", len(txIn.TxArray)).
 					Int64("gap", latestHeight-currentBlock).Bool("healthy", b.healthy.Load()).
-					Msg("Scan block progressing")
+					Msg("scan block progressing")
 			}
 			atomic.AddInt64(&b.previousBlock, 1)
 
@@ -274,7 +271,7 @@ func (b *BlockScanner) scanBlocks() {
 			} else {
 				b.healthy.Store(false)
 			}
-			b.logger.Debug().Msgf("The gap is %d , healthy: %+v", latestHeight-currentBlock, b.healthy.Load())
+			b.logger.Debug().Msgf("the gap is %d , healthy: %+v", latestHeight-currentBlock, b.healthy.Load())
 
 			b.metrics.GetCounter(metrics.TotalBlockScanned).Inc()
 			if len(txIn.TxArray) > 0 {
@@ -285,7 +282,7 @@ func (b *BlockScanner) scanBlocks() {
 				}
 			}
 			if err = b.scannerStorage.SetScanPos(b.previousBlock); err != nil {
-				b.logger.Error().Err(err).Msg("Fail to save block scan pos")
+				b.logger.Error().Err(err).Msg("fail to save block scan pos")
 				// alert!!
 				continue
 			}
@@ -297,33 +294,38 @@ func (b *BlockScanner) scanBlocks() {
 // does not match the fee published to THORNode. This can be called periodically to
 // ensure fee changes find consensus despite raciness on the observation height.
 func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
-	// Only broadcast MsgNetworkFee if the chain isn't THORChain
+	// Only broadcast MsgNetworkFee if the chain isn't relay
 	// and the scanner is healthy.
-	if b.cfg.ChainID.Equals(common.THORChain) || !b.healthy.Load() {
+	if !b.healthy.Load() {
+		return
+	}
+
+	if b.cfg.ChainID.Equals(common.MAPChain) {
 		return
 	}
 
 	transactionSize, transactionSwapSize, transactionFeeRate := b.chainScanner.GetNetworkFee()
 	onlineTxSize, onlineTxSwapSize, onlineTxFeeRate, err := b.bridge.GetNetworkFee(b.cfg.ChainID)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("Fail to get map network fee")
+		b.logger.Error().Err(err).Msg("fail to get map network fee")
 		return
 	}
-	// Do not broadcast a regularly-timed network fee if the THORNode network fee is already consistent with the scanner's.
+	// Do not broadcast a regularly-timed network fee if the relay network fee is already consistent with the scanner's.
 	if onlineTxSize == transactionSize && onlineTxFeeRate == transactionFeeRate && onlineTxSwapSize == transactionSwapSize {
 		return
 	}
 
 	cId, _ := b.cfg.ChainID.ChainID()
 	b.globalNetworkFeeQueue <- types.NetworkFee{
-		ChainId:         cId,
-		Height:          currentBlock,
-		TransactionSize: transactionSize,
-		TransactionRate: transactionFeeRate,
+		ChainId:             cId,
+		Height:              currentBlock,
+		TransactionSize:     transactionSize,
+		TransactionSwapSize: transactionSwapSize,
+		TransactionRate:     transactionFeeRate,
 	}
 
 	b.logger.Info().Int64("height", currentBlock).Uint64("size", transactionSize).
-		Uint64("rate", transactionFeeRate).Msg("Sent timed network fee to MAP")
+		Uint64("rate", transactionFeeRate).Msg("sent timed network fee to MAP")
 }
 
 // FetchLastHeight determines the height to start scanning:
@@ -384,8 +386,8 @@ func (b *BlockScanner) FetchLastHeight() (int64, error) {
 }
 
 func (b *BlockScanner) Stop() {
-	b.logger.Debug().Msg("Receive stop request")
-	defer b.logger.Debug().Msg("Common block scanner stopped")
+	b.logger.Info().Msg("receive stop request")
+	defer b.logger.Info().Msg("common block scanner stopped")
 	close(b.stopChan)
 	b.wg.Wait()
 }

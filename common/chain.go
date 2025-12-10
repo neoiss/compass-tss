@@ -39,7 +39,6 @@ var AllChains = [...]Chain{
 	LTCChain,
 	BCHChain,
 	DOGEChain,
-	THORChain,
 	GAIAChain,
 	AVAXChain,
 	BASEChain,
@@ -132,8 +131,8 @@ func (c Chain) Equals(c2 Chain) bool {
 	return strings.EqualFold(c.String(), c2.String())
 }
 
-func (c Chain) IsTHORChain() bool {
-	return c.Equals(THORChain)
+func (c Chain) IsMAPChain() bool {
+	return c.Equals(MAPChain)
 }
 
 func (c Chain) IsBSCChain() bool {
@@ -191,8 +190,6 @@ func (c Chain) GetSigningAlgo() SigningAlgo {
 // GetGasAsset chain's base asset
 func (c Chain) GetGasAsset() Asset {
 	switch c {
-	case THORChain:
-		return RuneNative
 	case BSCChain:
 		return BNBBEP20Asset
 	case BTCChain:
@@ -213,46 +210,10 @@ func (c Chain) GetGasAsset() Asset {
 		return BaseETHAsset
 	case XRPChain:
 		return XRPAsset
+	case MAPChain:
+		return MAPAsset
 	default:
 		return EmptyAsset
-	}
-}
-
-// GetGasUnits returns name of the gas unit for each chain
-func (c Chain) GetGasUnits() string {
-	switch c {
-	case AVAXChain:
-		return "nAVAX"
-	case BTCChain:
-		return "satsperbyte"
-	case BCHChain:
-		return "satsperbyte"
-	case DOGEChain:
-		return "satsperbyte"
-	case ETHChain, BSCChain, BASEChain:
-		return "gwei"
-	case GAIAChain:
-		return "uatom"
-	case LTCChain:
-		return "satsperbyte"
-	case XRPChain:
-		return "drop"
-	default:
-		return ""
-	}
-}
-
-// GetGasAssetDecimal returns decimals for the gas asset of the given chain. Currently
-// Gaia is 1e6 and all others are 1e8. If an external chain's gas asset is larger than
-// 1e8, just return cosmos.DefaultCoinDecimals.
-func (c Chain) GetGasAssetDecimal() int64 {
-	switch c {
-	case GAIAChain:
-		return 6
-	case XRPChain:
-		return 6
-	default:
-		return cosmos.DefaultCoinDecimals
 	}
 }
 
@@ -310,7 +271,8 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 func (c Chain) DustThreshold() cosmos.Uint {
 	switch c {
 	case BTCChain, LTCChain, BCHChain:
-		return cosmos.NewUint(10_000)
+		//return cosmos.NewUint(10_000)
+		return cosmos.NewUint(1_000) // todo utxo
 	case DOGEChain:
 		return cosmos.NewUint(100_000_000)
 	case ETHChain, AVAXChain, GAIAChain, BSCChain, BASEChain:
@@ -393,12 +355,10 @@ func (c Chain) InboundNotes() string {
 	switch c {
 	case BTCChain, LTCChain, BCHChain, DOGEChain:
 		return "First output should be to inbound_address, second output should be change back to self, third output should be OP_RETURN, limited to 80 bytes. Do not send below the dust threshold. Do not use exotic spend scripts, locks or address formats."
-	case ETHChain, AVAXChain, BSCChain, BASEChain:
+	case ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain:
 		return "Base Asset: Send the inbound_address the asset with the memo encoded in hex in the data field. Tokens: First approve router to spend tokens from user: asset.approve(router, amount). Then call router.depositWithExpiry(inbound_address, asset, amount, memo, expiry). Asset is the token contract address. Amount should be in native asset decimals (eg 1e18 for most tokens). Do not swap to smart contract addresses."
 	case GAIAChain:
 		return "Transfer the inbound_address the asset with the memo. Do not use multi-in, multi-out transactions."
-	case THORChain:
-		return "Broadcast a MsgDeposit to the THORChain network with the appropriate memo. Do not use multi-in, multi-out transactions."
 	case XRPChain:
 		return "Transfer the inbound_address the asset with the memo. Only a single memo is supported and only MemoData is used."
 	default:
@@ -411,7 +371,7 @@ func (c Chain) InboundNotes() string {
 // - uses 0x as an address prefix
 // - has a "Router" Smart Contract
 func GetEVMChains() []Chain {
-	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain}
+	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain}
 }
 
 // GetUTXOChains returns all "UTXO" chains connected to THORChain.

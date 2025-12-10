@@ -3,11 +3,12 @@ package types
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
+	"strings"
+
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/constants"
-	"math/big"
 )
 
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -21,60 +22,40 @@ type TxIn struct {
 	ConfirmationRequired int64        `json:"confirmation_required"`
 	// whether this originated from a "instant observation" - e.g. by a member of the signing party
 	// immediately after signing, and also has incorrect gas, requiring a re-observation to correct.
-	AllowFutureObservation bool `json:"allow_future_observation"`
+	AllowFutureObservation bool   `json:"allow_future_observation"`
+	Method                 string `json:"method"`
+	MapRelayHash           string `json:"map_relay_hash"`
+	PendingCount           int    `json:"pending_count"`
+	IsRemove               bool   `json:"is_remove"` // indicate whether this txin is used to remove the tx from mempool
+	RemoveReason           string `json:"remove_reason"`
 }
 
 type TxInItem struct {
-	Tx                  string        `json:"tx"`
-	Memo                string        `json:"memo"`
-	Sender              string        `json:"sender"`
-	ObservedVaultPubKey common.PubKey `json:"observed_vault_pub_key"`
-	TxInType            constants.TxInType
-	FromChain           *big.Int
-	ToChain             *big.Int
-	Height              *big.Int
-	Amount              *big.Int
-	OrderId             ecommon.Hash
-	GasUsed             *big.Int
-	Token               []byte
-	Vault               []byte
-	From                []byte
-	To                  []byte
-	Payload             []byte
-	Method              string
-	LogIndex            uint // index of the log in the block
+	Tx               string       `json:"tx"`
+	Memo             string       `json:"memo"`
+	Sender           string       `json:"sender"`
+	FromChain        *big.Int     `json:"from_chain"`
+	ToChain          *big.Int     `json:"to_chain"`
+	Height           *big.Int     `json:"height"`
+	Amount           *big.Int     `json:"amount"`
+	OrderId          ecommon.Hash `json:"order_id"`
+	GasUsed          *big.Int     `json:"gas_used"`
+	Token            []byte       `json:"token"`
+	Vault            []byte       `json:"vault"`
+	From             []byte       `json:"from"`
+	To               []byte       `json:"to"`
+	Payload          []byte       `json:"payload"`
+	Method           string       `json:"method"`
+	LogIndex         uint         `json:"log_index"`
+	ChainAndGasLimit *big.Int     `json:"chain_and_gas_limit"` // bridgeOut add new fields
+	TxOutType        uint8        `json:"tx_out_type"`
+	RefundAddr       []byte       `json:"refund_addr"`
+	Sequence         *big.Int     `json:"sequence"` // bridgeIn add new fields
+	Topic            string       `json:"topic"`
+	Timestamp        int64        `json:"timestamp"`
 }
 
 type TxInStatus byte
-
-//func NewTxInItem(
-//	blockHeight int64,
-//	tx string,
-//	memo string,
-//	sender string,
-//	to string,
-//	coins common.Coins,
-//	gas common.Gas,
-//	observedVaultPubKey common.PubKey,
-//	aggregator string,
-//	aggregatorTarget string,
-//	aggregatorTargetLimit *cosmos.Uint,
-//) *TxInItem {
-//	return &TxInItem{
-//		BlockHeight:           blockHeight,
-//		Tx:                    tx,
-//		Memo:                  memo,
-//		Sender:                sender,
-//		To:                    to,
-//		Coins:                 coins,
-//		Gas:                   gas,
-//		ObservedVaultPubKey:   observedVaultPubKey,
-//		Aggregator:            aggregator,
-//		AggregatorTarget:      aggregatorTarget,
-//		AggregatorTargetLimit: aggregatorTargetLimit,
-//		CommittedUnFinalised:  false, // stateful parameter used internally in the observer
-//	}
-//}
 
 const (
 	Processing TxInStatus = iota
@@ -85,7 +66,13 @@ func (t *TxInItem) Equals(other *TxInItem) bool {
 	if t.Height.Cmp(other.Height) != 0 {
 		return false
 	}
-	if t.Tx != other.Tx {
+	if !strings.EqualFold(t.Tx, other.Tx) {
+		return false
+	}
+	if !strings.EqualFold(t.OrderId.Hex(), other.OrderId.Hex()) {
+		return false
+	}
+	if t.LogIndex != other.LogIndex {
 		return false
 	}
 	if ecommon.Bytes2Hex(t.To) != ecommon.Bytes2Hex(other.To) {
@@ -113,17 +100,16 @@ func (t *TxInItem) EqualsObservedTx(other common.ObservedTx) bool {
 
 func (t *TxInItem) Copy() *TxInItem {
 	return &TxInItem{
-		Tx:       t.Tx,
-		TxInType: t.TxInType,
-		ToChain:  t.ToChain,
-		Height:   t.Height,
-		Amount:   t.Amount,
-		OrderId:  t.OrderId,
-		GasUsed:  t.GasUsed,
-		Token:    t.Token,
-		Vault:    t.Vault,
-		To:       t.To,
-		Method:   t.Method,
+		Tx:      t.Tx,
+		ToChain: t.ToChain,
+		Height:  t.Height,
+		Amount:  t.Amount,
+		OrderId: t.OrderId,
+		GasUsed: t.GasUsed,
+		Token:   t.Token,
+		Vault:   t.Vault,
+		To:      t.To,
+		Method:  t.Method,
 	}
 }
 

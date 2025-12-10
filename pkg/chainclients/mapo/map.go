@@ -179,13 +179,6 @@ func (b *Bridge) GetConstants() (map[string]int64, error) {
 	return result.Int64Values, nil
 }
 
-// GetMapVersion retrieve mapBridge version
-// func (b *Bridge) GetMapVersion() (semver.Version, error) {
-func (b *Bridge) GetMapVersion() (string, error) {
-	// todo handler
-	return "1.0.0", nil
-}
-
 // GetMimir - get mimir settings
 func (b *Bridge) GetMimir(key string) (int64, error) {
 	// todo handler
@@ -208,9 +201,4 @@ func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
 	// or "Ragnarok-%s" (to halt the pool of an arbitrary specified Asset (MimirString used for Assets to join Chain and Symbol with a hyphen).
 	key := fmt.Sprintf(template, ref)
 	return b.GetMimir(key)
-}
-
-func (b *Bridge) SetObserverCache(key, value string) error {
-
-	return nil
 }

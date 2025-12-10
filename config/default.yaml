@@ -19,41 +19,27 @@ bifrost:
     read_timeout: 30s
     write_timeout: 30s
     chains:
-      - BCH
       - BTC
-      - ETH
       - BSC
-      - BASE
   map_relay:
     chain_id: map
-    chain_host: https://testnet-rpc.maplabs.io
-    chain_rpc: ""
-    chain_ebifrost: localhost:50051
-    chain_home_folder: ""
-    signer_name: "first_cosmos"
+    chain_host: https://mrpc.chainservice.io
+    signer_name: "first_cosmos_name"
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
-    maintainer: "0x0EdA5e4015448A2283662174DD7def3C3d262D38"
-    token_registry: "0x00A494E872285e86ACbA4341D70C3f06D0bb8954"
-    view_controller: "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6"
-  attestation_gossip:
-    observe_reconcile_interval: 15s
-    late_observe_timeout: 5m
-    non_quorum_timeout: 10h
-    min_time_between_attestations: 30s
-    ask_peers: 3
-    ask_peers_delay: 5s
-    max_batch_size: 100
-    batch_interval: 2s
-    peer_timeout: 20s
-    peer_concurrent_sends: 4
-    peer_concurrent_receives: 5
+    maintainer: "0x7e22B9FC15054546028Df928eB7560AEd8F0eF48"
+    tss_manager: "0x062B3Bd0B1A0c9d3cE35dC59D8F5E929314a8706"
+    relay: "0x42D64eD9381bF456697b0C360e8acE139F176a80"
+    gas_service: "0x43A7dd204f6604F2578Bd5d0859f45296d27F23A"
+    token_registry: "0x78D31173C04e5F1D4b0172440B09453C27990527"
+    view_controller: "0xaf720ad7086627034c4d8CA2b4493079E97f1C3A"
+    cross_data_path: "./build/cross_dbs"
+    cross_data_address: "0.0.0.0:6041"
   signer:
     backup_keyshares: true
     signer_db_path: ./build/signer_db
     retry_interval: 2s
     reschedule_buffer_blocks: 150 # 15 minutes
     block_scanner:
-      mos: "0x3F753d04E0d2ed95C73C24Bf44163F56cA7a3288"
       chain_id: map
       start_block_height: 0
       block_retry_interval: 10s
@@ -64,8 +50,9 @@ bifrost:
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
       max_http_request_retry: "10"
+      max_gas_limit: 1000000
+      max_swap_gas_limit: 1500000
     leveldb: *default-leveldb
-    auto_observe: true
     keygen_timeout: 5m
     keysign_timeout: 45s
     party_timeout: 45s
@@ -75,9 +62,9 @@ bifrost:
     p2p_port: 5040
     info_address: 0.0.0.0:6040
     bootstrap_peers:
-      - 10.0.3.51
-      - 10.0.3.39
-      - 10.0.3.31
+      - 172.26.113.106
+      - 1172.26.113.107
+      - 172.26.113.108
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
   chains:
@@ -107,6 +94,7 @@ bifrost:
         transaction_batch_size: 500
         max_mempool_batches: 10
         estimated_average_tx_size: 1000
+        estimated_average_tx_swap_size: 2000
         default_min_relay_fee_sats: 1000
         default_sats_per_vbyte: 25
         max_sats_per_vbyte: 9765 # backwards compatible with 1e8/10/1024
@@ -128,16 +116,15 @@ bifrost:
         db_path: ./build/observer
         scan_mempool: true
         max_contract_tx_logs: 0
-
         # the following defaults must be defined to override with environment
         start_block_height: 263889
-        cosmos_grpc_host: ""
         cosmos_grpc_tls: false
         gas_cache_blocks: 0
         whitelist_tokens: []
         whitelist_cosmos_assets: []
         concurrency: 0
-        max_gas_limit: 0
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
         fixed_gas_rate: 0
         gas_price_resolution: 10_000_000_000 # 10 gwei
         max_resume_block_lag: 24h
@@ -148,32 +135,9 @@ bifrost:
       chain_host: ""
       chain_network: ""
       rpc_host: "https://rpc.bitlayer.org"
-      cosmos_grpc_host: ""
       cosmos_grpc_tls: false
       opt_to_retire: false
       solvency_blocks: 0
-
-    eth:
-      <<: *default-chain
-      chain_id: ETH
-      rpc_host: "https://ethereum-sepolia-rpc.publicnode.com"
-      max_pending_nonces: 3
-      max_gas_tip_percentage: 20
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      block_scanner:
-        <<: *default-block-scanner
-        mos: 0xC98E2C3BD2bd3B37934F94A53075e9aa8f86Dd8a
-        max_reorg_rescan_blocks: 96 # 3 epochs
-        gas_cache_blocks: 40
-        concurrency: 1
-        chain_id: ETH
-        observation_flexibility_blocks: 20
-        max_gas_limit: 100000
-        max_contract_tx_logs: 50
-        start_block_height: 8866200
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
 
     bsc:
       disabled: false
@@ -186,119 +150,18 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
-        mos: 0xCD9Fc97860755cD6630E5172dbad9454a1e029a9
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
         chain_id: BSC
         gas_cache_blocks: 40
-        gas_price_resolution: 10_000_000_000 # 10 gwei
+        gas_price_resolution: 1 # 10 gwei
         observation_flexibility_blocks: 80
-        max_gas_limit: 100000
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
-        start_block_height: 59917675
+        start_block_height: 
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
-          - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
-          - 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56 # Binance Pegged BUSD
-          - 0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3 # Binance Pegged DAI
-          - 0x14016E85a25aeb13065688cAFB43044C2ef86784 # True USD
-          - 0x2170Ed0880ac9A755fd29B2688956BD959F933F8 # Binance Pegged ETH
-          - 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c # Binance Pegged BTC
-          - 0x570A5D26f7765Ecb712C0924E4De545B89fD43dF # Binance Pegged SOL
-          - 0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47 # Binance Pegged Cardano
-          - 0x4B0F1812e5Df2A09796481Ff14017e6005508003 # Trust Wallet Token (TWT)
-          - 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82 # PancakeSwap (CAKE)
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
-
-########################################################################################
-# MAPO
-########################################################################################
-
-map:
-  node_relay_url: https://node-relay-bot.herokuapp.com
-  vault_pubkeys_cutoff_blocks: 1_000_000
-  seed_nodes_endpoint:
-  stagenet_admin_addresses: "sthor1gdq9qejfy33jctztqdrg5v4hvxnytmvjhduacc" # 9R official stagenet
-  telemetry:
-    slash_points: false
-
-  log_filter:
-    modules:
-      - api-server
-      - consensus
-      - evidence
-      - mempool
-      - p2p
-      - pex
-      - rpc
-      - rpc-server
-      - txindex
-      - x/bank
-    messages:
-      - executed block
-      - commit synced
-
-  auto_state_sync:
-    enabled: false
-    block_buffer: 150_000
-    peers:
-      # NOTE: These are peers for auto state sync on mainnet only.
-      - c3613862c2608b3e861406ad02146f41cf5124e6@statesync-seed.ninerealms.com:27146
-      - dbd1730bff1e8a21aad93bc6083209904d483185@statesync-seed-2.ninerealms.com:27146
-  cosmos:
-    pruning: nothing
-    halt_height: 0
-    min_retain_blocks: 0
-    telemetry:
-      enabled: false
-      prometheus_retention_time: 600
-    api:
-      enable: true
-      enabled_unsafe_cors: true
-      enabled_swagger: true
-      address: tcp://0.0.0.0:1317
-    grpc:
-      enable: false
-      address: 0.0.0.0:9090
-    ebifrost:
-      enable: true
-      address: 127.0.0.1:50051
-      cache_item_ttl: 30m
-    state_sync:
-      snapshot_interval: 0
-      snapshot_keep_recent: 2
-  tendermint:
-    log:
-      level: info
-      format: plain
-    rpc:
-      listen_address: "" # set dynamically
-      cors_allowed_origin: "*"
-      experimental_subscription_buffer_size: 200
-      experimental_websocket_write_buffer_size: 200
-    p2p:
-      listen_address: "" # set dynamically
-      seeds: "" # set dynamically
-      external_address: ""
-      persistent_peers: ""
-      addr_book_strict: false
-      max_num_inbound_peers: 40
-      max_num_outbound_peers: 10
-      allow_duplicate_ip: true
-    consensus:
-      timeout_commit: 5s
-      # these can be set to 1ms temporarily to recover from consensus failure faster
-      timeout_propose_delta: 500ms
-      timeout_prevote_delta: 500ms
-      timeout_precommit_delta: 500ms
-    state_sync:
-      enable: false
-      # Nine Realms will be the trusted source by default. These must be an archive
-      # nodes for historical height verification.
-      rpc_servers: https://rpc-v2.ninerealms.com:443,https://rpc-v2.ninerealms.com:443
-      trust_height: 0
-      trust_hash: ""
-      trust_period: 360h0m0s
-    instrumentation:
-      prometheus: true

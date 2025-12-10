@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog"
@@ -26,13 +27,13 @@ func GetPrivateKey(key cryptotypes.PrivKey) (*ecdsa.PrivateKey, error) {
 type KeySignWrapper struct {
 	privKey       *ecdsa.PrivateKey
 	pubKey        common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	logger        zerolog.Logger
 	signer        etypes.Signer
 }
 
 // NewKeySignWrapper create a new instance of keysign wrapper
-func NewKeySignWrapper(privateKey *ecdsa.PrivateKey, pubKey common.PubKey, keyManager tss.ThorchainKeyManager, chainID *big.Int, chain string) (*KeySignWrapper, error) {
+func NewKeySignWrapper(privateKey *ecdsa.PrivateKey, pubKey common.PubKey, keyManager tss.RelayKeyManager, chainID *big.Int, chain string) (*KeySignWrapper, error) {
 	return &KeySignWrapper{
 		privKey:       privateKey,
 		pubKey:        pubKey,
@@ -104,7 +105,7 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 		return nil, err
 	}
 	if ecrypto.VerifySignature(secpPubKey.Bytes(), hash[:], sig) {
-		w.logger.Info().Msg("we can successfully verify the bytes")
+		w.logger.Info().Msg("We can successfully verify the bytes")
 	} else {
 		w.logger.Error().Msg("Oops! we cannot verify the bytes")
 	}
@@ -112,6 +113,24 @@ func (w *KeySignWrapper) signTSS(tx *etypes.Transaction, poolPubKey string) ([]b
 	result := make([]byte, 65)
 	copy(result, sig)
 	result[64] = recovery[0]
+	return result, nil
+}
+
+func (w *KeySignWrapper) SignCustomTSS(hash []byte, ethPk string) ([]byte, error) {
+	sig, recovery, err := w.tssKeyManager.RemoteSign(hash[:], ethPk)
+	if err != nil || sig == nil {
+		return nil, fmt.Errorf("fail to TSS sign: %w", err)
+	}
+
+	if ecrypto.VerifySignature(ecommon.Hex2Bytes("04"+ethPk), hash[:], sig) {
+		w.logger.Info().Msg("We can successfully verify the bytes")
+	} else {
+		w.logger.Error().Msg("Oops! we cannot verify the bytes")
+	}
+	// add the recovery id at the end
+	result := make([]byte, 65)
+	copy(result, sig)
+	result[64] = recovery[0] + 27
 	return result, nil
 }
 

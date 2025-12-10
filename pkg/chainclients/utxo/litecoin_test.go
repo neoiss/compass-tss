@@ -2,6 +2,10 @@ package utxo
 
 import (
 	"encoding/json"
+	"math/big"
+	"net/http/httptest"
+	"os"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -11,9 +15,6 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	. "gopkg.in/check.v1"
-	"math/big"
-	"net/http/httptest"
-	"os"
 
 	"github.com/mapprotocol/compass-tss/cmd"
 	"github.com/mapprotocol/compass-tss/common"
@@ -771,8 +772,7 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "31f8699ce9028e9cd37f8a6d58a79e614a96e3fdd0f58be5fc36d2d95484716f",
 				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
 				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}
@@ -791,8 +791,7 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "24ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
 				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}
@@ -811,16 +810,14 @@ func (s *LitecoinSuite) TestOnObservedTxIn(c *C) {
 				Tx:     "44ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
 				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 			{
 				Height: big.NewInt(3),
 				Tx:     "54ed2d26fd5d4e0e8fa86633e40faf1bdfc8d1903b1cd02855286312d48818a2",
 				Sender: "ltc1q2gjc0rnhy4nrxvuklk6ptwkcs9kcr59mursyaz",
 				//To:          "ltc1qjw8h4l3dtz5xxc7uyh5ys70qkezspgfu8hg5j3",
-				Memo:                "MEMO",
-				ObservedVaultPubKey: pkey,
+				Memo: "MEMO",
 			},
 		},
 	}

@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type NetworkFee struct {

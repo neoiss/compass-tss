@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,16 +11,10 @@ import (
 	"time"
 
 	golog "github.com/ipfs/go-log"
-
-	"io"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	flag "github.com/spf13/pflag"
-
 	tcommon "github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/cross"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/observer"
@@ -31,9 +26,12 @@ import (
 	ctss "github.com/mapprotocol/compass-tss/tss"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/common"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	flag "github.com/spf13/pflag"
 )
 
-// THORNode define version / revision here , so THORNode could inject the version from CI pipeline if THORNode want to
+// relay define version / revision here , so relay could inject the version from CI pipeline if relay want to
 var (
 	version  string
 	revision string
@@ -71,26 +69,26 @@ func main() {
 	if err = m.Start(); err != nil {
 		log.Fatal().Err(err).Msg("fail to start metric collector")
 	}
-	if len(cfg.Thorchain.SignerName) == 0 {
+	if len(cfg.MAPRelay.SignerName) == 0 {
 		log.Fatal().Msg("signer name is empty")
 	}
-	if len(cfg.Thorchain.SignerPasswd) == 0 {
-		log.Fatal().Msg("signer password is empty")
-	}
-	kb, keyStore, err := keys.GetKeyringKeybase(cfg.Thorchain.KeystorePath, cfg.Thorchain.SignerName)
+
+	kb, keyStore, err := keys.GetKeyringKeybase(cfg.MAPRelay.KeystorePath, cfg.MAPRelay.SignerName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to get keyring keybase")
 	}
 
-	k := keys.NewKeysWithKeybase(kb, cfg.Thorchain.SignerName, cfg.Thorchain.SignerPasswd, keyStore)
+	k := keys.NewKeysWithKeybase(kb, cfg.MAPRelay.SignerName, "", keyStore) // "cfg.MAPRelay.SignerPasswd"
 	// map bridge
-	mapBridge, err := mapo.NewBridge(cfg.Thorchain, m, k)
+	mapBridge, err := mapo.NewBridge(cfg.MAPRelay, m, k)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create new map bridge")
 	}
+
 	if err = mapBridge.EnsureNodeWhitelistedWithTimeout(); err != nil {
 		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
 	}
+
 	// PubKey Manager
 	pubkeyMgr, err := pubkeymanager.NewPubKeyManager(mapBridge, m)
 	if err != nil {
@@ -117,16 +115,12 @@ func main() {
 	jailTimeKeygen := time.Duration(consts.GetInt64Value(constants.JailTimeKeygen)) * constants.MAPRelayChainBlockTime
 	jailTimeKeysign := time.Duration(consts.GetInt64Value(constants.JailTimeKeysign)) * constants.MAPRelayChainBlockTime
 	if cfg.Signer.KeygenTimeout >= jailTimeKeygen {
-		log.Fatal().
-			Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).
-			Stringer("keygenJail", jailTimeKeygen).
-			Msg("keygen timeout must be shorter than jail time")
+		log.Fatal().Stringer("keygenTimeout", cfg.Signer.KeygenTimeout).
+			Stringer("keygenJail", jailTimeKeygen).Msg("keygen timeout must be shorter than jail time")
 	}
 	if cfg.Signer.KeysignTimeout >= jailTimeKeysign {
-		log.Fatal().
-			Stringer("keysignTimeout", cfg.Signer.KeysignTimeout).
-			Stringer("keysignJail", jailTimeKeysign).
-			Msg("keysign timeout must be shorter than jail time")
+		log.Fatal().Stringer("keysignTimeout", cfg.Signer.KeysignTimeout).
+			Stringer("keysignJail", jailTimeKeysign).Msg("keysign timeout must be shorter than jail time")
 	}
 
 	comm, stateManager, err := p2p.StartP2P(
@@ -159,6 +153,12 @@ func main() {
 		log.Err(err).Msg("fail to start tss instance")
 	}
 
+	if err = mapBridge.SetTssKeyManager(tssIns); err != nil {
+		log.Fatal().Err(err).Msg("fail to set tss to bridge")
+	}
+	if err = mapBridge.HeartBeat(); err != nil {
+		log.Fatal().Err(err).Msg("node account is not whitelisted, can't start")
+	}
 	cfgChains := cfg.GetChains()
 
 	// ensure we have a protocol for chain RPC Hosts
@@ -180,7 +180,7 @@ func main() {
 		log.Fatal().Msg("fail to load any chains")
 	}
 	tssKeysignMetricMgr := metrics.NewTssKeysignMetricMgr()
-	healthServer := NewHealthServer(cfg.TSS.InfoAddress, tssIns, chains)
+	healthServer := NewHealthServer(cfg.TSS.InfoAddress, tssIns, chains, mapBridge)
 	go func() {
 		defer log.Info().Msg("health server exit")
 		if err = healthServer.Start(); err != nil {
@@ -188,13 +188,22 @@ func main() {
 		}
 	}()
 
+	crossStorage, err := cross.NewStorage(cfg.MAPRelay.CrossDataPath, cfg.ObserverLevelDB)
+	if err != nil {
+		log.Fatal().Err(err).Msg("fail to create cross storage")
+	}
+
+	crossServer := NewCrossServer(cfg.MAPRelay.CrossDataAddress, crossStorage)
+	go func() {
+		defer log.Info().Msg("cross server exit")
+		if err = crossServer.Start(); err != nil {
+			log.Error().Err(err).Msg("fail to start cross server")
+		}
+	}()
+
 	ctx := context.Background()
-
-	// start observer notifier
-	ag, err := observer.NewAttestationGossip(comm.GetHost(), k, cfg.Thorchain.ChainEBifrost, mapBridge, m, cfg.AttestationGossip)
-
 	// start observer
-	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, ag)
+	obs, err := observer.NewObserver(pubkeyMgr, chains, mapBridge, m, cfgChains[tcommon.BTCChain].BlockScanner.DBPath, tssKeysignMetricMgr, crossStorage)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create observer")
 	}
@@ -202,12 +211,8 @@ func main() {
 		log.Fatal().Err(err).Msg("fail to start observer")
 	}
 
-	// enable observer to react to notifications from thornode
-	// that come through the grpc connection within AttestationGossip.
-	ag.SetObserverHandleObservedTxCommitted(obs)
-
 	// start signer
-	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs)
+	sign, err := signer.NewSigner(cfg, mapBridge, k, pubkeyMgr, tssIns, chains, m, tssKeysignMetricMgr, obs, crossStorage)
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create instance of signer")
 	}
@@ -236,6 +241,9 @@ func main() {
 	tssIns.Stop()
 	if err = healthServer.Stop(); err != nil {
 		log.Fatal().Err(err).Msg("fail to stop health server")
+	}
+	if err = crossServer.Stop(); err != nil {
+		log.Fatal().Err(err).Msg("fail to stop cross server")
 	}
 }
 

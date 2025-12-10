@@ -126,7 +126,7 @@ func (c *Client) vinsUnspent(tx stypes.TxOutItem, vins []*wire.TxIn) (bool, erro
 	for _, vin := range vins {
 		if !unspent[vin.PreviousOutPoint.Hash.String()] {
 			c.log.Warn().
-				Str("in_hash", tx.InTxHash).
+				Str("txHash", tx.TxHash).
 				Stringer("vin", vin.PreviousOutPoint).
 				Msg("vin is spent")
 			allUnspent = false
@@ -282,7 +282,11 @@ func (c *Client) getGasCoin(tx stypes.TxOutItem, vSize int64) common.Coin {
 
 func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx, map[string]int64, error) {
 	// build memo
-	tx.Memo = mem.NewInboundMemo(tx.Chain.String(), tx.InTxHash).String()
+	chainName, err := c.bridge.GetChainName(tx.FromChain)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
+	}
+	tx.Memo = mem.NewInboundMemo(chainName, tx.OrderId.String()).String()
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
@@ -376,6 +380,64 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		gasAmtSats = c.minRelayFeeSats
 	}
 
+	maxGas := tx.TransactionRate.Uint64() * tx.TransactionSize.Uint64()
+	if gasAmtSats > maxGas {
+		c.log.Info().Msgf("max gas: %s, however estimated gas need %d", maxGas, gasAmtSats)
+		gasAmtSats = maxGas
+	}
+
+	// todo memo
+	//var memo mem.Memo
+	//if err == nil {
+	//	// Parse the memo to be able to identify Migrate or Consolidate outbounds.
+	//	memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
+	//	if err != nil {
+	//		return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
+	//	}
+	//
+	//	// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
+	//	if !tx.MaxGas.IsEmpty() {
+	//		maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
+	//		if gasAmtSats > maxGasCoin.Amount.Uint64() {
+	//			c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
+	//			gasAmtSats = maxGasCoin.Amount.Uint64()
+	//		} else if gasAmtSats < maxGasCoin.Amount.Uint64() && memo.GetType() == mem.TxMigrate {
+	//			// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
+	//			gap := maxGasCoin.Amount.Uint64() - gasAmtSats
+	//			c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to the vault migrated to", tx.MaxGas, gasAmtSats, gap)
+	//			coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
+	//		}
+	//	} else if memo.GetType() == mem.TxConsolidate {
+	//		gap := gasAmtSats
+	//		c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
+	//		coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
+	//	}
+	//} else {
+	//	// if the total gas spend is more than max gas , then we have to take away some from the amount pay to customer
+	//	if !tx.MaxGas.IsEmpty() {
+	//		maxGasCoin := tx.MaxGas.ToCoins().GetCoin(c.cfg.ChainID.GetGasAsset())
+	//		if gasAmtSats > maxGasCoin.Amount.Uint64() {
+	//			c.log.Info().Msgf("max gas: %s, however estimated gas need %d", tx.MaxGas, gasAmtSats)
+	//			gasAmtSats = maxGasCoin.Amount.Uint64()
+	//		} else if gasAmtSats < maxGasCoin.Amount.Uint64() {
+	//			// if the tx spend less gas then the estimated MaxGas , then the extra can be added to the coinToCustomer
+	//			gap := maxGasCoin.Amount.Uint64() - gasAmtSats
+	//			c.log.Info().Msgf("max gas is: %s, however only: %d is required, gap: %d goes to customer", tx.MaxGas, gasAmtSats, gap)
+	//			coinToCustomer.Amount = coinToCustomer.Amount.Add(cosmos.NewUint(gap))
+	//		}
+	//	} else {
+	//		memo, err = mem.ParseMemo(common.LatestVersion, tx.Memo)
+	//		if err != nil {
+	//			return nil, nil, fmt.Errorf("fail to parse memo: %w", err)
+	//		}
+	//		if memo.GetType() == mem.TxConsolidate {
+	//			gap := gasAmtSats
+	//			c.log.Info().Msgf("consolidate tx, need gas: %d", gap)
+	//			coinToCustomer.Amount = common.SafeSub(coinToCustomer.Amount, cosmos.NewUint(gap))
+	//		}
+	//	}
+	//}
+
 	gasAmt := btcutil.Amount(gasAmtSats)
 	if err = c.temporalStorage.UpsertTransactionFee(gasAmt.ToBTC(), int32(totalSize)); err != nil {
 		c.log.Err(err).Msg("fail to save gas info to UTXO storage")
@@ -391,7 +453,7 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	balance := totalAmt - redeemTxOut.Value - int64(gasAmt)
 	c.log.Info().Msgf("total: %d, to customer: %d, gas: %d", totalAmt, redeemTxOut.Value, int64(gasAmt))
 	if balance < 0 {
-		return nil, nil, fmt.Errorf("not enough balance to pay customer: %d", balance)
+		return nil, nil, fmt.Errorf("%s not enough balance to pay customer: %d", tx.VaultPubKey, balance)
 	}
 	if balance > 0 {
 		c.log.Info().Msgf("send %d back to self", balance)

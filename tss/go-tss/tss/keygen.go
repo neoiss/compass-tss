@@ -1,6 +1,7 @@
 package tss
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
@@ -49,6 +50,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 	sigChan := make(chan string)
 	blameMgr := keygenInstance.GetTssCommonStruct().GetBlameMgr()
 	joinPartyStartTime := time.Now()
+	fmt.Println("keyGen threshold ", len(req.Keys)-1)
 	onlinePeers, leader, errJoinParty := t.joinParty(msgID, req.Version, req.BlockHeight, req.Keys, len(req.Keys)-1, sigChan)
 	joinPartyTime := time.Since(joinPartyStartTime)
 	if errJoinParty != nil {
@@ -59,7 +61,7 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		// this indicate we are processing the leaderless join party
 		if leader == "NONE" {
 			if onlinePeers == nil {
-				t.logger.Error().Err(err).Msg("error before we start join party")
+				t.logger.Error().Err(err).Msg("Error before we start join party")
 				return keygen.Response{
 					Status: common.Fail,
 					Blame:  blame.NewBlame(blame.InternalError, []blame.Node{}),
@@ -67,10 +69,10 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 			}
 			blameNodes, err := blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
 			if err != nil {
-				t.logger.Err(errJoinParty).Msg("fail to get peers to blame")
+				t.logger.Err(errJoinParty).Msg("Fail to get peers to blame")
 			}
 			// make sure we blame the leader as well
-			t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
+			t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v,blameNodes=%v", onlinePeers, blameNodes)
 			return keygen.Response{
 				Status: common.Fail,
 				Blame:  blameNodes,
@@ -82,26 +84,26 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		var blameNodes blame.Blame
 		blameNodes, err = blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
 		if err != nil {
-			t.logger.Error().Err(err).Msg("failed to blame nodes for joinParty failure")
+			t.logger.Error().Err(err).Msg("Failed to blame nodes for joinParty failure")
 		}
 		leaderPubKey, err := conversion.GetPubKeyFromPeerIDByEth(leader)
 		if err != nil {
-			t.logger.Error().Err(err).Msgf("failed to convert peerID->pubkey for leader %s", leader)
+			t.logger.Error().Err(err).Msgf("Failed to convert peerID->pubkey for leader %s", leader)
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{})
 		} else {
 			blameLeader = blame.NewBlame(blame.TssSyncFail, []blame.Node{{Pubkey: leaderPubKey, BlameData: nil, BlameSignature: nil}})
 		}
 
 		if len(onlinePeers) != 0 {
-			t.logger.Trace().Msgf("there were %d onlinePeers, adding leader to %d existing nodes blamed",
-				len(onlinePeers), len(blameNodes.BlameNodes))
+			t.logger.Info().Msgf("There were %d onlinePeers, adding leader to %d existing nodes blamed",
+				len(onlinePeers), len(blameNodes.BlameNodes)) // trace
 			blameNodes.AddBlameNodes(blameLeader.BlameNodes...)
 		} else {
-			t.logger.Trace().Msgf("there were %d onlinePeers, setting blame nodes to just the leader",
-				len(onlinePeers))
+			t.logger.Info().Msgf("There were %d onlinePeers, setting blame nodes to just the leader",
+				len(onlinePeers)) // trace
 			blameNodes = blameLeader
 		}
-		t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
+		t.logger.Error().Err(errJoinParty).Msgf("Fail to form keygen party with online:%v", onlinePeers)
 
 		return keygen.Response{
 			Status: common.Fail,

@@ -18,11 +18,6 @@ import (
 
 var ErrNotFound = fmt.Errorf("not found")
 
-type QueryKeysign struct {
-	Keysign   types.TxOut `json:"keysign"`
-	Signature string      `json:"signature"`
-}
-
 func (b *Bridge) getContextWithTimeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)
 }
@@ -34,12 +29,7 @@ func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error)
 }
 
 // GetTxByBlockNumber retrieves txout from this block height from mapBridge
-func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut, error) {
-	// get block
-	if blockHeight%100 == 0 {
-		b.logger.Info().Int64("height", blockHeight).Msg("fetching txs for height")
-	}
-
+func (b *Bridge) GetTxByBlockNumber(blockHeight int64) (types.TxOut, error) {
 	block, err := b.ethRpc.GetBlock(blockHeight)
 	if err != nil {
 		return types.TxOut{}, err
@@ -53,15 +43,21 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 	logs, err := b.getFilterLogs(ethereum.FilterQuery{
 		FromBlock: big.NewInt(blockHeight),
 		ToBlock:   big.NewInt(blockHeight),
-		Addresses: []ecommon.Address{ecommon.HexToAddress(mos)}, // done
+		Addresses: []ecommon.Address{ecommon.HexToAddress(b.cfg.Relay)}, // done
 		Topics: [][]ecommon.Hash{{
-			constants.RelayEventOfMigration.GetTopic(),
-			constants.RelayEventOfTransferCall.GetTopic(),
-			constants.RelayEventOfTransferOut.GetTopic(),
+			constants.EventOfBridgeRelay.GetTopic(),
+			constants.EventOfBridgeCompleted.GetTopic(),
+			constants.EventOfBridgeRelaySigned.GetTopic(),
 		}},
 	})
-	if len(logs) == 0 {
+	defer func() {
+		b.blockHeight = blockHeight
+	}()
+	if err != nil {
 		return types.TxOut{}, err
+	}
+	if len(logs) == 0 {
+		return types.TxOut{}, nil
 	}
 	b.logger.Info().Msgf("Find tx blockHeight=%v, logs=%d", blockHeight, len(logs))
 
@@ -69,29 +65,27 @@ func (b *Bridge) GetTxByBlockNumber(blockHeight int64, mos string) (types.TxOut,
 		Height:  blockHeight,
 		TxArray: make([]types.TxArrayItem, 0, len(logs)),
 	}
+	mapCId, _ := common.MAPChain.ChainID()
 
-	// todo handler parse coins & gas
+	// handler parse coins & gas
 	for _, ele := range logs {
 		tmp := ele
-		item := &types.TxArrayItem{}
-		p := evm.NewSmartContractLogParser(nil,
-			nil,
-			nil,
-			nil,
-			b.relayAbi,
-			common.MAPAsset,
-			0)
-		p.GetTxOutItem(&tmp, item)
-		if item.Chain == nil {
+		item := &types.TxArrayItem{
+			Chain: mapCId,
+		}
+		p := evm.NewSmartContractLogParser(b.relayAbi)
+		err = p.GetTxOutItem(&tmp, item)
+		if err != nil {
+			b.logger.Error().Msgf("GetTxOutItem err=%v", err)
+			continue
+		}
+		if item.ToChain == nil {
 			b.logger.Info().Msgf("Find filter txOut=%+v", item)
 			continue
 		}
 
 		ret.TxArray = append(ret.TxArray, *item)
 	}
-
-	b.logger.Info().Msgf("Find filter blockHeight=%v, logs=%d", blockHeight, len(ret.TxArray))
-	time.Sleep(time.Minute)
 
 	return ret, nil
 }
@@ -141,12 +135,4 @@ func (b *Bridge) updateGasPrice(prices []*big.Int) {
 	median = median.Div(median, resolution)
 	median = median.Mul(median, resolution)
 	b.gasPrice = median
-
-	// // record metrics
-	// gasPriceFloat, _ := new(big.Float).SetInt64(b.gasPrice.Int64()).Float64()
-	// if b.m == nil {
-	// 	return
-	// }
-	// b.m.GetGauge(metrics.GasPrice(b.cfg.ChainID)).Set(gasPriceFloat)
-	// b.m.GetCounter(metrics.GasPriceChange(b.cfg.ChainID)).Inc()
 }

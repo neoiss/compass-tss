@@ -152,9 +152,6 @@ func (addr Address) IsChain(chain Chain) bool {
 		// Note: Gaia does not use a special prefix for testnet
 		prefix, _, _ := bech32.Decode(addr.String())
 		return prefix == "cosmos"
-	case THORChain:
-		prefix, _, _ := bech32.Decode(addr.String())
-		return prefix == "thor" || prefix == "tthor" || prefix == "sthor"
 	case BTCChain:
 		prefix, _, err := bech32.Decode(addr.String())
 		if err == nil && (prefix == "bc" || prefix == "tb") {
@@ -229,7 +226,7 @@ func (addr Address) IsChain(chain Chain) bool {
 // Note that this will always return ETHChain for an AVAXChain address,
 // so perhaps only use it when determining a network (e.g. mainnet/testnet).
 func (addr Address) GetChain() Chain {
-	for _, chain := range []Chain{ETHChain, THORChain, BTCChain, LTCChain, BCHChain, DOGEChain, GAIAChain, AVAXChain, XRPChain} {
+	for _, chain := range []Chain{ETHChain, MAPChain, BTCChain, LTCChain, BCHChain, DOGEChain, GAIAChain, AVAXChain, XRPChain} {
 		if addr.IsChain(chain) {
 			return chain
 		}

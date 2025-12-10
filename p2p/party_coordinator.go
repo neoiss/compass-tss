@@ -95,7 +95,7 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 	peerGroup, ok := pc.peersGroup[requestMsg.ID]
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
-		pc.logger.Info().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
+		pc.logger.Debug().Str("msgId", requestMsg.ID).Interface("group", pc.peersGroup).Msg("this party is not ready")
 		return
 	}
 	remotePeer := stream.Conn().RemotePeer()
@@ -183,6 +183,7 @@ func (pc *PartyCoordinator) HandleStreamWithLeader(stream network.Stream) {
 func (pc *PartyCoordinator) removePeerGroup(messageID string) {
 	pc.joinPartyGroupLock.Lock()
 	defer pc.joinPartyGroupLock.Unlock()
+	fmt.Println("messageID ---------------- ", messageID)
 	delete(pc.peersGroup, messageID)
 }
 
@@ -311,6 +312,7 @@ func (pc *PartyCoordinator) joinPartyMember(msgID string, peerGroup *peerStatus,
 				return
 			default:
 				pc.logger.Trace().Msg("sending request message to leader")
+				pc.logger.Trace().Any("msgID", msgID).Msg("sending request message to leader")
 				err := pc.sendRequestToLeader(&msg, leaderID)
 				if err != nil {
 					pc.logger.Error().Err(err).Msg("error sending request to leader")
@@ -426,7 +428,8 @@ func (pc *PartyCoordinator) joinPartyLeader(msgID string, peerGroup *peerStatus,
 	return onlinePeers, nil
 }
 
-func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64, peers []string, threshold int, sigChan chan string) ([]peer.ID, string, error) {
+func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64, peers []string,
+	threshold int, sigChan chan string) ([]peer.ID, string, error) {
 	leader, err := LeaderNode(msgID, blockHeight, peers)
 	if err != nil {
 		return nil, "", err
@@ -440,6 +443,8 @@ func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64,
 		return nil, "", err
 	}
 
+	fmt.Println("JoinPartyWithLeader leader ", leader, "leaderID", leaderID,
+		"peerIDs", peerIDs, "msgID", msgID)
 	peerGroup, err := pc.createJoinPartyGroups(msgID, leaderID, peerIDs, threshold)
 	if err != nil {
 		pc.logger.Error().Err(err).Msg("error creating peerStatus")

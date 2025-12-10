@@ -2,10 +2,11 @@ package pubkeymanager
 
 import (
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"strings"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -71,7 +72,7 @@ func NewPubKeyManager(bridge shareTypes.Bridge, m *metrics.Metrics) (*PubKeyMana
 func (pkm *PubKeyManager) Start() error {
 	pubkeys, err := pkm.getPubkeys()
 	if err != nil {
-		return fmt.Errorf("fail to get pubkeys from thorchain: %w", err)
+		return fmt.Errorf("fail to get pubkeys from relay: %w", err)
 	}
 	for _, pk := range pubkeys {
 		pkm.AddPubKey(pk.PubKey, false)
@@ -229,7 +230,7 @@ func (pkm *PubKeyManager) removePubKeyInternal(pk common.PubKey) {
 func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 	addressPairs, err := pkm.getPubkeys()
 	if err != nil {
-		pkm.logger.Error().Err(err).Msg("fail to get pubkeys from THORChain")
+		pkm.logger.Error().Err(err).Msg("fail to get pubkeys from relay")
 		return
 	}
 	var pubkeys common.PubKeys
@@ -238,17 +239,17 @@ func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 		pubkeys = append(pubkeys, pk.PubKey)
 	}
 	pkm.updateContractAddresses(addressPairs)
-	vaults, err := pkm.bridge.GetAsgards()
-	if err != nil {
-		return
-	}
+	// vaults, err := pkm.bridge.GetAsgards()
+	// if err != nil {
+	// 	return
+	// }
 
-	for _, vault := range vaults {
-		if vault.GetMembership().Contains(pkm.GetNodePubKey()) {
-			pkm.AddPubKey(vault.PubKey, true)
-			pubkeys = append(pubkeys, vault.PubKey)
-		}
-	}
+	// for _, vault := range vaults {
+	// 	if vault.GetMembership().Contains(pkm.GetNodePubKey()) {
+	// 		pkm.AddPubKey(vault.PubKey, true)
+	// 		pubkeys = append(pubkeys, vault.PubKey)
+	// 	}
+	// }
 
 	if prune {
 		pkm.rwMutex.Lock()

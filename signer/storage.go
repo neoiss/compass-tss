@@ -88,14 +88,13 @@ type SignerStorage interface {
 
 type SignerStore struct {
 	*blockscanner.LevelDBScannerStorage
-	logger     zerolog.Logger
-	db         *leveldb.DB
-	passphrase string
+	logger zerolog.Logger
+	db     *leveldb.DB
 }
 
 // NewSignerStore create a new instance of SignerStore. If no folder is given,
 // an in memory implementation is used.
-func NewSignerStore(levelDbFolder string, opts config.LevelDBOptions, passphrase string) (*SignerStore, error) {
+func NewSignerStore(levelDbFolder string, opts config.LevelDBOptions) (*SignerStore, error) {
 	ldb, err := db.NewLevelDB(levelDbFolder, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create level db: %w", err)
@@ -109,7 +108,6 @@ func NewSignerStore(levelDbFolder string, opts config.LevelDBOptions, passphrase
 		LevelDBScannerStorage: levelDbStorage,
 		logger:                log.With().Str("module", "signer-storage").Logger(),
 		db:                    ldb,
-		passphrase:            passphrase,
 	}, nil
 }
 

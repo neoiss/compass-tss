@@ -47,6 +47,8 @@ func (m *Manager) tssTimeoutBlame(lastMessageType string, partyIDMap map[string]
 // NodeSyncBlame this blame blames the node who cause the timeout in node sync
 func (m *Manager) NodeSyncBlame(keys []string, onlinePeers []peer.ID) (Blame, error) {
 	blame := NewBlame(TssSyncFail, nil)
+	fmt.Println("NodeSyncBlame ------------ ", keys)
+	fmt.Println("NodeSyncBlame onlinePeers ------------ ", onlinePeers)
 	for _, item := range keys {
 		found := false
 		peerID, err := conversion.GetPeerIDFromPubKeyByEth(item)
@@ -54,12 +56,15 @@ func (m *Manager) NodeSyncBlame(keys []string, onlinePeers []peer.ID) (Blame, er
 			return blame, fmt.Errorf("fail to get peer id from pub key, item:%v, err:%v", item, err)
 		}
 		for _, p := range onlinePeers {
+			fmt.Println("peerID ---------- ", p, peerID)
 			if p == peerID {
 				found = true
 				break
 			}
 		}
+		fmt.Println("pk ------"+item+"---peerID -------", peerID, "---found ---", found)
 		if !found {
+			fmt.Println("insert blame node pk ------", item)
 			blame.BlameNodes = append(blame.BlameNodes, NewNode(item, nil, nil))
 		}
 	}

@@ -3,23 +3,71 @@ package constants
 // -----------------------------------------------------------------
 // Method of Maintainer
 // -----------------------------------------------------------------
+
+const (
+	ElectionEpoch      = "electionEpoch"
+	GetEpochInfo       = "getEpochInfo"
+	GetMaintainerInfos = "getMaintainerInfos"
+	Register           = "register"
+	Heartbeat          = "heartbeat"
+	VersionMethod      = "version"
+)
+
+// -----------------------------------------------------------------
+// Method of Relay
+// -----------------------------------------------------------------
+const (
+	RelaySigned     = "relaySigned"
+	IsOrderExecuted = "isOrderExecuted"
+	OrderInfos      = "orderInfos"
+	Completed       = "completed" // custom method
+)
+
+// -----------------------------------------------------------------
+// EventName of Relay
+// -----------------------------------------------------------------
+const (
+	BridgeRelay       = "BridgeRelay"
+	BridgeCompleted   = "BridgeCompleted"
+	BridgeRelaySigned = "BridgeRelaySigned"
+)
+
+// -----------------------------------------------------------------
+// Method of TssManager
+// -----------------------------------------------------------------
 const (
 	VoteUpdateTssPool = "voteUpdateTssPool"
-	GetElectionEpoch  = "getElectionEpoch"
 	GetKeyShare       = "getKeyShare"
-	GetTSSPoolId      = "getTSSPoolId"
 	VoteNetworkFee    = "voteNetworkFee"
-	GetNetworkFee     = "getInboundAddress"
 	VoteTxIn          = "voteTxIn"
 	VoteTxOut         = "voteTxOut"
-	IsOrderExecuted   = "isOrderExecuted"
+	GetTSSStatus      = "getTSSStatus"
+)
+
+// -----------------------------------------------------------------
+// Method of GasService
+// -----------------------------------------------------------------
+const (
+	GetNetworkFeeInfo = "getNetworkFeeInfo"
+	GetNetworkFee     = "getNetworkFee"
 )
 
 // -----------------------------------------------------------------
 // Method of Gateway
 // -----------------------------------------------------------------
+
 const (
-	TransferAllowance = "transferAllowance"
-	TransferOut       = "transferOut"
-	TransferOutCall   = "transferOutCall"
+	BridgeIn = "bridgeIn"
+)
+
+var ZeroHash = "0x0000000000000000000000000000000000000000"
+
+// -----------------------------------------------------------------
+// Method of View
+// -----------------------------------------------------------------
+const (
+	GetPublickeys      = "getPublicKeys"
+	GetLastTxOutHeight = "getLastTxOutHeight"
+	GetLastTxInHeight  = "getLastTxInHeight"
+	GetVault           = "getVault"
 )

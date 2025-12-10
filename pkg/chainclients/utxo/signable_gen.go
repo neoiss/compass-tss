@@ -22,11 +22,11 @@ import (
 
 type tssSignableBCH struct {
 	poolPubKey    common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	log           zerolog.Logger
 }
 
-func newTssSignableBCH(poolPubKey common.PubKey, tssKeyManager tss.ThorchainKeyManager, log zerolog.Logger) *tssSignableBCH {
+func newTssSignableBCH(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManager, log zerolog.Logger) *tssSignableBCH {
 	return &tssSignableBCH{
 		poolPubKey:    poolPubKey,
 		tssKeyManager: tssKeyManager,
@@ -52,6 +52,7 @@ func (ts *tssSignableBCH) SignECDSA(payload []byte) (*bchec.Signature, error) {
 
 	return &sig, nil
 }
+
 // SignSchnorr signs the given payload using Schnorr
 func (ts *tssSignableBCH) SignSchnorr(payload []byte) (*bchec.Signature, error) {
 	return nil, fmt.Errorf("schnorr signature not yet implemented in TSS")
@@ -78,11 +79,11 @@ func (ts *tssSignableBCH) GetPubKey() *bchec.PublicKey {
 
 type tssSignableBTC struct {
 	poolPubKey    common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	log           zerolog.Logger
 }
 
-func newTssSignableBTC(poolPubKey common.PubKey, tssKeyManager tss.ThorchainKeyManager, log zerolog.Logger) *tssSignableBTC {
+func newTssSignableBTC(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManager, log zerolog.Logger) *tssSignableBTC {
 	return &tssSignableBTC{
 		poolPubKey:    poolPubKey,
 		tssKeyManager: tssKeyManager,
@@ -91,6 +92,7 @@ func newTssSignableBTC(poolPubKey common.PubKey, tssKeyManager tss.ThorchainKeyM
 }
 func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 	ts.log.Info().Msgf("msg to sign: %s", base64.StdEncoding.EncodeToString(payload))
+
 	result, _, err := ts.tssKeyManager.RemoteSign(payload, ts.poolPubKey.String())
 	if err != nil {
 		return nil, err
@@ -110,16 +112,7 @@ func (ts *tssSignableBTC) Sign(payload []byte) (*btcec.Signature, error) {
 }
 
 func (ts *tssSignableBTC) GetPubKey() *btcec.PublicKey {
-	//cpk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, ts.poolPubKey.String())
-	//if err != nil {
-	//	ts.log.Err(err).Str("pubkey", ts.poolPubKey.String()).Msg("fail to get pubic key from the bech32 pool public key string")
-	//	return nil
-	//}
-	//secpPubKey, err := codec.ToCmtPubKeyInterface(cpk)
-	//if err != nil {
-	//	ts.log.Err(err).Msgf("%s is not a secp256 k1 public key", ts.poolPubKey)
-	//	return nil
-	//}
+	ts.log.Info().Str("pubkey", ts.poolPubKey.String()).Msg("get public key")
 	pubKey, err := hex.DecodeString(ts.poolPubKey.String())
 	if err != nil {
 		ts.log.Err(err).Msg("fail to decode public key")
@@ -136,11 +129,11 @@ func (ts *tssSignableBTC) GetPubKey() *btcec.PublicKey {
 
 type tssSignableDOGE struct {
 	poolPubKey    common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	log           zerolog.Logger
 }
 
-func newTssSignableDOGE(poolPubKey common.PubKey, tssKeyManager tss.ThorchainKeyManager, log zerolog.Logger) *tssSignableDOGE {
+func newTssSignableDOGE(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManager, log zerolog.Logger) *tssSignableDOGE {
 	return &tssSignableDOGE{
 		poolPubKey:    poolPubKey,
 		tssKeyManager: tssKeyManager,
@@ -188,11 +181,11 @@ func (ts *tssSignableDOGE) GetPubKey() *dogeec.PublicKey {
 
 type tssSignableLTC struct {
 	poolPubKey    common.PubKey
-	tssKeyManager tss.ThorchainKeyManager
+	tssKeyManager tss.RelayKeyManager
 	log           zerolog.Logger
 }
 
-func newTssSignableLTC(poolPubKey common.PubKey, tssKeyManager tss.ThorchainKeyManager, log zerolog.Logger) *tssSignableLTC {
+func newTssSignableLTC(poolPubKey common.PubKey, tssKeyManager tss.RelayKeyManager, log zerolog.Logger) *tssSignableLTC {
 	return &tssSignableLTC{
 		poolPubKey:    poolPubKey,
 		tssKeyManager: tssKeyManager,

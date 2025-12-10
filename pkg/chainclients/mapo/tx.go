@@ -4,84 +4,247 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/pkg/errors"
 )
 
-var ErrOfOrderExist = errors.New("order already exist")
-
 func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 	//  check
-	if len(txIn.TxArray) == 0 {
+	if txIn == nil {
 		return nil, nil
 	}
 	// Here we construct tx according to method， and return tx hex bytes
 	var (
-		err    error
-		input  []byte
-		isTxIn bool
-		ele    = txIn.TxArray[0] // todo will next add mul
+		err   error
+		input []byte
 	)
 
-	switch ele.Method {
+	switch txIn.Method {
 	case constants.VoteTxIn:
-		input, err = b.mainAbi.Pack(constants.VoteTxIn, &structure.VoteTxIn{
-			TxInType:  ele.TxInType,
-			ToChain:   ele.ToChain,
-			Height:    ele.Height,
-			FromChain: ele.FromChain,
-			Amount:    ele.Amount,
-			OrderId:   ele.OrderId,
-			//Vault:     ele.Vault, // todo will next2
-			Vault:   ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
-			Token:   ele.Token,
-			From:    ele.From,
-			To:      ele.To,
-			Payload: ele.Payload,
-		})
-		isTxIn = true
+		args := make([]structure.VoteTxIn, 0)
+		for _, ele := range txIn.TxArray {
+			seq := ele.Sequence
+			if seq == nil {
+				seq = big.NewInt(0)
+			}
+
+			exist, err := b.OrderExecuted(ele.OrderId, true)
+			if err != nil {
+				return nil, err
+			}
+			if exist {
+				b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.Hex()).
+					Msg("voteTxIn ignore this tx, beasuce order exectued is ture")
+				continue
+			}
+
+			args = append(args, structure.VoteTxIn{
+				Height:     ele.Height.Uint64(),
+				OrderId:    ele.OrderId,
+				RefundAddr: ele.RefundAddr,
+				BridgeItem: structure.BridgeItem{
+					ChainAndGasLimit: ele.ChainAndGasLimit,
+					Vault:            ele.Vault,
+					TxType:           ele.TxOutType,
+					Sequence:         seq,
+					Token:            ele.Token,
+					Amount:           ele.Amount,
+					From:             ele.From,
+					To:               ele.To,
+					Payload:          ele.Payload,
+				},
+			})
+		}
+
+		if len(args) == 0 {
+			return nil, constants.ErrorOfOrderExecuted
+		}
+		input, err = b.tssAbi.Pack(constants.VoteTxIn, args)
 	case constants.VoteTxOut:
-		input, err = b.mainAbi.Pack(constants.VoteTxOut, &structure.VoteTxOut{
-			ToChain: ele.ToChain,
-			Height:  ele.Height,
-			Amount:  ele.Amount,
-			GasUsed: ele.GasUsed,
-			OrderId: ele.OrderId,
-			Vault:   ecommon.Hex2Bytes("9038a5cabb18c0bd3017b631d08feedf8107c816f3cd1783c26037516bfd7754bb59baad4e1c826ff72556af09cda2c3b934d9d08b10206c8ba4f39fafb864ea"),
-			Token:   ele.Token,
-			To:      ele.To,
-		})
+		args := make([]structure.VoteTxOut, 0)
+		for _, ele := range txIn.TxArray {
+
+			exist, err := b.OrderExecuted(ele.OrderId, false)
+			if err != nil {
+				return nil, err
+			}
+			if exist {
+				b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.Hex()).
+					Msg("voteTxOut ignore this tx, beasuce order exectued is ture")
+				continue
+			}
+
+			gasUsed := ele.GasUsed
+			if gasUsed == nil {
+				cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(ele.ChainAndGasLimit.Bytes(), 32)))
+				if err != nil {
+					return nil, fmt.Errorf("fail to parse chainAndGasLimit: %w", err)
+				}
+				gasUsed = cgl.End
+			}
+
+			args = append(args, structure.VoteTxOut{
+				Height:  ele.Height.Uint64(),
+				GasUsed: gasUsed,
+				OrderId: ele.OrderId,
+				Sender:  ecommon.HexToAddress(ele.Sender),
+				BridgeItem: structure.BridgeItem{
+					ChainAndGasLimit: ele.ChainAndGasLimit,
+					Vault:            ele.Vault,
+					TxType:           ele.TxOutType,
+					Sequence:         ele.Sequence,
+					Token:            ele.Token,
+					Amount:           ele.Amount,
+					From:             ele.From,
+					To:               ele.To,
+					Payload:          ele.Payload,
+				},
+			})
+		}
+		if len(args) == 0 {
+			return nil, constants.ErrorOfOrderExecuted
+		}
+		input, err = b.tssAbi.Pack(constants.VoteTxOut, args)
+	default:
+		return nil, fmt.Errorf("unsupported method: (%s)", txIn.Method)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("fail to method(%s) pack input: %w",
-			txIn.TxArray[0].Method, err)
-	}
-	//
-	var exist bool
-	err = b.mainCall.Call(constants.IsOrderExecuted, &exist, 0, ele.OrderId, isTxIn)
-	if err != nil {
-		return nil, fmt.Errorf("fail to call IsOrderExecuted: %w", err)
-	}
-	b.logger.Info().Str("txHash", ele.Tx).Str("orderId", ele.OrderId.String()).Msg("Checking orderId")
-	if exist {
-		return nil, ErrOfOrderExist
+		return nil, fmt.Errorf("fail to method(%s) pack input: %w", txIn.Method, err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0)
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
 }
 
-func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64) ([]byte, error) {
+// GetOracleStdTx Here we construct tx according to method， and return tx hex bytes
+func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
+	if txOut == nil {
+		return nil, nil
+	}
+
+	var (
+		err   error
+		input []byte
+	)
+
+	exist, err := b.OrderExecuted(txOut.OrderId, false)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		b.logger.Info().Str("txHash", txOut.TxHash).Str("orderId", txOut.OrderId.Hex()).
+			Msg("voteTxOut ignore this tx, beasuce order exectued is ture")
+		return nil, constants.ErrorOfOrderExecuted
+	}
+	isSign, err := b.OrderInfos(txOut.OrderId)
+	if err != nil {
+		return nil, err
+	}
+	if isSign {
+		b.logger.Info().Any("txHash", txOut.TxHash).Msg("is signed, ignore this tx")
+		return nil, nil
+	}
+
+	packAbi, _ := abi.JSON(strings.NewReader(packABI))
+	relayData, err := packAbi.Methods["relaySignedPack"].Inputs.Pack(
+		&structure.BridgeItem{
+			Amount:           txOut.Amount,
+			ChainAndGasLimit: txOut.ChainAndGasLimit,
+			From:             txOut.From,
+			Payload:          txOut.Data,
+			Sequence:         txOut.Sequence,
+			To:               txOut.To,
+			Token:            txOut.Token,
+			TxType:           txOut.TxType,
+			Vault:            txOut.Vault,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fail to pack relayData: %w", err)
+	}
+
+	cpk, err := b.compressPubkey(txOut.Vault)
+	if err != nil {
+		return nil, fmt.Errorf("fail to compress pubkey: %w", err)
+	}
+
+	sign, err := b.kw.SignCustomTSS(txOut.HashData[:], cpk) // check
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to sign tx")
+	}
+
+	input, err = b.relayAbi.Pack(constants.RelaySigned, txOut.OrderId, relayData, sign)
+	if err != nil {
+		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
+	}
+
+	return b.assemblyTx(context.Background(), input, 0, b.cfg.Relay)
+}
+
+func (b *Bridge) OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error) {
+	method := constants.IsOrderExecuted
+	input, err := b.relayAbi.Pack(method, orderId, txIn)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to pack input")
+	}
+	var isExecuted bool
+	err = b.callContract(&isExecuted, b.cfg.Relay, method, input, b.relayAbi)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to call contract")
+	}
+	return isExecuted, nil
+}
+
+type OrderInfoResp struct {
+	Signed      bool
+	Height      uint64
+	GasToken    ecommon.Address
+	EstimateGas *big.Int
+	Hash        [32]byte
+}
+
+func (b *Bridge) OrderInfos(orderId ecommon.Hash) (bool, error) {
+	method := constants.OrderInfos
+	input, err := b.relayAbi.Pack(method, orderId)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to pack input")
+	}
+	var ret OrderInfoResp
+	err = b.callContract(&ret, b.cfg.Relay, method, input, b.relayAbi)
+	if err != nil {
+		return false, errors.Wrap(err, "fail to call contract")
+	}
+	return ret.Signed, nil
+}
+
+func (b *Bridge) compressPubkey(pks []byte) (string, error) {
+	pk, err := ecrypto.UnmarshalPubkey(append([]byte{4}, pks...))
+	if err != nil {
+		return "", err
+	}
+	cpkBytes := ecrypto.CompressPubkey(pk)
+	return ecommon.Bytes2Hex(cpkBytes), nil
+}
+
+func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit uint64,
+	addr string) ([]byte, error) {
 	// estimate gas
 	gasFeeCap := b.gasPrice
 	fromAddr, _ := b.keys.GetEthAddress()
-	to := ecommon.HexToAddress(b.cfg.Maintainer)
+	to := ecommon.HexToAddress(addr)
 	gasLimit, err := b.ethClient.EstimateGas(ctx, ethereum.CallMsg{
 		From:     fromAddr,
 		To:       &to,
@@ -90,8 +253,11 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 		Data:     input,
 	})
 	if err != nil {
-		b.logger.Error().Str("input", ecommon.Bytes2Hex(input)).Msg("Estimate failed")
-		return nil, fmt.Errorf("fail to estimate gas limit: %w", err)
+		b.logger.Error().Any("err", err).Any("from", fromAddr).Str("input", ecommon.Bytes2Hex(input)).Msg("estimate failed")
+		if rpcErr, ok := err.(rpc.DataError); ok {
+			return nil, fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData())
+		}
+		return nil, err
 	}
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
 		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
@@ -101,7 +267,6 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 		gasFeeCap = head.BaseFee
 	}
 
-	// assemble tx
 	nonce, err := b.ethRpc.GetNonce(fromAddr.Hex())
 	if err != nil {
 		return nil, fmt.Errorf("fail to fetch account(%s) nonce : %w", fromAddr, err)
@@ -140,4 +305,56 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 	}
 
 	return ret, nil
+}
+
+// Broadcast Broadcasts tx to mapBridge
+func (b *Bridge) Broadcast(hexTx []byte) (string, error) {
+	// done
+	b.broadcastLock.Lock()
+	defer b.broadcastLock.Unlock()
+
+	// decode the transaction
+	tx := &etypes.Transaction{}
+	if err := tx.UnmarshalJSON(hexTx); err != nil {
+		return "", err
+	}
+	txID := tx.Hash().String()
+
+	// get context with default timeout
+	ctx, cancel := b.getTimeoutContext()
+	defer cancel()
+
+	// send the transaction
+	if err := b.ethClient.SendTransaction(ctx, tx); !isAcceptableError(err) {
+		b.logger.Error().Str("txId", txID).Err(err).Msg("Failed to send transaction")
+		return "", err
+	}
+	b.logger.Debug().Str("txId", txID).Msg("Broadcast tx")
+	return txID, nil
+}
+
+func (b *Bridge) getTimeoutContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), time.Second*5)
+}
+
+func (b *Bridge) TxStatus(txHash string) error {
+	_, pending, err := b.ethClient.TransactionByHash(context.Background(), ecommon.HexToHash(txHash))
+	if err != nil {
+		return errors.Wrap(err, "fail to get tx by hash")
+	}
+	if pending {
+		b.logger.Info().Str("tx", txHash).Msg("tx is still pending")
+		return errors.New("tx is pending")
+	}
+
+	receipt, err := b.ethClient.TransactionReceipt(context.Background(), ecommon.HexToHash(txHash))
+	if err != nil {
+		return errors.Wrap(err, "fail to get tx receipt")
+	}
+
+	if receipt.Status == etypes.ReceiptStatusSuccessful {
+		b.logger.Info().Str("hash", txHash).Msg("tx receipt status is success")
+		return nil
+	}
+	return fmt.Errorf("txHash(%s), status not success, current status is (%d)", txHash, receipt.Status)
 }

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"math/big"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -113,7 +114,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 	if err != nil {
 		return nil, err
 	}
-	vaultABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
+	gatewayABI, erc20ABI, err := evm.GetContractABI(gatewayContractABI, erc20ContractABI)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create contract abi: %w", err)
 	}
@@ -131,7 +132,7 @@ func NewETHScanner(cfg config.BifrostBlockScannerConfiguration,
 		blockMetaAccessor:    blockMetaAccessor,
 		tokens:               tokens,
 		bridge:               bridge,
-		gatewayABI:           vaultABI,
+		gatewayABI:           gatewayABI,
 		erc20ABI:             erc20ABI,
 		eipSigner:            etypes.NewLondonSigner(chainID),
 		pubkeyMgr:            pubkeyMgr,
@@ -197,10 +198,8 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		ToBlock:   big.NewInt(currentHeight),
 		Addresses: []ecommon.Address{ecommon.HexToAddress(e.cfg.Mos)},
 		Topics: [][]ecommon.Hash{{
-			constants.EventOfDeposit.GetTopic(),
-			constants.EventOfSwap.GetTopic(), // txIn -> voteTxIn
-			constants.EventOfTransferOut.GetTopic(),
-			constants.EventOfTransferAllowance.GetTopic(), // txOut -> voteTxOut
+			constants.EventOfBridgeOut.GetTopic(), // txIn -> voteTxIn
+			constants.EventOfBridgeIn.GetTopic(),  // txOut -> voteTxOut
 		}},
 	})
 	if err != nil {
@@ -236,9 +235,9 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 	// gas price to 1e8 from 1e18
 	gasPrice := e.GetGasPrice()
-	tcGasPrice := new(big.Int).Div(gasPrice, big.NewInt(1e10)).Uint64()
+	tcGasPrice := gasPrice.Uint64()
 	if tcGasPrice == 0 {
-		tcGasPrice = 1
+		tcGasPrice = 1000000000
 	}
 
 	// post to thorchain if there is a fee and it has changed
@@ -255,11 +254,11 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		e.lastReportedGasPrice = tcGasPrice
 	}
 
-	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(currentHeight); err != nil {
-			e.logger.Err(err).Msg("fail to report Solvency info to THORNode")
-		}
-	}
+	// if e.solvencyReporter != nil {
+	// 	if err = e.solvencyReporter(currentHeight); err != nil {
+	// 		e.logger.Err(err).Msg("fail to report Solvency info to relay")
+	// 	}
+	// }
 	return txIn, nil
 }
 
@@ -275,13 +274,13 @@ func (e *ETHScanner) updateGasPrice(baseFee *big.Int, priorityFees []*big.Int) {
 	priorityFee := priorityFees[len(priorityFees)/4]                                                    //
 
 	// consider gas price as base fee + 25th percentile priority fee
-	gasPriceWei := new(big.Int).Add(baseFee, priorityFee) // 20000
+	gasPriceWei := new(big.Int).Add(baseFee, priorityFee)
 
 	// round the price up to nearest configured resolution
-	resolution := big.NewInt(e.cfg.GasPriceResolution)                        // 10000
-	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1))) // 20000 + 9999
-	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)                    // 29999 / 9999 = 3
-	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)                    // 3 * 9999
+	resolution := big.NewInt(e.cfg.GasPriceResolution)
+	gasPriceWei.Add(gasPriceWei, new(big.Int).Sub(resolution, big.NewInt(1)))
+	gasPriceWei = gasPriceWei.Div(gasPriceWei, resolution)
+	gasPriceWei = gasPriceWei.Mul(gasPriceWei, resolution)
 
 	// add to the cache
 	e.gasCache = append(e.gasCache, gasPriceWei)
@@ -306,20 +305,17 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 	// avg
 	mean := new(big.Int).Quo(sum, big.NewInt(int64(e.cfg.GasCacheBlocks)))
 
-	// compute the standard deviation of cache
-	// 标准值
 	std := new(big.Int)
 	for _, fee := range e.gasCache {
-		v := new(big.Int).Sub(fee, mean) // 每个值在减去平均值, 4 - 2
-		v.Mul(v, v)                      // 2*2
-		std.Add(std, v)                  // 4 +4 +4+ 4  16
+		v := new(big.Int).Sub(fee, mean)
+		v.Mul(v, v)
+		std.Add(std, v)
 	}
-	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks))) // 在除以缓存长度 16/4 = 4
-	std.Sqrt(std)                                         // std开根号 2
+	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks)))
+	std.Sqrt(std)
 
-	// mean + 3x standard deviation over cache blocks
-	// 2 + 2*3 = 8
 	e.gasPrice = mean.Add(mean, std.Mul(std, big.NewInt(3)))
+	fmt.Println("e.gasPrice --------------- ", e.gasPrice)
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(e.gasPrice.Int64()).Float64()
@@ -817,9 +813,10 @@ func (e *ETHScanner) getAssetFromTokenAddress(token string) (common.Asset, error
 
 // getTxInFromSmartContract returns txInItem
 func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
-	e.logger.Debug().Msg("Parse tx from smart contract")
+	e.logger.Debug().Msg("parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
 		Tx:     ll.TxHash.Hex()[2:],
+		Topic:  ll.Topics[0].Hex(),
 		Height: big.NewInt(0).SetUint64(ll.BlockNumber),
 	}
 	cId, _ := e.cfg.ChainID.ChainID()
@@ -827,28 +824,22 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 
 	// 1 is Transaction success state
 	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Info().Msgf("Find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
+		e.logger.Info().Msgf("find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
 		return nil, nil
 	}
-	p := evm.NewSmartContractLogParser(e.isToValidContractAddress,
-		e.getAssetFromTokenAddress,
-		e.getTokenDecimalsForTHORChain,
-		e.convertAmount,
-		e.gatewayABI,
-		common.ETHAsset,
-		maxLogs)
+	p := evm.NewSmartContractLogParser(e.gatewayABI)
 	// txInItem will be changed in p.GetTxInItem function, so if the function return an error
 	// txInItem should be abandoned
-	if _, err := p.GetTxInItem(ll, txInItem); err != nil {
+	if err := p.GetTxInItem(ll, txInItem); err != nil {
 		return nil, fmt.Errorf("fail to parse logs, err: %w", err)
 	}
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
 	txGasPrice := receipt.EffectiveGasPrice
 
-	e.logger.Info().Msgf("Find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
+	e.logger.Info().Msgf("find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
 		txInItem.Tx, txGasPrice.String(), receipt.GasUsed, ll.Index)
 
-	e.logger.Debug().Msgf("Tx in item: %+v", txInItem)
+	e.logger.Debug().Msgf("tx in item: %+v", txInItem)
 	return txInItem, nil
 }
 

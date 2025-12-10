@@ -12,30 +12,33 @@ import (
 
 // TxOutItem represent the information of a tx bifrost need to process
 type TxOutItem struct {
-	Height          int64        `json:"height,omitempty"`
-	Memo            string       `json:"memo,omitempty"`
-	OrderId         ecommon.Hash `json:"order_id,omitempty"`
-	Token           []byte       `json:"token,omitempty"`
-	Vault           []byte       `json:"vault,omitempty"`
-	To              []byte       `json:"to,omitempty"`
-	Amount          *big.Int     `json:"amount,omitempty"`
-	FromChain       *big.Int     `json:"from_chain,omitempty"`
-	Chain           *big.Int     `json:"chain,omitempty"`
-	TransactionRate *big.Int     `json:"transaction_rate,omitempty"`
-	TransactionSize *big.Int     `json:"transaction_size,omitempty"`
-	LogIndex        uint         `json:"log_index,omitempty"`
-	TxHash          string       `json:"tx_hash,omitempty"`
-	InTxHash        string       `json:"in_tx_hash"`
-	Method          string       `json:"method,omitempty"`
-	// relayTransferCall
-	Payload []byte `json:"payload,omitempty"`
-	// migration
-	FromVault  []byte           `json:"from_vault,omitempty"`
-	ToVault    []byte           `json:"to_vault,omitempty"`
-	Allowances []TokenAllowance `json:"allowances,omitempty"`
-
-	VaultPubKey common.PubKey `json:"vault_pubkey"`
-	Checkpoint  []byte        `json:"-"`
+	Height           int64         `json:"height,omitempty"`
+	Checkpoint       []byte        `json:"-"`
+	Memo             string        `json:"memo,omitempty"`
+	Chain            *big.Int      // bridgeRelay add new field
+	VaultPubKey      common.PubKey `json:"vault_pubkey"`
+	LogIndex         uint          `json:"log_index,omitempty"`
+	TxHash           string        `json:"tx_hash,omitempty"`
+	Topics           string        `json:"topics,omitempty"`
+	Method           string        `json:"method,omitempty"`
+	FromChain        *big.Int      `json:"from_chain_chain,omitempty"` // bridgeRelay add new field
+	ToChain          *big.Int      `json:"to_chain,omitempty"`         // bridgeRelay add new field
+	OrderId          ecommon.Hash  `json:"order_id"`
+	ChainAndGasLimit *big.Int      `json:"chain_and_gas_limit,omitempty"`
+	TxType           uint8         `json:"tx_type,omitempty"`
+	Vault            []byte        `json:"vault,omitempty"`
+	To               []byte        `json:"to,omitempty"`
+	Token            []byte        `json:"token,omitempty"`
+	Amount           *big.Int      `json:"amount,omitempty"`
+	Sequence         *big.Int      `json:"sequence,omitempty"`
+	HashData         [32]byte      `json:"hash_data,omitempty"`
+	From             []byte        `json:"from,omitempty"`
+	Data             []byte        `json:"data,omitempty"`      // relaySigned relayData -> data
+	Sender           []byte        `json:"sender,omitempty"`    // bridgeCompleted event field
+	Signature        []byte        `json:"signature,omitempty"` // relaySigned event field
+	TransactionRate  *big.Int      `json:"transaction_rate,omitempty"`
+	TransactionSize  *big.Int      `json:"transaction_size,omitempty"`
+	// InTxHash         string        `json:"in_tx_hash"`
 }
 
 // Hash return a sha256 hash that can uniquely represent the TxOutItem
@@ -92,51 +95,54 @@ func (tx TxOutItem) Equals(tx2 TxOutItem) bool {
 // TxArrayItem from THORChain has Coin , which only have a single coin
 // TxOutItem used in bifrost need to support Coins for multisend
 type TxArrayItem struct {
-	Memo            string       `json:"memo,omitempty"`
-	OrderId         ecommon.Hash `json:"order_id"`
-	Token           []byte
-	Vault           []byte
-	To              []byte
-	Amount          *big.Int
-	Chain           *big.Int
-	TransactionRate *big.Int
-	TransactionSize *big.Int
-	LogIndex        uint
-	TxHash          string
-	Method          string
-	// relayTransferCall
-	Payload []byte
-	// migration
-	FromVault  []byte
-	ToVault    []byte
-	Allowances []TokenAllowance
-}
-
-type TokenAllowance struct {
-	Token  []byte
-	Amount *big.Int
+	Memo             string `json:"memo,omitempty"`
+	Chain            *big.Int
+	LogIndex         uint
+	TxHash           string
+	Topics           string
+	Method           string
+	FromChain        *big.Int
+	ToChain          *big.Int
+	OrderId          ecommon.Hash `json:"order_id"` // bridgeRelay add new field
+	ChainAndGasLimit *big.Int
+	TxType           uint8
+	Vault            []byte
+	To               []byte
+	Token            []byte
+	Amount           *big.Int
+	Sequence         *big.Int
+	Hash             [32]byte
+	From             []byte
+	Data             []byte // relaySigned relayData -> data
+	Sender           []byte // bridgeCompleted event field
+	Signature        []byte // relaySigned event field
 }
 
 // TxOutItem convert the information to TxOutItem
 func (tx TxArrayItem) TxOutItem(height int64) TxOutItem {
 	return TxOutItem{
-		Chain:           tx.Chain,
-		Memo:            tx.Memo,
-		Height:          height,
-		OrderId:         tx.OrderId,
-		Token:           tx.Token,
-		Vault:           tx.Vault,
-		To:              tx.To,
-		Amount:          tx.Amount,
-		TransactionRate: tx.TransactionRate,
-		TransactionSize: tx.TransactionSize,
-		LogIndex:        tx.LogIndex,
-		TxHash:          tx.TxHash,
-		Method:          tx.Method,
-		Payload:         tx.Payload,
-		FromVault:       tx.FromVault,
-		ToVault:         tx.ToVault,
-		Allowances:      tx.Allowances,
+		Chain:            tx.ToChain, // fixed , dont modify
+		Memo:             tx.Memo,
+		Height:           height,
+		OrderId:          tx.OrderId,
+		Token:            tx.Token,
+		Vault:            tx.Vault,
+		To:               tx.To,
+		Amount:           tx.Amount,
+		LogIndex:         tx.LogIndex,
+		TxHash:           tx.TxHash,
+		Topics:           tx.Topics,
+		Method:           tx.Method,
+		ChainAndGasLimit: tx.ChainAndGasLimit,
+		TxType:           tx.TxType,
+		Sequence:         tx.Sequence,
+		From:             tx.From,
+		Data:             tx.Data,
+		HashData:         tx.Hash,
+		Sender:           tx.Sender,
+		Signature:        tx.Signature,
+		FromChain:        tx.FromChain,
+		ToChain:          tx.ToChain,
 	}
 }
 

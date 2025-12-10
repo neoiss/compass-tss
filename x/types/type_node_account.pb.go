@@ -4,18 +4,19 @@
 package types
 
 import (
-	cosmossdk_io_math "cosmossdk.io/math"
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
-	common "github.com/mapprotocol/compass-tss/common"
-	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 	io "io"
 	math "math"
 	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
+
+	cosmossdk_io_math "cosmossdk.io/math"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
+	common "github.com/mapprotocol/compass-tss/common"
+	github_com_mapprotocol_compass_v3_common "github.com/mapprotocol/compass-tss/common"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -32,17 +33,17 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type NodeStatus int32
 
 const (
-	NodeStatus_Unknown     NodeStatus = 0
-	NodeStatus_Whitelisted NodeStatus = 1
-	NodeStatus_Standby     NodeStatus = 2
-	NodeStatus_Ready       NodeStatus = 3
-	NodeStatus_Active      NodeStatus = 4
-	NodeStatus_Disabled    NodeStatus = 5
+	NodeStatus_Unknown  NodeStatus = 0
+	NodeStatus_REVOKED  NodeStatus = 1
+	NodeStatus_Standby  NodeStatus = 2
+	NodeStatus_Ready    NodeStatus = 3
+	NodeStatus_Active   NodeStatus = 4
+	NodeStatus_Disabled NodeStatus = 5
 )
 
 var NodeStatus_name = map[int32]string{
 	0: "Unknown",
-	1: "Whitelisted",
+	1: "REVOKED",
 	2: "Standby",
 	3: "Ready",
 	4: "Active",

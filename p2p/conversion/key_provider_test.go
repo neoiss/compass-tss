@@ -85,3 +85,59 @@ func (KeyProviderTestSuite) TestCheckKeyOnCurve(c *C) {
 	_, err = CheckKeyOnCurve("thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n")
 	c.Assert(err, IsNil)
 }
+
+func Test_GetPeerIDFromPubKeyByEth(t *testing.T) {
+	testCases := []struct {
+		desc string
+	}{
+		{
+			desc: "59fb9b933e036204bbe24d3e9d2215952704341159bb6d15526e195b7e250a990dedff123dfa4ae5da1273f5d9863c9389bfc4c53e94b250d565c1669ba3bb17",
+		},
+		// {
+		// 	desc: "0336e12f4a3a175086bbd983f050453194810d8afcfec4e08a898c8e59778c649f",
+		// },
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ret, err := GetPeerIDFromPubKeyByEth(tC.desc)
+			if ret != "" {
+				t.Log("ret --------- ", ret)
+			}
+			if err != nil {
+				t.Log("err --------- ", err)
+			}
+
+		})
+	}
+}
+
+func Test_GetPubKeyFromPeerIDByEth(t *testing.T) {
+	testCases := []struct {
+		desc string
+	}{
+		// {
+		// 	desc: "16Uiu2HAm4EQGEiC8HChuZwt4m2nNpgFZ7kdBNifF6qVCpXzMngit",
+		// },
+		{
+			desc: "16Uiu2HAmGMDXAJ2SkJY8iTu3qTkr8QLJZrWVW9ZNWtUL5eCie4jx",
+		},
+		{
+			desc: "16Uiu2HAmJiFAAggjvwMftkM8nGrAutb6LYqCQYeUFk23WCB2dsiQ",
+		},
+		{
+			desc: "16Uiu2HAmN4KJgcnvkT1sJuFnEkgwEvmgVqbEgzDzGbQnBTNYop9e",
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ret, err := GetPubKeyFromPeerIDByEth(tC.desc)
+			if ret != "" {
+				t.Log("ret --------- ", ret)
+			}
+			if err != nil {
+				t.Log("err --------- ", err)
+			}
+
+		})
+	}
+}
