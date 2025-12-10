@@ -19,23 +19,19 @@ bifrost:
     read_timeout: 30s
     write_timeout: 30s
     chains:
-      - BCH
       - BTC
-      - ETH
       - BSC
-      - BASE
   map_relay:
     chain_id: map
-    chain_host: https://testnet-rpc.maplabs.io
-    signer_name: "first_cosmos"
+    chain_host: https://mrpc.chainservice.io
+    signer_name: "first_cosmos_name"
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
-    maintainer: "0x60c2e5bd5b785910424C48098292Ab410884B5ad"
-    tss_manager: "0x650e730F93AFC4ea7d2724D5237a4292aEF49F78"
+    maintainer: "0x7e22B9FC15054546028Df928eB7560AEd8F0eF48"
+    tss_manager: "0x062B3Bd0B1A0c9d3cE35dC59D8F5E929314a8706"
     relay: "0x42D64eD9381bF456697b0C360e8acE139F176a80"
-    gas_service: "0xf9A825A2B9d62550610cDC5a9d05417bC35FF524"
-    token_registry: "0xF67db5535c337261e4EFff49ed956397e8F00078"
-    view_controller: "0xb79bAe710F69f5D9B53098aB16B57A26a762c7BF"
-    addr: ""
+    gas_service: "0x43A7dd204f6604F2578Bd5d0859f45296d27F23A"
+    token_registry: "0x78D31173C04e5F1D4b0172440B09453C27990527"
+    view_controller: "0xaf720ad7086627034c4d8CA2b4493079E97f1C3A"
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
   signer:
@@ -54,8 +50,8 @@ bifrost:
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
       max_http_request_retry: "10"
-      max_gas_limit: 100000
-      max_swap_gas_limit: 150000
+      max_gas_limit: 1000000
+      max_swap_gas_limit: 1500000
     leveldb: *default-leveldb
     keygen_timeout: 5m
     keysign_timeout: 45s
@@ -66,9 +62,9 @@ bifrost:
     p2p_port: 5040
     info_address: 0.0.0.0:6040
     bootstrap_peers:
-      - 10.0.3.51
-      - 10.0.3.39
-      - 10.0.3.31
+      - 172.26.113.106
+      - 1172.26.113.107
+      - 172.26.113.108
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
   chains:
@@ -143,30 +139,6 @@ bifrost:
       opt_to_retire: false
       solvency_blocks: 0
 
-    eth:
-      <<: *default-chain
-      chain_id: ETH
-      rpc_host: "https://ethereum-sepolia-rpc.publicnode.com"
-      max_pending_nonces: 3
-      max_gas_tip_percentage: 20
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      block_scanner:
-        <<: *default-block-scanner
-        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
-        max_reorg_rescan_blocks: 96 # 3 epochs
-        gas_cache_blocks: 40
-        concurrency: 1
-        chain_id: ETH
-        observation_flexibility_blocks: 20
-        max_gas_limit: 100000
-        max_swap_gas_limit: 150000
-        max_contract_tx_logs: 50
-        start_block_height: 9470030
-        gas_price_resolution: 1
-      mempool_tx_id_cache_size: 0
-      scanner_leveldb: *default-leveldb
-
     bsc:
       disabled: false
       <<: *default-chain
@@ -185,21 +157,11 @@ bifrost:
         gas_cache_blocks: 40
         gas_price_resolution: 1 # 10 gwei
         observation_flexibility_blocks: 80
-        max_gas_limit: 100000
-        max_swap_gas_limit: 150000
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
-        start_block_height: 69788523
+        start_block_height: 
         whitelist_tokens:
           - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
-          - 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d # Binance Pegged USDC
-          - 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56 # Binance Pegged BUSD
-          - 0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3 # Binance Pegged DAI
-          - 0x14016E85a25aeb13065688cAFB43044C2ef86784 # True USD
-          - 0x2170Ed0880ac9A755fd29B2688956BD959F933F8 # Binance Pegged ETH
-          - 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c # Binance Pegged BTC
-          - 0x570A5D26f7765Ecb712C0924E4De545B89fD43dF # Binance Pegged SOL
-          - 0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47 # Binance Pegged Cardano
-          - 0x4B0F1812e5Df2A09796481Ff14017e6005508003 # Trust Wallet Token (TWT)
-          - 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82 # PancakeSwap (CAKE)
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb

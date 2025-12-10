@@ -253,7 +253,7 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 		Data:     input,
 	})
 	if err != nil {
-		b.logger.Error().Any("err", err).Str("input", ecommon.Bytes2Hex(input)).Msg("estimate failed")
+		b.logger.Error().Any("err", err).Any("from", fromAddr).Str("input", ecommon.Bytes2Hex(input)).Msg("estimate failed")
 		if rpcErr, ok := err.(rpc.DataError); ok {
 			return nil, fmt.Errorf("%s:%s", rpcErr.Error(), rpcErr.ErrorData())
 		}

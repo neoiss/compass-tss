@@ -816,6 +816,7 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	e.logger.Debug().Msg("parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
 		Tx:     ll.TxHash.Hex()[2:],
+		Topic:  ll.Topics[0].Hex(),
 		Height: big.NewInt(0).SetUint64(ll.BlockNumber),
 	}
 	cId, _ := e.cfg.ChainID.ChainID()
