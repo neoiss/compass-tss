@@ -812,7 +812,7 @@ func (e *ETHScanner) getAssetFromTokenAddress(token string) (common.Asset, error
 }
 
 // getTxInFromSmartContract returns txInItem
-func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Receipt, maxLogs int64) (*stypes.TxInItem, error) {
+func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, maxLogs int64) (*stypes.TxInItem, error) {
 	e.logger.Debug().Msg("parse tx from smart contract")
 	txInItem := &stypes.TxInItem{
 		Tx:     ll.TxHash.Hex()[2:],
@@ -822,11 +822,6 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 	cId, _ := e.cfg.ChainID.ChainID()
 	txInItem.FromChain = cId
 
-	// 1 is Transaction success state
-	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		e.logger.Info().Msgf("find a Tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
-		return nil, nil
-	}
 	p := evm.NewSmartContractLogParser(e.gatewayABI)
 	// txInItem will be changed in p.GetTxInItem function, so if the function return an error
 	// txInItem should be abandoned
@@ -834,11 +829,8 @@ func (e *ETHScanner) getTxInFromSmartContract(ll *etypes.Log, receipt *etypes.Re
 		return nil, fmt.Errorf("fail to parse logs, err: %w", err)
 	}
 	// under no circumstance ETH gas price will be less than 1 Gwei , unless it is in dev environment
-	txGasPrice := receipt.EffectiveGasPrice
 
-	e.logger.Info().Msgf("find tx: %s, gas price: %s, gas used: %d, logIndex:%d",
-		txInItem.Tx, txGasPrice.String(), receipt.GasUsed, ll.Index)
-
+	e.logger.Info().Msgf("find tx: %s, logIndex:%d", txInItem.Tx, ll.Index)
 	e.logger.Debug().Msgf("tx in item: %+v", txInItem)
 	return txInItem, nil
 }
@@ -847,24 +839,8 @@ func (e *ETHScanner) fromTxToTxInLog(ll *etypes.Log) (*stypes.TxInItem, error) {
 	if ll == nil {
 		return nil, nil
 	}
-	receipt, err := e.getReceipt(ll.TxHash.Hex())
-	if err != nil {
-		if errors.Is(err, ethereum.NotFound) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("fail to get transaction receipt: %w", err)
-	}
-	if receipt.Status != etypes.ReceiptStatusSuccessful {
-		if e.signerCacheManager != nil {
-			e.signerCacheManager.RemoveSigned(ll.TxHash.String())
-		}
-		e.logger.Debug().Msgf("tx(%s) state: %d means failed , ignore", ll.TxHash.String(), receipt.Status)
-		// todo will next 100
-		return nil, nil
-		//return e.getTxInFromFailedTransaction(tx, receipt), nil
-	}
 
-	ret, err := e.getTxInFromSmartContract(ll, receipt, 0)
+	ret, err := e.getTxInFromSmartContract(ll, 0)
 	if err != nil {
 		return nil, err
 	}

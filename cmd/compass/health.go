@@ -41,10 +41,10 @@ type P2PStatusPeer struct {
 }
 
 type P2PStatusResponse struct {
-	ThornodeHeight int64           `json:"thornode_height"`
-	Peers          []P2PStatusPeer `json:"peers"`
-	PeerCount      int             `json:"peer_count"`
-	Errors         []string        `json:"errors"`
+	RelayHeight int64           `json:"relay_height"`
+	Peers       []P2PStatusPeer `json:"peers"`
+	PeerCount   int             `json:"peer_count"`
+	Errors      []string        `json:"errors"`
 }
 
 type ScannerResponse struct {
