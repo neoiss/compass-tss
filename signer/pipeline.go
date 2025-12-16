@@ -160,7 +160,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 		}
 	}
 	if len(itemsToSign) > 0 {
-		log.Info().Msgf("SpawnSignings will handle %d tx locking", len(itemsToSign))
+		log.Debug().Msgf("SpawnSignings will handle %d tx locking", len(itemsToSign))
 	}
 
 	// spawn signing routines for each item
