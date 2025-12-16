@@ -110,9 +110,6 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 			retryItems[vc] = append(retryItems[vc], item)
 		}
 	}
-	if len(allItems) > 0 {
-		log.Info().Msgf("SpawnSignings found %d all items", len(allItems))
-	}
 
 	var itemsToSign []TxOutStoreItem
 
@@ -168,7 +165,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 	// spawn signing routines for each item
 	for _, item := range itemsToSign {
-		log.Info().Msgf("SpawnSignings will handler %s a tx", item.TxOutItem.TxHash)
+		log.Debug().Msgf("SpawnSignings will handler %s a tx", item.TxOutItem.TxHash)
 		// return if the signer is stopped
 		if s.isStopped() {
 			return
@@ -178,7 +175,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 		// check if the vault/chain is locked
 		if lockedVaultChains[vc] {
-			log.Info().Msgf("skill %s a tx", item.TxOutItem.TxHash)
+			log.Debug().Msgf("skill %s a tx", item.TxOutItem.TxHash)
 			continue
 		}
 
