@@ -208,9 +208,7 @@ func (c *Client) GetChain() common.Chain {
 
 // IsBlockScannerHealthy returns true if the block scanner is healthy.
 func (c *Client) IsBlockScannerHealthy() bool {
-	// todo utxo
-	//return c.blockScanner.IsHealthy()
-	return true
+	return c.blockScanner.IsHealthy()
 }
 
 // GetHeight returns current chain (not scanner) height.
@@ -599,11 +597,14 @@ func (c *Client) FetchMemPool(height int64) (types.TxIn, error) {
 			var txInItem types.TxInItem
 			txInItem, err = c.getTxIn(result, height, true, nil)
 			if err != nil {
-				c.log.Debug().Err(err).Msg("fail to get TxInItem")
+				c.log.Debug().Str("txid", result.Txid).Err(err).Msg("fail to get TxInItem")
 				continue
 			}
 			if txInItem.IsEmpty() {
 				continue
+			}
+			if txInItem.IsEmpty() {
+				c.log.Debug().Str("txid", result.Txid).Err(err).Msg("not found tx in")
 			}
 			//if txInItem.Coins.IsEmpty() {
 			//	continue

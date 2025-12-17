@@ -318,7 +318,7 @@ func (c *Client) sendNetworkFee(height int64) error {
 		TransactionRate:     feeRate,
 	}
 
-	c.log.Debug().Msg("send network fee to THORNode successfully")
+	c.log.Info().Msg("send network fee to map successfully")
 	return nil
 }
 
@@ -468,7 +468,7 @@ func (c *Client) isRBFEnabled(tx *btcjson.TxRawResult) bool {
 }
 
 func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, vinZeroTxs map[string]*btcjson.TxRawResult) (types.TxInItem, error) {
-	c.log.Info().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
+	//c.log.Info().Int64("height", height).Str("txid", tx.Txid).Msg("get tx in")
 	if c.ignoreTx(tx, height) {
 		b, _ := json.Marshal(tx)
 		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Str("tx", string(b)).Msg("ignore tx not matching format")

@@ -72,6 +72,9 @@ func DecodeBitcoinAddress(addr string, network *chaincfg.Params) (btcutil.Addres
 	if !common.HasHexPrefix(addr) {
 		addr = "0x" + addr
 	}
+	if len(addr) <= 4 {
+		return nil, fmt.Errorf("invalid address: %s", addr)
+	}
 
 	prefix := addr[:4]
 	publicKey := addr[4:]
