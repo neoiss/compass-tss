@@ -113,7 +113,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 			}
 			outputAddr, err = btcutil.DecodeAddress(addr.String(), c.getChainCfgBTC())
 			if err != nil {
-				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("fail to decode next address")
+				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", addr.String()).Msg("fail to decode next address")
 				return nil, nil, nil, fmt.Errorf("fail to decode next addres: %w", err)
 			}
 		} else {

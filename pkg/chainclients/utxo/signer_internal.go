@@ -3,6 +3,7 @@ package utxo
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/constants"
 	"math/big"
 	"sort"
 	"strings"
@@ -349,9 +350,29 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		}
 	case common.BTCChain:
 		var outputAddr btcutil.Address
-		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
-		if err != nil {
-			return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
+		if tx.TxType == uint8(constants.MIGRATE) {
+			// when migrating, we need to use the pubkey to get the address
+			pubKey, err := common.CompressPubKey(tx.Data)
+			if err != nil {
+				c.log.Error().Err(err).Str("pubkey", hex.EncodeToString(tx.Data)).Msg("fail to compress pub key")
+				return nil, nil, fmt.Errorf("fail to compress pub key: %w", err)
+			}
+			addr, err := common.PubKey(pubKey).GetAddress(c.cfg.ChainID)
+			if err != nil {
+				c.log.Error().Err(err).Str("pubkey", pubKey).Msg("fail to get vault address")
+				return nil, nil, fmt.Errorf("fail to get vault address: %w", err)
+			}
+			outputAddr, err = btcutil.DecodeAddress(addr.String(), c.getChainCfgBTC())
+			if err != nil {
+				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", addr.String()).Msg("fail to decode next address")
+				return nil, nil, fmt.Errorf("fail to decode next addres: %w", err)
+			}
+		} else {
+			outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
+			if err != nil {
+				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("fail to decode bitcoind address")
+				return nil, nil, fmt.Errorf("fail to decode next address: %w", err)
+			}
 		}
 		buf, err = btctxscript.PayToAddrScript(outputAddr)
 		if err != nil {
