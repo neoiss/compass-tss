@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/ctx"
 	"github.com/mapprotocol/compass-tss/internal/structure"
 	stypes "github.com/mapprotocol/compass-tss/x/types"
@@ -79,7 +80,7 @@ type Bridge interface {
 	HeartBeat() error
 	EnsureNodeWhitelisted() error
 	EnsureNodeWhitelistedWithTimeout() error
-	FetchNodeStatus() (stypes.NodeStatus, error)
+	FetchNodeStatus() (constants.NodeStatus, error)
 	FetchActiveNodes() ([]common.PubKey, error)
 	GetNodeAccount(string) (*structure.MaintainerInfo, error)
 	GetNodeAccounts([]ecommon.Address) ([]structure.MaintainerInfo, error)

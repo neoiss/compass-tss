@@ -314,7 +314,7 @@ func (b *Bridge) EnsureNodeWhitelisted() error {
 	if err != nil {
 		return fmt.Errorf("failed to get node status: %w", err)
 	}
-	if status == stypes.NodeStatus_Unknown {
+	if status == constants.NodeStatus_Unknown {
 		return fmt.Errorf("node account status %d , will not be able to forward transaction to mapBridge", status)
 	}
 	return nil
