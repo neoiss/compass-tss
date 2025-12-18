@@ -543,20 +543,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 
 		vaultPbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(sender))
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
-		}
-
-		address, err := btcutil.DecodeAddress(toAddr, c.getChainCfgBTC())
-		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
-		}
-		to, err := EncodeBitcoinAddress(address)
-		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
-		}
-		toBytes, err := hex.DecodeString(strings.TrimPrefix(to, "0x"))
-		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", to, err)
+			return types.TxInItem{}, fmt.Errorf("fail to get asgard pub key by address: %w", err)
 		}
 
 		amount, err := btcutil.NewAmount(tx.Vout[0].Value)
@@ -570,6 +557,37 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		fee, err := btcutil.NewAmount(txResult.Fee)
 		if err != nil {
 			return types.TxInItem{}, fmt.Errorf("fail to parse amount(%f): %w", tx.Vout[0].Value, err)
+		}
+
+		var (
+			toBytes   []byte
+			txOutType constants.TxInType
+		)
+
+		switch parsedMemo.GetType() {
+		case mem.TxInbound:
+			address, err := btcutil.DecodeAddress(toAddr, c.getChainCfgBTC())
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
+			}
+			to, err := EncodeBitcoinAddress(address)
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
+			}
+			toBytes, err = hex.DecodeString(strings.TrimPrefix(to, "0x"))
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", to, err)
+			}
+			txOutType = constants.TRANSFER
+		case mem.TxMigrate:
+			toBytes = []byte{}
+			payload, err = utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to get asgard pub key by address: %w", err)
+			}
+			txOutType = constants.MIGRATE
+		default:
+			return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
 		}
 
 		chainAndGasLimit := make([]byte, 32)
@@ -591,7 +609,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			Method:           constants.VoteTxOut,
 			LogIndex:         0,
 			ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
-			TxOutType:        uint8(constants.TRANSFER),
+			TxOutType:        uint8(txOutType),
 			Sequence:         big.NewInt(0),
 			Topic:            constants.EventOfBridgeIn.GetTopic().String(),
 			Timestamp:        tx.Blocktime,

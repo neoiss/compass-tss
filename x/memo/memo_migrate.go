@@ -4,30 +4,30 @@ import (
 	"fmt"
 )
 
-type InboundMemo struct {
+type MigrateMemo struct {
 	MemoBase
 	Chain   string
 	OrderID string
 }
 
-func (m InboundMemo) GetOrderID() string { return m.OrderID }
+func (m MigrateMemo) GetOrderID() string { return m.OrderID }
 
 // String returns a string representation of the memo
 // format: M>|from chain|order id
-func (m InboundMemo) String() string {
+func (m MigrateMemo) String() string {
 	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.OrderID)
 }
 
-func NewInboundMemo(chain, orderID string) InboundMemo {
+func NewMigrateMemo(chain, orderID string) InboundMemo {
 	return InboundMemo{
-		MemoBase: MemoBase{TxType: TxInbound},
+		MemoBase: MemoBase{TxType: TxMigrate},
 		Chain:    chain,
 		OrderID:  orderID,
 	}
 }
 
-func (p *parser) ParseInboundMemo() (InboundMemo, error) {
+func (p *parser) ParseMigrateMemo() (InboundMemo, error) {
 	chain := p.get(1)
 	order := p.get(2)
-	return NewInboundMemo(chain, order), p.Error()
+	return NewMigrateMemo(chain, order), p.Error()
 }

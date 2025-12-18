@@ -287,7 +287,11 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
 	}
-	tx.Memo = mem.NewInboundMemo(chainName, tx.OrderId.String()).String()
+	if tx.TxType == uint8(constants.MIGRATE) {
+		tx.Memo = mem.NewMigrateMemo(chainName, tx.OrderId.String()).String()
+	} else {
+		tx.Memo = mem.NewInboundMemo(chainName, tx.OrderId.String()).String()
+	}
 
 	txes, err := c.getUtxoToSpend(tx.VaultPubKey, c.getPaymentAmount(tx))
 	if err != nil {
