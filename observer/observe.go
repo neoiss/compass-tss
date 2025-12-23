@@ -178,17 +178,17 @@ func (o *Observer) deck(ctx context.Context) {
 	}
 }
 func (o *Observer) sendDeck(ctx context.Context) {
-	// check if node is active
-	nodeStatus, err := o.bridge.FetchNodeStatus()
-	if err != nil {
-		o.logger.Error().Err(err).Msg("Failed to get node status")
-		return
-	}
+	// // check if node is active
+	// nodeStatus, err := o.bridge.FetchNodeStatus()
+	// if err != nil {
+	// 	o.logger.Error().Err(err).Msg("Failed to get node status")
+	// 	return
+	// }
 
-	if nodeStatus != constants.NodeStatus_Active {
-		o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("Node is not active, will not handle tx in")
-		return
-	}
+	// if nodeStatus != constants.NodeStatus_Active {
+	// 	o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("Node is not active, will not handle tx in")
+	// 	return
+	// }
 
 	o.lock.Lock()
 	defer o.lock.Unlock()
