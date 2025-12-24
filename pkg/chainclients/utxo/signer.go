@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/constants"
 	"math/big"
 	"strings"
 	"sync"
@@ -56,7 +57,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	//}
 
 	toAddress := hex.EncodeToString(tx.To)
-	if c.cfg.ChainID.Equals(common.BCHChain) {
+	if c.cfg.ChainID.Equals(common.BCHChain) { // todo decode address
 		if !common.Address(toAddress).IsValidBCHAddress() {
 			c.log.Error().Str("relayHash", tx.TxHash).Msgf("to address: %s is legacy not allowed ", toAddress)
 			return nil, nil, nil, nil
@@ -97,10 +98,30 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		}
 		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
 	case common.BTCChain:
-		outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
-		if err != nil {
-			c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
-			return nil, nil, nil, nil
+		var outputAddr btcutil.Address
+		if tx.TxType == uint8(constants.MIGRATE) {
+			// when migrating, we need to use the pubkey to get the address
+			pubKey, err := common.CompressPubKey(tx.Data)
+			if err != nil {
+				c.log.Error().Err(err).Str("pubkey", hex.EncodeToString(tx.Data)).Msg("fail to compress pub key")
+				return nil, nil, nil, fmt.Errorf("fail to compress pub key: %w", err)
+			}
+			addr, err := common.PubKey(pubKey).GetAddress(c.cfg.ChainID)
+			if err != nil {
+				c.log.Error().Err(err).Str("pubkey", pubKey).Msg("fail to get vault address")
+				return nil, nil, nil, fmt.Errorf("fail to get vault address: %w", err)
+			}
+			outputAddr, err = btcutil.DecodeAddress(addr.String(), c.getChainCfgBTC())
+			if err != nil {
+				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", addr.String()).Msg("fail to decode next address")
+				return nil, nil, nil, fmt.Errorf("fail to decode next addres: %w", err)
+			}
+		} else {
+			outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
+			if err != nil {
+				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
+				return nil, nil, nil, nil
+			}
 		}
 		outputAddrStr = outputAddr.(btcutil.Address).String()
 	default:

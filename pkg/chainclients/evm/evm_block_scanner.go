@@ -602,7 +602,6 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	median = median.Div(median, resolution)
 	median = median.Mul(median, resolution)
 	e.gasPrice = median
-	fmt.Println("evm e.gasPrice -------------- ", e.gasPrice)
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(e.gasPrice.Int64()).Float64()

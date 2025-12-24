@@ -212,18 +212,19 @@ func (b *Bridge) callContract(ret interface{}, addr, method string, input []byte
 }
 
 // FetchNodeStatus get current node status from mapBridge
-func (b *Bridge) FetchNodeStatus() (stypes.NodeStatus, error) {
+func (b *Bridge) FetchNodeStatus() (constants.NodeStatus, error) {
 	addr, err := b.keys.GetEthAddress()
 	if err != nil {
-		return stypes.NodeStatus_Unknown, nil
+		return constants.NodeStatus_Unknown, nil
 	}
 	// done
 	na, err := b.GetNodeAccount(addr.String())
 	if err != nil {
-		return stypes.NodeStatus_Unknown, fmt.Errorf("failed to get node status: %w", err)
+		return constants.NodeStatus_Unknown,
+			fmt.Errorf("failed to get node status: %w", err)
 	}
 
-	return stypes.NodeStatus(na.Status), nil
+	return constants.NodeStatus(na.Status), nil
 }
 
 func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {

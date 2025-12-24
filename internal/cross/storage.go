@@ -177,7 +177,12 @@ func (s *CrossStorage) GetCrossData(key string) (*CrossSet, error) {
 
 func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 	ret := make([]*CrossMapping, 0, limit)
-	iter := s.db.NewIterator(nil, nil)
+	snap, err := s.db.GetSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	defer snap.Release()
+	iter := snap.NewIterator(nil, nil)
 	defer iter.Release()
 	if key != "" {
 		ok := iter.Seek([]byte(key))
@@ -205,6 +210,17 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 
 	if err := iter.Error(); err != nil {
 		return nil, fmt.Errorf("iterator error: %w", err)
+	}
+
+	return ret, nil
+}
+
+func (s *CrossStorage) Count() (int64, error) {
+	iter := s.db.NewIterator(nil, nil)
+	ret := int64(0)
+	defer iter.Release()
+	for iter.Next() {
+		ret++
 	}
 
 	return ret, nil

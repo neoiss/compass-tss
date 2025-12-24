@@ -18,6 +18,7 @@ const (
 	TxOutbound
 	TxRefund
 	TxAdd
+	TxMigrate
 )
 
 var txToStringMap = map[TxType]string{
@@ -25,6 +26,7 @@ var txToStringMap = map[TxType]string{
 	TxOutbound: "Mx",
 	TxRefund:   "M<",
 	TxAdd:      "M+",
+	TxMigrate:  "M~",
 }
 
 var stringToTxTypeMap = map[string]TxType{
@@ -32,6 +34,7 @@ var stringToTxTypeMap = map[string]TxType{
 	"mx": TxOutbound,
 	"m<": TxRefund,
 	"m+": TxAdd,
+	"m~": TxMigrate,
 }
 
 func StringToTxType(s string) (TxType, error) {

@@ -21,6 +21,7 @@ bifrost:
     chains:
       - BTC
       - BSC
+      - ETH
   map_relay:
     chain_id: map
     chain_host: https://mrpc.chainservice.io
@@ -45,7 +46,6 @@ bifrost:
       block_retry_interval: 10s
       block_height_discover_back_off: 5s
       block_scan_processors: 1
-      start_block: 17243301
       http_request_timeout: 30s
       http_request_read_timeout: 30s
       http_request_write_timeout: 30s
@@ -138,6 +138,30 @@ bifrost:
       cosmos_grpc_tls: false
       opt_to_retire: false
       solvency_blocks: 0
+
+    eth:
+      <<: *default-chain
+      chain_id: ETH
+      rpc_host: "https://cf-rpc.omniservice.dev/compass/sepolia"
+      max_pending_nonces: 3
+      max_gas_tip_percentage: 20
+      token_max_gas_multiplier: 3
+      aggregator_max_gas_multiplier: 10
+      block_scanner:
+        <<: *default-block-scanner
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        max_reorg_rescan_blocks: 96 # 3 epochs
+        gas_cache_blocks: 40
+        concurrency: 1
+        chain_id: ETH
+        observation_flexibility_blocks: 20
+        max_gas_limit: 100000
+        max_swap_gas_limit: 150000
+        max_contract_tx_logs: 50
+        start_block_height: 9763169
+        gas_price_resolution: 1000000
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
 
     bsc:
       disabled: false
