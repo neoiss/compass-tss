@@ -765,7 +765,7 @@ func (s *Signer) processTransaction(item TxOutStoreItem) {
 		for e := range constants.ToMapIgnoreError {
 			if strings.Contains(err.Error(), e) {
 				s.logger.Info().Str("relayHash", item.TxOutItem.TxHash).
-					Msgf("ignore This Error, Continue to the next: %s", err.Error())
+					Msgf("ignore this error, Continue to the next: %s", err.Error())
 				goto final
 			}
 		}

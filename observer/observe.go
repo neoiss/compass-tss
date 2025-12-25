@@ -178,18 +178,6 @@ func (o *Observer) deck(ctx context.Context) {
 	}
 }
 func (o *Observer) sendDeck(ctx context.Context) {
-	// // check if node is active
-	// nodeStatus, err := o.bridge.FetchNodeStatus()
-	// if err != nil {
-	// 	o.logger.Error().Err(err).Msg("Failed to get node status")
-	// 	return
-	// }
-
-	// if nodeStatus != constants.NodeStatus_Active {
-	// 	o.logger.Warn().Any("nodeStatus", nodeStatus).Msg("Node is not active, will not handle tx in")
-	// 	return
-	// }
-
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
@@ -270,7 +258,7 @@ func (o *Observer) signAndSendToMapRelay(txIn *types.TxIn) error {
 		for e := range constants.ToMapIgnoreError {
 			if strings.Contains(err.Error(), e) {
 				o.logger.Info().Str("id", txIn.TxArray[0].Tx).Str("method", txIn.Method).
-					Msgf("ignore This Error, Continue to the next: %s", err.Error())
+					Msgf("ignore this error, Continue to the next: %s", err.Error())
 				txIn.IsRemove = true
 				txIn.RemoveReason = fmt.Sprintf("ignore error: %s", err.Error())
 				return nil
@@ -523,6 +511,19 @@ func (o *Observer) processNetworkFeeQueue(ctx context.Context) {
 
 			txId, err := o.bridge.PostNetworkFee(ctx, ele.Height, ele.ChainId, ele.TransactionSize, ele.TransactionSwapSize, ele.TransactionRate)
 			if err != nil {
+				isIgnore := false
+				for e := range constants.ToMapIgnoreError {
+					if strings.Contains(err.Error(), e) {
+						isIgnore = true
+						o.logger.Info().Any("param", ele).
+							Msgf("report gas ignore this error, Continue to the next: %s", err.Error())
+						break
+					}
+				}
+				if isIgnore {
+					continue
+				}
+
 				o.logger.Err(err).Msg("fail to send network fee to map")
 				continue
 			}

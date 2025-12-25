@@ -163,6 +163,29 @@ bifrost:
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
+    base:
+      <<: *default-chain
+      chain_id: BASE
+      rpc_host: "https://base.drpc.org"
+      solvency_blocks: 100
+      max_pending_nonces: 3
+      max_gas_tip_percentage: 20
+      token_max_gas_multiplier: 3
+      aggregator_max_gas_multiplier: 10
+      block_scanner:
+        <<: *default-block-scanner
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        gas_cache_blocks: 40
+        gas_price_resolution: 1
+        concurrency: 1
+        chain_id: BASE
+        observation_flexibility_blocks: 20
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
+        max_contract_tx_logs: 50
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
+
     bsc:
       disabled: false
       <<: *default-chain
@@ -185,7 +208,5 @@ bifrost:
         max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
         start_block_height: 
-        whitelist_tokens:
-          - 0x55d398326f99059fF775485246999027B3197955 # Binance Pegged USDT
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
