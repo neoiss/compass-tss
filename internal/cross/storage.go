@@ -1,6 +1,7 @@
 package cross
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -189,8 +190,11 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 		if !ok {
 			return nil, fmt.Errorf("key not found: %s", key)
 		}
+		if iter.Valid() && bytes.Equal(iter.Key(), []byte(key)) {
+			iter.Next()
+		}
 	}
-	for iter.Next() {
+	for iter.Valid() {
 		key := iter.Key()
 		value := iter.Value()
 		ele := &CrossSet{}
