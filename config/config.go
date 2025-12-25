@@ -473,9 +473,10 @@ type Bifrost struct {
 	MAPRelay BifrostClientConfiguration  `mapstructure:"map_relay"`
 	Metrics  BifrostMetricsConfiguration `mapstructure:"metrics"`
 	Chains   struct {
-		BSC BifrostChainConfiguration `mapstructure:"bsc"`
-		BTC BifrostChainConfiguration `mapstructure:"btc"`
-		ETH BifrostChainConfiguration `mapstructure:"eth"`
+		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
+		BTC  BifrostChainConfiguration `mapstructure:"btc"`
+		ETH  BifrostChainConfiguration `mapstructure:"eth"`
+		BASE BifrostChainConfiguration `mapstructure:"base"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
@@ -485,9 +486,10 @@ type Bifrost struct {
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.BSCChain: b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
-		common.ETHChain: b.Chains.ETH,
+		common.BSCChain:  b.Chains.BSC,
+		common.BTCChain:  b.Chains.BTC,
+		common.ETHChain:  b.Chains.ETH,
+		common.BASEChain: b.Chains.BASE,
 	}
 }
 
