@@ -491,12 +491,20 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
 
-	var toBytes []byte
+	var (
+		toBytes     []byte
+		invalidMemo bool
+	)
 	parsedMemo, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
+		invalidMemo = true
 	} else {
-		toBytes = ethcommon.Hex2Bytes(common.TrimHexPrefix(parsedMemo.GetDestination()))
+		toBytes, err = hex.DecodeString(common.TrimHexPrefix(parsedMemo.GetDestination()))
+		if err != nil {
+			c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to decode memo")
+			invalidMemo = true
+		}
 	}
 
 	chainID, err := c.GetChain().ChainID()
@@ -634,26 +642,33 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		txOutType   constants.TxInType
 		destChainID = big.NewInt(0)
 	)
-	if parsedMemo.GetType() == mem.TxOutbound {
-		destToken = parsedMemo.GetToken()
-		txOutType = constants.TRANSFER
-		destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
-		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
-		}
-	} else if parsedMemo.GetType() == mem.TxAdd {
-		destToken = constants.BTCToken
-		txOutType = constants.DEPOSIT
-	} else {
-		return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
-	}
 
+	if invalidMemo {
+		destToken = constants.BTCToken
+		txOutType = constants.TRANSFER
+		destChainID, _ = common.MAPChain.ChainID()
+	} else {
+		switch parsedMemo.GetType() {
+		case mem.TxOutbound:
+			destToken = parsedMemo.GetToken()
+			txOutType = constants.TRANSFER
+			destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+			}
+		case mem.TxAdd:
+			destToken = constants.BTCToken
+			txOutType = constants.DEPOSIT
+		default:
+			return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
+		}
+	}
 	tokenAddress, err := c.bridge.GetTokenAddress(chainID, destToken)
 	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, parsedMemo.GetToken())
+		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, destToken)
 	}
 	if len(tokenAddress) == 0 {
-		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, parsedMemo.GetToken())
+		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, destToken)
 	}
 
 	address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
@@ -664,12 +679,12 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
 	}
-	fromBytes, err := hex.DecodeString(strings.TrimPrefix(from, "0x"))
+	fromBytes, err := hex.DecodeString(common.TrimHexPrefix(from))
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
 	}
 
-	pbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
+	pubKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
 	}
@@ -691,7 +706,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		OrderId:          generateOrderID(chainID.String(), tx.Txid),
 		GasUsed:          big.NewInt(0),
 		Token:            tokenAddress,
-		Vault:            pbuKey,
+		Vault:            pubKey,
 		From:             fromBytes,
 		To:               toBytes,
 		Payload:          payload,
@@ -838,7 +853,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		txInItem, err = c.getTxIn(&block.Tx[idx], block.Height, false, vinZeroTxs)
 		if err != nil {
 			// expected since vouts below dust threshold are skipped for vinZeroTxs
-			c.log.Debug().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
+			c.log.Error().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
 			continue
 		}
 		if txInItem.IsEmpty() {
