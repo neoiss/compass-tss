@@ -487,21 +487,16 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
-	if len(memo) <= 0 {
-		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx with empty memo")
-		return types.TxInItem{}, nil
-	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
+
+	var toBytes []byte
 	parsedMemo, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
-		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
-	}
-	if !parsedMemo.IsValid() {
-		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", parsedMemo.GetType().String()).Msg("invalid memo")
-		return types.TxInItem{}, fmt.Errorf("invalid memo")
+	} else {
+		toBytes = ethcommon.Hex2Bytes(common.TrimHexPrefix(parsedMemo.GetDestination()))
 	}
 
 	chainID, err := c.GetChain().ChainID()
@@ -698,7 +693,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		Token:            tokenAddress,
 		Vault:            pbuKey,
 		From:             fromBytes,
-		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(parsedMemo.GetDestination())),
+		To:               toBytes,
 		Payload:          payload,
 		Method:           constants.VoteTxIn,
 		LogIndex:         0,
