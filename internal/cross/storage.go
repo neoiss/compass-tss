@@ -1,10 +1,11 @@
 package cross
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/config"
@@ -16,10 +17,12 @@ import (
 // CrossStorage save the ondeck tx in item to key value store, in case bifrost restart
 type CrossStorage struct {
 	db *leveldb.DB
+	mu sync.Mutex
 }
 
 const (
 	CrossChainPrefix = "cross"
+	KeyOfSeq         = "meta:tx_seq"
 )
 
 type StatusOfCross int64
@@ -72,12 +75,12 @@ func NewStorage(path string, opts config.LevelDBOptions) (*CrossStorage, error) 
 		return nil, fmt.Errorf("failed to create observer storage: %w", err)
 	}
 
-	return &CrossStorage{db: ldb}, nil
+	return &CrossStorage{db: ldb, mu: sync.Mutex{}}, nil
 }
 
 // createTxKey creates a unique key for a TxIn based on prefix, chain, mempool, blockheight
-func (s *CrossStorage) createTxKey(orderId string) string {
-	return fmt.Sprintf("%s:%s", CrossChainPrefix, orderId)
+func (s *CrossStorage) createTxKey(seq uint64, orderId string) string {
+	return fmt.Sprintf("%s:%s:%s", CrossChainPrefix, encodeSeq(seq), orderId)
 }
 
 func TxInConvertCross(txIn *types.TxInItem) *CrossData {
@@ -118,9 +121,28 @@ func TxOutConvertCross(txOut *types.TxOutItem) *CrossData {
 	}
 }
 
+func encodeSeq(n uint64) string {
+	return fmt.Sprintf("%020d", n)
+}
+
+func decodeSeq(b []byte) (uint64, error) {
+	return strconv.ParseUint(string(b), 10, 64)
+}
+
 // AddOrUpdateTx adds or updates a single TxIn in storage
 func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error {
-	key := s.createTxKey(insertData.OrderId)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	seqBytes, err := s.db.Get([]byte(KeyOfSeq), nil)
+	var seq uint64 = 1
+	if err == nil {
+		seq, _ = decodeSeq(seqBytes)
+	} else if err != leveldb.ErrNotFound {
+		return fmt.Errorf("fail to get tx seq: %w", err)
+	}
+
+	key := s.createTxKey(seq, insertData.OrderId)
 	ret, err := s.GetCrossData(key)
 	if err != nil {
 		return fmt.Errorf("fail to get crossData: %w", err)
@@ -157,7 +179,12 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 	if err != nil {
 		return fmt.Errorf("fail to marshal tx to json: %w", err)
 	}
-	return s.db.Put([]byte(key), data, nil)
+
+	batch := new(leveldb.Batch)
+	batch.Put([]byte(key), data)
+	batch.Put([]byte(KeyOfSeq), []byte(encodeSeq(seq+1)))
+
+	return s.db.Write(batch, nil)
 }
 
 func (s *CrossStorage) GetCrossData(key string) (*CrossSet, error) {
@@ -185,16 +212,15 @@ func (s *CrossStorage) Range(key string, limit int64) ([]*CrossMapping, error) {
 	defer snap.Release()
 	iter := snap.NewIterator(nil, nil)
 	defer iter.Release()
+
 	if key != "" {
 		ok := iter.Seek([]byte(key))
 		if !ok {
 			return nil, fmt.Errorf("key not found: %s", key)
 		}
-		if iter.Valid() && bytes.Equal(iter.Key(), []byte(key)) {
-			iter.Next()
-		}
 	}
-	for iter.Valid() {
+
+	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
 		ele := &CrossSet{}
@@ -230,8 +256,7 @@ func (s *CrossStorage) Count() (int64, error) {
 	return ret, nil
 }
 
-func (s *CrossStorage) DeleteTx(orderId string) error {
-	key := s.createTxKey(orderId)
+func (s *CrossStorage) DeleteTx(key string) error {
 	return s.db.Delete([]byte(key), nil)
 }
 
