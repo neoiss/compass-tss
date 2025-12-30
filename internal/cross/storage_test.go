@@ -45,7 +45,7 @@ func TestCrossStorage_Range(t *testing.T) {
 					TxHash:  "src_tx_hash" + fmt.Sprint(i),
 					Topic:   "test",
 					Height:  100,
-					OrderId: "order",
+					OrderId: "order" + fmt.Sprint("%d", i),
 				}, "src")
 				if err != nil {
 					t.Fatalf("could not write to storage: %v", err)
