@@ -138,19 +138,27 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 	switch _type {
 	case TypeOfSrcChain:
 		ret.Src = insertData
-		ret.Status = StatusOfInit
+		if ret.Status < StatusOfInit {
+			ret.Status = StatusOfInit
+		}
 	case TypeOfRelayChain:
 		if ret.Src == nil { // map sending tx
 			ret.Src = insertData
 		}
 		ret.Relay = insertData
-		ret.Status = StatusOfPending
+		if ret.Status < StatusOfPending {
+			ret.Status = StatusOfPending
+		}
 	case TypeOfSendDst:
 		ret.Dest = insertData
-		ret.Status = StatusOfSend
+		if ret.Status < StatusOfSend {
+			ret.Status = StatusOfSend
+		}
 	case TypeOfDstChain:
 		ret.Dest = insertData
-		ret.Status = StatusOfCompleted
+		if ret.Status < StatusOfCompleted {
+			ret.Status = StatusOfCompleted
+		}
 	case TypeOfMapDstChain:
 		if ret.Relay == nil {
 			ret.Relay = insertData
@@ -159,7 +167,9 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 			ret.Dest = insertData
 		}
 		ret.MapDst = insertData
-		ret.Status = StatusOfCompleted
+		if ret.Status < StatusOfCompleted {
+			ret.Status = StatusOfCompleted
+		}
 	default:
 		return fmt.Errorf("invalid type:%s", _type)
 	}
