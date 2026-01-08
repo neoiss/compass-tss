@@ -377,7 +377,7 @@ func (c Chain) InboundNotes() string {
 // - uses 0x as an address prefix
 // - has a "Router" Smart Contract
 func GetEVMChains() []Chain {
-	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain}
+	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain, ARBChain}
 }
 
 // GetUTXOChains returns all "UTXO" chains connected to THORChain.

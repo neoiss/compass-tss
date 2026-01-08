@@ -23,6 +23,7 @@ bifrost:
       - BSC
       - ETH
       - BASE
+      - ARB
   map_relay:
     chain_id: map
     chain_host: https://mrpc.chainservice.io
