@@ -405,7 +405,7 @@ func (c *Client) OnObservedTxIn(txIn types.TxInItem, blockHeight int64) {
 	//if m.GetTxHash().IsEmpty() { todo utxo
 	//	return
 	//}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxHash()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetOrderID()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.log.Err(err).Msg("fail to update signer cache")
 	}
 }
