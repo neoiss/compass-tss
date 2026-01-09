@@ -6,28 +6,28 @@ import (
 
 type RefundMemo struct {
 	MemoBase
-	Chain  string
-	TxHash string
+	Chain   string
+	OrderID string
 }
 
-func (m RefundMemo) GetTxHash() string { return m.TxHash }
+func (m RefundMemo) GetOrderID() string { return m.OrderID }
 
 // String implement fmt.Stringer
 func (m RefundMemo) String() string {
-	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.TxHash)
+	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.OrderID)
 }
 
 // NewRefundMemo create a new RefundMemo
-func NewRefundMemo(chain, txHash string) RefundMemo {
+func NewRefundMemo(chain, orderID string) RefundMemo {
 	return RefundMemo{
 		MemoBase: MemoBase{TxType: TxRefund},
 		Chain:    chain,
-		TxHash:   txHash,
+		OrderID:  orderID,
 	}
 }
 
 func (p *parser) ParseRefundMemo() (RefundMemo, error) {
 	chain := p.get(1)
-	txHash := p.get(2)
-	return NewRefundMemo(chain, txHash), p.Error()
+	orderID := p.get(2)
+	return NewRefundMemo(chain, orderID), p.Error()
 }
