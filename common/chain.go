@@ -27,6 +27,7 @@ const (
 	BASEChain  = Chain("BASE")
 	XRPChain   = Chain("XRP")
 	MAPChain   = Chain("MAP")
+	ARBChain   = Chain("ARB")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -44,6 +45,7 @@ var AllChains = [...]Chain{
 	BASEChain,
 	XRPChain,
 	MAPChain,
+	ARBChain,
 }
 
 var chainToChainID = map[string]*big.Int{
@@ -55,6 +57,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(AVAXChain, TestNet): big.NewInt(43113),
 	getChainKey(BASEChain, TestNet): big.NewInt(84532),
 	getChainKey(MAPChain, TestNet):  big.NewInt(212),
+	getChainKey(ARBChain, TestNet):  big.NewInt(42170),
 
 	// main network
 	getChainKey(BSCChain, MainNet):  big.NewInt(56),
@@ -64,6 +67,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(AVAXChain, MainNet): big.NewInt(43114),
 	getChainKey(BASEChain, MainNet): big.NewInt(8453),
 	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
+	getChainKey(ARBChain, MainNet):  big.NewInt(42161),
 }
 
 var chainIDToChain = map[string]Chain{
@@ -75,6 +79,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(43113).String():            AVAXChain,
 	big.NewInt(84532).String():            BASEChain,
 	big.NewInt(212).String():              MAPChain,
+	big.NewInt(42170).String():            ARBChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -84,6 +89,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(43114).String():            AVAXChain,
 	big.NewInt(8453).String():             BASEChain,
 	big.NewInt(22776).String():            MAPChain,
+	big.NewInt(42161).String():            ARBChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {
@@ -371,7 +377,7 @@ func (c Chain) InboundNotes() string {
 // - uses 0x as an address prefix
 // - has a "Router" Smart Contract
 func GetEVMChains() []Chain {
-	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain}
+	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain, ARBChain}
 }
 
 // GetUTXOChains returns all "UTXO" chains connected to THORChain.

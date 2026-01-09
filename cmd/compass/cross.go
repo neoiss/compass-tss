@@ -48,6 +48,7 @@ func (s *CrossServer) newHandler() http.Handler {
 	router.Handle("/ping", http.HandlerFunc(s.pingHandler)).Methods(http.MethodGet)
 	router.Handle("/cross/list", http.HandlerFunc(s.crossList)).Methods(http.MethodGet)
 	router.Handle("/cross/signle", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
+	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
 	return router
 }
 
@@ -119,6 +120,32 @@ func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) 
 	key := request.URL.Query().Get("key")
 	s.logger.Info().Any("key", key).Msg("get cross signel")
 	crossData, err := s.dbStorage.GetCrossData(key)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res := &CrossSignelResponse{
+		Data: crossData,
+	}
+
+	// write the response
+	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to write to response")
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		_, err = w.Write(jsonBytes)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("fail to write to response")
+		}
+	}
+}
+
+func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request) {
+	key := request.URL.Query().Get("tx")
+	s.logger.Info().Any("tx", key).Msg("get cross signel by tx")
+	crossData, err := s.dbStorage.GetCrossDataByTx(key)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
 		w.WriteHeader(http.StatusInternalServerError)

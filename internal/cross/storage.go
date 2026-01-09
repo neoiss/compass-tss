@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
@@ -22,7 +21,7 @@ type CrossStorage struct {
 
 const (
 	CrossChainPrefix = "cross"
-	KeyOfSeq         = "meta:tx_seq"
+	KeyOfTxHash      = "meta:tx:%s"
 )
 
 type StatusOfCross int64
@@ -55,12 +54,13 @@ type CrossData struct {
 }
 
 type CrossSet struct {
-	Src    *CrossData    `json:"src"`
-	Relay  *CrossData    `json:"relay"`
-	Dest   *CrossData    `json:"dest"`
-	MapDst *CrossData    `json:"map_dest"`
-	Now    int64         `json:"now"`
-	Status StatusOfCross `json:"status"`
+	Src     *CrossData    `json:"src"`
+	Relay   *CrossData    `json:"relay"`
+	Dest    *CrossData    `json:"dest"`
+	MapDst  *CrossData    `json:"map_dest"`
+	Now     int64         `json:"now"`
+	Status  StatusOfCross `json:"status"`
+	OrderId string        `json:"order_id"`
 }
 
 type CrossMapping struct {
@@ -78,9 +78,13 @@ func NewStorage(path string, opts config.LevelDBOptions) (*CrossStorage, error) 
 	return &CrossStorage{db: ldb, mu: sync.Mutex{}}, nil
 }
 
-// createTxKey creates a unique key for a TxIn based on prefix, chain, mempool, blockheight
-func (s *CrossStorage) createTxKey(seq uint64, orderId string) string {
-	return fmt.Sprintf("%s:%s:%s", CrossChainPrefix, encodeSeq(seq), orderId)
+// createOrderIDKey creates a unique key for a TxIn based on prefix, chain, mempool, blockheight
+func (s *CrossStorage) createOrderIDKey(orderId string) string {
+	return fmt.Sprintf("%s:%s", CrossChainPrefix, orderId)
+}
+
+func (s *CrossStorage) createTxKey(txHash string) string {
+	return fmt.Sprintf(KeyOfTxHash, txHash)
 }
 
 func TxInConvertCross(txIn *types.TxInItem) *CrossData {
@@ -121,28 +125,12 @@ func TxOutConvertCross(txOut *types.TxOutItem) *CrossData {
 	}
 }
 
-func encodeSeq(n uint64) string {
-	return fmt.Sprintf("%020d", n)
-}
-
-func decodeSeq(b []byte) (uint64, error) {
-	return strconv.ParseUint(string(b), 10, 64)
-}
-
 // AddOrUpdateTx adds or updates a single TxIn in storage
 func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	seqBytes, err := s.db.Get([]byte(KeyOfSeq), nil)
-	var seq uint64 = 1
-	if err == nil {
-		seq, _ = decodeSeq(seqBytes)
-	} else if err != leveldb.ErrNotFound {
-		return fmt.Errorf("fail to get tx seq: %w", err)
-	}
-
-	key := s.createTxKey(seq, insertData.OrderId)
+	key := s.createOrderIDKey(insertData.OrderId)
 	ret, err := s.GetCrossData(key)
 	if err != nil {
 		return fmt.Errorf("fail to get crossData: %w", err)
@@ -150,19 +138,27 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 	switch _type {
 	case TypeOfSrcChain:
 		ret.Src = insertData
-		ret.Status = StatusOfInit
+		if ret.Status < StatusOfInit {
+			ret.Status = StatusOfInit
+		}
 	case TypeOfRelayChain:
 		if ret.Src == nil { // map sending tx
 			ret.Src = insertData
 		}
 		ret.Relay = insertData
-		ret.Status = StatusOfPending
+		if ret.Status < StatusOfPending {
+			ret.Status = StatusOfPending
+		}
 	case TypeOfSendDst:
 		ret.Dest = insertData
-		ret.Status = StatusOfSend
+		if ret.Status < StatusOfSend {
+			ret.Status = StatusOfSend
+		}
 	case TypeOfDstChain:
 		ret.Dest = insertData
-		ret.Status = StatusOfCompleted
+		if ret.Status < StatusOfCompleted {
+			ret.Status = StatusOfCompleted
+		}
 	case TypeOfMapDstChain:
 		if ret.Relay == nil {
 			ret.Relay = insertData
@@ -171,7 +167,9 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 			ret.Dest = insertData
 		}
 		ret.MapDst = insertData
-		ret.Status = StatusOfCompleted
+		if ret.Status < StatusOfCompleted {
+			ret.Status = StatusOfCompleted
+		}
 	default:
 		return fmt.Errorf("invalid type:%s", _type)
 	}
@@ -182,7 +180,8 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) error 
 
 	batch := new(leveldb.Batch)
 	batch.Put([]byte(key), data)
-	batch.Put([]byte(KeyOfSeq), []byte(encodeSeq(seq+1)))
+	// insert tx hash & orderId mapping
+	batch.Put([]byte(s.createTxKey(insertData.TxHash)), []byte(insertData.OrderId))
 
 	return s.db.Write(batch, nil)
 }
@@ -193,6 +192,31 @@ func (s *CrossStorage) GetCrossData(key string) (*CrossSet, error) {
 		return nil, err
 	}
 	ret := &CrossSet{}
+	if len(retBytes) == 0 {
+		return ret, nil
+	}
+	err = json.Unmarshal(retBytes, ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (s *CrossStorage) GetCrossDataByTx(txHash string) (*CrossSet, error) {
+	orderIdBytes, err := s.db.Get([]byte(s.createTxKey(txHash)), nil)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		return nil, err
+	}
+	ret := &CrossSet{
+		OrderId: string(orderIdBytes),
+	}
+	if len(orderIdBytes) == 0 {
+		return ret, nil
+	}
+	retBytes, err := s.db.Get([]byte(s.createOrderIDKey(string(orderIdBytes))), nil)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		return nil, err
+	}
 	if len(retBytes) == 0 {
 		return ret, nil
 	}

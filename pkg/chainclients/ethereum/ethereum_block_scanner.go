@@ -406,10 +406,10 @@ func (e *ETHScanner) extractTxs(block *etypes.Block, logs []etypes.Log) (stypes.
 		if txInItem == nil {
 			return
 		}
-		// sometimes if a transaction failed due to gas problem , it will have no `to` address
-		if len(txInItem.To) == 0 {
-			return
-		}
+		// // sometimes if a transaction failed due to gas problem , it will have no `to` address
+		// if len(txInItem.To) == 0 {
+		// 	return
+		// }
 
 		//txInItem.BlockHeight = block.Number().Int64()
 		mu.Lock()
