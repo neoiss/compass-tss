@@ -272,15 +272,13 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:6041",
+	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "compass-tss-api",
 	Description:      "tss跨链服务api",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

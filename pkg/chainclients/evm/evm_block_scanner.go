@@ -412,9 +412,6 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 		if txInItem == nil {
 			continue
 		}
-		if len(txInItem.To) == 0 {
-			continue
-		}
 
 		// add the txInItem to the txInbound
 		txInItem.Height = block.Number()

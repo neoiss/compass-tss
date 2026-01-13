@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/mapprotocol/compass-tss/cmd/compass/docs"
+
 	"github.com/mapprotocol/compass-tss/internal/cross"
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -50,10 +52,7 @@ func (s *CrossServer) newHandler() http.Handler {
 	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
 	router.Handle("/cross/chain/height", http.HandlerFunc(s.chainHeight)).Methods(http.MethodGet)
 	router.Handle("/cross/pending/tx", http.HandlerFunc(s.pendingTx)).Methods(http.MethodGet)
-	swaggerHandler := httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	)
-	http.Handle("/swagger/", swaggerHandler)
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	return router
 }

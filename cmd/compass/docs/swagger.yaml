@@ -75,7 +75,6 @@ definitions:
           type: string
         type: array
     type: object
-host: localhost:6041
 info:
   contact: {}
   description: tss跨链服务api
