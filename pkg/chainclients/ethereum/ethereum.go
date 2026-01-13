@@ -497,25 +497,25 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		}
 		return nil, nil, nil, err
 	}
-	c.logger.Info().Msgf("memo:%s estimated gas unit: %d", tx.Memo, estimatedGas)
+	c.logger.Info().Msgf("txHash:%s estimated gas unit: %d", tx.TxHash, estimatedGas)
 
 	var estimatedFee *big.Int
+	estimatedGas = c.calGasLimit(estimatedGas, cgl.End.Uint64(), uint64(c.cfg.MaxGasLimit),
+		c.cfg.LimitMultiplier)
 	if c.cfg.BlockScanner.FixedGasRate == 0 {
-		// if estimated gas is more than the planned gas, abort and let thornode reschedule
+		// if estimated gas is more than the planned gas,
+		// abort and let relay reschedule
 		if estimatedGas > cgl.End.Uint64() {
-			c.logger.Warn().Str("in_hash", tx.TxHash).Stringer("rate", gasRate).
+			c.logger.Warn().Str("in_hash", tx.TxHash).
 				Uint64("estimated_gas_units", estimatedGas).Uint64("max_gas_units", cgl.End.Uint64()).
-				Msg("max gas exceeded, aborting to let thornode reschedule")
+				Msg("max gas exceeded, aborting to let relay reschedule")
 		}
 
 		estimatedFee = big.NewInt(int64(estimatedGas))
 		totalGasRate := big.NewInt(0).Add(gasRate, tipCap)
 		estimatedFee.Mul(estimatedFee, totalGasRate)
-		c.logger.Info().
-			Str("in_hash", tx.TxHash).
-			Stringer("rate", gasRate).
-			Stringer("tipCap", tipCap).
-			Uint64("estimated_gas_units", estimatedGas).
+		c.logger.Info().Str("in_hash", tx.TxHash).Stringer("rate", gasRate).
+			Stringer("tipCap", tipCap).Uint64("estimated_gas_units", estimatedGas).
 			Msg("will send tx with dynamic fee")
 
 		to := ecommon.HexToAddress(c.cfg.BlockScanner.Mos)
@@ -531,7 +531,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 		})
 	} else {
 		// keyring
-		// if over max scheduled gas, abort and let thornode reschedule
+		// if over max scheduled gas, abort and let relay reschedule
 		estimatedFee = big.NewInt(int64(estimatedGas) * gasRate.Int64())
 		scheduledMaxFee := big.NewInt(0).Mul(cgl.Third, cgl.End)
 		if scheduledMaxFee.Cmp(estimatedFee) < 0 {
@@ -563,6 +563,17 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 
 	var txIn *stypes.TxInItem
 	return rawTx, nil, txIn, nil
+}
+
+func (c *Client) calGasLimit(estimatedGas, min, max uint64, limitMultiplier int) uint64 {
+	mulResult := big.NewInt(0).Mul(big.NewInt(int64(estimatedGas)), big.NewInt(int64(limitMultiplier)))
+	if mulResult.Uint64() < min {
+		return min
+	} else if mulResult.Uint64() > max {
+		return max
+	}
+
+	return mulResult.Uint64()
 }
 
 func (c *Client) getOutboundTxData(sender common.Address, txOutItem stypes.TxOutItem) ([]byte, error) {
