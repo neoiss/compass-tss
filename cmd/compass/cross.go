@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/internal/cross"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
@@ -46,9 +46,15 @@ func NewCrossServer(addr string, dbStorage *cross.CrossStorage) *CrossServer {
 func (s *CrossServer) newHandler() http.Handler {
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(s.pingHandler)).Methods(http.MethodGet)
-	router.Handle("/cross/list", http.HandlerFunc(s.crossList)).Methods(http.MethodGet)
 	router.Handle("/cross/signle", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
 	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
+	router.Handle("/cross/chain/height", http.HandlerFunc(s.chainHeight)).Methods(http.MethodGet)
+	router.Handle("/cross/pending/tx", http.HandlerFunc(s.pendingTx)).Methods(http.MethodGet)
+	swaggerHandler := httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	)
+	http.Handle("/swagger/", swaggerHandler)
+
 	return router
 }
 
@@ -56,66 +62,31 @@ func (s *CrossServer) pingHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-type CrossSignelRequest struct {
-	Key string `json:"key"`
-}
-
+// CrossSignelResponse is the response for cross signel
 type CrossSignelResponse struct {
 	Data *cross.CrossSet `json:"data"`
 }
 
-type CrossListRequest struct {
-	Key   string `json:"key"`
-	Limit int64  `json:"limit"`
+// ChainHeightResponse
+type ChainHeightResponse struct {
+	Height string `json:"height"`
 }
 
-type CrossListResponse struct {
-	Data []*cross.CrossMapping `json:"data"`
+// PendingTxResponse
+type PendingTxResponse struct {
+	Txs []string `json:"txs"`
 }
 
-func (s *CrossServer) crossList(w http.ResponseWriter, request *http.Request) {
-	key := request.URL.Query().Get("key")
-	limit := request.URL.Query().Get("limit")
-	if limit == "" {
-		limit = "10"
-	}
-
-	limitNum, err := strconv.ParseInt(limit, 10, 64)
-	if limitNum < 0 {
-		limitNum = 10
-	}
-	if limitNum > 50 {
-		limitNum = 50
-	}
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to parse limit")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	crossData, err := s.dbStorage.Range(key, limitNum)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to get cross data")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res := &CrossListResponse{
-		Data: crossData,
-	}
-
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
-}
-
+// get tx record by orderId
+// @Summary      通过orderId获取交易记录
+// @Description  通过orderId获取交易记录
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        key query string true "orderId"
+// @Success      200  {object}  CrossSignelResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/signle [get]
 func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) {
 	key := request.URL.Query().Get("key")
 	s.logger.Info().Any("key", key).Msg("get cross signel")
@@ -142,6 +113,16 @@ func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) 
 	}
 }
 
+// get tx record by txHash
+// @Summary      通过 txHash 获取交易记录
+// @Description  通过 txHash 获取交易记录
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        tx query string true "txHash"
+// @Success      200  {object}  CrossSignelResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/tx [get]
 func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request) {
 	key := request.URL.Query().Get("tx")
 	s.logger.Info().Any("tx", key).Msg("get cross signel by tx")
@@ -153,6 +134,78 @@ func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request
 	}
 	res := &CrossSignelResponse{
 		Data: crossData,
+	}
+
+	// write the response
+	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to write to response")
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		_, err = w.Write(jsonBytes)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("fail to write to response")
+		}
+	}
+}
+
+// get scanner chain height
+// @Summary      获取扫描高度
+// @Description  根据 chainId 获取扫描高度
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        chainId query string true "chainId"
+// @Success      200  {object}   ChainHeightResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/chain/height [get]
+func (s *CrossServer) chainHeight(w http.ResponseWriter, request *http.Request) {
+	chainId := request.URL.Query().Get("chainId")
+	s.logger.Info().Any("chainId", chainId).Msg("get chain height")
+	height, err := s.dbStorage.GetChainHeight(chainId)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res := &ChainHeightResponse{
+		Height: height,
+	}
+
+	// write the response
+	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to write to response")
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		_, err = w.Write(jsonBytes)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("fail to write to response")
+		}
+	}
+}
+
+// get pending txs by chainId
+// @Summary      获取pending的交易列表
+// @Description  根据 chainId 获取pending的交易列表
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        chainId query string true "chainId"
+// @Success      200  {object}  PendingTxResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/pending/tx [get]
+func (s *CrossServer) pendingTx(w http.ResponseWriter, request *http.Request) {
+	chainId := request.URL.Query().Get("chainId")
+	s.logger.Info().Any("chainId", chainId).Msg("get chain pending txs")
+	txs, err := s.dbStorage.GetPendingSet(chainId)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res := &PendingTxResponse{
+		Txs: txs,
 	}
 
 	// write the response

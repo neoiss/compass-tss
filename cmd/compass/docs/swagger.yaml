@@ -1,0 +1,177 @@
+definitions:
+  cross.CrossData:
+    properties:
+      chain:
+        example: ""
+        type: string
+      chain_and_gas_limit:
+        example: ""
+        type: string
+      height:
+        type: integer
+      is_memoized:
+        type: boolean
+      log_index:
+        type: integer
+      order_id:
+        example: ""
+        type: string
+      timestamp:
+        type: integer
+      topic:
+        example: ""
+        type: string
+      tx_hash:
+        example: ""
+        type: string
+    type: object
+  cross.CrossSet:
+    properties:
+      dest:
+        $ref: '#/definitions/cross.CrossData'
+      map_dest:
+        $ref: '#/definitions/cross.CrossData'
+      now:
+        type: integer
+      order_id:
+        example: ""
+        type: string
+      relay:
+        $ref: '#/definitions/cross.CrossData'
+      src:
+        $ref: '#/definitions/cross.CrossData'
+      status:
+        $ref: '#/definitions/cross.StatusOfCross'
+    type: object
+  cross.StatusOfCross:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    format: int64
+    type: integer
+    x-enum-varnames:
+    - StatusOfInit
+    - StatusOfPending
+    - StatusOfSend
+    - StatusOfCompleted
+    - StatusOfFailed
+  main.ChainHeightResponse:
+    properties:
+      height:
+        type: string
+    type: object
+  main.CrossSignelResponse:
+    properties:
+      data:
+        $ref: '#/definitions/cross.CrossSet'
+    type: object
+  main.PendingTxResponse:
+    properties:
+      txs:
+        items:
+          type: string
+        type: array
+    type: object
+host: localhost:6041
+info:
+  contact: {}
+  description: tss跨链服务api
+  title: compass-tss-api
+  version: "1.0"
+paths:
+  /cross/chain/height:
+    get:
+      consumes:
+      - application/json
+      description: 根据 chainId 获取扫描高度
+      parameters:
+      - description: chainId
+        in: query
+        name: chainId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ChainHeightResponse'
+        "400":
+          description: bad request
+      summary: 获取扫描高度
+      tags:
+      - 交易记录
+  /cross/pending/tx:
+    get:
+      consumes:
+      - application/json
+      description: 根据 chainId 获取pending的交易列表
+      parameters:
+      - description: chainId
+        in: query
+        name: chainId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.PendingTxResponse'
+        "400":
+          description: bad request
+      summary: 获取pending的交易列表
+      tags:
+      - 交易记录
+  /cross/signle:
+    get:
+      consumes:
+      - application/json
+      description: 通过orderId获取交易记录
+      parameters:
+      - description: orderId
+        in: query
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.CrossSignelResponse'
+        "400":
+          description: bad request
+      summary: 通过orderId获取交易记录
+      tags:
+      - 交易记录
+  /cross/tx:
+    get:
+      consumes:
+      - application/json
+      description: 通过 txHash 获取交易记录
+      parameters:
+      - description: txHash
+        in: query
+        name: tx
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.CrossSignelResponse'
+        "400":
+          description: bad request
+      summary: 通过 txHash 获取交易记录
+      tags:
+      - 交易记录
+swagger: "2.0"

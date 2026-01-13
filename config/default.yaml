@@ -227,7 +227,7 @@ bifrost:
         mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
-        chain_id: BSC
+        chain_id: ARB
         gas_cache_blocks: 40
         gas_price_resolution: 1000000 # 10 gwei
         observation_flexibility_blocks: 80

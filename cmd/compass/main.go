@@ -45,6 +45,10 @@ func printVersion() {
 	fmt.Printf("%s v%s, rev %s\n", serverIdentity, version, revision)
 }
 
+// @title           compass-tss-api
+// @version         1.0
+// @description     tss跨链服务api
+// @host            localhost:6041
 func main() {
 	showVersion := flag.Bool("version", false, "Shows version")
 	logLevel := flag.StringP("log-level", "l", "info", "Log Level")
@@ -192,6 +196,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("fail to create cross storage")
 	}
+	crossStorage.Start()
 
 	crossServer := NewCrossServer(cfg.MAPRelay.CrossDataAddress, crossStorage)
 	go func() {
@@ -245,6 +250,7 @@ func main() {
 	if err = crossServer.Stop(); err != nil {
 		log.Fatal().Err(err).Msg("fail to stop cross server")
 	}
+	crossStorage.Stop()
 }
 
 func initLog(level string, pretty bool) {
