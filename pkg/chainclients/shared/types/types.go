@@ -115,6 +115,9 @@ type Bridge interface {
 	GetChainID(name string) (*big.Int, error)
 	GetChainName(chain *big.Int) (string, error)
 	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
+	GetTokenDecimals(chainID *big.Int, address []byte) (*big.Int, error)
+	GetAffiliateIDByName(name string) (uint16, error)
+	GetAffiliateIDByAlias(alias string) (uint16, error)
 	GetObservationsStdTx(txIn *types.TxIn) ([]byte, error)
 	GetOracleStdTx(txIn *types.TxOutItem) ([]byte, error)
 	TxStatus(txHash string) error

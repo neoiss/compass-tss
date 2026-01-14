@@ -1,6 +1,7 @@
 package utxo
 
 import (
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/internal/keys"
@@ -8,6 +9,7 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -85,3 +87,60 @@ func getBridgeForTest(t *testing.T) types.Bridge {
 //		})
 //	}
 //}
+
+func TestEncodeAffiliateData(t *testing.T) {
+	type args struct {
+		affiliates []*Affiliate
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "t-1",
+			args: args{
+				affiliates: []*Affiliate{
+
+					{
+						ID:  14,
+						Bps: 0,
+					},
+				},
+			},
+			want:    []byte{0, 14, 0, 0},
+			wantErr: false,
+		},
+		{
+			name: "t-2",
+			args: args{
+				affiliates: []*Affiliate{
+
+					{
+						ID:  1,
+						Bps: 10,
+					},
+				},
+			},
+			want:    []byte{0, 1, 0, 10},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := EncodeAffiliateData(tt.args.affiliates)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EncodeAffiliateData() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAffiliateIDByName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestName(t *testing.T) {
+	t.Log(ecommon.Hex2Bytes("000e0000"))
+}

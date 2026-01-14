@@ -2,14 +2,18 @@ package thorchain
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/common/cosmos"
 	"math/big"
 	"strconv"
 	"strings"
-
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
+	"unicode"
 )
+
+const maxNameLength = 10      // todo
+var maxBps = big.NewInt(5000) // todo
 
 type parser struct {
 	memo           string
@@ -102,6 +106,14 @@ func (p *parser) get(idx int) string {
 		return ""
 	}
 	return p.parts[idx]
+}
+
+func (p *parser) getMinAmount(idx int) *big.Int {
+	return p.parseMinAmount(p.get(idx))
+}
+
+func (p *parser) getAffiliates(idx int) []*Affiliate {
+	return p.parseAffiliates(p.get(idx))
 }
 
 // Safe accessor for split memo parts - always returns empty string for indices that are
@@ -324,4 +336,148 @@ func (p *parser) getBase64Bytes(idx int, required bool, def []byte) []byte {
 		return def
 	}
 	return value
+}
+
+func (p *parser) parseMinAmount(s string) *big.Int {
+	if s == "" {
+		p.addErr(errors.New("cannot parse empty string as an big int"))
+		return big.NewInt(0)
+	}
+
+	if strings.ContainsAny(s, "eE") {
+		f, _, err := new(big.Float).Parse(s, 10)
+		if err != nil {
+			p.addErr(fmt.Errorf("cannot parse '%s' as an big float", s))
+			return big.NewInt(0)
+		}
+		i, _ := f.Int(nil)
+		return i
+	}
+
+	i := new(big.Int)
+	if _, ok := i.SetString(s, 10); !ok {
+		p.addErr(fmt.Errorf("cannot parse '%s' as an big int", s))
+		return big.NewInt(0)
+	}
+	return i
+}
+
+func (p *parser) parseAffiliates(s string) []*Affiliate {
+	result := make([]*Affiliate, 0)
+
+	if strings.Contains(s, ",") {
+		parts := strings.Split(s, ",")
+		for _, part := range parts {
+			aff := p.parseSingleAffiliate(part)
+			if aff == nil {
+				return result
+			}
+			result = append(result, aff)
+		}
+		return result
+	}
+
+	if strings.Contains(s, ":") {
+		aff := p.parseSingleAffiliate(s)
+		if aff == nil {
+			return result
+		}
+		result = append(result, aff)
+		return result
+	}
+
+	var nameBuilder strings.Builder
+	var bpsBuilder strings.Builder
+
+	flush := func() bool {
+		if nameBuilder.Len() == 0 || bpsBuilder.Len() == 0 {
+			nameBuilder.Reset()
+			bpsBuilder.Reset()
+			return true
+		}
+		name := nameBuilder.String()
+		if len(name) > 2 {
+			p.addErr(fmt.Errorf("invalid compressed affiliate name '%s'", name))
+			return false
+		}
+
+		bps, ok := new(big.Int).SetString(bpsBuilder.String(), 10)
+		if !ok {
+			p.addErr(fmt.Errorf("cannot parse '%s' as an big int", bpsBuilder.String()))
+			return false
+		}
+
+		if bps.Cmp(maxBps) <= 0 && bps.Sign() > 0 {
+			result = append(result, &Affiliate{
+				Name:       name,
+				Bps:        bps,
+				Compressed: true,
+			})
+		}
+		nameBuilder.Reset()
+		bpsBuilder.Reset()
+		return true
+	}
+
+	for _, r := range s {
+		switch {
+		case unicode.IsLetter(r) || r == '-' || r == '_':
+			if bpsBuilder.Len() > 0 {
+				if !flush() {
+					return []*Affiliate{}
+				}
+			}
+			//if nameBuilder.Len() < maxNameLength {
+			//	nameBuilder.WriteRune(r)
+			//} else {
+			//	nameBuilder.Reset()
+			//	bpsBuilder.Reset()
+			//}
+			nameBuilder.WriteRune(r)
+		case unicode.IsDigit(r):
+			bpsBuilder.WriteRune(r)
+		default:
+			nameBuilder.Reset()
+			bpsBuilder.Reset()
+			p.addErr(fmt.Errorf("invalid char '%d'", r))
+			return []*Affiliate{}
+		}
+	}
+	if !flush() {
+		return []*Affiliate{}
+	}
+
+	return result
+}
+
+func (p *parser) parseSingleAffiliate(part string) *Affiliate {
+	if part == "" {
+		return nil
+	}
+	affiliateParts := strings.SplitN(part, ":", 2)
+	if len(affiliateParts) != 2 {
+		p.addErr(fmt.Errorf("invalid affiliate '%s'", part))
+		return nil
+	}
+	name := strings.TrimSpace(affiliateParts[0])
+	bpsStr := strings.TrimSpace(affiliateParts[1]) // todo negative ?
+	if name == "" || bpsStr == "" {
+		p.addErr(fmt.Errorf("invalid affiliate '%s'", part))
+		return nil
+	}
+	//if len(name) > maxNameLength {
+	//	return nil
+	//}
+	bps, ok := new(big.Int).SetString(bpsStr, 10)
+	if !ok {
+		p.addErr(fmt.Errorf("cannot parse '%s' as an big int", bpsStr))
+		return nil
+	}
+	if bps.Cmp(maxBps) <= 0 && bps.Sign() > 0 {
+		return &Affiliate{
+			Name: name,
+			Bps:  bps,
+		}
+	}
+	return nil
 }

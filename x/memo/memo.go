@@ -69,6 +69,7 @@ type Memo interface {
 	GetAmount() cosmos.Uint
 	GetDestination() string
 	GetOrderID() string
+	GetAffiliates() Affiliates
 	IsValid() bool
 }
 
@@ -79,15 +80,16 @@ type MemoBase struct {
 
 var EmptyMemo = MemoBase{TxType: TxUnknown, Asset: common.EmptyAsset}
 
-func (m MemoBase) String() string         { return "" }
-func (m MemoBase) GetType() TxType        { return m.TxType }
-func (m MemoBase) IsType(tx TxType) bool  { return m.TxType.Equals(tx) }
-func (m MemoBase) GetChain() string       { return "" }
-func (m MemoBase) GetToken() string       { return "" }
-func (m MemoBase) GetAmount() cosmos.Uint { return cosmos.ZeroUint() }
-func (m MemoBase) GetDestination() string { return "" }
-func (m MemoBase) GetOrderID() string     { return "" }
-func (m MemoBase) IsEmpty() bool          { return m.TxType.IsEmpty() }
+func (m MemoBase) String() string            { return "" }
+func (m MemoBase) GetType() TxType           { return m.TxType }
+func (m MemoBase) IsType(tx TxType) bool     { return m.TxType.Equals(tx) }
+func (m MemoBase) GetChain() string          { return "" }
+func (m MemoBase) GetToken() string          { return "" }
+func (m MemoBase) GetAmount() cosmos.Uint    { return cosmos.ZeroUint() }
+func (m MemoBase) GetDestination() string    { return "" }
+func (m MemoBase) GetOrderID() string        { return "" }
+func (m MemoBase) GetAffiliates() Affiliates { return Affiliates{} }
+func (m MemoBase) IsEmpty() bool             { return m.TxType.IsEmpty() }
 func (m MemoBase) IsValid() bool {
 	_, ok := txToStringMap[m.GetType()]
 	return ok

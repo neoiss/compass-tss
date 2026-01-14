@@ -540,9 +540,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		if err != nil {
 			return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, token)
 		}
-		if len(tokenAddress) == 0 {
-			return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, token)
-		}
 
 		vaultPbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(sender))
 		if err != nil {
@@ -629,9 +626,19 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 
 		amount, err := btcutil.NewAmount(output.Value)
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
+			return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w, value: %f", err, output.Value)
 		}
 		amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
+
+		native, ok := c.GetChain().NativeToken()
+		if !ok {
+			return types.TxInItem{}, fmt.Errorf("fail to get native token, chain: %s", c.GetChain())
+		}
+
+		mapChainID, err := common.MAPChain.ChainID()
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, common.MAPChain)
+		}
 
 		//gas, err := c.getGas(tx)
 		//if err != nil {
@@ -643,10 +650,11 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			destChainID = big.NewInt(0)
 		)
 
+		// refund
 		if invalidMemo {
-			destToken = constants.BTCToken
+			destToken = native
 			txOutType = constants.TRANSFER
-			destChainID, _ = common.MAPChain.ChainID()
+			destChainID = mapChainID
 		} else {
 			switch parsedMemo.GetType() {
 			case mem.TxOutbound:
@@ -655,6 +663,32 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 				destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
 				if err != nil {
 					return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+				}
+
+				var relayData []byte
+				if !strings.EqualFold(destToken, native) {
+					destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
+					if err != nil {
+						return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, mapChainID, destToken)
+					}
+					decimals, err := c.bridge.GetTokenDecimals(mapChainID, destTokenAddress)
+					if err != nil {
+						return types.TxInItem{}, fmt.Errorf("fail to get token decimals: %w, chainID: %s, token: %s", err, mapChainID, destToken)
+					}
+					minAmount := utxo.ConvertDecimal(parsedMemo.GetAmount().BigInt(), 6, decimals.Uint64())
+					relayData, err = utxo.EncodeRelayData(ethcommon.BytesToAddress(destTokenAddress), minAmount)
+					if err != nil {
+						return types.TxInItem{}, fmt.Errorf("fail to encode relay data: %w", err)
+					}
+				}
+				affiliateData, err := c.encodeAffiliates(parsedMemo.GetAffiliates())
+				if err != nil {
+					return types.TxInItem{}, fmt.Errorf("fail to encode affiliates: %w", err)
+				}
+
+				payload, err = utxo.EncodePayload(affiliateData, relayData, nil)
+				if err != nil {
+					return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
 				}
 			case mem.TxAdd:
 				destToken = constants.BTCToken
@@ -1181,4 +1215,32 @@ const errDatabaseAlreadyExists = "database already exists"
 
 func databaseAlreadyExists(e error) bool {
 	return strings.Contains(strings.ToLower(e.Error()), errDatabaseAlreadyExists)
+}
+
+func (c *Client) encodeAffiliates(affiliates mem.Affiliates) ([]byte, error) {
+	as := make([]*utxo.Affiliate, len(affiliates))
+	for _, aff := range affiliates {
+		if aff.Compressed {
+			id, err := c.bridge.GetAffiliateIDByAlias(aff.Name)
+			if err != nil {
+				return []byte{}, fmt.Errorf("fail to get affiliate id by alias: %w", err)
+			}
+			as = append(as, &utxo.Affiliate{
+				ID:  id,
+				Bps: uint16(aff.Bps.Uint64()),
+			})
+			continue
+		}
+
+		id, err := c.bridge.GetAffiliateIDByName(aff.Name)
+		if err != nil {
+			return []byte{}, fmt.Errorf("fail to get affiliate id by name: %w", err)
+		}
+
+		as = append(as, &utxo.Affiliate{
+			ID:  id,
+			Bps: uint16(aff.Bps.Uint64()),
+		})
+	}
+	return utxo.EncodeAffiliateData(as)
 }

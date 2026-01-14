@@ -46,25 +46,25 @@ const (
 
 // Bridge will be used to send tx to THORChain
 type Bridge struct {
-	logger                                                    zerolog.Logger
-	cfg                                                       config.BifrostClientConfiguration
-	keys                                                      *keys2.Keys
-	errCounter                                                *prometheus.CounterVec
-	m                                                         *metrics.Metrics
-	blockHeight                                               int64
-	chainID, gasPrice, epoch                                  *big.Int
-	httpClient                                                *retryablehttp.Client
-	broadcastLock                                             *sync.RWMutex
-	ethClient                                                 *ethclient.Client
-	blockScanner                                              *MapChainBlockScan
-	stopChan                                                  chan struct{}
-	wg                                                        *sync.WaitGroup
-	gasCache                                                  []*big.Int
-	ethPriKey                                                 *ecdsa.PrivateKey
-	kw                                                        *evm.KeySignWrapper
-	ethRpc                                                    *evm.EthRPC
-	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi *abi.ABI
-	epochHash                                                 ecommon.Hash
+	logger                                                                     zerolog.Logger
+	cfg                                                                        config.BifrostClientConfiguration
+	keys                                                                       *keys2.Keys
+	errCounter                                                                 *prometheus.CounterVec
+	m                                                                          *metrics.Metrics
+	blockHeight                                                                int64
+	chainID, gasPrice, epoch                                                   *big.Int
+	httpClient                                                                 *retryablehttp.Client
+	broadcastLock                                                              *sync.RWMutex
+	ethClient                                                                  *ethclient.Client
+	blockScanner                                                               *MapChainBlockScan
+	stopChan                                                                   chan struct{}
+	wg                                                                         *sync.WaitGroup
+	gasCache                                                                   []*big.Int
+	ethPriKey                                                                  *ecdsa.PrivateKey
+	kw                                                                         *evm.KeySignWrapper
+	ethRpc                                                                     *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi, affiliateFeeAbi *abi.ABI
+	epochHash                                                                  ecommon.Hash
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying

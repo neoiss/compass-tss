@@ -48,6 +48,10 @@ var AllChains = [...]Chain{
 	ARBChain,
 }
 
+var chainToNativeToken = map[Chain]string{
+	BTCChain: "BTC",
+}
+
 var chainToChainID = map[string]*big.Int{
 	// test network
 	getChainKey(BSCChain, TestNet):  big.NewInt(97),
@@ -370,6 +374,11 @@ func (c Chain) InboundNotes() string {
 	default:
 		return ""
 	}
+}
+
+func (c Chain) NativeToken() (string, bool) {
+	token, ok := chainToNativeToken[c]
+	return token, ok
 }
 
 // GetEVMChains returns all "EVM" chains connected to THORChain
