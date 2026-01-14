@@ -35,6 +35,7 @@ bifrost:
     gas_service: "0x43A7dd204f6604F2578Bd5d0859f45296d27F23A"
     token_registry: "0x78D31173C04e5F1D4b0172440B09453C27990527"
     view_controller: "0xaf720ad7086627034c4d8CA2b4493079E97f1C3A"
+    affiliate_fee_manager: ""
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
   signer:

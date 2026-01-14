@@ -2,6 +2,7 @@ package mapo
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -18,7 +19,7 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	method := "getChainByName"
 	input, err := b.tokenRegistry.Pack(method, name)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to pack input of %s", method)
 	}
 
 	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
@@ -53,7 +54,7 @@ func (b *Bridge) GetChainName(chain *big.Int) (string, error) {
 	method := "getChainName"
 	input, err := b.tokenRegistry.Pack(method, chain)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to pack input of %s", method)
 	}
 
 	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
@@ -90,7 +91,7 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 	method := "getTokenAddressByNickname"
 	input, err := b.tokenRegistry.Pack(method, chainID, strings.ToUpper(name))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to pack input of %s", method)
 	}
 
 	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
@@ -114,5 +115,48 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 	if err = outputs.Copy(&address, unpack); err != nil {
 		return nil, errors.Wrapf(err, "unable to copy output of %s", method)
 	}
+	if len(address) == 0 {
+		return nil, fmt.Errorf("unsupported token(%d:%s)", chainID, name)
+	}
 	return address, nil
+}
+
+func (b *Bridge) GetTokenDecimals(chainID *big.Int, address []byte) (*big.Int, error) {
+	if chainID == nil {
+		return nil, errors.New("chainID is nil")
+	}
+	if address == nil {
+		return nil, errors.New("token address is nil")
+	}
+	method := "getTokenDecimals"
+	input, err := b.tokenRegistry.Pack(method, chainID, address)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to pack input of %s", method)
+	}
+
+	to := ecommon.HexToAddress(b.cfg.TokenRegistry)
+	output, err := b.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			From: constants.ZeroAddress,
+			To:   &to,
+			Data: input,
+		},
+		nil,
+	)
+
+	outputs := b.tokenRegistry.Methods[method].Outputs
+	unpack, err := outputs.Unpack(output)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to unpack output of %s", method)
+	}
+
+	decimals := big.NewInt(0)
+	if err = outputs.Copy(&decimals, unpack); err != nil {
+		return nil, errors.Wrapf(err, "unable to copy output of %s", method)
+	}
+	if decimals.Cmp(big.NewInt(0)) == 0 {
+		return nil, fmt.Errorf("unsupported token(%d:%s)", chainID, address)
+	}
+	return decimals, nil
 }
