@@ -301,14 +301,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 				tmp := tx
 				param := tmp.TxOutItem(txOut.Height)
 				param.Chain, _ = common.MAPChain.ChainID()
-				go func(ele *types.TxOutItem, _type string) {
-					// add in cross-chain storage
-					err := s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(ele), _type)
-					if err != nil {
-						s.logger.Error().Str("txHash", ele.TxHash).Err(err).
-							Msg("fail to add relay tx in cross storage")
-					}
-				}(&param, _type)
+go				s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param), _type)
 			}
 			if len(items) <= 0 {
 				continue
@@ -708,15 +701,12 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	s.tssKeysignMetricMgr.SetTssKeysignMetric(hash, elapse.Milliseconds())
 
 	// add in cross-chain storage
-	err = s.crossStorage.AddOrUpdateTx(&cross.CrossData{
+	s.crossStorage.AddOrUpdateTx(&cross.CrossData{
 		Chain:     item.TxOutItem.ToChain.String(),
 		TxHash:    hash,
 		OrderId:   item.TxOutItem.OrderId.Hex(),
 		Timestamp: time.Now().Unix(),
 	}, cross.TypeOfSendDst)
-	if err != nil {
-		s.logger.Error().Str("txHash", hash).Err(err).Msg("fail to add broadcast in cross storage")
-	}
 
 	return nil, observation, nil
 }

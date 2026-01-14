@@ -477,6 +477,7 @@ type Bifrost struct {
 		BTC  BifrostChainConfiguration `mapstructure:"btc"`
 		ETH  BifrostChainConfiguration `mapstructure:"eth"`
 		BASE BifrostChainConfiguration `mapstructure:"base"`
+		ARB  BifrostChainConfiguration `mapstructure:"arb"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
@@ -490,6 +491,7 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 		common.BTCChain:  b.Chains.BTC,
 		common.ETHChain:  b.Chains.ETH,
 		common.BASEChain: b.Chains.BASE,
+		common.ARBChain:  b.Chains.ARB,
 	}
 }
 
@@ -623,6 +625,13 @@ type BifrostChainConfiguration struct {
 	// MaxGasTipPercentage is the percentage of the max fee to set for the max tip cap on
 	// dynamic fee EVM transactions.
 	MaxGasTipPercentage int `mapstructure:"max_gas_tip_percentage"`
+
+	// LimitMultiplier is the multiplier that needs to be multiplied after gasLimit is
+	// calculated, but it cannot exceed MaxGasLimit in maximum and MinGasLimit in minimum.
+	LimitMultiplier int `mapstructure:"limit_multiplier"`
+
+	// MaxGasLimit is the maximum gas limit before the final transaction is sent.
+	MaxGasLimit int `mapstructure:"max_gas_limit"`
 
 	// TokenMaxGasMultiplier is a multiplier applied to max gas for outbounds which are
 	// not the gas asset. This compensates for variance in gas units when contracts for

@@ -361,9 +361,9 @@ func (e *EVMScanner) getTxInOptimized(block *etypes.Block, logs []etypes.Log) (s
 		if txInItem == nil {
 			continue
 		}
-		if len(txInItem.To) == 0 {
-			continue
-		}
+		// if len(txInItem.To) == 0 {
+		// 	continue
+		// }
 		// add the txInItem to the txInbound
 		txInItem.Height = block.Number()
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
@@ -410,9 +410,6 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 
 		// skip invalid items
 		if txInItem == nil {
-			continue
-		}
-		if len(txInItem.To) == 0 {
 			continue
 		}
 

@@ -303,6 +303,7 @@ func (c *Client) RegisterPublicKey(pubkey common.PubKey) error {
 			Str("addr", addr.String()).
 			Msg("fail to import address")
 	}
+	c.log.Info().Str("pubkey", pubkey.String()).Str("addr", addr.String()).Msg("registered public key")
 	return err
 }
 
@@ -404,7 +405,7 @@ func (c *Client) OnObservedTxIn(txIn types.TxInItem, blockHeight int64) {
 	//if m.GetTxHash().IsEmpty() { todo utxo
 	//	return
 	//}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxHash()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetOrderID()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.log.Err(err).Msg("fail to update signer cache")
 	}
 }
@@ -597,7 +598,7 @@ func (c *Client) FetchMemPool(height int64) (types.TxIn, error) {
 			var txInItem types.TxInItem
 			txInItem, err = c.getTxIn(result, height, true, nil)
 			if err != nil {
-				c.log.Debug().Str("txid", result.Txid).Err(err).Msg("fail to get TxInItem")
+				c.log.Error().Str("txid", result.Txid).Err(err).Msg("fail to get TxInItem")
 				continue
 			}
 			if txInItem.IsEmpty() {

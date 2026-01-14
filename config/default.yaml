@@ -22,6 +22,8 @@ bifrost:
       - BTC
       - BSC
       - ETH
+      - BASE
+      - ARB
   map_relay:
     chain_id: map
     chain_host: https://mrpc.chainservice.io
@@ -63,7 +65,7 @@ bifrost:
     info_address: 0.0.0.0:6040
     bootstrap_peers:
       - 172.26.113.106
-      - 1172.26.113.107
+      - 172.26.113.107
       - 172.26.113.108
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
@@ -145,6 +147,8 @@ bifrost:
       rpc_host: "https://cf-rpc.omniservice.dev/compass/sepolia"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
@@ -170,6 +174,8 @@ bifrost:
       solvency_blocks: 100
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
@@ -195,6 +201,8 @@ bifrost:
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
         mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
@@ -208,5 +216,33 @@ bifrost:
         max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
         start_block_height: 
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
+
+    arb:
+      disabled: false
+      <<: *default-chain
+      chain_id: ARB
+      rpc_host: "https://arb-mainnet-public.unifra.io"
+      solvency_blocks: 100
+      max_pending_nonces: 3
+      token_max_gas_multiplier: 3
+      aggregator_max_gas_multiplier: 10
+      limit_multiplier: 2
+      max_gas_limit: 3000000
+      block_scanner:
+        <<: *default-block-scanner
+        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        max_reorg_rescan_blocks: 600 # 30m
+        concurrency: 1
+        chain_id: ARB
+        gas_cache_blocks: 40
+        gas_price_resolution: 1000000 # 10 gwei
+        observation_flexibility_blocks: 80
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
+        max_contract_tx_logs: 50
+        start_block_height: 
+        max_healthy_lag: 30s
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb

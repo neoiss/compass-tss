@@ -68,7 +68,6 @@ type Memo interface {
 	GetToken() string
 	GetAmount() cosmos.Uint
 	GetDestination() string
-	GetTxHash() string
 	GetOrderID() string
 	IsValid() bool
 }
@@ -87,7 +86,6 @@ func (m MemoBase) GetChain() string       { return "" }
 func (m MemoBase) GetToken() string       { return "" }
 func (m MemoBase) GetAmount() cosmos.Uint { return cosmos.ZeroUint() }
 func (m MemoBase) GetDestination() string { return "" }
-func (m MemoBase) GetTxHash() string      { return "" }
 func (m MemoBase) GetOrderID() string     { return "" }
 func (m MemoBase) IsEmpty() bool          { return m.TxType.IsEmpty() }
 func (m MemoBase) IsValid() bool {

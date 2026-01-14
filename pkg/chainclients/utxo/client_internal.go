@@ -487,21 +487,24 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	if err != nil {
 		return types.TxInItem{}, fmt.Errorf("fail to get memo from tx: %w", err)
 	}
-	if len(memo) <= 0 {
-		c.log.Debug().Int64("height", height).Str("txid", tx.Txid).Msg("ignore tx with empty memo")
-		return types.TxInItem{}, nil
-	}
 	if len([]byte(memo)) > constants.MaxMemoSize {
 		return types.TxInItem{}, fmt.Errorf("memo (%s) longer than max allow length (%d)", memo, constants.MaxMemoSize)
 	}
+
+	var (
+		toBytes     []byte
+		invalidMemo bool
+	)
 	parsedMemo, err := mem.ParseMemo(memo)
 	if err != nil {
 		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
-		return types.TxInItem{}, fmt.Errorf("fail to parse memo: %w", err)
-	}
-	if !parsedMemo.IsValid() {
-		c.log.Debug().Str("txid", tx.Txid).Str("memo", memo).Str("type", parsedMemo.GetType().String()).Msg("invalid memo")
-		return types.TxInItem{}, fmt.Errorf("invalid memo")
+		invalidMemo = true
+	} else {
+		toBytes, err = hex.DecodeString(common.TrimHexPrefix(parsedMemo.GetDestination()))
+		if err != nil {
+			c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to decode memo")
+			invalidMemo = true
+		}
 	}
 
 	chainID, err := c.GetChain().ChainID()
@@ -618,98 +621,108 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		return txIn, nil
 	}
 
-	if c.isAsgardAddress(toAddr) {
+	if c.isAsgardAddress(toAddr) && (!isMemPool) {
 		// only inbound UTXO need to be validated against multi-sig
 		if !c.isValidUTXO(output.ScriptPubKey.Hex) {
 			return types.TxInItem{}, fmt.Errorf("invalid utxo")
 		}
-	}
-	amount, err := btcutil.NewAmount(output.Value)
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
-	}
-	amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
 
-	//gas, err := c.getGas(tx)
-	//if err != nil {
-	//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
-	//}
-	var (
-		destToken   string
-		txOutType   constants.TxInType
-		destChainID = big.NewInt(0)
-	)
-	if parsedMemo.GetType() == mem.TxOutbound {
-		destToken = parsedMemo.GetToken()
-		txOutType = constants.TRANSFER
-		destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
+		amount, err := btcutil.NewAmount(output.Value)
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+			return types.TxInItem{}, fmt.Errorf("fail to parse float64: %w", err)
 		}
-	} else if parsedMemo.GetType() == mem.TxAdd {
-		destToken = constants.BTCToken
-		txOutType = constants.DEPOSIT
-	} else {
-		return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
+		amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
+
+		//gas, err := c.getGas(tx)
+		//if err != nil {
+		//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
+		//}
+		var (
+			destToken   string
+			txOutType   constants.TxInType
+			destChainID = big.NewInt(0)
+		)
+
+		if invalidMemo {
+			destToken = constants.BTCToken
+			txOutType = constants.TRANSFER
+			destChainID, _ = common.MAPChain.ChainID()
+		} else {
+			switch parsedMemo.GetType() {
+			case mem.TxOutbound:
+				destToken = parsedMemo.GetToken()
+				txOutType = constants.TRANSFER
+				destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
+				if err != nil {
+					return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+				}
+			case mem.TxAdd:
+				destToken = constants.BTCToken
+				txOutType = constants.DEPOSIT
+			default:
+				return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
+			}
+		}
+		tokenAddress, err := c.bridge.GetTokenAddress(chainID, destToken)
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, destToken)
+		}
+		if len(tokenAddress) == 0 {
+			return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, destToken)
+		}
+
+		address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
+		}
+		from, err := EncodeBitcoinAddress(address)
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
+		}
+		fromBytes, err := hex.DecodeString(common.TrimHexPrefix(from))
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
+		}
+
+		pubKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
+		}
+
+		chainAndGasLimit := make([]byte, 32)
+		fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
+		toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
+		copy(chainAndGasLimit[0:8], fromChain)
+		copy(chainAndGasLimit[8:16], toChain)
+
+		txIn := types.TxInItem{
+			Tx:               tx.Txid,
+			Memo:             memo,
+			Sender:           sender,
+			FromChain:        chainID,
+			ToChain:          destChainID,
+			Height:           big.NewInt(height),
+			Amount:           new(big.Int).SetUint64(amt),
+			OrderId:          generateOrderID(chainID.String(), tx.Txid),
+			GasUsed:          big.NewInt(0),
+			Token:            tokenAddress,
+			Vault:            pubKey,
+			From:             fromBytes,
+			To:               toBytes,
+			Payload:          payload,
+			Method:           constants.VoteTxIn,
+			LogIndex:         0,
+			ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
+			TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
+			RefundAddr:       fromBytes,
+			Topic:            constants.EventOfBridgeOut.GetTopic().String(),
+			Timestamp:        tx.Blocktime,
+		}
+		c.log.Info().Int64("height", height).Str("txid", tx.Txid).Interface("txIn", txIn).Msg("got tx in")
+		return txIn, nil
 	}
 
-	tokenAddress, err := c.bridge.GetTokenAddress(chainID, destToken)
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, parsedMemo.GetToken())
-	}
-	if len(tokenAddress) == 0 {
-		return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, parsedMemo.GetToken())
-	}
-
-	address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
-	}
-	from, err := EncodeBitcoinAddress(address)
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
-	}
-	fromBytes, err := hex.DecodeString(strings.TrimPrefix(from, "0x"))
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", from, err)
-	}
-
-	pbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
-	if err != nil {
-		return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
-	}
-
-	chainAndGasLimit := make([]byte, 32)
-	fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
-	toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
-	copy(chainAndGasLimit[0:8], fromChain)
-	copy(chainAndGasLimit[8:16], toChain)
-
-	txIn := types.TxInItem{
-		Tx:               tx.Txid,
-		Memo:             memo,
-		Sender:           sender,
-		FromChain:        chainID,
-		ToChain:          destChainID,
-		Height:           big.NewInt(height),
-		Amount:           new(big.Int).SetUint64(amt),
-		OrderId:          generateOrderID(chainID.String(), tx.Txid),
-		GasUsed:          big.NewInt(0),
-		Token:            tokenAddress,
-		Vault:            pbuKey,
-		From:             fromBytes,
-		To:               ethcommon.Hex2Bytes(common.TrimHexPrefix(parsedMemo.GetDestination())),
-		Payload:          payload,
-		Method:           constants.VoteTxIn,
-		LogIndex:         0,
-		ChainAndGasLimit: new(big.Int).SetBytes(chainAndGasLimit),
-		TxOutType:        uint8(txOutType), // by memo type, TxAdd(DEPOSIT), TxOutbound(TRANSFER)
-		RefundAddr:       fromBytes,
-		Topic:            constants.EventOfBridgeOut.GetTopic().String(),
-		Timestamp:        tx.Blocktime,
-	}
-	c.log.Info().Int64("height", height).Str("txid", tx.Txid).Interface("txIn", txIn).Msg("got tx in")
-	return txIn, nil
+	return types.TxInItem{}, nil
 }
 
 func generateOrderID(chainID, txHash string) ethcommon.Hash {
@@ -843,7 +856,7 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		txInItem, err = c.getTxIn(&block.Tx[idx], block.Height, false, vinZeroTxs)
 		if err != nil {
 			// expected since vouts below dust threshold are skipped for vinZeroTxs
-			c.log.Debug().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
+			c.log.Error().Str("txid", tx.Txid).Err(err).Msg("fail to get TxInItem")
 			continue
 		}
 		if txInItem.IsEmpty() {
@@ -856,6 +869,13 @@ func (c *Client) extractTxs(block *btcjson.GetBlockVerboseTxResult) (types.TxIn,
 		//if txInItem.Coins[0].Amount.LT(c.cfg.ChainID.DustThreshold()) {
 		//	continue
 		//}
+		if txInItem.Amount == nil {
+			continue
+		}
+		if cosmos.NewUint(txInItem.Amount.Uint64()).LT(c.cfg.ChainID.DustThreshold()) {
+			c.log.Error().Str("txid", tx.Txid).Err(err).Msg(fmt.Sprintf("amount lesser than dust threshold(%d)", c.cfg.ChainID.DustThreshold().Uint64()))
+			continue
+		}
 		var added bool
 		added, err = c.temporalStorage.TrackObservedTx(txInItem.Tx)
 		if err != nil {

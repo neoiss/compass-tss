@@ -75,10 +75,10 @@ func (pkm *PubKeyManager) Start() error {
 		return fmt.Errorf("fail to get pubkeys from relay: %w", err)
 	}
 	for _, pk := range pubkeys {
-		pkm.AddPubKey(pk.PubKey, false)
+		pkm.AddPubKey(pk.CompressedPubKey, false)
 	}
 
-	// get smart contract address from THORNode , and update it's internal
+	// get smart contract address from map relay chain , and update it's internal
 	pkm.updateContractAddresses(pubkeys)
 	go pkm.updatePubKeys()
 	return nil
@@ -96,7 +96,7 @@ func (pkm *PubKeyManager) updateContractAddresses(pairs []shareTypes.PubKeyContr
 	defer pkm.rwMutex.Unlock()
 	for _, pair := range pairs {
 		for idx, item := range pkm.pubkeys {
-			if item.PubKey == pair.PubKey {
+			if item.PubKey == pair.CompressedPubKey {
 				pkm.pubkeys[idx].Contracts = pair.Contracts
 			}
 		}
@@ -235,8 +235,8 @@ func (pkm *PubKeyManager) fetchPubKeys(prune bool) {
 	}
 	var pubkeys common.PubKeys
 	for _, pk := range addressPairs {
-		pkm.AddPubKey(pk.PubKey, false)
-		pubkeys = append(pubkeys, pk.PubKey)
+		pkm.AddPubKey(pk.CompressedPubKey, false)
+		pubkeys = append(pubkeys, pk.CompressedPubKey)
 	}
 	pkm.updateContractAddresses(addressPairs)
 	// vaults, err := pkm.bridge.GetAsgards()
