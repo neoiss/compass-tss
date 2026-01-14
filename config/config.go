@@ -808,6 +808,7 @@ type BifrostClientConfiguration struct {
 	Addr             string       `mapstructure:"addr"`
 	CrossDataPath    string       `mapstructure:"cross_data_path"`
 	CrossDataAddress string       `mapstructure:"cross_data_address"`
+	IncreaseGasLimit int64        `mapstructure:"increase_gas_limit"`
 }
 
 type BifrostMetricsConfiguration struct {
