@@ -289,6 +289,12 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 	if recommendLimit != 0 {
 		gasLimit = recommendLimit
 	}
+
+	if b.cfg.IncreaseGasLimit > 0 {
+		b.logger.Info().Int64("increaseGasLimit", b.cfg.IncreaseGasLimit).
+			Uint64("gasLimit", gasLimit).Msg("relay increaseGasLimit gather 0, will add")
+		gasLimit = gasLimit + uint64(b.cfg.IncreaseGasLimit)
+	}
 	td := etypes.NewTx(&etypes.DynamicFeeTx{
 		Nonce:     nonce,
 		Value:     nil,

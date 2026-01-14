@@ -38,6 +38,7 @@ bifrost:
     affiliate_fee_manager: ""
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
+    increase_gas_limit: 2000000
   signer:
     backup_keyshares: true
     signer_db_path: ./build/signer_db
@@ -66,7 +67,7 @@ bifrost:
     info_address: 0.0.0.0:6040
     bootstrap_peers:
       - 172.26.113.106
-      - 1172.26.113.107
+      - 172.26.113.107
       - 172.26.113.108
     external_ip: ""
     max_keyshare_recover_scan_blocks: 100
@@ -148,6 +149,8 @@ bifrost:
       rpc_host: "https://cf-rpc.omniservice.dev/compass/sepolia"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
@@ -173,6 +176,8 @@ bifrost:
       solvency_blocks: 100
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
       block_scanner:
@@ -198,6 +203,8 @@ bifrost:
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
         mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
@@ -223,12 +230,14 @@ bifrost:
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
       aggregator_max_gas_multiplier: 10
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
         mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
-        chain_id: BSC
+        chain_id: ARB
         gas_cache_blocks: 40
         gas_price_resolution: 1000000 # 10 gwei
         observation_flexibility_blocks: 80

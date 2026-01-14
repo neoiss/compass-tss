@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -311,107 +310,7 @@ func (c *EVMClient) GetBlockScannerHeight() (int64, error) {
 }
 
 func (c *EVMClient) GetLatestTxForVault(vault string) (string, string, error) {
-	lastObserved, err := c.signerCacheManager.GetLatestRecordedTx(stypes.InboundCacheKey(vault, c.GetChain().String()))
-	if err != nil {
-		return "", "", err
-	}
-	lastBroadCasted, err := c.signerCacheManager.GetLatestRecordedTx(stypes.BroadcastCacheKey(vault, c.GetChain().String()))
-	return lastObserved, lastBroadCasted, err
-}
-
-// --------------------------------- addresses ---------------------------------
-
-// GetAddress returns the address for the given public key.
-func (c *EVMClient) GetAddress(poolPubKey common.PubKey) string {
-	addr, err := poolPubKey.GetAddress(c.cfg.ChainID)
-	if err != nil {
-		c.logger.Error().Err(err).Str("pool_pub_key", poolPubKey.String()).Msg("fail to get pool address")
-		return ""
-	}
-	return addr.String()
-}
-
-// GetAccount returns the account for the given public key.
-func (c *EVMClient) GetAccount(pk common.PubKey, height *big.Int) (common.Account, error) {
-	addr := c.GetAddress(pk)
-	nonce, err := c.evmScanner.GetNonce(addr)
-	if err != nil {
-		return common.Account{}, err
-	}
-	coins, err := c.GetBalances(addr, height)
-	if err != nil {
-		return common.Account{}, err
-	}
-	account := common.NewAccount(int64(nonce), 0, coins, false)
-	return account, nil
-}
-
-// GetAccountByAddress returns the account for the given address.
-func (c *EVMClient) GetAccountByAddress(address string, height *big.Int) (common.Account, error) {
-	nonce, err := c.evmScanner.GetNonce(address)
-	if err != nil {
-		return common.Account{}, err
-	}
-	coins, err := c.GetBalances(address, height)
-	if err != nil {
-		return common.Account{}, err
-	}
-	account := common.NewAccount(int64(nonce), 0, coins, false)
-	return account, nil
-}
-
-func (c *EVMClient) getSmartContractAddr(pubkey common.PubKey) common.Address {
-	return c.pubkeyMgr.GetContract(c.cfg.ChainID, pubkey)
-}
-
-func (c *EVMClient) getTokenAddressFromAsset(asset common.Asset) string {
-	if asset.Equals(c.cfg.ChainID.GetGasAsset()) {
-		return evm.NativeTokenAddr
-	}
-	allParts := strings.Split(asset.Symbol.String(), "-")
-	return allParts[len(allParts)-1]
-}
-
-// --------------------------------- balances ---------------------------------
-
-// GetBalance returns the balance of the provided address.
-func (c *EVMClient) GetBalance(addr, token string, height *big.Int) (*big.Int, error) {
-	contractAddresses := c.pubkeyMgr.GetContracts(c.cfg.ChainID)
-	c.logger.Debug().Interface("contractAddresses", contractAddresses).Msg("got contracts")
-	if len(contractAddresses) == 0 {
-		return nil, fmt.Errorf("fail to get contract address")
-	}
-
-	return c.evmScanner.tokenManager.GetBalance(addr, token, height, contractAddresses[0].String())
-}
-
-// GetBalances returns the balances of the provided address.
-func (c *EVMClient) GetBalances(addr string, height *big.Int) (common.Coins, error) {
-	// for all the tokens the chain client has dealt with before
-	tokens, err := c.evmScanner.GetTokens()
-	if err != nil {
-		return nil, fmt.Errorf("fail to get all the tokens: %w", err)
-	}
-	coins := common.Coins{}
-	for _, token := range tokens {
-		var balance *big.Int
-		balance, err = c.GetBalance(addr, token.Address, height)
-		if err != nil {
-			c.logger.Err(err).Str("token", token.Address).Msg("fail to get balance for token")
-			continue
-		}
-		asset := c.cfg.ChainID.GetGasAsset()
-		if !strings.EqualFold(token.Address, evm.NativeTokenAddr) {
-			asset, err = common.NewAsset(fmt.Sprintf("%s.%s-%s", c.GetChain(), token.Symbol, token.Address))
-			if err != nil {
-				return nil, err
-			}
-		}
-		bal := c.evmScanner.tokenManager.ConvertAmount(token.Address, balance)
-		coins = append(coins, common.NewCoin(asset, bal))
-	}
-
-	return coins.Distinct(), nil
+	return "", "", nil
 }
 
 // --------------------------------- gas ---------------------------------
@@ -467,18 +366,16 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 
 	gasRate := c.GetGasPrice()
 	if c.cfg.BlockScanner.FixedGasRate > 0 && gasRate.Cmp(big.NewInt(0)) == 0 {
-		// if chain gas is zero we are still filling our gas price buffer, use outbound rate
+		// if chain gas is zero we are still filling our gas price buffer,
+		// use outbound rate
 		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
 	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
 		// todo will next 2
 	}
 
 	if gasRate.Cmp(cgl.Third) != 0 {
-		c.logger.Info().Str("txHash", txOutItem.TxHash).
-			Str("outboundRate", cgl.Third.String()).
-			Str("currentRate", c.GetGasPrice().String()).
-			Str("effectiveRate", gasRate.String()).
-			Msg("gas rate")
+		c.logger.Info().Str("txHash", txOutItem.TxHash).Str("eventRate", cgl.Third.String()).
+			Str("currentRate", gasRate.String()).Msg("gas rate")
 	}
 
 	// outbound tx always send to smart contract address
@@ -493,11 +390,13 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 		return nil, err
 	}
 
+	estimatedGas = c.calGasLimit(estimatedGas, cgl.End.Uint64(), uint64(c.cfg.MaxGasLimit),
+		c.cfg.LimitMultiplier)
 	// if estimated gas is more than the planned gas, abort and let thornode reschedule
 	if estimatedGas > cgl.End.Uint64() {
-		c.logger.Warn().Str("relayHash", txOutItem.TxHash).Stringer("rate", gasRate).
+		c.logger.Warn().Str("relayHash", txOutItem.TxHash).
 			Uint64("estimatedGasUnits", estimatedGas).Uint64("maxGasUnits", cgl.End.Uint64()).
-			Msg("max gas exceeded, aborting to let thornode reschedule")
+			Msg("max gas exceeded, aborting to let relay reschedule")
 	}
 
 	// before signing, confirm the vault has enough gas asset
@@ -514,6 +413,34 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	)
 
 	return createdTx, nil
+}
+
+func (c *EVMClient) calGasLimit(estimatedGas, min, max uint64, limitMultiplier int) uint64 {
+	mulResult := big.NewInt(0).Mul(big.NewInt(int64(estimatedGas)), big.NewInt(int64(limitMultiplier)))
+	if mulResult.Uint64() < min {
+		return min
+	} else if mulResult.Uint64() > max {
+		return max
+	}
+
+	return mulResult.Uint64()
+}
+
+// --------------------------------- addresses ---------------------------------
+
+// GetAddress returns the address for the given public key.
+func (c *EVMClient) GetAddress(poolPubKey common.PubKey) string {
+	return ""
+}
+
+// GetAccount returns the account for the given public key.
+func (c *EVMClient) GetAccount(pk common.PubKey, height *big.Int) (common.Account, error) {
+	return common.Account{}, nil
+}
+
+// GetAccountByAddress returns the account for the given address.
+func (c *EVMClient) GetAccountByAddress(address string, height *big.Int) (common.Account, error) {
+	return common.Account{}, nil
 }
 
 // --------------------------------- sign ---------------------------------
@@ -606,20 +533,6 @@ func (c *EVMClient) sign(tx *etypes.Transaction, poolPubKey common.PubKey, heigh
 	if err == nil && rawBytes != nil {
 		return rawBytes, nil
 	}
-	// var keysignError tss.KeysignError
-	// if errors.As(err, &keysignError) {
-	// 	if len(keysignError.Blame.BlameNodes) == 0 {
-	// 		// TSS doesn't know which node to blame
-	// 		return nil, fmt.Errorf("fail to sign tx: %w", err)
-	// 	}
-	// 	// key sign error forward the keysign blame to thorchain
-	// 	txID, errPostKeysignFail := c.bridge.PostKeysignFailure(keysignError.Blame, height,
-	// 		txOutItem.Memo, nil, common.EmptyPubKey) // txOutItem.Coins, txOutItem.VaultPubKey
-	// 	if errPostKeysignFail != nil {
-	// 		return nil, multierror.Append(err, errPostKeysignFail)
-	// 	}
-	// 	c.logger.Info().Str("tx_id", txID).Msg("post keysign failure to thorchain")
-	// }
 	return nil, fmt.Errorf("fail to sign tx: %w", err)
 }
 
@@ -706,18 +619,6 @@ func (c *EVMClient) BroadcastTx(txOutItem stypes.TxOutItem, hexTx []byte) (strin
 
 // OnObservedTxIn is called when a new observed tx is received.
 func (c *EVMClient) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
-	//m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
-	//if err != nil {
-	//	// Debug log only as ParseMemo error is expected for THORName inbounds.
-	//	c.logger.Debug().Err(err).Str("memo", txIn.Memo).Msg("fail to parse memo")
-	//	return
-	//}
-	//if !m.IsOutbound() {
-	//	return
-	//}
-	//if m.GetTxID().IsEmpty() {
-	//	return
-	//}
 	if err := c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), txIn.Tx), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")
 	}
@@ -728,6 +629,8 @@ func (c *EVMClient) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	switch c.cfg.ChainID {
 	case common.AVAXChain: // instant finality
 		return 0
+	case common.ARBChain:
+		return 12
 	case common.BASEChain:
 		return 12 // ~2 Ethereum blocks for parity with the 2 block minimum in eth client
 	case common.BSCChain:

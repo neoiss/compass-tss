@@ -417,19 +417,13 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 		for _, ele := range result {
 			tmp := ele
 			o.addToOnDeck(&tmp)
-			go func(list types.TxIn) {
-				// add in cross-chain storage
-				cId, _ := list.Chain.ChainID()
-				for _, ele := range list.TxArray {
-					tmp2 := ele
-					tmp2.FromChain = cId
-					err = o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfSrcChain)
-					if err != nil {
-						o.logger.Error().Str("txHash", tmp2.Tx).Err(err).
-							Msg("fail to add src tx in cross storage")
-					}
-				}
-			}(tmp)
+
+			cId, _ := tmp.Chain.ChainID()
+			for _, ele := range tmp.TxArray {
+				tmp2 := ele
+				tmp2.FromChain = cId
+				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfSrcChain)
+			}
 		}
 	}
 	if len(bridgeOut.TxArray) > 0 {
@@ -437,19 +431,12 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 		for _, ele := range result {
 			tmp := ele
 			o.addToOnDeck(&tmp)
-			go func(list types.TxIn) {
-				// add in cross-chain storage
-				cId, _ := list.Chain.ChainID()
-				for _, ele := range list.TxArray {
-					tmp2 := ele
-					tmp2.FromChain = cId
-					err = o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfDstChain)
-					if err != nil {
-						o.logger.Error().Str("txHash", tmp2.Tx).Err(err).
-							Msg("fail to add dst tx in cross storage")
-					}
-				}
-			}(tmp)
+			cId, _ := tmp.Chain.ChainID()
+			for _, ele := range tmp.TxArray {
+				tmp2 := ele
+				tmp2.FromChain = cId
+				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfDstChain)
+			}
 		}
 	}
 }

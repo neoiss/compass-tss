@@ -626,6 +626,13 @@ type BifrostChainConfiguration struct {
 	// dynamic fee EVM transactions.
 	MaxGasTipPercentage int `mapstructure:"max_gas_tip_percentage"`
 
+	// LimitMultiplier is the multiplier that needs to be multiplied after gasLimit is
+	// calculated, but it cannot exceed MaxGasLimit in maximum and MinGasLimit in minimum.
+	LimitMultiplier int `mapstructure:"limit_multiplier"`
+
+	// MaxGasLimit is the maximum gas limit before the final transaction is sent.
+	MaxGasLimit int `mapstructure:"max_gas_limit"`
+
 	// TokenMaxGasMultiplier is a multiplier applied to max gas for outbounds which are
 	// not the gas asset. This compensates for variance in gas units when contracts for
 	// pool assets use more than the configured MaxGasLimit gas units in transferOut.
@@ -802,6 +809,7 @@ type BifrostClientConfiguration struct {
 	Addr                string       `mapstructure:"addr"`
 	CrossDataPath       string       `mapstructure:"cross_data_path"`
 	CrossDataAddress    string       `mapstructure:"cross_data_address"`
+	IncreaseGasLimit    int64        `mapstructure:"increase_gas_limit"`
 }
 
 type BifrostMetricsConfiguration struct {
