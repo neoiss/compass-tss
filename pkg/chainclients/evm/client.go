@@ -309,6 +309,10 @@ func (c *EVMClient) GetBlockScannerHeight() (int64, error) {
 	return c.blockScanner.PreviousHeight(), nil
 }
 
+func (c *EVMClient) GetLatestTxForVault(vault string) (string, string, error) {
+	return "", "", nil
+}
+
 // --------------------------------- gas ---------------------------------
 
 // GetGasFee returns the gas fee based on the current gas price.
@@ -420,6 +424,23 @@ func (c *EVMClient) calGasLimit(estimatedGas, min, max uint64, limitMultiplier i
 	}
 
 	return mulResult.Uint64()
+}
+
+// --------------------------------- addresses ---------------------------------
+
+// GetAddress returns the address for the given public key.
+func (c *EVMClient) GetAddress(poolPubKey common.PubKey) string {
+	return ""
+}
+
+// GetAccount returns the account for the given public key.
+func (c *EVMClient) GetAccount(pk common.PubKey, height *big.Int) (common.Account, error) {
+	return common.Account{}, nil
+}
+
+// GetAccountByAddress returns the account for the given address.
+func (c *EVMClient) GetAccountByAddress(address string, height *big.Int) (common.Account, error) {
+	return common.Account{}, nil
 }
 
 // --------------------------------- sign ---------------------------------
