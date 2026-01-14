@@ -666,7 +666,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 				}
 
 				var relayData []byte
-				if destToken != native {
+				if !strings.EqualFold(destToken, native) {
 					destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
 					if err != nil {
 						return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, mapChainID, destToken)

@@ -156,7 +156,7 @@ func (b *Bridge) GetTokenDecimals(chainID *big.Int, address []byte) (*big.Int, e
 		return nil, errors.Wrapf(err, "unable to copy output of %s", method)
 	}
 	if decimals.Cmp(big.NewInt(0)) == 0 {
-		return nil, fmt.Errorf("unsupported token(%d:%s)", chainID, address)
+		return nil, fmt.Errorf("unsupported token(%d:%s)", chainID, ecommon.BytesToAddress(address))
 	}
 	return decimals, nil
 }
