@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/mapprotocol/compass-tss/cmd/compass/docs"
@@ -48,10 +49,11 @@ func NewCrossServer(addr string, dbStorage *cross.CrossStorage) *CrossServer {
 func (s *CrossServer) newHandler() http.Handler {
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(s.pingHandler)).Methods(http.MethodGet)
-	router.Handle("/cross/signle", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
-	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
 	router.Handle("/cross/chain/height", http.HandlerFunc(s.chainHeight)).Methods(http.MethodGet)
+	router.Handle("/cross/chain/height/txs", http.HandlerFunc(s.chainTxs)).Methods(http.MethodGet)
+	router.Handle("/cross/order", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
 	router.Handle("/cross/pending/tx", http.HandlerFunc(s.pendingTx)).Methods(http.MethodGet)
+	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	return router
@@ -71,6 +73,12 @@ type ChainHeightResponse struct {
 	Height string `json:"height"`
 }
 
+// ChainHeightResponse
+type ChainOrderIdResponse struct {
+	Height string   `json:"height"`
+	Set    []string `json:"set"`
+}
+
 // PendingTxResponse
 type PendingTxResponse struct {
 	Txs []string `json:"txs"`
@@ -82,19 +90,19 @@ type PendingTxResponse struct {
 // @Tags         交易记录
 // @Accept       json
 // @Produce      json
-// @Param        key query string true "orderId"
+// @Param        orderId query string true "orderId"
 // @Success      200  {object}  CrossSignelResponse
 // @Failure      400  {object}  nil  "bad request"
-// @Router       /cross/signle [get]
+// @Router       /cross/order [get]
 func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) {
-	key := request.URL.Query().Get("key")
-	s.logger.Info().Any("key", key).Msg("get cross signel")
-	crossData, err := s.dbStorage.GetCrossData(key)
+	orderId := request.URL.Query().Get("orderId")
+	crossData, err := s.dbStorage.GetCrossData(orderId)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	crossData.StatusStr = crossData.Status.String()
 	res := &CrossSignelResponse{
 		Data: crossData,
 	}
@@ -131,8 +139,60 @@ func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	crossData.StatusStr = crossData.Status.String()
 	res := &CrossSignelResponse{
 		Data: crossData,
+	}
+
+	// write the response
+	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to write to response")
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		_, err = w.Write(jsonBytes)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("fail to write to response")
+		}
+	}
+}
+
+// get scanner chain txs
+// @Summary      获取高度对应的交易集群
+// @Description  根据 chainId 获取扫描交易集合
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        chainId query string true "1"
+// @Param        height query string true "12245"
+// @Success      200  {object}   ChainOrderIdResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/chain/height/txs [get]
+func (s *CrossServer) chainTxs(w http.ResponseWriter, request *http.Request) {
+	chainId := request.URL.Query().Get("chainId")
+	height := request.URL.Query().Get("height")
+	s.logger.Info().Any("chainId", chainId).Any("height", height).Msg("get chain height")
+	heightI, err := strconv.ParseInt(height, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	orderIdSet, err := s.dbStorage.GetOrderIdSet(chainId, heightI)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	scannerHeight, err := s.dbStorage.GetChainHeight(chainId)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res := &ChainOrderIdResponse{
+		Height: scannerHeight,
+		Set:    orderIdSet,
 	}
 
 	// write the response
