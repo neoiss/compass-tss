@@ -41,6 +41,22 @@ const (
 	StatusOfFailed
 )
 
+func (s StatusOfCross) String() string {
+	switch s {
+	case StatusOfInit:
+		return "init"
+	case StatusOfPending:
+		return "pending"
+	case StatusOfSend:
+		return "send"
+	case StatusOfCompleted:
+		return "completed"
+	case StatusOfFailed:
+		return "failed"
+	}
+	return ""
+}
+
 const (
 	TypeOfSrcChain    = "src"
 	TypeOfRelayChain  = "relay"
@@ -69,13 +85,14 @@ type ChanStruct struct {
 
 // CrossSet
 type CrossSet struct {
-	Src     *CrossData    `json:"src" `
-	Relay   *CrossData    `json:"relay"  `
-	Dest    *CrossData    `json:"dest" `
-	MapDst  *CrossData    `json:"map_dest" `
-	Now     int64         `json:"now" example:1767097427 `
-	Status  StatusOfCross `json:"status" example: 0 `
-	OrderId string        `json:"order_id" example:"" `
+	Src       *CrossData    `json:"src" `      // 源链交易
+	Relay     *CrossData    `json:"relay"  `   // relay交易
+	Dest      *CrossData    `json:"dest" `     // 目标链交易
+	MapDst    *CrossData    `json:"map_dest" ` // map dest交易
+	Now       int64         `json:"now" example: 1767097427 `
+	Status    StatusOfCross `json:"status" example: 1`
+	StatusStr string        `json:"status" example: "pending" `
+	OrderId   string        `json:"order_id" example:"" `
 }
 
 // NewStorage create a new instance of LevelDBScannerStorage
@@ -203,7 +220,7 @@ func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
 	}
 
 	key := s.createOrderIDKey(ele.CrossData.OrderId)
-	ret, err := s.GetCrossData(key)
+	ret, err := s.GetCrossData(ele.CrossData.OrderId)
 	if err != nil {
 		return fmt.Errorf("fail to get crossData: %w", err)
 	}
@@ -245,7 +262,7 @@ func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
 	}
 
 	txSetKey := s.createOrderIdSetKey(ele.CrossData.Chain, ele.CrossData.Height)
-	orderIdSet, err := s.GetOrderIdSet(txSetKey)
+	orderIdSet, err := s.GetOrderIdSet(ele.CrossData.Chain, ele.CrossData.Height)
 	orderIdSet = append(orderIdSet, ele.CrossData.OrderId)
 
 	batch := new(leveldb.Batch)
@@ -271,7 +288,8 @@ func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
 	return s.db.Write(batch, nil)
 }
 
-func (s *CrossStorage) GetCrossData(key string) (*CrossSet, error) {
+func (s *CrossStorage) GetCrossData(orderId string) (*CrossSet, error) {
+	key := s.createOrderIDKey(orderId)
 	retBytes, err := s.db.Get([]byte(key), nil)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
@@ -312,7 +330,8 @@ func (s *CrossStorage) GetCrossDataByTx(txHash string) (*CrossSet, error) {
 	return ret, nil
 }
 
-func (s *CrossStorage) GetOrderIdSet(key string) ([]string, error) {
+func (s *CrossStorage) GetOrderIdSet(chainId string, height int64) ([]string, error) {
+	key := s.createOrderIdSetKey(chainId, height)
 	retBytes, err := s.db.Get([]byte(key), nil)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
