@@ -630,7 +630,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		}
 		amt := uint64(amount.ToUnit(btcutil.AmountSatoshi))
 
-		native, ok := c.GetChain().NativeToken()
+		nativeToken, ok := c.GetChain().NativeToken()
 		if !ok {
 			return types.TxInItem{}, fmt.Errorf("fail to get native token, chain: %s", c.GetChain())
 		}
@@ -645,28 +645,27 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		//	return types.TxInItem{}, fmt.Errorf("fail to get gas from tx: %w", err)
 		//}
 		var (
-			destToken   string
 			txOutType   constants.TxInType
 			destChainID = big.NewInt(0)
 		)
 
 		// refund
 		if invalidMemo {
-			destToken = native
 			txOutType = constants.TRANSFER
 			destChainID = mapChainID
 		} else {
 			switch parsedMemo.GetType() {
 			case mem.TxOutbound:
-				destToken = parsedMemo.GetToken()
+				destToken := parsedMemo.GetToken()
 				txOutType = constants.TRANSFER
 				destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
 				if err != nil {
 					return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
 				}
 
+				// if dest token is not native token, we need to build relay data
 				var relayData []byte
-				if !strings.EqualFold(destToken, native) {
+				if !strings.EqualFold(destToken, nativeToken) {
 					destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
 					if err != nil {
 						return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, mapChainID, destToken)
@@ -674,6 +673,9 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 					decimals, err := c.bridge.GetTokenDecimals(mapChainID, destTokenAddress)
 					if err != nil {
 						return types.TxInItem{}, fmt.Errorf("fail to get token decimals: %w, chainID: %s, token: %s", err, mapChainID, destToken)
+					}
+					if decimals.Cmp(big.NewInt(0)) == 0 {
+						decimals = big.NewInt(constants.DefaultTokenDecimals)
 					}
 					minAmount := utxo.ConvertDecimal(parsedMemo.GetAmount().BigInt(), 6, decimals.Uint64())
 					relayData, err = utxo.EncodeRelayData(ethcommon.BytesToAddress(destTokenAddress), minAmount)
@@ -691,18 +693,14 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 					return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
 				}
 			case mem.TxAdd:
-				destToken = constants.BTCToken
 				txOutType = constants.DEPOSIT
 			default:
 				return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
 			}
 		}
-		tokenAddress, err := c.bridge.GetTokenAddress(chainID, destToken)
+		nativeTokenAddress, err := c.bridge.GetTokenAddress(chainID, nativeToken)
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, destToken)
-		}
-		if len(tokenAddress) == 0 {
-			return types.TxInItem{}, fmt.Errorf("unsupported token(%d:%s)", chainID, destToken)
+			return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, chainID, nativeToken)
 		}
 
 		address, err := btcutil.DecodeAddress(sender, c.getChainCfgBTC())
@@ -739,7 +737,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			Amount:           new(big.Int).SetUint64(amt),
 			OrderId:          generateOrderID(chainID.String(), tx.Txid),
 			GasUsed:          big.NewInt(0),
-			Token:            tokenAddress,
+			Token:            nativeTokenAddress,
 			Vault:            pubKey,
 			From:             fromBytes,
 			To:               toBytes,
