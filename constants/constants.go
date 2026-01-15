@@ -167,3 +167,5 @@ var ToMapIgnoreError = map[string]struct{}{
 const (
 	BTCToken = "BTC"
 )
+
+const DefaultTokenDecimals = 18
