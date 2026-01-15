@@ -29,13 +29,12 @@ bifrost:
     chain_host: https://mrpc.chainservice.io
     signer_name: "first_cosmos_name"
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
-    maintainer: "0x7e22B9FC15054546028Df928eB7560AEd8F0eF48"
-    tss_manager: "0x062B3Bd0B1A0c9d3cE35dC59D8F5E929314a8706"
-    relay: "0x42D64eD9381bF456697b0C360e8acE139F176a80"
-    gas_service: "0x43A7dd204f6604F2578Bd5d0859f45296d27F23A"
-    token_registry: "0x78D31173C04e5F1D4b0172440B09453C27990527"
-    view_controller: "0xaf720ad7086627034c4d8CA2b4493079E97f1C3A"
-    affiliate_fee_manager: ""
+    maintainer: "0xBfb6B7d0d5Fc120703F7B57CC18157d79a50a7e5"
+    tss_manager: "0xf3Fa35B6e3753cFe88Da86c71B2283F75EB64BE9"
+    relay: "0x00004080D86e1077ce96E67C1B167fF105025307"
+    gas_service: "0x1De9C47ae0074F347d9fF6bfA39CDd3389322eAD"
+    token_registry: "0xf2C3a9b547875C48Ba8598C4973BAC71eDc4C34c"
+    view_controller: "0x8c98bA0a11Cbb0DB3C52e4CD91B0844B39BC1F11"
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
     increase_gas_limit: 2000000
@@ -207,7 +206,7 @@ bifrost:
       max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
-        mos: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        mos: 0x00004080D86e1077ce96E67C1B167fF105025307
         max_reorg_rescan_blocks: 600 # 30m
         concurrency: 1
         chain_id: BSC
