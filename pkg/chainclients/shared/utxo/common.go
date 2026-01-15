@@ -95,6 +95,9 @@ func EncodeAffiliateData(affiliates []*Affiliate) ([]byte, error) {
 
 	buf := make([]byte, len(affiliates)*4)
 	for i, affiliate := range affiliates {
+		if affiliate == nil {
+			return nil, fmt.Errorf("affiliate is nil")
+		}
 		offset := i * 4
 
 		binary.BigEndian.PutUint16(buf[offset:], affiliate.ID)

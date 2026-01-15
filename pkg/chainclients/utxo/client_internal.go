@@ -1216,7 +1216,7 @@ func databaseAlreadyExists(e error) bool {
 }
 
 func (c *Client) encodeAffiliates(affiliates mem.Affiliates) ([]byte, error) {
-	as := make([]*utxo.Affiliate, len(affiliates))
+	as := make([]*utxo.Affiliate, 0, len(affiliates))
 	for _, aff := range affiliates {
 		if aff.Compressed {
 			id, err := c.bridge.GetAffiliateIDByAlias(aff.Name)
