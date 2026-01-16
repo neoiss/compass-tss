@@ -121,7 +121,7 @@ paths:
       summary: 获取扫描高度
       tags:
       - 交易记录
-  /cross/chain/height/txs:
+  /cross/chain/height/orders:
     get:
       consumes:
       - application/json

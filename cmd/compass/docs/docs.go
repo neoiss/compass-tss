@@ -50,7 +50,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cross/chain/height/txs": {
+        "/cross/chain/height/orders": {
             "get": {
                 "description": "根据 chainId 获取扫描交易集合",
                 "consumes": [
