@@ -268,7 +268,7 @@ func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
 	batch := new(leveldb.Batch)
 	batch.Put([]byte(key), data)
 	batch.Put([]byte(s.createTxKey(ele.CrossData.TxHash)), []byte(ele.CrossData.OrderId))
-	batch.Put([]byte(s.createChainHeightKey(ele.CrossData.Chain)), []byte(string(ele.CrossData.Height)))
+	batch.Put([]byte(s.createChainHeightKey(ele.CrossData.Chain)), []byte(strconv.Itoa(int(ele.CrossData.Height))))
 	orderIdSetData, _ := json.Marshal(orderIdSet)
 	batch.Put([]byte(txSetKey), orderIdSetData)
 	if len(pendingTxs) > 0 {

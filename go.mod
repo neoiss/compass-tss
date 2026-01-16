@@ -115,7 +115,7 @@ require (
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/swaggo/http-swagger v1.3.4
-	github.com/swaggo/swag v1.8.12
+	github.com/swaggo/swag v1.16.6
 	gitlab.com/thorchain/thornode/v3 v3.5.5
 )
 
@@ -128,6 +128,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
+	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 )
 

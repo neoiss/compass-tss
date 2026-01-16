@@ -48,7 +48,6 @@ func printVersion() {
 // @title           compass-tss-api
 // @version         1.0
 // @description     tss跨链服务api
-// @host            https://tss-api-test.chainservice.io
 func main() {
 	showVersion := flag.Bool("version", false, "Shows version")
 	logLevel := flag.StringP("log-level", "l", "info", "Log Level")
