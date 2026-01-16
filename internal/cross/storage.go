@@ -89,10 +89,10 @@ type CrossSet struct {
 	Relay     *CrossData    `json:"relay"  `   // relay交易
 	Dest      *CrossData    `json:"dest" `     // 目标链交易
 	MapDst    *CrossData    `json:"map_dest" ` // map dest交易
-	Now       int64         `json:"now" example: 1767097427 `
-	Status    StatusOfCross `json:"status" example: 1`
-	StatusStr string        `json:"status" example: "pending" `
-	OrderId   string        `json:"order_id" example:"" `
+	Now       int64         `json:"now" `
+	Status    StatusOfCross `json:"status"`
+	StatusStr string        `json:"status_str"`
+	OrderId   string        `json:"order_id"`
 }
 
 // NewStorage create a new instance of LevelDBScannerStorage
