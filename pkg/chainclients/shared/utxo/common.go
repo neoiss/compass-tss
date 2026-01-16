@@ -118,6 +118,18 @@ func EncodeRelayData(token ethcommon.Address, minAmount *big.Int) ([]byte, error
 	return packed, nil
 }
 
+func EncodeTargetData(to []byte, toChain *big.Int) ([]byte, error) {
+	args := abi.Arguments{
+		{Type: bytesType},
+		{Type: uint256Type},
+	}
+	packed, err := args.Pack(to, toChain)
+	if err != nil {
+		return nil, err
+	}
+	return packed, nil
+}
+
 func EncodePayload(affiliateData, relayData, targetData []byte) ([]byte, error) {
 	args := abi.Arguments{
 		{Type: bytesType},

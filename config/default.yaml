@@ -35,6 +35,8 @@ bifrost:
     gas_service: "0x1De9C47ae0074F347d9fF6bfA39CDd3389322eAD"
     token_registry: "0xf2C3a9b547875C48Ba8598C4973BAC71eDc4C34c"
     view_controller: "0x8c98bA0a11Cbb0DB3C52e4CD91B0844B39BC1F11"
+    affiliate_fee_manager: "0x4De2ADb9cB88c10Bf200F76c18035cbB8906b6bC"
+    fusion_receiver: "0xc21cDC5F18eFf67Dd4560878fAa80351F3adC558"
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
     increase_gas_limit: 2000000
