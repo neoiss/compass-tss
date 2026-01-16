@@ -734,7 +734,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 
 func (c *Client) encodePayload(nativeToken, destToken string, mapChainID, destChainID *big.Int, to []byte, parsedMemo mem.Memo) (payload []byte, err error) {
 	var relayData []byte
-	// if dest token is not native token, we need to build relay data
+	// if the dest token is not native token, we need to build the relay data
 	if !strings.EqualFold(destToken, nativeToken) {
 		destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
 		if err != nil {
@@ -755,17 +755,11 @@ func (c *Client) encodePayload(nativeToken, destToken string, mapChainID, destCh
 	}
 
 	var targetData []byte
-	if destChainID.Cmp(big.NewInt(0)) == 0 {
-		chainID, err := c.bridge.GetChainIDFromFusionReceiver(parsedMemo.GetChain())
+	// if the dest chain is not the map chain, we need to build the target data.
+	if destChainID.Cmp(mapChainID) != 0 {
+		targetData, err = utxo.EncodeTargetData(to, destChainID)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
-		}
-		if chainID.Cmp(big.NewInt(0)) == 0 {
-			return nil, fmt.Errorf("unsupported destination chain: %s", parsedMemo.GetChain())
-		}
-		targetData, err = utxo.EncodeTargetData(to, chainID)
-		if err != nil {
-			return nil, fmt.Errorf("fail to encode target data: %w, to: %s, chainID: %d", err, parsedMemo.GetDestination(), chainID)
+			return nil, fmt.Errorf("fail to encode target data: %w, to: %s, chainID: %d", err, parsedMemo.GetDestination(), destChainID)
 		}
 	}
 
