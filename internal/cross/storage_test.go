@@ -31,9 +31,21 @@ func TestCrossStorage_HandlerCrossData(t *testing.T) {
 			},
 			limit: 10,
 			key: cross.ChanStruct{
+				CrossData: &cross.CrossData{
+					OrderId:          "0x015be4c33f51fbee02e13b93f5bc2089e2cde770810a5510225de4ce7a8375a1",
+					Chain:            "1360095883558914",
+					Height:           287013,
+					LogIndex:         1,
+					TxHash:           "3183f09f1a960c1d401dfa63f07ecab06bf586f3db84e88a3e1237c799ecd55e",
+					Topic:            "0x8104943fdd0997a3240b59b381251572ac6ac81941e1af29845de70edca938a4",
+					Timestamp:        1768536636,
+					ChainAndGasLimit: "462816646496852369478131125222857703149698333785718784",
+				},
+				Type: "src",
+
 				// CrossData: &cross.CrossData{
-				// 	OrderId:          "0x015be4c87f51fbee02e13b93f5bc2089e2cde770810a5510225de4ce7a8375a1",
-				// 	Chain:            "1360095883558914",
+				// 	OrderId:          "0x015be4c33f51fbee02e13b93f5bc2089e2cde770810a5510225de4ce7a8375a1",
+				// 	Chain:            "212",
 				// 	Height:           287013,
 				// 	LogIndex:         1,
 				// 	TxHash:           "3183f09f1a960c1d401dfa63f07ecab06bf586f3db84e88a3e1237c799ecd55e",
@@ -41,18 +53,18 @@ func TestCrossStorage_HandlerCrossData(t *testing.T) {
 				// 	Timestamp:        1768536636,
 				// 	ChainAndGasLimit: "462816646496852369478131125222857703149698333785718784",
 				// },
-				// Type: "dst",
-				CrossData: &cross.CrossData{
-					OrderId:          "0x780a6ea54f538434331c3c1490a43c984e7e89d4434f53822437e97a98b0d146",
-					Chain:            "212",
-					Height:           20160120,
-					LogIndex:         3,
-					TxHash:           "0x6dfbefc5bd6a6d0399bd6d21c48015a35bf49db361a5b466da5286d4a32a5c01",
-					Topic:            "0x298a40641bd31f72c733761e0e85a6bd8a36909666ac2ed63a42c8015d025638",
-					Timestamp:        1768534943,
-					ChainAndGasLimit: "462816646496852369478131125222857703149698333785718784",
-				},
-				Type: "map_dst",
+				// Type: "relay",
+				// CrossData: &cross.CrossData{
+				// 	OrderId:          "0x780a6ea54f538434331c3c1490a43c984e7e89d4434f53822437e97a98b0d146",
+				// 	Chain:            "212",
+				// 	Height:           20160120,
+				// 	LogIndex:         3,
+				// 	TxHash:           "0x6dfbefc5bd6a6d0399bd6d21c48015a35bf49db361a5b466da5286d4a32a5c01",
+				// 	Topic:            "0x298a40641bd31f72c733761e0e85a6bd8a36909666ac2ed63a42c8015d025638",
+				// 	Timestamp:        1768534943,
+				// 	ChainAndGasLimit: "462816646496852369478131125222857703149698333785718784",
+				// },
+				// Type: "map_dst",
 			},
 		},
 	}
@@ -98,7 +110,7 @@ func TestCrossStorage_GetCrossData(t *testing.T) {
 				FilterBitsPerKey:              10,
 				WriteBuffer:                   1 << 20,
 			},
-			orderId: "0x780a6ea54f538434331c3c1490a43c984e7e89d4434f53822437e97a98b0d146",
+			orderId: "0x015be4c33f51fbee02e13b93f5bc2089e2cde770810a5510225de4ce7a8375a1",
 		},
 	}
 	for _, tt := range tests {

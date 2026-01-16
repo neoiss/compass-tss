@@ -102,7 +102,6 @@ func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) 
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	crossData.StatusStr = crossData.Status.String()
 	res := &CrossSignelResponse{
 		Data: crossData,
 	}

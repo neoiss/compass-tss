@@ -298,10 +298,12 @@ func (s *CrossStorage) GetCrossData(orderId string) (*CrossSet, error) {
 	if len(retBytes) == 0 {
 		return ret, nil
 	}
+
 	err = json.Unmarshal(retBytes, ret)
 	if err != nil {
 		return nil, err
 	}
+	ret.StatusStr = ret.Status.String()
 	return ret, nil
 }
 
