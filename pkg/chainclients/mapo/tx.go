@@ -155,7 +155,7 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 	}
 	if isSign {
 		b.logger.Info().Any("txHash", txOut.TxHash).Msg("is signed, ignore this tx")
-		return nil, nil
+		return nil, constants.ErrorOfOrderExecuted
 	}
 
 	packAbi, _ := abi.JSON(strings.NewReader(packABI))
