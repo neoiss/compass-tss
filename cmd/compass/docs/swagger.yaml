@@ -28,20 +28,28 @@ definitions:
   cross.CrossSet:
     properties:
       dest:
-        $ref: '#/definitions/cross.CrossData'
+        allOf:
+        - $ref: '#/definitions/cross.CrossData'
+        description: 目标链交易
       map_dest:
-        $ref: '#/definitions/cross.CrossData'
+        allOf:
+        - $ref: '#/definitions/cross.CrossData'
+        description: map dest交易
       now:
         type: integer
       order_id:
         example: ""
         type: string
       relay:
-        $ref: '#/definitions/cross.CrossData'
+        allOf:
+        - $ref: '#/definitions/cross.CrossData'
+        description: relay交易
       src:
-        $ref: '#/definitions/cross.CrossData'
+        allOf:
+        - $ref: '#/definitions/cross.CrossData'
+        description: 源链交易
       status:
-        $ref: '#/definitions/cross.StatusOfCross'
+        type: string
     type: object
   cross.StatusOfCross:
     enum:
@@ -62,6 +70,15 @@ definitions:
     properties:
       height:
         type: string
+    type: object
+  main.ChainOrderIdResponse:
+    properties:
+      height:
+        type: string
+      set:
+        items:
+          type: string
+        type: array
     type: object
   main.CrossSignelResponse:
     properties:
@@ -104,6 +121,57 @@ paths:
       summary: 获取扫描高度
       tags:
       - 交易记录
+  /cross/chain/height/txs:
+    get:
+      consumes:
+      - application/json
+      description: 根据 chainId 获取扫描交易集合
+      parameters:
+      - description: "1"
+        in: query
+        name: chainId
+        required: true
+        type: string
+      - description: "12245"
+        in: query
+        name: height
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ChainOrderIdResponse'
+        "400":
+          description: bad request
+      summary: 获取高度对应的交易集群
+      tags:
+      - 交易记录
+  /cross/order:
+    get:
+      consumes:
+      - application/json
+      description: 通过orderId获取交易记录
+      parameters:
+      - description: orderId
+        in: query
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.CrossSignelResponse'
+        "400":
+          description: bad request
+      summary: 通过orderId获取交易记录
+      tags:
+      - 交易记录
   /cross/pending/tx:
     get:
       consumes:
@@ -125,29 +193,6 @@ paths:
         "400":
           description: bad request
       summary: 获取pending的交易列表
-      tags:
-      - 交易记录
-  /cross/signle:
-    get:
-      consumes:
-      - application/json
-      description: 通过orderId获取交易记录
-      parameters:
-      - description: orderId
-        in: query
-        name: key
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.CrossSignelResponse'
-        "400":
-          description: bad request
-      summary: 通过orderId获取交易记录
       tags:
       - 交易记录
   /cross/tx:
