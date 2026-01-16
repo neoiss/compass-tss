@@ -50,7 +50,7 @@ func (s *CrossServer) newHandler() http.Handler {
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(s.pingHandler)).Methods(http.MethodGet)
 	router.Handle("/cross/chain/height", http.HandlerFunc(s.chainHeight)).Methods(http.MethodGet)
-	router.Handle("/cross/chain/height/txs", http.HandlerFunc(s.chainTxs)).Methods(http.MethodGet)
+	router.Handle("/cross/chain/height/orders", http.HandlerFunc(s.chainOrders)).Methods(http.MethodGet)
 	router.Handle("/cross/order", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
 	router.Handle("/cross/pending/tx", http.HandlerFunc(s.pendingTx)).Methods(http.MethodGet)
 	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
@@ -107,17 +107,7 @@ func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) 
 		Data: crossData,
 	}
 
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
+	s.writeSuccess(w, res)
 }
 
 // get tx record by txHash
@@ -144,17 +134,7 @@ func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request
 		Data: crossData,
 	}
 
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
+	s.writeSuccess(w, res)
 }
 
 // get scanner chain txs
@@ -167,8 +147,8 @@ func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request
 // @Param        height query string true "12245"
 // @Success      200  {object}   ChainOrderIdResponse
 // @Failure      400  {object}  nil  "bad request"
-// @Router       /cross/chain/height/txs [get]
-func (s *CrossServer) chainTxs(w http.ResponseWriter, request *http.Request) {
+// @Router       /cross/chain/height/orders [get]
+func (s *CrossServer) chainOrders(w http.ResponseWriter, request *http.Request) {
 	chainId := request.URL.Query().Get("chainId")
 	height := request.URL.Query().Get("height")
 	s.logger.Info().Any("chainId", chainId).Any("height", height).Msg("get chain height")
@@ -195,17 +175,7 @@ func (s *CrossServer) chainTxs(w http.ResponseWriter, request *http.Request) {
 		Set:    orderIdSet,
 	}
 
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
+	s.writeSuccess(w, res)
 }
 
 // get scanner chain height
@@ -231,17 +201,7 @@ func (s *CrossServer) chainHeight(w http.ResponseWriter, request *http.Request) 
 		Height: height,
 	}
 
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		s.logger.Error().Err(err).Msg("fail to write to response")
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
-	}
+	s.writeSuccess(w, res)
 }
 
 // get pending txs by chainId
@@ -266,17 +226,22 @@ func (s *CrossServer) pendingTx(w http.ResponseWriter, request *http.Request) {
 	res := &PendingTxResponse{
 		Txs: txs,
 	}
+	s.writeSuccess(w, res)
+}
 
-	// write the response
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+func (s *CrossServer) writeSuccess(w http.ResponseWriter, data interface{}) {
+	jsonBytes, err := json.MarshalIndent(map[string]interface{}{
+		"data": data,
+		"code": 0,
+		"msg":  "success",
+	}, "", "  ")
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to write to response")
 		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		_, err = w.Write(jsonBytes)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("fail to write to response")
-		}
+	}
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to write to response")
 	}
 }
 

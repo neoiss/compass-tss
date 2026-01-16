@@ -50,6 +50,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/cross/chain/height/orders": {
+            "get": {
+                "description": "根据 chainId 获取扫描交易集合",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "交易记录"
+                ],
+                "summary": "获取高度对应的交易集群",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "1",
+                        "name": "chainId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "12245",
+                        "name": "height",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ChainOrderIdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    }
+                }
+            }
+        },
+        "/cross/order": {
+            "get": {
+                "description": "通过orderId获取交易记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "交易记录"
+                ],
+                "summary": "通过orderId获取交易记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "orderId",
+                        "name": "orderId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.CrossSignelResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    }
+                }
+            }
+        },
         "/cross/pending/tx": {
             "get": {
                 "description": "根据 chainId 获取pending的交易列表",
@@ -77,41 +154,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.PendingTxResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request"
-                    }
-                }
-            }
-        },
-        "/cross/signle": {
-            "get": {
-                "description": "通过orderId获取交易记录",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "交易记录"
-                ],
-                "summary": "通过orderId获取交易记录",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "orderId",
-                        "name": "key",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.CrossSignelResponse"
                         }
                     },
                     "400": {
@@ -198,10 +240,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "dest": {
-                    "$ref": "#/definitions/cross.CrossData"
+                    "description": "目标链交易",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cross.CrossData"
+                        }
+                    ]
                 },
                 "map_dest": {
-                    "$ref": "#/definitions/cross.CrossData"
+                    "description": "map dest交易",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cross.CrossData"
+                        }
+                    ]
                 },
                 "now": {
                     "type": "integer"
@@ -211,13 +263,23 @@ const docTemplate = `{
                     "example": ""
                 },
                 "relay": {
-                    "$ref": "#/definitions/cross.CrossData"
+                    "description": "relay交易",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cross.CrossData"
+                        }
+                    ]
                 },
                 "src": {
-                    "$ref": "#/definitions/cross.CrossData"
+                    "description": "源链交易",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cross.CrossData"
+                        }
+                    ]
                 },
                 "status": {
-                    "$ref": "#/definitions/cross.StatusOfCross"
+                    "type": "string"
                 }
             }
         },
@@ -244,6 +306,20 @@ const docTemplate = `{
             "properties": {
                 "height": {
                     "type": "string"
+                }
+            }
+        },
+        "main.ChainOrderIdResponse": {
+            "type": "object",
+            "properties": {
+                "height": {
+                    "type": "string"
+                },
+                "set": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -279,6 +355,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "tss跨链服务api",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

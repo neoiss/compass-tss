@@ -662,34 +662,9 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 				if err != nil {
 					return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
 				}
-
-				// if dest token is not native token, we need to build relay data
-				var relayData []byte
-				if !strings.EqualFold(destToken, nativeToken) {
-					destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
-					if err != nil {
-						return types.TxInItem{}, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, mapChainID, destToken)
-					}
-					decimals, err := c.bridge.GetTokenDecimals(mapChainID, destTokenAddress)
-					if err != nil {
-						return types.TxInItem{}, fmt.Errorf("fail to get token decimals: %w, chainID: %s, token: %s", err, mapChainID, destToken)
-					}
-					if decimals.Cmp(big.NewInt(0)) == 0 {
-						decimals = big.NewInt(constants.DefaultTokenDecimals)
-					}
-					minAmount := utxo.ConvertDecimal(parsedMemo.GetAmount().BigInt(), 6, decimals.Uint64())
-					relayData, err = utxo.EncodeRelayData(ethcommon.BytesToAddress(destTokenAddress), minAmount)
-					if err != nil {
-						return types.TxInItem{}, fmt.Errorf("fail to encode relay data: %w", err)
-					}
-				}
-				affiliateData, err := c.encodeAffiliates(parsedMemo.GetAffiliates())
+				payload, err = c.encodePayload(nativeToken, destToken, mapChainID, destChainID, toBytes, parsedMemo)
 				if err != nil {
-					return types.TxInItem{}, fmt.Errorf("fail to encode affiliates: %w", err)
-				}
-
-				payload, err = utxo.EncodePayload(affiliateData, relayData, nil)
-				if err != nil {
+					// todo refund
 					return types.TxInItem{}, fmt.Errorf("fail to encode payload: %w", err)
 				}
 			case mem.TxAdd:
@@ -755,6 +730,55 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 	}
 
 	return types.TxInItem{}, nil
+}
+
+func (c *Client) encodePayload(nativeToken, destToken string, mapChainID, destChainID *big.Int, to []byte, parsedMemo mem.Memo) (payload []byte, err error) {
+	var relayData []byte
+	// if dest token is not native token, we need to build relay data
+	if !strings.EqualFold(destToken, nativeToken) {
+		destTokenAddress, err := c.bridge.GetTokenAddress(mapChainID, destToken)
+		if err != nil {
+			return nil, fmt.Errorf("fail to get token address: %w, chainID: %s, token: %s", err, mapChainID, destToken)
+		}
+		decimals, err := c.bridge.GetTokenDecimals(mapChainID, destTokenAddress)
+		if err != nil {
+			return nil, fmt.Errorf("fail to get token decimals: %w, chainID: %s, token: %s", err, mapChainID, destToken)
+		}
+		if decimals.Cmp(big.NewInt(0)) == 0 {
+			decimals = big.NewInt(constants.DefaultTokenDecimals)
+		}
+		minAmount := utxo.ConvertDecimal(parsedMemo.GetAmount().BigInt(), 6, decimals.Uint64())
+		relayData, err = utxo.EncodeRelayData(ethcommon.BytesToAddress(destTokenAddress), minAmount)
+		if err != nil {
+			return nil, fmt.Errorf("fail to encode relay data: %w, token: %s, minAmount: %d", err, ethcommon.BytesToAddress(destTokenAddress), minAmount)
+		}
+	}
+
+	var targetData []byte
+	if destChainID.Cmp(big.NewInt(0)) == 0 {
+		chainID, err := c.bridge.GetChainIDFromFusionReceiver(parsedMemo.GetChain())
+		if err != nil {
+			return nil, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
+		}
+		if chainID.Cmp(big.NewInt(0)) == 0 {
+			return nil, fmt.Errorf("unsupported destination chain: %s", parsedMemo.GetChain())
+		}
+		targetData, err = utxo.EncodeTargetData(to, chainID)
+		if err != nil {
+			return nil, fmt.Errorf("fail to encode target data: %w, to: %s, chainID: %d", err, parsedMemo.GetDestination(), chainID)
+		}
+	}
+
+	affiliateData, err := c.encodeAffiliates(parsedMemo.GetAffiliates())
+	if err != nil {
+		return nil, fmt.Errorf("fail to encode affiliates: %w", err)
+	}
+
+	payload, err = utxo.EncodePayload(affiliateData, relayData, targetData)
+	if err != nil {
+		return nil, fmt.Errorf("fail to encode payload: %w", err)
+	}
+	return payload, nil
 }
 
 func generateOrderID(chainID, txHash string) ethcommon.Hash {

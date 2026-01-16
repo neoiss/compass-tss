@@ -803,6 +803,7 @@ type BifrostClientConfiguration struct {
 	ViewController      string       `mapstructure:"view_controller"`
 	TokenRegistry       string       `mapstructure:"token_registry"`
 	AffiliateFeeManager string       `mapstructure:"affiliate_fee_manager"`
+	FusionReceiver      string       `mapstructure:"fusion_receiver"`
 	Relay               string       `mapstructure:"relay"`
 	GasService          string       `mapstructure:"gas_service"`
 	SignerPasswd        string       `mapstructure:"signer_passwd"`

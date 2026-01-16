@@ -122,7 +122,7 @@ func (s *CrossStorage) Start() {
 					log.Error().Msg("cross storage channel closed")
 					return
 				}
-				err := s.handlerCrossData(ele)
+				err := s.HandlerCrossData(ele)
 				if err != nil {
 					log.Error().Any("ele", ele).Err(err).Msg("fail to handle cross data")
 				}
@@ -204,14 +204,14 @@ func (s *CrossStorage) AddOrUpdateTx(insertData *CrossData, _type string) {
 	}
 }
 
-func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
+func (s *CrossStorage) HandlerCrossData(ele *ChanStruct) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	pendingKey := s.createPendingKey(ele.CrossData.Chain)
 	pendingTxs, err := s.GetPendingSet(ele.CrossData.Chain)
 	if err != nil {
-		return err
+		return fmt.Errorf("GetPending failed err :%w", err)
 	}
 	if ele.CrossData.IsMemoized {
 		pendingTxs = append(pendingTxs, ele.CrossData.TxHash)
@@ -268,7 +268,7 @@ func (s *CrossStorage) handlerCrossData(ele *ChanStruct) error {
 	batch := new(leveldb.Batch)
 	batch.Put([]byte(key), data)
 	batch.Put([]byte(s.createTxKey(ele.CrossData.TxHash)), []byte(ele.CrossData.OrderId))
-	batch.Put([]byte(s.createChainHeightKey(ele.CrossData.Chain)), []byte(string(ele.CrossData.Height)))
+	batch.Put([]byte(s.createChainHeightKey(ele.CrossData.Chain)), []byte(strconv.Itoa(int(ele.CrossData.Height))))
 	orderIdSetData, _ := json.Marshal(orderIdSet)
 	batch.Put([]byte(txSetKey), orderIdSetData)
 	if len(pendingTxs) > 0 {
@@ -342,7 +342,7 @@ func (s *CrossStorage) GetOrderIdSet(chainId string, height int64) ([]string, er
 		return ret, nil
 	}
 
-	err = json.Unmarshal(retBytes, ret)
+	err = json.Unmarshal(retBytes, &ret)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func (s *CrossStorage) GetOrderIdSet(chainId string, height int64) ([]string, er
 }
 
 func (s *CrossStorage) GetPendingSet(chainId string) ([]string, error) {
-	key := s.createChainHeightKey(chainId)
+	key := s.createPendingKey(chainId)
 	retBytes, err := s.db.Get([]byte(key), nil)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
@@ -361,7 +361,7 @@ func (s *CrossStorage) GetPendingSet(chainId string) ([]string, error) {
 		return ret, nil
 	}
 
-	err = json.Unmarshal(retBytes, ret)
+	err = json.Unmarshal(retBytes, &ret)
 	if err != nil {
 		return nil, err
 	}

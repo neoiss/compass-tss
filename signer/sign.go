@@ -301,7 +301,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 				tmp := tx
 				param := tmp.TxOutItem(txOut.Height)
 				param.Chain, _ = common.MAPChain.ChainID()
-go				s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param), _type)
+				s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param), _type)
 			}
 			if len(items) <= 0 {
 				continue
@@ -558,6 +558,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	}
 	exist, err := s.mapBridge.OrderExecuted(item.TxOutItem.OrderId, false)
 	if err != nil {
+		s.logger.Error().Str("relayHash", item.TxOutItem.TxHash).Err(err).Msgf("fail to check order executed")
 		return nil, nil, err
 	}
 	if exist {
