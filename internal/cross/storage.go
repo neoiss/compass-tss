@@ -350,7 +350,7 @@ func (s *CrossStorage) GetOrderIdSet(chainId string, height int64) ([]string, er
 }
 
 func (s *CrossStorage) GetPendingSet(chainId string) ([]string, error) {
-	key := s.createChainHeightKey(chainId)
+	key := s.createPendingKey(chainId)
 	retBytes, err := s.db.Get([]byte(key), nil)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
