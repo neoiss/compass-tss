@@ -567,7 +567,7 @@ func (c *EVMClient) callContract(ret interface{}, addr, method string, input []b
 	outputs := abi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(outPut)
 	if err != nil {
-		return errors.Wrap(err, "unpack output")
+		return errors.Wrap(err, "unpack output"+method)
 	}
 
 	if err = outputs.Copy(ret, unpack); err != nil {
