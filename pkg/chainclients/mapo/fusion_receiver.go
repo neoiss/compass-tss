@@ -9,6 +9,10 @@ import (
 	"math/big"
 )
 
+func (b *Bridge) GetFusionReceiver() ecommon.Address {
+	return ecommon.HexToAddress(b.cfg.FusionReceiver)
+}
+
 func (b *Bridge) GetChainIDFromFusionReceiver(name string) (*big.Int, error) {
 	if name == "" {
 		return nil, errors.New("chain name is empty")
