@@ -113,6 +113,7 @@ type Bridge interface {
 	PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error)
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 	GetChainID(name string) (*big.Int, error)
+	GetFusionReceiver() ecommon.Address
 	GetChainIDFromFusionReceiver(name string) (*big.Int, error)
 	GetChainName(chain *big.Int) (string, error)
 	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
