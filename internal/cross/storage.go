@@ -58,11 +58,12 @@ func (s StatusOfCross) String() string {
 }
 
 const (
-	TypeOfSrcChain    = "src"
-	TypeOfRelayChain  = "relay"
-	TypeOfSendDst     = "send_dst"
-	TypeOfDstChain    = "dst"
-	TypeOfMapDstChain = "map_dst"
+	TypeOfSrcChain         = "src"
+	TypeOfRelayChain       = "relay"
+	TypeOfRelaySignedChain = "relay_signed"
+	TypeOfSendDst          = "send_dst"
+	TypeOfDstChain         = "dst"
+	TypeOfMapDstChain      = "map_dst"
 )
 
 // CrossData
@@ -85,14 +86,15 @@ type ChanStruct struct {
 
 // CrossSet
 type CrossSet struct {
-	Src       *CrossData    `json:"src" `      // 源链交易
-	Relay     *CrossData    `json:"relay"  `   // relay交易
-	Dest      *CrossData    `json:"dest" `     // 目标链交易
-	MapDst    *CrossData    `json:"map_dest" ` // map dest交易
-	Now       int64         `json:"now" `
-	Status    StatusOfCross `json:"status"`
-	StatusStr string        `json:"status_str"`
-	OrderId   string        `json:"order_id"`
+	Src         *CrossData    `json:"src" `      // 源链交易
+	Relay       *CrossData    `json:"relay"  `   // relay交易
+	RelaySigned *CrossData    `json:"relay"  `   // relay签名交易，前端忽略此字段
+	Dest        *CrossData    `json:"dest" `     // 目标链交易
+	MapDst      *CrossData    `json:"map_dest" ` // map dest交易
+	Now         int64         `json:"now" `
+	Status      StatusOfCross `json:"status"`
+	StatusStr   string        `json:"status_str"`
+	OrderId     string        `json:"order_id"`
 }
 
 // NewStorage create a new instance of LevelDBScannerStorage
@@ -235,6 +237,9 @@ func (s *CrossStorage) HandlerCrossData(ele *ChanStruct) error {
 		}
 		ret.Relay = ele.CrossData
 		changeStatus = StatusOfPending
+	case TypeOfRelaySignedChain:
+		// dont change status
+		ret.RelaySigned = ele.CrossData
 	case TypeOfSendDst:
 		ret.Dest = ele.CrossData
 		changeStatus = StatusOfSend
