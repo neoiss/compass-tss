@@ -669,6 +669,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 				}
 			case mem.TxAdd:
 				txOutType = constants.DEPOSIT
+				destChainID = mapChainID
 			default:
 				return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
 			}
