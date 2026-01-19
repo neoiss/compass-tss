@@ -290,7 +290,7 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 			items := make([]TxOutStoreItem, 0, len(txOut.TxArray))
 
 			for i, tx := range txOut.TxArray {
-				_type := cross.TypeOfRelayChain
+				_type := cross.TypeOfRelaySignedChain
 				switch tx.Method {
 				case constants.Completed:
 					_type = cross.TypeOfMapDstChain
@@ -354,6 +354,13 @@ func (s *Signer) cacheOracle(ch <-chan types.TxOut) {
 			}
 			if err := s.oracleStorage.Batch(items); err != nil {
 				s.logger.Error().Err(err).Msg("fail to save tx out items to storage")
+			}
+
+			for _, tx := range txOut.TxArray {
+				tmp := tx
+				param := tmp.TxOutItem(txOut.Height)
+				param.Chain, _ = common.MAPChain.ChainID()
+				s.crossStorage.AddOrUpdateTx(cross.TxOutConvertCross(&param), cross.TypeOfRelayChain)
 			}
 		}
 	}
