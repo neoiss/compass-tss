@@ -213,7 +213,7 @@ bifrost:
         concurrency: 1
         chain_id: BSC
         gas_cache_blocks: 40
-        gas_price_resolution: 1 # 10 gwei
+        gas_price_resolution: 10000000 # 10 gwei
         observation_flexibility_blocks: 80
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
