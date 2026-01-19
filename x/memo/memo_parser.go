@@ -407,13 +407,11 @@ func (p *parser) parseAffiliates(s string) []*Affiliate {
 			return false
 		}
 
-		if bps.Cmp(maxBps) <= 0 && bps.Sign() > 0 {
-			result = append(result, &Affiliate{
-				Name:       name,
-				Bps:        bps,
-				Compressed: true,
-			})
-		}
+		result = append(result, &Affiliate{
+			Name:       name,
+			Bps:        bps,
+			Compressed: true,
+		})
 		nameBuilder.Reset()
 		bpsBuilder.Reset()
 		return true
@@ -473,11 +471,9 @@ func (p *parser) parseSingleAffiliate(part string) *Affiliate {
 		p.addErr(fmt.Errorf("cannot parse '%s' as an big int", bpsStr))
 		return nil
 	}
-	if bps.Cmp(maxBps) <= 0 && bps.Sign() > 0 {
-		return &Affiliate{
-			Name: name,
-			Bps:  bps,
-		}
+
+	return &Affiliate{
+		Name: name,
+		Bps:  bps,
 	}
-	return nil
 }

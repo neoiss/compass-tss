@@ -157,7 +157,13 @@ func Test_parseAffiliates(t *testing.T) {
 		{
 			name:  "compressed-format-with-zero-bps",
 			input: "a0",
-			want:  []*Affiliate{}, // Zero BPS should be invalid
+			want: []*Affiliate{
+				{
+					Name:       "a",
+					Bps:        big.NewInt(0),
+					Compressed: true,
+				},
+			},
 		},
 		{
 			name:  "compressed-format-with-negative-bps (impossible with digits)",
@@ -172,18 +178,18 @@ func Test_parseAffiliates(t *testing.T) {
 		},
 		{
 			name:  "large-bps-value-within-limit",
-			input: "test9999",
+			input: "tp9999",
 			want: []*Affiliate{
 				{
-					Name:       "test",
+					Name:       "tp",
 					Bps:        big.NewInt(9999),
 					Compressed: true,
 				},
 			},
 		},
 		{
-			name:  "large-bps-value-exceeding-limit",
-			input: "test10001", // Assuming maxBps is 10000
+			name:  "name-too-long",
+			input: "test10",
 			want:  []*Affiliate{},
 		},
 	}
@@ -199,7 +205,7 @@ func Test_parseAffiliates(t *testing.T) {
 			got := new(parser).parseAffiliates(tt.input)
 
 			if len(got) != len(tt.want) {
-				t.Errorf("parseAffiliates(%q), got %v, want %vv", tt.input, toString(got), toString(tt.want))
+				t.Errorf("parseAffiliates(%q), got %v, want %v", tt.input, toString(got), toString(tt.want))
 				return
 			}
 
