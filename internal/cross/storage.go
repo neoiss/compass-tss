@@ -86,11 +86,11 @@ type ChanStruct struct {
 
 // CrossSet
 type CrossSet struct {
-	Src         *CrossData    `json:"src" `      // 源链交易
-	Relay       *CrossData    `json:"relay"  `   // relay交易
-	RelaySigned *CrossData    `json:"relay"  `   // relay签名交易，前端忽略此字段
-	Dest        *CrossData    `json:"dest" `     // 目标链交易
-	MapDst      *CrossData    `json:"map_dest" ` // map dest交易
+	Src         *CrossData    `json:"src" `      // source chain transaction
+	Relay       *CrossData    `json:"relay"  `   // relay chain transaction
+	RelaySigned *CrossData    `json:"relay"  `   // relay signed transaction , The front end ignores this field.
+	Dest        *CrossData    `json:"dest" `     // target Chain Transactions
+	MapDst      *CrossData    `json:"map_dest" ` // map dest Transactions
 	Now         int64         `json:"now" `
 	Status      StatusOfCross `json:"status"`
 	StatusStr   string        `json:"status_str"`
