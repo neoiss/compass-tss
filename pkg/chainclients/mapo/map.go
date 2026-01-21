@@ -188,7 +188,7 @@ func (b *Bridge) GetMimir(key string) (int64, error) {
 	case "MaxConfirmations-BSC":
 		return -1, nil
 	case "MaxConfirmations-BTC":
-		return 2, nil
+		return 4, nil
 	case "SignerConcurrency":
 		return 20, nil
 	case "HALTSIGNINGBSC", "HALTSIGNINGETH", "HALTSIGNINGBTC", "HALTSIGNING":
