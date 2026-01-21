@@ -70,13 +70,13 @@ const (
 type CrossData struct {
 	TxHash           string `json:"tx_hash" example:""  `
 	Topic            string `json:"topic" example:""  `
-	Height           int64  `json:"height" example:81507414 `
+	Height           int64  `json:"height" example:"81507414" `
 	OrderId          string `json:"order_id" example:"" `
-	LogIndex         uint   `json:"log_index" example:1 `
+	LogIndex         uint   `json:"log_index" example:"1" `
 	Chain            string `json:"chain" example:"" `
 	ChainAndGasLimit string `json:"chain_and_gas_limit" example:"" `
-	Timestamp        int64  `json:"timestamp" example: 1767097427 `
-	IsMemoized       bool   `json:"is_memoized" example: false `
+	Timestamp        int64  `json:"timestamp" example:"1767097427" `
+	IsMemoized       bool   `json:"is_memoized" example:"false" `
 }
 
 type ChanStruct struct {
@@ -86,11 +86,11 @@ type ChanStruct struct {
 
 // CrossSet
 type CrossSet struct {
-	Src         *CrossData    `json:"src" `      // source chain transaction
-	Relay       *CrossData    `json:"relay"  `   // relay chain transaction
-	RelaySigned *CrossData    `json:"relay"  `   // relay signed transaction , The front end ignores this field.
-	Dest        *CrossData    `json:"dest" `     // target Chain Transactions
-	MapDst      *CrossData    `json:"map_dest" ` // map dest Transactions
+	Src         *CrossData    `json:"src" `         // source chain transaction
+	Relay       *CrossData    `json:"relay"  `      // relay chain transaction
+	RelaySigned *CrossData    `json:"relay_signed"` // relay signed transaction , The front end ignores this field.
+	Dest        *CrossData    `json:"dest" `        // target Chain Transactions
+	MapDst      *CrossData    `json:"map_dest" `    // map dest Transactions
 	Now         int64         `json:"now" `
 	Status      StatusOfCross `json:"status"`
 	StatusStr   string        `json:"status_str"`
@@ -160,7 +160,7 @@ func (s *CrossStorage) createPendingKey(chainId string) string {
 	return fmt.Sprintf(KeyOfPendingTx, chainId)
 }
 
-func TxInConvertCross(txIn *types.TxInItem) *CrossData {
+func TxInConvertCross(txIn *types.TxInItem, mempool bool) *CrossData {
 	height := int64(0)
 	if txIn.Height != nil {
 		height = txIn.Height.Int64()
@@ -182,6 +182,7 @@ func TxInConvertCross(txIn *types.TxInItem) *CrossData {
 		Chain:            fromChain,
 		ChainAndGasLimit: cgl,
 		Timestamp:        time.Now().Unix(),
+		IsMemoized:       mempool,
 	}
 }
 

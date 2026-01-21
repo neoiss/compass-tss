@@ -188,6 +188,10 @@ func (o *Observer) sendDeck(ctx context.Context) {
 				Str("chain", deck.Chain.String()).Msg("fail to retrieve chain client")
 			continue
 		}
+		if deck.MemPool {
+			o.logger.Info().Any("deck", deck).Msg("tx is mempool, will ignore")
+			continue
+		}
 
 		deck.ConfirmationRequired = chainClient.GetConfirmationCount(*deck)
 		result := o.chunkifyAndSendToMapRelay(deck, chainClient, false)
@@ -200,6 +204,10 @@ func (o *Observer) sendDeck(ctx context.Context) {
 func (o *Observer) chunkifyAndSendToMapRelay(deck *types.TxIn, chainClient chainclients.ChainClient, finalised bool) *types.TxIn {
 	tmp := deck
 	if tmp.MapRelayHash != "" { // already sent
+		return nil
+	}
+	if !chainClient.ConfirmationCountReady(*deck) {
+		o.logger.Info().Any("deck", deck).Msg("not ready for confirmation")
 		return nil
 	}
 	if err := o.signAndSendToMapRelay(tmp); err != nil {
@@ -290,9 +298,10 @@ func (o *Observer) checkTxConfirmation() {
 			return
 		case <-time.After(checkTxConfirmationInterval):
 			for _, deck := range o.onDeck {
-				if deck.IsRemove {
-					o.logger.Info().Any("isRemove", deck.IsRemove).Any("pendingCount", deck.PendingCount).
-						Any("mapHash", deck.MapRelayHash).Msg("removing tx from onDeck ")
+				if deck.IsRemove || deck.MemPool {
+					o.logger.Info().Any("isRemove", deck.IsRemove).Any("memPool", deck.MemPool).
+						Any("pendingCount", deck.PendingCount).Any("mapHash", deck.MapRelayHash).
+						Msg("removing tx from onDeck")
 					k := TxInKey(deck)
 					o.removeConfirmedTx(k)
 					continue
@@ -422,7 +431,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			for _, ele := range tmp.TxArray {
 				tmp2 := ele
 				tmp2.FromChain = cId
-				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfSrcChain)
+				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2, tmp.MemPool), cross.TypeOfSrcChain)
 			}
 		}
 	}
@@ -435,7 +444,7 @@ func (o *Observer) processObservedTx(txIn types.TxIn) {
 			for _, ele := range tmp.TxArray {
 				tmp2 := ele
 				tmp2.FromChain = cId
-				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2), cross.TypeOfDstChain)
+				o.crossStorage.AddOrUpdateTx(cross.TxInConvertCross(tmp2, tmp.MemPool), cross.TypeOfDstChain)
 			}
 		}
 	}
