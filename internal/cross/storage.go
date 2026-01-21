@@ -262,6 +262,7 @@ func (s *CrossStorage) HandlerCrossData(ele *ChanStruct) error {
 	if ret.Status < changeStatus {
 		ret.Status = changeStatus
 	}
+	ret.Now = time.Now().Unix()
 	data, err := json.Marshal(ret)
 	if err != nil {
 		return fmt.Errorf("fail to marshal tx to json: %w", err)
