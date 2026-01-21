@@ -296,6 +296,9 @@ func (s *Signer) processTxnOut(ch <-chan types.TxOut) {
 					_type = cross.TypeOfMapDstChain
 				default:
 					items = append(items, NewTxOutStoreItem(txOut.Height, tx.TxOutItem(txOut.Height), int64(i)))
+					if strings.EqualFold(tx.Topics, constants.EventOfBridgeRelay.String()) {
+						_type = cross.TypeOfRelayChain
+					}
 				}
 
 				tmp := tx
