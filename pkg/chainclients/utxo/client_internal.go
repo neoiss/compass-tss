@@ -586,6 +586,20 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 				return types.TxInItem{}, fmt.Errorf("fail to get asgard pub key by address: %w", err)
 			}
 			txOutType = constants.MIGRATE
+		case mem.TxRefund:
+			address, err := btcutil.DecodeAddress(toAddr, c.getChainCfgBTC())
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to decode btc address(%s): %w", address, err)
+			}
+			to, err := EncodeBitcoinAddress(address)
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to encode btc address(%s): %w", address.String(), err)
+			}
+			toBytes, err = hex.DecodeString(strings.TrimPrefix(to, "0x"))
+			if err != nil {
+				return types.TxInItem{}, fmt.Errorf("fail to decode hex address(%s): %w", to, err)
+			}
+			txOutType = constants.REFUND
 		default:
 			return types.TxInItem{}, fmt.Errorf("unsupported tx type: %s", parsedMemo.GetType())
 		}
