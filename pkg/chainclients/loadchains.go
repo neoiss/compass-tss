@@ -12,7 +12,7 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
 
 	//"github.com/mapprotocol/compass-tss/pkg/chainclients/gaia"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
+
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
@@ -33,7 +33,6 @@ func LoadChains(thorKeys *keys.Keys,
 	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubKeyValidator pubkeymanager.PubKeyValidator,
-	poolMgr mapo.PoolManager,
 ) (chains map[common.Chain]ChainClient, restart chan struct{}) {
 	logger := log.Logger.With().Str("module", "bifrost").Logger()
 
@@ -44,9 +43,9 @@ func LoadChains(thorKeys *keys.Keys,
 	loadChain := func(chain config.BifrostChainConfiguration) (ChainClient, error) {
 		switch chain.ChainID {
 		case common.ETHChain:
-			return ethereum.NewClient(thorKeys, chain, server, bridge, m, pubKeyValidator, poolMgr)
+			return ethereum.NewClient(thorKeys, chain, server, bridge, m, pubKeyValidator)
 		case common.BSCChain, common.BASEChain, common.ARBChain:
-			return evm.NewEVMClient(thorKeys, chain, server, bridge, m, pubKeyValidator, poolMgr)
+			return evm.NewEVMClient(thorKeys, chain, server, bridge, m, pubKeyValidator)
 		//case common.GAIAChain:
 		//	return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)
 		case common.BTCChain, common.DOGEChain:

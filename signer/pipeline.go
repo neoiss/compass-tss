@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mapprotocol/compass-tss/constants"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 
 	"github.com/mapprotocol/compass-tss/common"
 
-	"github.com/mapprotocol/compass-tss/x/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -60,7 +60,7 @@ type pipeline struct {
 	concurrency int64
 
 	// vaultStatusConcurrency maps vault status to a semaphore for concurrent signings.
-	vaultStatusConcurrency map[types.VaultStatus]semaphore
+	vaultStatusConcurrency map[constants.VaultStatus]semaphore
 
 	// vaultChainLock maps a vault/chain combination to a lock. The lock is represented as
 	// a channel instead of a mutex so we can check if it is taken without blocking.
@@ -79,10 +79,10 @@ func newPipeline(concurrency int64) (*pipeline, error) {
 
 	return &pipeline{
 		concurrency: concurrency,
-		vaultStatusConcurrency: map[types.VaultStatus]semaphore{
-			types.VaultStatus_ActiveVault:   make(semaphore, int(concurrency)),
-			types.VaultStatus_RetiringVault: make(semaphore, int(concurrency)),
-			types.VaultStatus_InactiveVault: make(semaphore, 1),
+		vaultStatusConcurrency: map[constants.VaultStatus]semaphore{
+			constants.VaultStatus_ActiveVault:   make(semaphore, int(concurrency)),
+			constants.VaultStatus_RetiringVault: make(semaphore, int(concurrency)),
+			constants.VaultStatus_InactiveVault: make(semaphore, 1),
 		},
 		vaultChainLock: make(map[vaultChain]chan struct{}),
 	}, nil
@@ -140,7 +140,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 	}
 
 	// get the available capacities for each vault status
-	availableCapacities := make(map[types.VaultStatus]int)
+	availableCapacities := make(map[constants.VaultStatus]int)
 	for status, semaphore := range p.vaultStatusConcurrency {
 		availableCapacities[status] = semaphore.acquire()
 	}
@@ -185,19 +185,19 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 		}
 
 		// check if the vault status semaphore has capacity
-		if availableCapacities[types.VaultStatus_ActiveVault] == 0 {
+		if availableCapacities[constants.VaultStatus_ActiveVault] == 0 {
 			log.Info().Msgf("availableCapacities skill %s a tx", item.TxOutItem.TxHash)
 			continue
 		}
 
 		// acquire the vault status semaphore and vault/chain lock
-		availableCapacities[types.VaultStatus_ActiveVault]--
+		availableCapacities[constants.VaultStatus_ActiveVault]--
 		p.vaultChainLock[vc] <- struct{}{}
 		lockedVaultChains[vc] = true
 		log.Info().Msgf("will handler  %s a tx", item.TxOutItem.TxHash)
 
 		// spawn signing routine
-		go func(item TxOutStoreItem, vaultStatus types.VaultStatus) {
+		go func(item TxOutStoreItem, vaultStatus constants.VaultStatus) {
 			// release the vault status semaphore and vault/chain lock when complete
 			defer func() {
 				vc2 := vaultChain{item.TxOutItem.VaultPubKey, item.TxOutItem.Chain.String()}
@@ -207,7 +207,7 @@ func (p *pipeline) SpawnSignings(s pipelineSigner, bridge shareTypes.Bridge) {
 
 			// process the transaction
 			s.processTransaction(item)
-		}(item, types.VaultStatus_ActiveVault)
+		}(item, constants.VaultStatus_ActiveVault)
 	}
 }
 

@@ -24,7 +24,6 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
@@ -53,7 +52,6 @@ type EVMClient struct {
 	blockScanner            *blockscanner.BlockScanner
 	gatewayAbi              *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
-	poolMgr                 mapo.PoolManager
 	tssKeySigner            *tss.KeySign
 	wg                      *sync.WaitGroup
 	stopchan                chan struct{}
@@ -70,7 +68,6 @@ func NewEVMClient(
 	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
-	poolMgr mapo.PoolManager,
 ) (*EVMClient, error) {
 	// check required arguments
 	if relayKey == nil {
@@ -81,9 +78,6 @@ func NewEVMClient(
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")
-	}
-	if poolMgr == nil {
-		return nil, errors.New("pool manager is nil")
 	}
 
 	// create keys
@@ -195,7 +189,6 @@ func NewEVMClient(
 		bridge:       bridge,
 		gatewayAbi:   vaultABI,
 		pubkeyMgr:    pubkeyMgr,
-		poolMgr:      poolMgr,
 		tssKeySigner: tssKm,
 		wg:           &sync.WaitGroup{},
 		stopchan:     make(chan struct{}),
