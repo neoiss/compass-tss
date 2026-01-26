@@ -240,13 +240,13 @@ type Transaction struct {
 
 func (t *Transaction) GetGasPrice() (*big.Int, bool) {
 	switch strings.TrimPrefix(t.Type, "0x") {
-	case "0", "1", "120": // ArbitrumLegacyTx
+	case "0", "1", "78": // ArbitrumLegacyTx
 		return big.NewInt(0).SetString(strings.TrimPrefix(t.GasPrice, "0x"), 16)
 	case "2", "3", "4": // DynamicFeeTxType、 BlobTxType、 SetCodeTxType
 		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
-	case "101", "102", "104", "105": // ArbitrumUnsignedTxType、ArbitrumContractTxType、ArbitrumRetryTxType、ArbitrumSubmitRetryableTxType
+	case "65", "66", "68", "69": // ArbitrumUnsignedTxType、ArbitrumContractTxType、ArbitrumRetryTxType、ArbitrumSubmitRetryableTxType
 		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
-	case "126", "100", "106": // DepositTxType、ArbitrumDepositTxType、ArbitrumInternalTxType
+	case "126", "64", "6a": // DepositTxType、ArbitrumDepositTxType、ArbitrumInternalTxType
 		return big.NewInt(0), true
 	}
 	return big.NewInt(-1), false

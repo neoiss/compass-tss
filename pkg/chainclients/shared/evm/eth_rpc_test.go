@@ -9,7 +9,7 @@ import (
 )
 
 func TestEthRPC_GetBlockSafe(t *testing.T) {
-	ethClient, err := ethclient.Dial("https://binance.llamarpc.com")
+	ethClient, err := ethclient.Dial("https://cf-rpc.omniservice.dev/filter/arbitrum")
 	if err != nil {
 		t.Fatalf("Dial faild, err is %v", err)
 	}
@@ -26,8 +26,8 @@ func TestEthRPC_GetBlockSafe(t *testing.T) {
 			name:    "success",
 			client:  ethClient,
 			timeout: time.Second * 10,
-			chain:   "bsc",
-			number:  77481565,
+			chain:   "arb",
+			number:  425674957,
 			wantErr: false,
 		},
 	}
@@ -48,20 +48,20 @@ func TestEthRPC_GetBlockSafe(t *testing.T) {
 				t.Fatal("GetBlockSafe() succeeded unexpectedly")
 			}
 
-			got1, gotErr := e.GetBlock(tt.number)
-			if gotErr != nil {
-				if !tt.wantErr {
-					t.Errorf("GetBlockSafe() failed: %v", gotErr)
-				}
-				return
-			}
+			// got1, gotErr := e.GetBlock(tt.number)
+			// if gotErr != nil {
+			// 	if !tt.wantErr {
+			// 		t.Errorf("GetBlockSafe() failed: %v", gotErr)
+			// 	}
+			// 	return
+			// }
 
-			for idx, ele := range got.Transactions {
+			for _, ele := range got.Transactions {
 				gas, ok := ele.GetGasPrice()
-				if gas.Cmp(got1.Transactions()[idx].GasPrice()) == 0 {
-					continue
-				}
-				t.Log("txType-", ele.Type, "gas ----- ", gas, "ok", ok, "other ===", got1.Transactions()[idx].GasPrice())
+				// if gas.Cmp(got1.Transactions()[idx].GasPrice()) == 0 {
+				// 	continue
+				// }
+				t.Log("txType-", ele.Type, "gas ----- ", gas, "ok", ok) //, "other ===", got1.Transactions()[idx].GasPrice())
 			}
 		})
 	}

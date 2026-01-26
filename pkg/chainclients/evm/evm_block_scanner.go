@@ -238,7 +238,7 @@ func (e *EVMScanner) processBlock(block *evm.Block, logs []etypes.Log) (stypes.T
 	for _, tx := range block.Transactions {
 		gas, ok := tx.GetGasPrice()
 		if !ok {
-			e.logger.Warn().Any("txHash", tx.Hash).Any("txType", tx.Type).Msg("tx gas price is error ")
+			e.logger.Warn().Any("txHash", tx.Hash).Any("tx", tx).Msg("tx gas price is error ")
 			continue
 		}
 		txsGas = append(txsGas, gas)

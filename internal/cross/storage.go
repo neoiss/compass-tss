@@ -2,17 +2,24 @@ package cross
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/db"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
+)
+
+const (
+	IntervalRange = 100
 )
 
 // CrossStorage save the ondeck tx in item to key value store, in case bifrost restart
@@ -152,7 +159,7 @@ func (s *CrossStorage) createChainHeightKey(chainId string) string {
 }
 
 func (s *CrossStorage) createOrderIdSetKey(chainId string, startHeight int64) string {
-	cacheHeight := startHeight / 100 * 100
+	cacheHeight := startHeight / IntervalRange * IntervalRange
 	return fmt.Sprintf(KeyOfOrderIdSet, chainId, strconv.FormatInt(cacheHeight, 10))
 }
 
@@ -387,8 +394,87 @@ func (s *CrossStorage) GetChainHeight(chainId string) (string, error) {
 	return string(retBytes), nil
 }
 
-func (s *CrossStorage) DeleteTx(key string) error {
-	return s.db.Delete([]byte(key), nil)
+func (s *CrossStorage) GetTxByHeightRange(chainId string, startHeight, endHeight *big.Int) ([]CrossSet, error) {
+	// get all orderId
+	startKey := s.createOrderIdSetKey(chainId, startHeight.Int64())
+	endKey := s.createOrderIdSetKey(chainId, endHeight.Int64())
+	orderIds, err := s.GetOrderIdSet(chainId, startHeight.Int64())
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to get startKey order id set")
+	}
+	if endKey != startKey {
+		endOrderIds, err := s.GetOrderIdSet(chainId, endHeight.Int64())
+		if err != nil {
+			return nil, errors.Wrap(err, "fail to get endKey order id set")
+		}
+		orderIds = append(orderIds, endOrderIds...)
+	}
+	all := make([]CrossSet, 0)
+	if len(orderIds) <= 0 {
+		return all, nil
+	}
+	const prefix = "meta:order:"
+	// get iterator
+	iter := s.db.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
+	defer iter.Release()
+	for iter.Next() {
+		if iter.Key() == nil {
+			continue
+		}
+		if !exist(strings.TrimPrefix(string(iter.Key()), prefix), orderIds) {
+			continue
+		}
+
+		var crossSet CrossSet
+		if err := json.Unmarshal(iter.Value(), &crossSet); err != nil {
+			continue
+		}
+		all = append(all, crossSet)
+	}
+	// match
+	ret := make([]CrossSet, 0, len(all))
+	for _, ele := range all {
+		if match(ele.Src, chainId, startHeight, endHeight) {
+			ret = append(ret, ele)
+			continue
+		}
+		if match(ele.Relay, chainId, startHeight, endHeight) {
+			ret = append(ret, ele)
+			continue
+		}
+		if match(ele.RelaySigned, chainId, startHeight, endHeight) {
+			ret = append(ret, ele)
+			continue
+		}
+		if match(ele.Dest, chainId, startHeight, endHeight) {
+			ret = append(ret, ele)
+			continue
+		}
+		if match(ele.MapDst, chainId, startHeight, endHeight) {
+			ret = append(ret, ele)
+		}
+	}
+
+	return ret, nil
+}
+
+func match(crossData *CrossData, chainId string, startHeight, endHeight *big.Int) bool {
+	if crossData.Chain != chainId {
+		return false
+	}
+	if crossData.Height < startHeight.Int64() || crossData.Height > endHeight.Int64() {
+		return false
+	}
+	return true
+}
+
+func exist(target string, source []string) bool {
+	for _, v := range source {
+		if v == target {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *CrossStorage) Close() error {
