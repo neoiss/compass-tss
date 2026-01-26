@@ -21,7 +21,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/tokenlist"
 	"github.com/mapprotocol/compass-tss/config"
 	"github.com/mapprotocol/compass-tss/constants"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
@@ -59,10 +58,7 @@ type EVMScanner struct {
 	currentBlockHeight    int64
 	gasCache              []*big.Int
 	solvencyReporter      SolvencyReporter
-	whitelistTokens       []tokenlist.ERC20Token
-	whitelistContracts    []common.Address
 	signerCacheManager    *signercache.CacheManager
-	tokenManager          *evm.TokenManager
 	gatewayABI, erc20ABI  *abi.ABI
 }
 
@@ -95,7 +91,6 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	// set storage prefixes
 	prefixBlockMeta := fmt.Sprintf("%s-blockmeta-", strings.ToLower(cfg.ChainID.String()))
 	prefixSignedMeta := fmt.Sprintf("%s-signedtx-", strings.ToLower(cfg.ChainID.String()))
-	prefixTokenMeta := fmt.Sprintf("%s-tokenmeta-", strings.ToLower(cfg.ChainID.String()))
 
 	// create block meta accessor
 	blockMetaAccessor, err := evm.NewLevelDBBlockMetaAccessor(
@@ -110,53 +105,6 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create contract abi: %w", err)
 	}
-
-	// load token list
-	allTokens := tokenlist.GetEVMTokenList(cfg.ChainID).Tokens
-	var whitelistTokens []tokenlist.ERC20Token
-	for _, addr := range cfg.WhitelistTokens {
-		// find matching token in token list
-		found := false
-		for _, tok := range allTokens {
-			if strings.EqualFold(addr, tok.Address) {
-				whitelistTokens = append(whitelistTokens, tok)
-				found = true
-				break
-			}
-		}
-
-		// all whitelisted tokens must be in the chain token list
-		if !found {
-			return nil, fmt.Errorf("whitelist token %s not found in token list", addr)
-		}
-	}
-
-	// create token manager - storage is scoped to chain so assets should not collide
-	tokenManager, err := evm.NewTokenManager(
-		storage.GetInternalDb(),
-		prefixTokenMeta,
-		cfg.ChainID.GetGasAsset(),
-		defaultDecimals,
-		cfg.HTTPRequestTimeout,
-		whitelistTokens,
-		ethClient,
-		gatewayContractABI,
-		erc20ContractABI,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create token helper: %w", err)
-	}
-
-	// store the token metadata for the chain gas asset
-	err = tokenManager.SaveTokenMeta(
-		cfg.ChainID.GetGasAsset().Symbol.String(), evm.NativeTokenAddr, defaultDecimals,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// load whitelist contracts for the chain
-	whitelistContracts := []common.Address{}
 
 	return &EVMScanner{
 		cfg:                  cfg,
@@ -177,10 +125,7 @@ func NewEVMScanner(cfg config.BifrostBlockScannerConfiguration,
 		pubkeyMgr:            pubkeyMgr,
 		gasCache:             make([]*big.Int, 0),
 		solvencyReporter:     solvencyReporter,
-		whitelistTokens:      whitelistTokens,
-		whitelistContracts:   whitelistContracts,
 		signerCacheManager:   signerCacheManager,
-		tokenManager:         tokenManager,
 	}, nil
 }
 
@@ -216,7 +161,7 @@ func (e *EVMScanner) FetchMemPool(_ int64) (stypes.TxIn, error) {
 
 // GetTokens returns all token meta data.
 func (e *EVMScanner) GetTokens() ([]*evmtypes.TokenMeta, error) {
-	return e.tokenManager.GetTokens()
+	return nil, nil
 }
 
 // FetchTxs extracts all relevant transactions from the block at the provided height.
@@ -235,7 +180,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 	}
 
 	// process all transactions in the block
-	block, err := e.ethRpc.GetBlock(currentHeight)
+	block, err := e.ethRpc.GetBlockSafe(currentHeight)
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
@@ -248,7 +193,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 	e.currentBlockHeight = currentHeight
 	// if reorgs are possible on this chain store block meta for handling
 	if e.cfg.MaxReorgRescanBlocks > 0 {
-		blockMeta := evmtypes.NewBlockMeta(block.Header(), txIn)
+		blockMeta := evmtypes.NewBlockMeta(block.GetHeader(), txIn)
 		if err = e.blockMetaAccessor.SaveBlockMeta(currentHeight, blockMeta); err != nil {
 			e.logger.Err(err).Int64("currentHeight", currentHeight).Msg("fail to save block meta")
 		}
@@ -280,7 +225,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 // --------------------------------- extraction ---------------------------------
 
-func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
+func (e *EVMScanner) processBlock(block *evm.Block, logs []etypes.Log) (stypes.TxIn, error) {
 	txIn := stypes.TxIn{
 		Chain:    e.cfg.ChainID,
 		TxArray:  nil,
@@ -290,16 +235,21 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 
 	// collect gas prices of txs in current block
 	var txsGas []*big.Int
-	for _, tx := range block.Transactions() {
-		txsGas = append(txsGas, tx.GasPrice())
+	for _, tx := range block.Transactions {
+		gas, ok := tx.GetGasPrice()
+		if !ok {
+			e.logger.Warn().Any("txHash", tx.Hash).Any("txType", tx.Type).Msg("tx gas price is error ")
+			continue
+		}
+		txsGas = append(txsGas, gas)
 	}
 	e.updateGasPrice(txsGas)
 
 	// process reorg if possible on this chain
 	if e.cfg.MaxReorgRescanBlocks > 0 {
-		reorgedTxIns, err := e.processReorg(block.Header())
+		reorgedTxIns, err := e.processReorg(block.GetHeader())
 		if err != nil {
-			e.logger.Error().Err(err).Msgf("fail to process reorg for block %d", block.NumberU64())
+			e.logger.Error().Err(err).Msgf("fail to process reorg for block %d", block.Header.Number.Int64())
 			return txIn, err
 		}
 		if len(reorgedTxIns) > 0 {
@@ -317,7 +267,7 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 		return txIn, nil
 	}
 	// collect all relevant transactions from the block
-	txInBlock, err := e.getTxIn(block, logs)
+	txInBlock, err := e.getTxIn(logs)
 	if err != nil {
 		return txIn, err
 	}
@@ -327,59 +277,9 @@ func (e *EVMScanner) processBlock(block *etypes.Block, logs []etypes.Log) (stype
 	return txIn, nil
 }
 
-func (e *EVMScanner) getTxInOptimized(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
+func (e *EVMScanner) getTxIn(logs []etypes.Log) (stypes.TxIn, error) {
 	txInbound := stypes.TxIn{
 		Chain: e.cfg.ChainID,
-	}
-
-	for _, ll := range logs {
-		if err := e.blockMetaAccessor.RemoveSignedTxItem(ll.TxHash.String()); err != nil {
-			e.logger.Err(err).Str("tx hash", ll.TxHash.String()).Msg("Failed to remove signed tx item")
-		}
-
-		// extract the txInItem
-		var (
-			err      error
-			txInItem *stypes.TxInItem
-		)
-		tmp := ll
-		txInItem, err = e.getTxInFromSmartContract(&tmp)
-		if err != nil {
-			e.logger.Error().Err(err).Msg("failed to convert receipt to txInItem")
-			continue
-		}
-
-		// skip invalid items
-		if txInItem == nil {
-			continue
-		}
-		// if len(txInItem.To) == 0 {
-		// 	continue
-		// }
-		// add the txInItem to the txInbound
-		txInItem.Height = block.Number()
-		txInbound.TxArray = append(txInbound.TxArray, txInItem)
-	}
-
-	if len(txInbound.TxArray) == 0 {
-		e.logger.Debug().Uint64("block", block.NumberU64()).Msg("no tx need to be processed in this block")
-		return stypes.TxIn{}, nil
-	}
-	return txInbound, nil
-}
-
-func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxIn, error) {
-	// CHANGEME: if an EVM chain supports some way of fetching all transaction receipts
-	// within a block, register it here.
-	switch e.cfg.ChainID {
-	case common.BASEChain, common.BSCChain:
-		return e.getTxInOptimized(block, logs)
-	}
-
-	txInbound := stypes.TxIn{
-		Chain:    e.cfg.ChainID,
-		Filtered: false,
-		MemPool:  false,
 	}
 
 	// process all batches
@@ -406,12 +306,11 @@ func (e *EVMScanner) getTxIn(block *etypes.Block, logs []etypes.Log) (stypes.TxI
 		}
 
 		// add the txInItem to the txInbound
-		txInItem.Height = block.Number()
+		txInItem.Height = big.NewInt(0).SetUint64(ele.BlockNumber)
 		txInbound.TxArray = append(txInbound.TxArray, txInItem)
 	}
 
 	if len(txInbound.TxArray) == 0 {
-		e.logger.Debug().Uint64("block", block.NumberU64()).Msg("no tx need to be processed in this block")
 		return stypes.TxIn{}, nil
 	}
 	return txInbound, nil
@@ -454,12 +353,6 @@ func (e *EVMScanner) processReorg(header *etypes.Header) ([]stypes.TxIn, error) 
 	var txIns []stypes.TxIn
 	for _, rescanHeight := range heights {
 		e.logger.Info().Msgf("rescan block height: %d", rescanHeight)
-		var block *etypes.Block
-		block, err = e.ethRpc.GetBlock(rescanHeight)
-		if err != nil {
-			e.logger.Err(err).Int64("height", rescanHeight).Msg("fail to get block")
-			continue
-		}
 		logs, err := e.ethClient.FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: big.NewInt(rescanHeight),
 			ToBlock:   big.NewInt(rescanHeight),
@@ -479,7 +372,7 @@ func (e *EVMScanner) processReorg(header *etypes.Header) ([]stypes.TxIn, error) 
 			continue
 		}
 		var txIn stypes.TxIn
-		txIn, err = e.getTxIn(block, logs)
+		txIn, err = e.getTxIn(logs)
 		if err != nil {
 			e.logger.Err(err).Int64("height", rescanHeight).Msg("fail to extract txs from block")
 			continue

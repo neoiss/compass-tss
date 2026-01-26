@@ -2,12 +2,17 @@ package evm
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -148,4 +153,111 @@ func (e *EthRPC) CheckTransaction(hash string) bool {
 		return true // unknown, prefer false positive
 	}
 	return receipt.Status == etypes.ReceiptStatusSuccessful
+}
+
+func (e *EthRPC) GetBlockSafe(number int64) (*Block, error) {
+	ctx, cancel := e.getContext()
+	defer cancel()
+
+	block, err := e.getSafeBlock(ctx, "eth_getBlockByNumber", toBlockNumArg(big.NewInt(number)), true)
+	if err != nil || block == nil {
+		e.logger.Info().Any("number", number).Err(err).Msg("block not found")
+		return nil, err
+	}
+
+	return block, nil
+}
+
+func (e *EthRPC) getSafeBlock(ctx context.Context, method string, args ...interface{}) (*Block, error) {
+	var raw json.RawMessage
+	err := e.client.Client().CallContext(ctx, &raw, method, args...)
+	if err != nil {
+		return nil, err
+	} else if len(raw) == 0 {
+		return nil, ethereum.NotFound
+	}
+	var head *etypes.Header
+	if err := json.Unmarshal(raw, &head); err != nil {
+		return nil, err
+	}
+
+	// Decode header and transactions.
+	var body Block
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return nil, err
+	}
+	body.Header = head
+	if body.Header.UncleHash == types.EmptyUncleHash && len(body.UncleHashes) > 0 {
+		return nil, errors.New("server returned non-empty uncle list but block header indicates no uncles")
+	}
+	if body.Header.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
+		return nil, errors.New("server returned empty uncle list but block header indicates uncles")
+	}
+	if body.Header.TxHash == types.EmptyRootHash && len(body.Transactions) > 0 {
+		return nil, fmt.Errorf("server returned non-empty transaction list but block header indicates no transactions")
+	}
+	if body.Header.TxHash != types.EmptyRootHash && len(body.Transactions) == 0 {
+		return nil, fmt.Errorf("server returned empty transaction list but block header indicates transactions")
+	}
+	return &body, nil
+}
+
+func toBlockNumArg(number *big.Int) string {
+	if number == nil {
+		return "latest"
+	}
+	if number.Sign() >= 0 {
+		return hexutil.EncodeBig(number)
+	}
+	// It's negative.
+	if number.IsInt64() {
+		return rpc.BlockNumber(number.Int64()).String()
+	}
+	// It's negative and large, which is invalid.
+	return fmt.Sprintf("<invalid %d>", number)
+}
+
+type Transaction struct {
+	BlockHash            string        `json:"blockHash"`
+	BlockNumber          string        `json:"blockNumber"`
+	From                 string        `json:"from"`
+	Gas                  string        `json:"gas"`
+	GasPrice             string        `json:"gasPrice"`
+	Hash                 string        `json:"hash"`
+	Input                string        `json:"input"`
+	Nonce                string        `json:"nonce"`
+	To                   string        `json:"to"`
+	TransactionIndex     string        `json:"transactionIndex"`
+	Value                string        `json:"value"`
+	Type                 string        `json:"type"`
+	ChainID              string        `json:"chainId"`
+	GasFeeCap            string        `json:"gasFeeCap,omitempty"`
+	MaxFeePerGas         string        `json:"maxFeePerGas,omitempty"`
+	MaxPriorityFeePerGas string        `json:"maxPriorityFeePerGas,omitempty"`
+	AccessList           []interface{} `json:"accessList,omitempty"`
+	YParity              string        `json:"yParity,omitempty"`
+}
+
+func (t *Transaction) GetGasPrice() (*big.Int, bool) {
+	switch strings.TrimPrefix(t.Type, "0x") {
+	case "0", "1", "120": // ArbitrumLegacyTx
+		return big.NewInt(0).SetString(strings.TrimPrefix(t.GasPrice, "0x"), 16)
+	case "2", "3", "4": // DynamicFeeTxType、 BlobTxType、 SetCodeTxType
+		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
+	case "101", "102", "104", "105": // ArbitrumUnsignedTxType、ArbitrumContractTxType、ArbitrumRetryTxType、ArbitrumSubmitRetryableTxType
+		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
+	case "126", "100", "106": // DepositTxType、ArbitrumDepositTxType、ArbitrumInternalTxType
+		return big.NewInt(0), true
+	}
+	return big.NewInt(-1), false
+}
+
+type Block struct {
+	Header       *etypes.Header
+	Transactions []Transaction  `json:"transactions"`
+	UncleHashes  []ecommon.Hash `json:"uncles"`
+}
+
+func (b *Block) GetHeader() *etypes.Header {
+	return b.Header
 }

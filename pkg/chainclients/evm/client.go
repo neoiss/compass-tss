@@ -234,16 +234,6 @@ func NewEVMClient(
 		return c, fmt.Errorf("fail to create block scanner: %w", err)
 	}
 
-	// TODO: Is this necessary?
-	localNodeAddress, err := c.localPubKey.GetAddress(cfg.ChainID)
-	if err != nil {
-		c.logger.Err(err).Stringer("chain", cfg.ChainID).Msg("failed to get local node address")
-	}
-	c.logger.Info().
-		Stringer("chain", cfg.ChainID).
-		Stringer("address", localNodeAddress).
-		Msg("local node address")
-
 	return c, nil
 }
 
@@ -623,7 +613,7 @@ func (c *EVMClient) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	case common.AVAXChain: // instant finality
 		return 0
 	case common.ARBChain:
-		return 12
+		return 24
 	case common.BASEChain:
 		return 12 // ~2 Ethereum blocks for parity with the 2 block minimum in eth client
 	case common.BSCChain:
@@ -650,6 +640,13 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	case common.BASEChain:
 		// block is already finalized(settled to l1)
 		return true
+	case common.ARBChain:
+		if len(txIn.TxArray) == 0 {
+			return true
+		}
+		blockHeight := txIn.TxArray[0].Height.Int64()
+		confirm := txIn.ConfirmationRequired
+		return (c.evmScanner.currentBlockHeight - blockHeight) >= confirm
 	default:
 		c.logger.Fatal().Msgf("unsupported chain: %s", c.cfg.ChainID)
 		return false
