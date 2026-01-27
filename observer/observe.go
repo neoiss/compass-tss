@@ -21,7 +21,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
-	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -72,7 +71,6 @@ type Observer struct {
 	signedTxOutCache      *lru.Cache
 	signedTxOutCacheMu    sync.Mutex
 	observerWorkers       int
-	lastNodeStatus        stypes.NodeStatus
 	crossStorage          *cross.CrossStorage
 }
 

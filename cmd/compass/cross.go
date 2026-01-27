@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"strconv"
 	"time"
@@ -53,6 +54,7 @@ func (s *CrossServer) newHandler() http.Handler {
 	router.Handle("/cross/chain/height/orders", http.HandlerFunc(s.chainOrders)).Methods(http.MethodGet)
 	router.Handle("/cross/order", http.HandlerFunc(s.crossSignel)).Methods(http.MethodGet)
 	router.Handle("/cross/pending/tx", http.HandlerFunc(s.pendingTx)).Methods(http.MethodGet)
+	router.Handle("/cross/height/range/txs", http.HandlerFunc(s.GetTxByHeightRange)).Methods(http.MethodGet)
 	router.Handle("/cross/tx", http.HandlerFunc(s.crossFindByTx)).Methods(http.MethodGet)
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
@@ -97,6 +99,10 @@ type PendingTxResponse struct {
 func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) {
 	orderId := request.URL.Query().Get("orderId")
 	crossData, err := s.dbStorage.GetCrossData(orderId)
+	if orderId == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -121,6 +127,10 @@ func (s *CrossServer) crossSignel(w http.ResponseWriter, request *http.Request) 
 // @Router       /cross/tx [get]
 func (s *CrossServer) crossFindByTx(w http.ResponseWriter, request *http.Request) {
 	key := request.URL.Query().Get("tx")
+	if key == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	s.logger.Info().Any("tx", key).Msg("get cross signel by tx")
 	crossData, err := s.dbStorage.GetCrossDataByTx(key)
 	if err != nil {
@@ -151,6 +161,10 @@ func (s *CrossServer) chainOrders(w http.ResponseWriter, request *http.Request) 
 	chainId := request.URL.Query().Get("chainId")
 	height := request.URL.Query().Get("height")
 	s.logger.Info().Any("chainId", chainId).Any("height", height).Msg("get chain height")
+	if chainId == "" || height == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	heightI, err := strconv.ParseInt(height, 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -178,18 +192,22 @@ func (s *CrossServer) chainOrders(w http.ResponseWriter, request *http.Request) 
 }
 
 // get scanner chain height
-// @Summary      获取扫描高度
+// @Summary      获取当前扫描有交易的最高高度
 // @Description  根据 chainId 获取扫描高度
 // @Tags         交易记录
 // @Accept       json
 // @Produce      json
 // @Param        chainId query string true "chainId"
-// @Success      200  {object}   ChainHeightResponse
+// @Success      200  {object}  ChainHeightResponse
 // @Failure      400  {object}  nil  "bad request"
 // @Router       /cross/chain/height [get]
 func (s *CrossServer) chainHeight(w http.ResponseWriter, request *http.Request) {
 	chainId := request.URL.Query().Get("chainId")
 	s.logger.Info().Any("chainId", chainId).Msg("get chain height")
+	if chainId == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	height, err := s.dbStorage.GetChainHeight(chainId)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
@@ -216,6 +234,10 @@ func (s *CrossServer) chainHeight(w http.ResponseWriter, request *http.Request) 
 func (s *CrossServer) pendingTx(w http.ResponseWriter, request *http.Request) {
 	chainId := request.URL.Query().Get("chainId")
 	s.logger.Info().Any("chainId", chainId).Msg("get chain pending txs")
+	if chainId == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	txs, err := s.dbStorage.GetPendingSet(chainId)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("fail to get cross data")
@@ -226,6 +248,60 @@ func (s *CrossServer) pendingTx(w http.ResponseWriter, request *http.Request) {
 		Txs: txs,
 	}
 	s.writeSuccess(w, res)
+}
+
+// get txs by chain height range
+// @Summary      根据高度区间获取交易列表
+// @Description  根据高度区间获取交易列表
+// @Tags         交易记录
+// @Accept       json
+// @Produce      json
+// @Param        chainId query string true "chainId"
+// @Param        startHeight query string true "startHeight"
+// @Param        endHeight query string true "endHeight"
+// @Success      200  {array}  CrossSignelResponse
+// @Failure      400  {object}  nil  "bad request"
+// @Router       /cross/height/range/txs [get]
+func (s *CrossServer) GetTxByHeightRange(w http.ResponseWriter, request *http.Request) {
+	chainId := request.URL.Query().Get("chainId")
+	startHeightStr := request.URL.Query().Get("startHeight")
+	endHeightStr := request.URL.Query().Get("endHeight")
+	if chainId == "" || startHeightStr == "" || endHeightStr == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	startHeight, ok := big.NewInt(0).SetString(startHeightStr, 10)
+	if !ok {
+		s.logger.Error().Str("startHeight", startHeightStr).Msg("fail to convert startHeight to big.Int")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	endHeight, ok := big.NewInt(0).SetString(endHeightStr, 10)
+	if !ok {
+		s.logger.Error().Str("endHeight", endHeightStr).Msg("fail to convert endHeight to big.Int")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if endHeight.Cmp(startHeight) < 0 {
+		s.logger.Error().Msg("startHeight must be less than endHeight")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if endHeight.Int64()-startHeight.Int64() > 100 {
+		s.logger.Error().Msg("the range of height must be less than 100")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	sets, err := s.dbStorage.GetTxByHeightRange(chainId, startHeight, endHeight)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("fail to get cross data")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	s.writeSuccess(w, sets)
 }
 
 func (s *CrossServer) writeSuccess(w http.ResponseWriter, data interface{}) {

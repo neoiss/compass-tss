@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "交易记录"
                 ],
-                "summary": "获取扫描高度",
+                "summary": "获取当前扫描有交易的最高高度",
                 "parameters": [
                     {
                         "type": "string",
@@ -84,6 +84,58 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.ChainOrderIdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    }
+                }
+            }
+        },
+        "/cross/height/range/txs": {
+            "get": {
+                "description": "根据高度区间获取交易列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "交易记录"
+                ],
+                "summary": "根据高度区间获取交易列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "chainId",
+                        "name": "chainId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "startHeight",
+                        "name": "startHeight",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "endHeight",
+                        "name": "endHeight",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.CrossSignelResponse"
+                            }
                         }
                     },
                     "400": {
@@ -211,20 +263,24 @@ const docTemplate = `{
                     "example": ""
                 },
                 "height": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 81507414
                 },
                 "is_memoized": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "log_index": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "order_id": {
                     "type": "string",
                     "example": ""
                 },
                 "timestamp": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1767097427
                 },
                 "topic": {
                     "type": "string",
@@ -240,7 +296,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "dest": {
-                    "description": "目标链交易",
+                    "description": "target Chain Transactions",
                     "allOf": [
                         {
                             "$ref": "#/definitions/cross.CrossData"
@@ -248,7 +304,7 @@ const docTemplate = `{
                     ]
                 },
                 "map_dest": {
-                    "description": "map dest交易",
+                    "description": "map dest Transactions",
                     "allOf": [
                         {
                             "$ref": "#/definitions/cross.CrossData"
@@ -259,11 +315,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "order_id": {
-                    "type": "string",
-                    "example": ""
+                    "type": "string"
                 },
                 "relay": {
-                    "description": "relay交易",
+                    "description": "relay chain transaction",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cross.CrossData"
+                        }
+                    ]
+                },
+                "relay_signed": {
+                    "description": "relay signed transaction , The front end ignores this field.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/cross.CrossData"
@@ -271,7 +334,7 @@ const docTemplate = `{
                     ]
                 },
                 "src": {
-                    "description": "源链交易",
+                    "description": "source chain transaction",
                     "allOf": [
                         {
                             "$ref": "#/definitions/cross.CrossData"
@@ -279,6 +342,9 @@ const docTemplate = `{
                     ]
                 },
                 "status": {
+                    "$ref": "#/definitions/cross.StatusOfCross"
+                },
+                "status_str": {
                     "type": "string"
                 }
             }

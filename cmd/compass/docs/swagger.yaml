@@ -8,15 +8,19 @@ definitions:
         example: ""
         type: string
       height:
+        example: 81507414
         type: integer
       is_memoized:
+        example: false
         type: boolean
       log_index:
+        example: 1
         type: integer
       order_id:
         example: ""
         type: string
       timestamp:
+        example: 1767097427
         type: integer
       topic:
         example: ""
@@ -30,25 +34,30 @@ definitions:
       dest:
         allOf:
         - $ref: '#/definitions/cross.CrossData'
-        description: 目标链交易
+        description: target Chain Transactions
       map_dest:
         allOf:
         - $ref: '#/definitions/cross.CrossData'
-        description: map dest交易
+        description: map dest Transactions
       now:
         type: integer
       order_id:
-        example: ""
         type: string
       relay:
         allOf:
         - $ref: '#/definitions/cross.CrossData'
-        description: relay交易
+        description: relay chain transaction
+      relay_signed:
+        allOf:
+        - $ref: '#/definitions/cross.CrossData'
+        description: relay signed transaction , The front end ignores this field.
       src:
         allOf:
         - $ref: '#/definitions/cross.CrossData'
-        description: 源链交易
+        description: source chain transaction
       status:
+        $ref: '#/definitions/cross.StatusOfCross'
+      status_str:
         type: string
     type: object
   cross.StatusOfCross:
@@ -118,7 +127,7 @@ paths:
             $ref: '#/definitions/main.ChainHeightResponse'
         "400":
           description: bad request
-      summary: 获取扫描高度
+      summary: 获取当前扫描有交易的最高高度
       tags:
       - 交易记录
   /cross/chain/height/orders:
@@ -147,6 +156,41 @@ paths:
         "400":
           description: bad request
       summary: 获取高度对应的交易集群
+      tags:
+      - 交易记录
+  /cross/height/range/txs:
+    get:
+      consumes:
+      - application/json
+      description: 根据高度区间获取交易列表
+      parameters:
+      - description: chainId
+        in: query
+        name: chainId
+        required: true
+        type: string
+      - description: startHeight
+        in: query
+        name: startHeight
+        required: true
+        type: string
+      - description: endHeight
+        in: query
+        name: endHeight
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.CrossSignelResponse'
+            type: array
+        "400":
+          description: bad request
+      summary: 根据高度区间获取交易列表
       tags:
       - 交易记录
   /cross/order:

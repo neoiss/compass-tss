@@ -354,6 +354,8 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 		return 2_000
 	case MAPChain:
 		return 5_000
+	case ARBChain:
+		return 1_000
 	case XRPChain:
 		return 4_000 // approx 3-5 seconds
 	default:

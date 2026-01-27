@@ -1,16 +1,12 @@
 package mapo
 
 import (
-	"encoding/json"
-	"fmt"
 	"math/big"
-	"net/http"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/pkg/errors"
 )
 
@@ -192,20 +188,4 @@ func (b *Bridge) GetVault(pubkey []byte) (*shareTypes.Vault, error) {
 		return nil, errors.Wrapf(err, "unable to call %s", method)
 	}
 	return &ret, nil
-}
-
-// GetPools get pools from relay
-func (b *Bridge) GetPools() (stypes.Pools, error) {
-	buf, s, err := b.getWithPath(PoolsEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pools addresses: %w", err)
-	}
-	if s != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", s)
-	}
-	var pools stypes.Pools
-	if err = json.Unmarshal(buf, &pools); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal pools from json: %w", err)
-	}
-	return pools, nil
 }
