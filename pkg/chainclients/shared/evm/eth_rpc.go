@@ -246,7 +246,7 @@ func (t *Transaction) GetGasPrice() (*big.Int, bool) {
 		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
 	case "65", "66", "68", "69": // ArbitrumUnsignedTxType、ArbitrumContractTxType、ArbitrumRetryTxType、ArbitrumSubmitRetryableTxType
 		return big.NewInt(0).SetString(strings.TrimPrefix(t.MaxFeePerGas, "0x"), 16)
-	case "126", "64", "6a": // DepositTxType、ArbitrumDepositTxType、ArbitrumInternalTxType
+	case "7e", "64", "6a": // DepositTxType、ArbitrumDepositTxType、ArbitrumInternalTxType
 		return big.NewInt(0), true
 	}
 	return big.NewInt(-1), false
