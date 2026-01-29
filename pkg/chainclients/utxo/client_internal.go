@@ -500,7 +500,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to parse memo")
 		invalidMemo = true
 	} else {
-		toBytes, err = hex.DecodeString(common.TrimHexPrefix(parsedMemo.GetDestination()))
+		toBytes, err = parsedMemo.GetChain().DecodeAddress(parsedMemo.GetDestination())
 		if err != nil {
 			c.log.Debug().Err(err).Str("txid", tx.Txid).Str("memo", memo).Msg("fail to decode memo")
 			invalidMemo = true
@@ -609,8 +609,8 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		copy(chainAndGasLimit[8:16], toChain)
 		//copy(chainAndGasLimit[24:32], big.NewInt(int64(fee)).Bytes())
 		txIn := types.TxInItem{
-			Tx: tx.Txid,
-			//Sender:           sender,
+			Tx:               tx.Txid,
+			Memo:             memo,
 			Height:           new(big.Int).SetInt64(height),
 			Amount:           big.NewInt(int64(amount)),
 			OrderId:          ethcommon.HexToHash(parsedMemo.GetOrderID()),
@@ -672,7 +672,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			case mem.TxOutbound:
 				destToken := parsedMemo.GetToken()
 				txOutType = constants.TRANSFER
-				destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain())
+				destChainID, err = c.bridge.GetChainID(parsedMemo.GetChain().String())
 				if err != nil {
 					return types.TxInItem{}, fmt.Errorf("fail to get destination chain id: %w, chain: %s", err, parsedMemo.GetChain())
 				}

@@ -17,10 +17,10 @@ func TestRefundMemo(t *testing.T) {
 		{
 			name: "t-1",
 			args: args{
-				chain:   "btc_test",
-				orderID: "0x8fa90e636cbc1dd79691e255fae3702205031798d1ca393f5042fddc64c1a122",
+				chain:   "Btc",
+				orderID: "0x9abf316cd5f9ef297569f29a746e78cebd45a0e3c950e0ed3e030be3c73d420c",
 			},
-			want: "M<|btc_test|0x8fa90e636cbc1dd79691e255fae3702205031798d1ca393f5042fddc64c1a122",
+			want: "M<|Btc|0x9abf316cd5f9ef297569f29a746e78cebd45a0e3c950e0ed3e030be3c73d420c",
 		},
 	}
 	for _, tt := range tests {
@@ -30,4 +30,12 @@ func TestRefundMemo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseRefundMemo(t *testing.T) {
+	mem, err := ParseMemo("M<|Btc|0x9abf316cd5f9ef297569f29a746e78cebd45a0e3c950e0ed3e030be3c73d420c")
+	if err != nil {
+		t.Errorf("ParseMemo() error = %v", err)
+	}
+	t.Log(mem.GetType())
 }

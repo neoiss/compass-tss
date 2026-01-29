@@ -8,14 +8,20 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/pkg/errors"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
+	"github.com/mapprotocol/compass-tss/constants"
 )
 
 func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	if name == "" {
 		return nil, errors.New("chain name is empty")
 	}
+	// convert to title, because of the token registry contract naming convention
+	name = cases.Title(language.English).String(name)
+
 	method := "getChainByName"
 	input, err := b.tokenRegistry.Pack(method, name)
 	if err != nil {
