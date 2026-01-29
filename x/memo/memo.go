@@ -64,7 +64,7 @@ type Memo interface {
 	IsType(tx TxType) bool
 	GetType() TxType
 	IsEmpty() bool
-	GetChain() string
+	GetChain() common.Chain
 	GetToken() string
 	GetAmount() cosmos.Uint
 	GetDestination() string
@@ -83,7 +83,7 @@ var EmptyMemo = MemoBase{TxType: TxUnknown, Asset: common.EmptyAsset}
 func (m MemoBase) String() string            { return "" }
 func (m MemoBase) GetType() TxType           { return m.TxType }
 func (m MemoBase) IsType(tx TxType) bool     { return m.TxType.Equals(tx) }
-func (m MemoBase) GetChain() string          { return "" }
+func (m MemoBase) GetChain() common.Chain    { return common.EmptyChain }
 func (m MemoBase) GetToken() string          { return "" }
 func (m MemoBase) GetAmount() cosmos.Uint    { return cosmos.ZeroUint() }
 func (m MemoBase) GetDestination() string    { return "" }

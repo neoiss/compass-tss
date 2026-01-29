@@ -2,6 +2,7 @@ package thorchain
 
 import (
 	"fmt"
+	"github.com/mapprotocol/compass-tss/common"
 	"math/big"
 	"strings"
 )
@@ -16,15 +17,15 @@ type Affiliate struct {
 
 type OutboundMemo struct {
 	MemoBase
-	ChainID    string
+	Chain      string
 	Token      string
 	Receiver   string
 	Amount     *big.Int
 	Affiliates Affiliates
 }
 
-func (m OutboundMemo) GetChain() string {
-	return m.ChainID
+func (m OutboundMemo) GetChain() common.Chain {
+	return common.Chain(strings.ToUpper(m.Chain))
 }
 
 func (m OutboundMemo) GetToken() string {
@@ -36,13 +37,13 @@ func (m OutboundMemo) GetDestination() string { return m.Receiver }
 func (m OutboundMemo) GetAffiliates() Affiliates { return m.Affiliates }
 
 func (m OutboundMemo) String() string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s", m.TxType.String(), m.ChainID, m.Token, m.Receiver, m.Amount, m.Affiliates)
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s", m.TxType.String(), m.Chain, m.Token, m.Receiver, m.Amount, m.Affiliates)
 }
 
-func NewOutboundMemo(chainID, token, receiver string, amount *big.Int, affiliates Affiliates) OutboundMemo {
+func NewOutboundMemo(chain, token, receiver string, amount *big.Int, affiliates Affiliates) OutboundMemo {
 	return OutboundMemo{
 		MemoBase:   MemoBase{TxType: TxOutbound},
-		ChainID:    chainID,
+		Chain:      chain,
 		Token:      token,
 		Receiver:   receiver,
 		Amount:     amount,

@@ -28,6 +28,8 @@ const (
 	XRPChain   = Chain("XRP")
 	MAPChain   = Chain("MAP")
 	ARBChain   = Chain("ARB")
+	TRONChain  = Chain("TRX")
+	SOLChain   = Chain("SOL")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -379,6 +381,17 @@ func (c Chain) InboundNotes() string {
 func (c Chain) NativeToken() (string, bool) {
 	token, ok := chainToNativeToken[c]
 	return token, ok
+}
+
+func (c Chain) DecodeAddress(address string) ([]byte, error) {
+	switch c {
+	case SOLChain:
+		return solanaAddressToBytes(address)
+	case TRONChain:
+		return tronAddressToBytes(address)
+	default:
+		return evmAddressToBytes(address)
+	}
 }
 
 // GetEVMChains returns all "EVM" chains connected to THORChain
