@@ -85,7 +85,6 @@ type Bridge interface {
 	GetNodeAccount(string) (*structure.MaintainerInfo, error)
 	GetNodeAccounts([]ecommon.Address) ([]structure.MaintainerInfo, error)
 	GetKeygenBlock() (*structure.KeyGen, error)
-	GetPools() (stypes.Pools, error) //
 	GetVault(pubkey []byte) (*Vault, error)
 	GetPubKeys() ([]PubKeyContractAddressPair, error)
 	GetLastObservedInHeight(chain common.Chain) (int64, error)

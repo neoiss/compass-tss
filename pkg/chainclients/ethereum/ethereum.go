@@ -28,7 +28,6 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
@@ -59,7 +58,6 @@ type Client struct {
 	blockScanner            *blockscanner.BlockScanner
 	gatewayABI              *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
-	poolMgr                 mapo.PoolManager
 	asgardAddresses         []common.Address
 	lastAsgard              time.Time
 	tssKeySigner            *tss.KeySign
@@ -77,7 +75,6 @@ func NewClient(thorKeys *keys.Keys,
 	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
-	poolMgr mapo.PoolManager,
 ) (*Client, error) {
 	if thorKeys == nil {
 		return nil, fmt.Errorf("fail to create ETH client,thor keys is empty")
@@ -106,9 +103,6 @@ func NewClient(thorKeys *keys.Keys,
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")
-	}
-	if poolMgr == nil {
-		return nil, errors.New("pool manager is nil")
 	}
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
@@ -142,7 +136,6 @@ func NewClient(thorKeys *keys.Keys,
 		bridge:       bridge,
 		gatewayABI:   gatewayABI,
 		pubkeyMgr:    pubkeyMgr,
-		poolMgr:      poolMgr,
 		tssKeySigner: tssKm,
 		wg:           &sync.WaitGroup{},
 		stopchan:     make(chan struct{}),

@@ -13,7 +13,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/constants"
 	sharedTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
@@ -26,7 +25,7 @@ func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
 	}
 
 	// skip recovery if the current node is not active
-	if types.NodeStatus(na.Status) != types.NodeStatus_Active {
+	if constants.NodeStatus(na.Status) != constants.NodeStatus_Active {
 		log.Info().Msgf("%s is not active, status(%d), skipping key shares recovery", na.Account, na.Status)
 		return nil
 	}

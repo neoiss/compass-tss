@@ -16,3 +16,12 @@ const (
 	NodeStatus_Active
 	NodeStatus_Disabled
 )
+
+type VaultStatus int32
+
+const (
+	VaultStatus_InactiveVault VaultStatus = 0
+	VaultStatus_ActiveVault   VaultStatus = 1
+	VaultStatus_RetiringVault VaultStatus = 2
+	VaultStatus_InitVault     VaultStatus = 3
+)

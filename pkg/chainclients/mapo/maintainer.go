@@ -16,7 +16,6 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/structure"
-	stypes "github.com/mapprotocol/compass-tss/x/types"
 	"github.com/pkg/errors"
 )
 
@@ -239,7 +238,7 @@ func (b *Bridge) FetchActiveNodes() ([]common.PubKey, error) {
 	}
 	active := make([]common.PubKey, 0)
 	for _, item := range na {
-		if stypes.NodeStatus(item.Status) == stypes.NodeStatus_Active {
+		if constants.NodeStatus(item.Status) == constants.NodeStatus_Active {
 			active = append(active, common.PubKey(ecommon.Bytes2Hex(item.Secp256Pubkey)))
 		}
 	}

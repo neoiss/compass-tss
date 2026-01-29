@@ -24,7 +24,6 @@ import (
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
 	"github.com/mapprotocol/compass-tss/metrics"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/mapo"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
@@ -53,7 +52,6 @@ type EVMClient struct {
 	blockScanner            *blockscanner.BlockScanner
 	gatewayAbi              *abi.ABI
 	pubkeyMgr               pubkeymanager.PubKeyValidator
-	poolMgr                 mapo.PoolManager
 	tssKeySigner            *tss.KeySign
 	wg                      *sync.WaitGroup
 	stopchan                chan struct{}
@@ -70,7 +68,6 @@ func NewEVMClient(
 	bridge shareTypes.Bridge,
 	m *metrics.Metrics,
 	pubkeyMgr pubkeymanager.PubKeyValidator,
-	poolMgr mapo.PoolManager,
 ) (*EVMClient, error) {
 	// check required arguments
 	if relayKey == nil {
@@ -81,9 +78,6 @@ func NewEVMClient(
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")
-	}
-	if poolMgr == nil {
-		return nil, errors.New("pool manager is nil")
 	}
 
 	// create keys
@@ -195,7 +189,6 @@ func NewEVMClient(
 		bridge:       bridge,
 		gatewayAbi:   vaultABI,
 		pubkeyMgr:    pubkeyMgr,
-		poolMgr:      poolMgr,
 		tssKeySigner: tssKm,
 		wg:           &sync.WaitGroup{},
 		stopchan:     make(chan struct{}),
@@ -240,16 +233,6 @@ func NewEVMClient(
 	if err != nil {
 		return c, fmt.Errorf("fail to create block scanner: %w", err)
 	}
-
-	// TODO: Is this necessary?
-	localNodeAddress, err := c.localPubKey.GetAddress(cfg.ChainID)
-	if err != nil {
-		c.logger.Err(err).Stringer("chain", cfg.ChainID).Msg("failed to get local node address")
-	}
-	c.logger.Info().
-		Stringer("chain", cfg.ChainID).
-		Stringer("address", localNodeAddress).
-		Msg("local node address")
 
 	return c, nil
 }
@@ -630,7 +613,7 @@ func (c *EVMClient) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	case common.AVAXChain: // instant finality
 		return 0
 	case common.ARBChain:
-		return 12
+		return 24
 	case common.BASEChain:
 		return 12 // ~2 Ethereum blocks for parity with the 2 block minimum in eth client
 	case common.BSCChain:
@@ -657,6 +640,13 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	case common.BASEChain:
 		// block is already finalized(settled to l1)
 		return true
+	case common.ARBChain:
+		if len(txIn.TxArray) == 0 {
+			return true
+		}
+		blockHeight := txIn.TxArray[0].Height.Int64()
+		confirm := txIn.ConfirmationRequired
+		return (c.evmScanner.currentBlockHeight - blockHeight) >= confirm
 	default:
 		c.logger.Fatal().Msgf("unsupported chain: %s", c.cfg.ChainID)
 		return false

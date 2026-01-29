@@ -4,16 +4,12 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"math/rand/v2"
-	"net/http"
 	"os"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/x/types"
 )
 
 const (
@@ -28,40 +24,7 @@ func getSeedAddrs() (addrs []string) {
 		log.Warn().Msg("no seed nodes endpoint provided")
 		return
 	}
-
-	// get nodes
-	res, err := http.Get(config.MAPO.SeedNodesEndpoint)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to get thorchain nodes")
-	}
-
-	// parse nodes
-	var nodes []types.NodeAccount
-	if err = json.NewDecoder(res.Body).Decode(&nodes); err != nil {
-		log.Fatal().Err(err).Msg("failed to decode thorchain nodes")
-	}
-	res.Body.Close()
-
-	// include active nodes with an ip address
-	var seeds []string
-	for _, node := range nodes {
-		if node.Status != types.NodeStatus_Active {
-			continue
-		}
-		if node.IPAddress == "" || node.IPAddress == "0.0.0.0" {
-			continue
-		}
-		seeds = append(seeds, node.IPAddress)
-	}
-
-	// randomly shuffle seeds
-	rand.Shuffle(len(seeds), func(i, j int) {
-		seeds[i], seeds[j] = seeds[j], seeds[i]
-	})
-
-	log.Info().Msgf("found %d thorchain seeds", len(seeds))
-
-	return seeds
+	return []string{}
 }
 
 func assertBifrostHasSeeds() {

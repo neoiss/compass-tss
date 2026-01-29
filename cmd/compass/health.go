@@ -16,7 +16,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	"github.com/mapprotocol/compass-tss/x/types"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
@@ -59,12 +58,6 @@ type signingChain struct {
 	LatestBroadcastedTx string `json:"latest_broadcasted_tx"`
 	LatestObservedTx    string `json:"latest_observed_tx"`
 	CurrentSequence     int64  `json:"current_sequence"`
-}
-
-type VaultResponse struct {
-	Pubkey       common.PubKey     `json:"pubkey"`
-	Status       types.VaultStatus `json:"status"`
-	ChainDetails []signingChain    `json:"chain_details"`
 }
 
 // -------------------------------------------------------------------------------------
