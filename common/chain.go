@@ -15,21 +15,21 @@ import (
 
 const (
 	EmptyChain = Chain("")
-	BSCChain   = Chain("BSC")
-	ETHChain   = Chain("ETH")
-	BTCChain   = Chain("BTC")
-	LTCChain   = Chain("LTC")
-	BCHChain   = Chain("BCH")
-	DOGEChain  = Chain("DOGE")
-	THORChain  = Chain("THOR")
-	GAIAChain  = Chain("GAIA")
-	AVAXChain  = Chain("AVAX")
-	BASEChain  = Chain("BASE")
-	XRPChain   = Chain("XRP")
-	MAPChain   = Chain("MAP")
-	ARBChain   = Chain("ARB")
-	TRONChain  = Chain("TRON")
-	SOLChain   = Chain("SOL")
+	BSCChain   = Chain("Bsc")
+	ETHChain   = Chain("Eth")
+	BTCChain   = Chain("Btc")
+	LTCChain   = Chain("Ltc")
+	BCHChain   = Chain("Bch")
+	DOGEChain  = Chain("Doge")
+	THORChain  = Chain("Thor")
+	GAIAChain  = Chain("Gaia")
+	AVAXChain  = Chain("Avax")
+	BASEChain  = Chain("Base")
+	XRPChain   = Chain("Xrp")
+	MAPChain   = Chain("Map")
+	ARBChain   = Chain("Arb")
+	TRONChain  = Chain("Tron")
+	SOLChain   = Chain("Sol")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -51,7 +51,7 @@ var AllChains = [...]Chain{
 }
 
 var chainToNativeToken = map[Chain]string{
-	BTCChain: "BTC",
+	BTCChain: "Btc",
 }
 
 var chainToChainID = map[string]*big.Int{

@@ -4,9 +4,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	ethcommon "github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strings"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
@@ -59,7 +60,7 @@ func GetAsgardPubKeyByAddress(chain common.Chain, bridge shareTypes.Bridge, addr
 		}
 		return pubKey, nil
 	}
-	return nil, fmt.Errorf("fail to get asgard pub key by address(%s)", address)
+	return nil, fmt.Errorf("fail to get vault pub key by address(%s)", address)
 }
 
 //func GetAsgardAddress2PubKeyMapped(chain common.Chain, bridge shareTypes.Bridge) (map[common.Address][]byte, error) {

@@ -68,7 +68,7 @@ func (b *Bridge) getLastBlock(chain common.Chain) (*LastBlock, error) {
 	}, nil
 }
 
-// GetAsgards retrieve all the asgard vaults from mapBridge
+// GetAsgards retrieve all the vaults from mapBridge
 func (b *Bridge) GetAsgards() (shareTypes.Vaults, error) {
 	vaults, err := b.getPublickeys()
 	if err != nil {
@@ -118,7 +118,7 @@ func (b *Bridge) GetPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 	return ret, nil
 }
 
-// GetAsgardPubKeys retrieve asgard vaults, and it's relevant smart contracts
+// GetAsgardPubKeys retrieve vaults, and it's relevant smart contracts
 func (b *Bridge) GetAsgardPubKeys() ([]shareTypes.PubKeyContractAddressPair, error) {
 	vaults, err := b.getPublickeys()
 	if err != nil {
