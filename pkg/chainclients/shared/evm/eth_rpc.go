@@ -181,6 +181,9 @@ func (e *EthRPC) getSafeBlock(ctx context.Context, method string, args ...interf
 		return nil, err
 	}
 
+	if head == nil {
+		return nil, ethereum.NotFound
+	}
 	// Decode header and transactions.
 	var body Block
 	if err := json.Unmarshal(raw, &body); err != nil {
