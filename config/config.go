@@ -91,7 +91,7 @@ func Init() {
 	// TODO: The following can be cleaned once all deployments are updated to use
 	// explicit keys for the new configuration package. In the meantime we will preserve
 	// mappings from historical environment for backwards compatibility.
-	assert(viper.BindEnv("bifrost.thorchain.signer_name", "SIGNER_NAME"))
+	assert(viper.BindEnv("bifrost.map_relay.signer_name", "SIGNER_NAME"))
 	assert(viper.BindEnv(
 		"bifrost.chains.btc.block_scanner.block_height_discover_back_off",
 		"BLOCK_SCANNER_BACKOFF",
@@ -122,10 +122,10 @@ func Init() {
 	))
 	assert(viper.BindEnv("bifrost.tss.bootstrap_peers", "PEER"))
 	assert(viper.BindEnv("bifrost.tss.external_ip", "EXTERNAL_IP"))
-	assert(viper.BindEnv("bifrost.thorchain.chain_id", "CHAIN_ID"))
-	assert(viper.BindEnv("bifrost.thorchain.chain_host", "CHAIN_API"))
+	assert(viper.BindEnv("bifrost.map_relay.chain_id", "CHAIN_ID"))
+	assert(viper.BindEnv("bifrost.map_relay.chain_host", "CHAIN_API"))
 	assert(viper.BindEnv(
-		"bifrost.thorchain.chain_rpc",
+		"bifrost.map_relay.chain_rpc",
 		"CHAIN_RPC",
 	))
 	assert(viper.BindEnv(
