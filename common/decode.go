@@ -1,12 +1,13 @@
 package common
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcutil/base58"
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"reflect"
 )
 
 func evmAddressToBytes(address string) ([]byte, error) {
@@ -24,12 +25,12 @@ func evmAddressToBytes(address string) ([]byte, error) {
 	if err != nil {
 		return []byte{}, fmt.Errorf("fail to decode hex string: %w", err)
 	}
-	if len(decoded) != 20 {
-		return []byte{}, fmt.Errorf("invalid evm address length")
-	}
 	return decoded, nil
 }
 
+// tronAddressToBytes converts a tron address to bytes
+// tron address format: version(1 bytes)+address(20 bytes)+checksum(4 bytes)
+// version: 0x41(mainnet)
 func tronAddressToBytes(address string) ([]byte, error) {
 	if len(address) == 0 {
 		return []byte{}, fmt.Errorf("empty tron address")
@@ -39,7 +40,7 @@ func tronAddressToBytes(address string) ([]byte, error) {
 	if len(decoded) != 25 {
 		return []byte{}, fmt.Errorf("invalid tron address length")
 	}
-	if decoded[1] != 0x41 {
+	if decoded[0] != 0x41 {
 		return []byte{}, fmt.Errorf("invalid tron address")
 	}
 
@@ -49,7 +50,7 @@ func tronAddressToBytes(address string) ([]byte, error) {
 	expectedChecksum := hash2[:4]
 	actualChecksum := decoded[21:25]
 
-	if !reflect.DeepEqual(expectedChecksum, actualChecksum) {
+	if !bytes.Equal(expectedChecksum, actualChecksum) {
 		return []byte{}, fmt.Errorf("invalid tron address checksum")
 	}
 
