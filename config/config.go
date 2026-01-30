@@ -2,23 +2,15 @@ package config
 
 import (
 	"bytes"
-	"context"
 	"embed"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
-	"text/template"
 	"time"
 
-	tmhttp "github.com/cometbft/cometbft/rpc/client/http"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -91,7 +83,7 @@ func Init() {
 	// TODO: The following can be cleaned once all deployments are updated to use
 	// explicit keys for the new configuration package. In the meantime we will preserve
 	// mappings from historical environment for backwards compatibility.
-	assert(viper.BindEnv("bifrost.map_relay.signer_name", "SIGNER_NAME"))
+	assert(viper.BindEnv("bifrost.mapo.signer_name", "SIGNER_NAME"))
 	assert(viper.BindEnv(
 		"bifrost.chains.btc.block_scanner.block_height_discover_back_off",
 		"BLOCK_SCANNER_BACKOFF",
@@ -122,10 +114,10 @@ func Init() {
 	))
 	assert(viper.BindEnv("bifrost.tss.bootstrap_peers", "PEER"))
 	assert(viper.BindEnv("bifrost.tss.external_ip", "EXTERNAL_IP"))
-	assert(viper.BindEnv("bifrost.map_relay.chain_id", "CHAIN_ID"))
-	assert(viper.BindEnv("bifrost.map_relay.chain_host", "CHAIN_API"))
+	assert(viper.BindEnv("bifrost.mapo.chain_id", "CHAIN_ID"))
+	assert(viper.BindEnv("bifrost.mapo.chain_host", "CHAIN_API"))
 	assert(viper.BindEnv(
-		"bifrost.map_relay.chain_rpc",
+		"bifrost.mapo.chain_rpc",
 		"CHAIN_RPC",
 	))
 	assert(viper.BindEnv(
@@ -265,64 +257,6 @@ func InitBifrost() {
 	// set bootstrap peers from seeds endpoint if unset
 	if len(config.Bifrost.TSS.BootstrapPeers) == 0 {
 		config.Bifrost.TSS.BootstrapPeers = resolveAddrs(getSeedAddrs())
-	}
-}
-
-func InitThornode(ctx context.Context) {
-	// Environment variables prefixed with `THORNODE` will be read by viper in cosmos-sdk
-	// initialization and overwrite configuration we apply in this package.
-	for _, env := range os.Environ() {
-		envKey := strings.Split(env, "=")[0]
-		if strings.HasPrefix(envKey, "THORNODE_") {
-			log.Warn().Msgf("environment variable %s could overwrite config", env)
-		}
-	}
-
-	// if auto statesync enable, find latest snapshot height and hash that should exist
-	if config.MAPO.AutoStateSync.Enabled {
-		thornodeAutoStateSync(ctx)
-	}
-
-	// dynamically set seeds
-	seedAddrs, tmSeeds := thornodeSeeds()
-	config.MAPO.Tendermint.P2P.Seeds = strings.Join(tmSeeds, ",")
-
-	// set the Tendermint external address
-	if os.Getenv("EXTERNAL_IP") != "" {
-		config.MAPO.Tendermint.P2P.ExternalAddress = fmt.Sprintf("%s:%d", os.Getenv("EXTERNAL_IP"), p2pPort)
-	}
-
-	// set paths
-	home := os.ExpandEnv("$HOME/.thornode")
-	tendermintPath := filepath.Join(home, "config", "config.toml")
-	cosmosPath := filepath.Join(home, "config", "app.toml")
-
-	// template tendermint config into place
-	t := template.Must(template.ParseFS(templates, "*.tmpl"))
-	tendermintFile, err := os.OpenFile(tendermintPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to open config.toml")
-	}
-	err = t.ExecuteTemplate(tendermintFile, "config.toml.tmpl", config.MAPO.Tendermint)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to render config.toml")
-	}
-
-	// template cosmos config into place
-	cosmosFile, err := os.OpenFile(cosmosPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to open app.toml")
-	}
-	err = t.ExecuteTemplate(cosmosFile, "app.toml.tmpl", config.MAPO.Cosmos)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to render app.toml")
-	}
-
-	// fetch genesis
-	if len(seedAddrs) > 0 {
-		thornodeFetchGenesis(seedAddrs)
-	} else {
-		log.Warn().Msg("no seeds, skipping genesis fetch")
 	}
 }
 
@@ -470,7 +404,7 @@ type MAPO struct {
 
 type Bifrost struct {
 	Signer   BifrostSignerConfiguration  `mapstructure:"signer"`
-	MAPRelay BifrostClientConfiguration  `mapstructure:"map_relay"`
+	MAPRelay BifrostClientConfiguration  `mapstructure:"mapo"`
 	Metrics  BifrostMetricsConfiguration `mapstructure:"metrics"`
 	Chains   struct {
 		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
@@ -667,7 +601,7 @@ type BifrostChainConfiguration struct {
 		MaxMempoolBatches int `mapstructure:"max_mempool_batches"`
 
 		// NOTE: The following fields must be consistent across all validators. Otherwise,
-		// nodes can fail to sign outbounds from asgard since they may build different
+		// nodes can fail to sign outbounds from vault since they may build different
 		// transactions. They may also be slashed for reporting different fee and solvency.
 
 		// EstimatedAverageTxSize is the estimated average transaction size in bytes.
@@ -693,7 +627,7 @@ type BifrostChainConfiguration struct {
 		MinSatsPerVByte int64 `mapstructure:"min_sats_per_vbyte"`
 
 		// MinUTXOConfirmations is the minimum number of confirmations required for a UTXO to
-		// be considered for spending from an asgard vault.
+		// be considered for spending from an vault.
 		MinUTXOConfirmations int64 `mapstructure:"min_utxo_confirmations"`
 
 		// MaxUTXOsToSpend is the maximum number of UTXOs to spend in a single transaction.
@@ -787,7 +721,7 @@ type BifrostBlockScannerConfiguration struct {
 	// MaxReorgRescanBlocks is the maximum number of blocks to rescan during a reorg.
 	MaxReorgRescanBlocks int64 `mapstructure:"max_reorg_rescan_blocks"`
 
-	Mos string `mapstructure:"mos"`
+	Mos string `mapstructure:"gateway"`
 }
 
 type BifrostClientConfiguration struct {
@@ -823,12 +757,11 @@ type BifrostMetricsConfiguration struct {
 }
 
 type BifrostTSSConfiguration struct {
-	BootstrapPeers               []string `mapstructure:"bootstrap_peers"`
-	Rendezvous                   string   `mapstructure:"rendezvous"`
-	P2PPort                      int      `mapstructure:"p2p_port"`
-	InfoAddress                  string   `mapstructure:"info_address"`
-	ExternalIP                   string   `mapstructure:"external_ip"`
-	MaxKeyshareRecoverScanBlocks int64    `mapstructure:"max_keyshare_recover_scan_blocks"`
+	BootstrapPeers []string `mapstructure:"bootstrap_peers"`
+	Rendezvous     string   `mapstructure:"rendezvous"`
+	P2PPort        int      `mapstructure:"p2p_port"`
+	InfoAddress    string   `mapstructure:"info_address"`
+	ExternalIP     string   `mapstructure:"external_ip"`
 }
 
 func (c BifrostTSSConfiguration) GetP2PPort() int {
@@ -853,7 +786,7 @@ type WhitelistCosmosAsset struct {
 func (c BifrostTSSConfiguration) GetBootstrapPeers() ([]maddr.Multiaddr, error) {
 	var addrs []maddr.Multiaddr
 
-	// todo handler p2p get addr： prot 6040
+	// handler p2p get addr： prot 6040
 	for _, ip := range resolveAddrs(c.BootstrapPeers) {
 		if len(ip) == 0 {
 			continue
@@ -921,244 +854,4 @@ func resolveAddrs(addrs []string) []string {
 	}
 
 	return resolvedAddrs
-}
-
-func thornodeSeeds() (seedAddrs, tmSeeds []string) {
-	// use environment variable if set
-	seeds := os.Getenv("SEEDS")
-	if seeds != "" {
-		seedAddrs = strings.Split(seeds, ",")
-	} else {
-		log.Info().Msg("seeds not provided, initializing automatically...")
-		seedAddrs = getSeedAddrs()
-	}
-
-	// resolve any hostnames
-	seedAddrs = resolveAddrs(seedAddrs)
-
-	// skip further steps if there were no seeds to check
-	if len(seedAddrs) == 0 {
-		log.Warn().Msg("no seeds found")
-		return
-	}
-
-	// initialize seed with their node id if the network matches
-	wg := sync.WaitGroup{}
-	mu := sync.Mutex{}
-
-	for try := 0; try < MaxRetries; try++ {
-		for _, seed := range seedAddrs {
-			wg.Add(1)
-			go func(seedIP string) {
-				defer wg.Done()
-
-				// get node status
-				res, err := httpClient.Get(fmt.Sprintf("http://%s:%d/status", seedIP, rpcPort))
-				if err != nil {
-					log.Error().Err(err).Msg("failed to get node status")
-					return
-				}
-
-				// decode status response
-				type status struct {
-					Result struct {
-						NodeInfo struct {
-							ID      string `json:"id"`
-							Network string `json:"network"`
-						} `json:"node_info"`
-					} `json:"result"`
-				}
-				var s status
-				dec := json.NewDecoder(res.Body)
-				err = dec.Decode(&s)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to decode node status")
-					return
-				}
-
-				// skip if the node is not on the same network
-				if s.Result.NodeInfo.Network != os.Getenv("CHAIN_ID") {
-					log.Error().
-						Str("network", s.Result.NodeInfo.Network).
-						Str("expected", os.Getenv("CHAIN_ID")).
-						Msg("node is not on the same network")
-					return
-				}
-
-				// update seeds
-				mu.Lock()
-				tmSeeds = append(tmSeeds, fmt.Sprintf("%s@%s:%d", s.Result.NodeInfo.ID, seedIP, p2pPort))
-				mu.Unlock()
-			}(seed)
-		}
-		wg.Wait()
-
-		// retry a few times if we have no seeds
-		if len(tmSeeds) > 0 {
-			break
-		}
-		log.Info().Msg("retrying to fetch seeds...")
-		time.Sleep(RetryBackoff)
-	}
-
-	log.Info().Msgf("found %d p2p seeds", len(tmSeeds))
-	return
-}
-
-func thornodeAutoStateSync(ctx context.Context) {
-	// if we already have a state assume we have a snapshot and skip
-	dataDir := os.ExpandEnv("$HOME/.thornode/data/state.db")
-	if _, err := os.Stat(dataDir); err == nil {
-		log.Info().Msg("data directory detected, skipping auto statesync configuration")
-		return
-	}
-
-	for _, host := range strings.Split(config.MAPO.Tendermint.StateSync.RPCServers, ",") {
-		log.Info().Msgf("auto statesync enabled, determining trust height via %s", host)
-
-		client, err := tmhttp.New(host, "")
-		if err != nil {
-			log.Err(err).Str("host", host).Msg("failed to create tendermint client")
-			continue
-		}
-
-		// get the height of the expected snapshot
-		status, err := client.Status(ctx)
-		if err != nil {
-			log.Err(err).Str("host", host).Msg("failed to get status")
-			continue
-		}
-		height := status.SyncInfo.LatestBlockHeight - config.MAPO.AutoStateSync.BlockBuffer
-
-		// get the hash of the trust block
-		block, err := client.Block(ctx, &height)
-		if err != nil {
-			log.Err(err).Str("host", host).Int64("height", height).Msg("failed to get block")
-			continue
-		}
-		hash := block.BlockID.Hash.String()
-
-		// set the trusted hash and height in tendermint
-		log.Info().Int64("height", height).Str("hash", hash).Msg("setting automatic statesync trust")
-		config.MAPO.Tendermint.StateSync.Enable = true
-		config.MAPO.Tendermint.StateSync.TrustHeight = height
-		config.MAPO.Tendermint.StateSync.TrustHash = hash
-
-		// set the persistent peers in tendermint to the known auto statesync peers
-		config.MAPO.Tendermint.P2P.PersistentPeers = strings.Join(config.MAPO.AutoStateSync.Peers, ",")
-
-		// success
-		return
-	}
-
-	log.Fatal().Msg("failed to determine statesync trust height from any rpc host")
-}
-
-func thornodeFetchGenesis(seeds []string) {
-	home := os.ExpandEnv("$HOME/.thornode")
-	genesisPath := filepath.Join(home, "config", "genesis.json")
-
-	// check to see if we already have a genesis file
-	if fi, err := os.Stat(genesisPath); !os.IsNotExist(err) || (fi != nil && fi.Size() == 0) {
-		log.Info().Msg("genesis file already exists, skipping fetch")
-		return
-	}
-
-	// iterate peers until we succeed in fetching genesis
-	for peerRetry := 0; peerRetry < MaxRetries; peerRetry++ {
-		for _, seed := range seeds {
-			// initialize empty genesis
-			err := os.MkdirAll(filepath.Dir(genesisPath), 0o755)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to create genesis directory")
-			}
-
-			f, err := os.OpenFile(genesisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to create genesis file")
-			}
-			defer f.Close()
-
-			// fetch genesis file in chunks
-			for chunkID := 0; ; chunkID++ {
-				for chunkRetry := 0; chunkRetry < MaxRetries; chunkRetry++ {
-					clog := log.With().
-						Str("seed", seed).
-						Int("chunk", chunkID).
-						Int("retry", chunkRetry).
-						Logger()
-
-					url := fmt.Sprintf("http://%s:%d/genesis_chunked?chunk=%d", seed, rpcPort, chunkID)
-					var res *http.Response
-					res, err = http.Get(url)
-					if err != nil || res.StatusCode != http.StatusOK {
-						clog.Err(err).Msg("failed to fetch genesis chunk")
-						time.Sleep(RetryBackoff)
-						continue
-					}
-
-					// decode the json response which contains the base64 encoded chunk
-					type chunkResponse struct {
-						Result struct {
-							Data  string `json:"data"`
-							Chunk string `json:"chunk"`
-							Total string `json:"total"`
-						} `json:"result"`
-					}
-
-					var response chunkResponse
-					dec := json.NewDecoder(res.Body)
-					err = dec.Decode(&response)
-					res.Body.Close()
-					if err != nil {
-						clog.Err(err).Msg("failed to decode genesis chunk")
-						time.Sleep(RetryBackoff)
-						continue
-					}
-
-					// decode the base64 chunk
-					var chunkData []byte
-					chunkData, err = base64.StdEncoding.DecodeString(response.Result.Data)
-					if err != nil {
-						clog.Err(err).Msg("failed to decode base64 genesis chunk")
-						time.Sleep(RetryBackoff)
-						continue
-					}
-
-					// write the decoded chunk to the file
-					_, err = f.Write(chunkData)
-					if err != nil {
-						clog.Fatal().Err(err).Msg("failed to write genesis chunk to file")
-					}
-
-					// convert chunk and total to int
-					var chunk, total int
-					chunk, err = strconv.Atoi(response.Result.Chunk)
-					if err != nil {
-						clog.Err(err).Msg("failed to convert chunk to int")
-						time.Sleep(RetryBackoff)
-						continue
-					}
-					total, err = strconv.Atoi(response.Result.Total)
-					if err != nil {
-						clog.Err(err).Msg("failed to convert total to int")
-						time.Sleep(RetryBackoff)
-						continue
-					}
-
-					// done if the current chunk is the last one
-					if chunk == total-1 {
-						clog.Info().Msg("genesis file successfully fetched")
-						return
-					}
-
-					// break chunk retry on success
-					break
-				}
-			}
-		}
-
-		time.Sleep(RetryBackoff)
-		log.Info().Msg("retrying to fetch genesis...")
-	}
 }

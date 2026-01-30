@@ -3,10 +3,11 @@ package utxo
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/constants"
 	"math/big"
 	"sort"
 	"strings"
+
+	"github.com/mapprotocol/compass-tss/constants"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -80,10 +81,8 @@ func (c *Client) getUtxoToSpend(pubkey common.PubKey, total float64) ([]btcjson.
 		}
 
 		if item.Confirmations < c.cfg.UTXO.MinUTXOConfirmations || item.Amount < minUTXOAmt {
-			// use all UTXOs sent from asgard, regardless of confirmations or dust threshold
 			isSelfTx := c.isSelfTransaction(item.TxID)
 
-			// confirm sender of the UTXO is not asgard in case of lost block meta
 			if !isSelfTx {
 				isSelfTx = c.isFromAsgard(item.TxID)
 			}

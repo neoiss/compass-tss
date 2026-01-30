@@ -38,7 +38,6 @@ import (
 
 // Endpoint urls
 const (
-	AsgardVault          = "/mapBridge/vaults/asgard"
 	MimirEndpoint        = "/mapBridge/mimir"
 	ChainVersionEndpoint = "/mapBridge/version"
 	PoolsEndpoint        = "/mapBridge/pools"
