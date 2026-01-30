@@ -121,12 +121,38 @@ func Init() {
 		"CHAIN_RPC",
 	))
 	assert(viper.BindEnv(
+		"bifrost.chains.BTC.username",
+		"BTC_USERNAME",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BTC.password",
+		"BTC_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BTC.authorization_bearer",
+		"BTC_AUTHORIZATION_BEARER",
+	))
+	assert(viper.BindEnv(
 		"bifrost.chains.BTC.rpc_host",
 		"BTC_HOST",
 	))
 	assert(viper.BindEnv(
 		"bifrost.chains.BTC.block_scanner.start_block_height",
 		"BTC_START_BLOCK_HEIGHT",
+	))
+
+	// eth
+	assert(viper.BindEnv(
+		"bifrost.chains.ETH.username",
+		"ETH_USERNAME",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.ETH.password",
+		"ETH_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.ETH.authorization_bearer",
+		"ETH_AUTHORIZATION_BEARER",
 	))
 	assert(viper.BindEnv(
 		"bifrost.chains.ETH.rpc_host",
@@ -136,6 +162,20 @@ func Init() {
 		"bifrost.chains.ETH.block_scanner.start_block_height",
 		"ETH_START_BLOCK_HEIGHT",
 	))
+
+	// avax
+	assert(viper.BindEnv(
+		"bifrost.chains.AVAX.username",
+		"AVAX_USERNAME",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.AVAX.password",
+		"AVAX_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.AVAX.authorization_bearer",
+		"AVAX_AUTHORIZATION_BEARER",
+	))
 	assert(viper.BindEnv(
 		"bifrost.chains.AVAX.rpc_host",
 		"AVAX_HOST",
@@ -143,6 +183,20 @@ func Init() {
 	assert(viper.BindEnv(
 		"bifrost.chains.AVAX.block_scanner.start_block_height",
 		"AVAX_START_BLOCK_HEIGHT",
+	))
+
+	// doge
+	assert(viper.BindEnv(
+		"bifrost.chains.DOGE.username",
+		"DOGE_USERNAME",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.DOGE.password",
+		"DOGE_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.DOGE.authorization_bearer",
+		"DOGE_AUTHORIZATION_BEARER",
 	))
 	assert(viper.BindEnv(
 		"bifrost.chains.DOGE.rpc_host",
@@ -152,13 +206,19 @@ func Init() {
 		"bifrost.chains.DOGE.block_scanner.start_block_height",
 		"DOGE_START_BLOCK_HEIGHT",
 	))
+
+	// ltc
 	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.rpc_host",
-		"GAIA_HOST",
+		"bifrost.chains.LTC.username",
+		"LTC_USERNAME",
 	))
 	assert(viper.BindEnv(
-		"bifrost.chains.GAIA.block_scanner.start_block_height",
-		"GAIA_START_BLOCK_HEIGHT",
+		"bifrost.chains.LTC.password",
+		"LTC_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.LTC.authorization_bearer",
+		"LTC_AUTHORIZATION_BEARER",
 	))
 	assert(viper.BindEnv(
 		"bifrost.chains.LTC.rpc_host",
@@ -167,6 +227,20 @@ func Init() {
 	assert(viper.BindEnv(
 		"bifrost.chains.LTC.block_scanner.start_block_height",
 		"LTC_START_BLOCK_HEIGHT",
+	))
+
+	// bch
+	assert(viper.BindEnv(
+		"bifrost.chains.BCH.username",
+		"BCH_USERNAME",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BCH.password",
+		"BCH_PASSWORD",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BCH.authorization_bearer",
+		"BCH_AUTHORIZATION_BEARER",
 	))
 	assert(viper.BindEnv(
 		"bifrost.chains.BCH.rpc_host",
