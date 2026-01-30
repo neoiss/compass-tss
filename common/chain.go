@@ -28,7 +28,7 @@ const (
 	XRPChain   = Chain("XRP")
 	MAPChain   = Chain("MAP")
 	ARBChain   = Chain("ARB")
-	TRONChain  = Chain("TRX")
+	TRONChain  = Chain("TRON")
 	SOLChain   = Chain("SOL")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
