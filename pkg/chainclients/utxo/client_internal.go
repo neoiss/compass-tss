@@ -51,7 +51,7 @@ func (c *Client) getAsgardAddress() ([]common.Address, error) {
 func (c *Client) isAsgardAddress(addressToCheck string) bool {
 	asgards, err := c.getAsgardAddress()
 	if err != nil {
-		c.log.Err(err).Msg("fail to get asgard addresses")
+		c.log.Err(err).Msg("fail to get vault addresses")
 		return false
 	}
 	for _, addr := range asgards {
@@ -543,7 +543,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 
 		vaultPbuKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(sender))
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get asgard pub key by address: %w", err)
+			return types.TxInItem{}, fmt.Errorf("fail to get vault pub key by address: %w", err)
 		}
 
 		amount, err := btcutil.NewAmount(tx.Vout[0].Value)
@@ -583,7 +583,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 			toBytes = []byte{}
 			payload, err = utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
 			if err != nil {
-				return types.TxInItem{}, fmt.Errorf("fail to get asgard pub key by address: %w", err)
+				return types.TxInItem{}, fmt.Errorf("fail to get vault pub key by address: %w", err)
 			}
 			txOutType = constants.MIGRATE
 		case mem.TxRefund:
@@ -708,7 +708,7 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 
 		pubKey, err := utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(toAddr))
 		if err != nil {
-			return types.TxInItem{}, fmt.Errorf("fail to get asgard address2pubkey mapped: %w", err)
+			return types.TxInItem{}, fmt.Errorf("fail to get vault address2pubkey mapped: %w", err)
 		}
 
 		chainAndGasLimit := make([]byte, 32)
@@ -1001,7 +1001,7 @@ func (c *Client) ignoreTx(tx *btcjson.TxRawResult, height int64) bool {
 // outbound tx.
 // logic is if sender is a vault then prefer the first Vout with value,
 // else prefer the first Vout with value that's to a vault
-// an exception need to be made for consolidate tx , because consolidate tx will be send from asgard back asgard itself
+// an exception need to be made for consolidate tx , because consolidate tx will be send from vault back vault itself
 func (c *Client) getOutput(sender string, tx *btcjson.TxRawResult, consolidate bool) (btcjson.Vout, error) {
 	isSenderAsgard := c.isAsgardAddress(sender)
 	for _, vout := range tx.Vout {
@@ -1042,12 +1042,12 @@ func (c *Client) getOutput(sender string, tx *btcjson.TxRawResult, consolidate b
 	return btcjson.Vout{}, btypes.ErrFailOutputMatchCriteria
 }
 
-// isFromAsgard returns true if the tx is from asgard and false if not or on error.
+// isFromAsgard returns true if the tx is from vault and false if not or on error.
 // Since this is used to determine UTXOs used for outbounds, the risk of false negative
 // is only that vault members may not find consensus on the outbound, whereas aborting
 // on the error would guarantee the member is not a part of consensus. Returning a false
 // negative should never be done, as it could result in members using an unconfirmed or
-// dust VIN not sent by asgard in an outbound, which can be gamed by a malicious party.
+// dust VIN not sent by vault in an outbound, which can be gamed by a malicious party.
 func (c *Client) isFromAsgard(txid string) bool {
 	// lookup the txid
 	tx, err := c.rpc.GetRawTransactionVerbose(txid)
@@ -1063,7 +1063,7 @@ func (c *Client) isFromAsgard(txid string) bool {
 		return false
 	}
 
-	// check if the sender is an asgard address
+	// check if the sender is an vault address
 	return c.isAsgardAddress(sender)
 }
 

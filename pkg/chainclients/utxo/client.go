@@ -330,7 +330,7 @@ func (c *Client) GetAccount(pubkey common.PubKey, height *big.Int) (common.Accou
 			continue
 		}
 		if item.Confirmations == 0 {
-			// pending tx in mempool, only count sends from asgard
+			// pending tx in mempool, only count sends from vault
 			if !c.isSelfTransaction(item.TxID) && !c.isFromAsgard(item.TxID) {
 				continue
 			}
@@ -707,74 +707,11 @@ func (c *Client) ShouldReportSolvency(height int64) bool {
 	}
 }
 
-// ReportSolvency reports solvency for all asgard vaults.
+// ReportSolvency reports solvency for all vault vaults.
 func (c *Client) ReportSolvency(height int64) error {
 	if !c.ShouldReportSolvency(height) {
 		return nil
 	}
 
-	// todo this report dont need
-	// // fetch all asgard vaults
-	// asgardVaults, err := c.bridge.GetAsgards()
-	// if err != nil {
-	// 	return fmt.Errorf("fail to get asgards: %w", err)
-	// }
-
-	// currentGasFee := cosmos.NewUint(3 * c.cfg.UTXO.EstimatedAverageTxSize * c.lastFeeRate)
-
-	// // report insolvent asgard vaults,
-	// // or else all if the chain is halted and all are solvent
-	// msgs := make([]types.Solvency, 0, len(asgardVaults))
-	// solventMsgs := make([]types.Solvency, 0, len(asgardVaults))
-	// for i := range asgardVaults {
-	// 	var acct common.Account
-	// 	acct, err = c.GetAccount(asgardVaults[i].PubKey, nil)
-	// 	if err != nil {
-	// 		c.log.Err(err).Msgf("fail to get account balance")
-	// 		continue
-	// 	}
-
-	// 	msg := types.Solvency{
-	// 		Height: height,
-	// 		Chain:  c.cfg.ChainID,
-	// 		PubKey: asgardVaults[i].PubKey,
-	// 		Coins:  acct.Coins,
-	// 	}
-
-	// 	if runners.IsVaultSolvent(acct, asgardVaults[i], currentGasFee) {
-	// 		solventMsgs = append(solventMsgs, msg) // Solvent-vault message
-	// 		continue
-	// 	}
-	// 	msgs = append(msgs, msg) // Insolvent-vault message
-	// }
-
-	// // Only if the block scanner is unhealthy (e.g. solvency-halted) and all vaults are solvent,
-	// // report that all the vaults are solvent.
-	// // If there are any insolvent vaults, report only them.
-	// // Not reporting both solvent and insolvent vaults is to avoid noise (spam):
-	// // Reporting both could halt-and-unhalt SolvencyHalt in the same THOR block
-	// // (resetting its height), plus making it harder to know at a glance from solvency reports which vaults were insolvent.
-	// solvent := false
-	// if !c.IsBlockScannerHealthy() && len(solventMsgs) == len(asgardVaults) {
-	// 	msgs = solventMsgs
-	// 	solvent = true
-	// }
-
-	// for i := range msgs {
-	// 	c.log.Info().
-	// 		Stringer("asgard", msgs[i].PubKey).
-	// 		Interface("coins", msgs[i].Coins).
-	// 		Bool("solvent", solvent).
-	// 		Msg("reporting solvency")
-
-	// 	// send solvency to thorchain via global queue consumed by the observer
-	// 	select {
-	// 	case c.globalSolvencyQueue <- msgs[i]:
-	// 	case <-time.After(constants.MAPRelayChainBlockTime):
-	// 		c.log.Warn().Msgf("timeout sending solvency to thorchain")
-	// 	}
-	// }
-
-	// c.lastSolvencyCheckHeight = height
 	return nil
 }
