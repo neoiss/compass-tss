@@ -25,7 +25,7 @@ type OutboundMemo struct {
 }
 
 func (m OutboundMemo) GetChain() common.Chain {
-	return common.Chain(strings.ToUpper(m.Chain))
+	return common.Chain(m.Chain)
 }
 
 func (m OutboundMemo) GetToken() string {
