@@ -29,7 +29,7 @@ func (m OutboundMemo) GetChain() common.Chain {
 }
 
 func (m OutboundMemo) GetToken() string {
-	return strings.ToUpper(m.Token)
+	return m.Token
 }
 
 func (m OutboundMemo) GetDestination() string { return m.Receiver }
