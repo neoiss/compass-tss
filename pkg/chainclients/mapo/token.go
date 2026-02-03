@@ -3,14 +3,10 @@ package mapo
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"strings"
-
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"math/big"
 
 	"github.com/mapprotocol/compass-tss/constants"
 )
@@ -19,8 +15,6 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	if name == "" {
 		return nil, errors.New("chain name is empty")
 	}
-	// convert to title, because of the token registry contract naming convention
-	name = cases.Title(language.English).String(name)
 
 	method := "getChainByName"
 	input, err := b.tokenRegistry.Pack(method, name)
@@ -95,7 +89,7 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 		return nil, errors.New("token name is empty")
 	}
 	method := "getTokenAddressByNickname"
-	input, err := b.tokenRegistry.Pack(method, chainID, strings.ToUpper(name))
+	input, err := b.tokenRegistry.Pack(method, chainID, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to pack input of %s", method)
 	}

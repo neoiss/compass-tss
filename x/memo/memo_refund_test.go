@@ -1,6 +1,7 @@
-package thorchain
+package memo
 
 import (
+	"encoding/hex"
 	"testing"
 )
 
@@ -38,4 +39,19 @@ func TestParseRefundMemo(t *testing.T) {
 		t.Errorf("ParseMemo() error = %v", err)
 	}
 	t.Log(mem.GetType())
+}
+
+func TestParseOutboundMemo(t *testing.T) {
+	mem, err := ParseMemo("Mx|Tron|USDT|TXcb8NicbbiT1sfSuNRZH19XggX1ph3Aoz|690943|bt0")
+	if err != nil {
+		t.Errorf("ParseMemo() error = %v", err)
+	}
+	t.Log(string(mem.GetChain()))
+	t.Log(mem.GetDestination())
+
+	address, err := mem.GetChain().DecodeAddress(mem.GetDestination())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("addr: ", hex.EncodeToString(address))
 }

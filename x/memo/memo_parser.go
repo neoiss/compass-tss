@@ -1,4 +1,4 @@
-package thorchain
+package memo
 
 import (
 	"encoding/base64"

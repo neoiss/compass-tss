@@ -1,4 +1,4 @@
-package thorchain
+package memo
 
 const nativeToken = "0x0000000000000000000000000000000000000000"
 
