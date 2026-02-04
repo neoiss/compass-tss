@@ -2,6 +2,7 @@ package xrp
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -263,7 +264,6 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			continue
 		}
 		var (
-			amount                                      int64
 			topic                                       string
 			invalidMemo                                 bool
 			vaultAddress                                = payment.Account.String()
@@ -279,6 +279,11 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		hash, ok := rawTx["hash"].(string)
 		if !ok {
 			ctxLog.Msg("skipping tx, cannot cast hash to string")
+			continue
+		}
+		amount, err := c.getDeliveredAmount(flatTx, meta)
+		if err != nil {
+			ctxLog.Msg("skipping tx, cannot parse delivered amount")
 			continue
 		}
 		toBytes, err = parseMemo.GetChain().DecodeAddress(parseMemo.GetDestination())
@@ -367,16 +372,26 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			continue
 		}
 
+		txInAmount, ok := big.NewInt(0).SetString(amount.Flatten().(string), 10)
+		if !ok {
+			ctxLog.Msg(fmt.Sprintf("fail to parse amount(%f): %w", amount.Flatten().(string), err))
+			continue
+		}
+		fromBytes, err := hex.DecodeString(payment.Account.String())
+		if err != nil {
+			ctxLog.Msg(fmt.Sprint("fail to decode from address: %w", err))
+			continue
+		}
 		txIn = append(txIn, &types.TxInItem{
-			Tx:               hash,                          // done
-			Memo:             memo,                          // done
-			Height:           new(big.Int).SetInt64(height), // done
-			Amount:           big.NewInt(amount),
-			OrderId:          orderId,     // done
-			GasUsed:          gasUsed,     // done
-			Token:            toToken,     // done
-			Vault:            vaultPbuKey, // done
-			From:             nil,
+			Tx:               hash,                                    // done
+			Memo:             memo,                                    // done
+			Height:           new(big.Int).SetInt64(height),           // done
+			Amount:           txInAmount,                              // done
+			OrderId:          orderId,                                 // done
+			GasUsed:          gasUsed,                                 // done
+			Token:            toToken,                                 // done
+			Vault:            vaultPbuKey,                             // done
+			From:             fromBytes,                               // todo ensure
 			To:               toBytes,                                 // done
 			Payload:          payload,                                 // done
 			Method:           callMethod,                              // done

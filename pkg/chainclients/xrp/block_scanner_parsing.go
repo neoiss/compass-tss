@@ -17,6 +17,7 @@ func (c *XrpBlockScanner) processPayment(flatTx map[string]any) (*transaction.Pa
 	if flatTx["TransactionType"] != "Payment" {
 		return nil, nil
 	}
+	fmt.Println("flatTx --------------- ", flatTx)
 
 	fee, err := parseAmountFromTx(flatTx["Fee"])
 	if err != nil {
