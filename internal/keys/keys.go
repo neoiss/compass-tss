@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	// folder name for thorchain thorcli
-	thorchainCliFolderName = `.compass`
+	// folder name for relay thorcli
+	relayCliFolderName = `.compass`
 )
 
-// Keys manages all the keys used by thorchain
+// Keys manages all the keys used by relay
 type Keys struct {
 	signerName string
 	password   string // TODO this is a bad way , need to fix it

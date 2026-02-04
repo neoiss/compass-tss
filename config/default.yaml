@@ -249,3 +249,15 @@ bifrost:
         max_healthy_lag: 30s
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
+
+    xrp:
+      <<: *default-chain
+      chain_id: Xrp
+      solvency_blocks: 10
+      block_scanner:
+        <<: *default-block-scanner
+        chain_id: Xrp
+        gas_price_resolution: 10 # drop
+        observation_flexibility_blocks: 40
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb

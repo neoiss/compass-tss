@@ -32,7 +32,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
@@ -825,36 +824,9 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	return confirm
 }
 
-func (c *Client) getAsgardAddress() ([]common.Address, error) {
-	if time.Since(c.lastAsgard) < constants.MAPRelayChainBlockTime && c.asgardAddresses != nil {
-		return c.asgardAddresses, nil
-	}
-	newAddresses, err := utxo.GetAsgardAddress(common.ETHChain, c.bridge)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get asgards : %w", err)
-	}
-	if len(newAddresses) > 0 { // ensure we don't overwrite with empty list
-		c.asgardAddresses = newAddresses
-	}
-	c.lastAsgard = time.Now()
-	return c.asgardAddresses, nil
-}
-
 // OnObservedTxIn gets called from observer when we have a valid observation
 func (c *Client) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 	c.ethScanner.onObservedTxIn(txIn, blockHeight)
-	//m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
-	//if err != nil {
-	// //	Debug log only as ParseMemo error is expected for THORName inbounds.
-	//c.logger.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
-	//return
-	//}
-	//if !m.IsOutbound() {
-	//	return
-	//}
-	//if m.GetTxID().IsEmpty() {
-	//	return
-	//}
 	if err := c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), txIn.Tx),
 		txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")

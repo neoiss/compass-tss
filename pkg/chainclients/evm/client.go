@@ -74,7 +74,7 @@ func NewEVMClient(
 		return nil, fmt.Errorf("failed to create EVM client, thor keys empty")
 	}
 	if bridge == nil {
-		return nil, errors.New("thorchain bridge is nil")
+		return nil, errors.New("bridge is nil")
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")

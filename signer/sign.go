@@ -37,7 +37,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Signer will pull the tx out from thorchain and then forward it to chain
+// Signer will pull the tx out from relay and then forward it to chain
 type Signer struct {
 	logger               zerolog.Logger
 	cfg                  config.Bifrost
@@ -76,12 +76,12 @@ func NewSigner(cfg config.Bifrost,
 ) (*Signer, error) {
 	storage, err := NewSignerStore(cfg.Signer.SignerDbPath, cfg.Signer.LevelDB)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
+		return nil, fmt.Errorf("fail to create relay scan storage: %w", err)
 	}
 
 	oracleStorage, err := NewSignerStore(cfg.Signer.OracleDbPath, cfg.Signer.LevelDB)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create thorchain scan storage: %w", err)
+		return nil, fmt.Errorf("fail to create relay scan storage: %w", err)
 	}
 
 	if tssKeysignMetricMgr == nil {
@@ -95,7 +95,7 @@ func NewSigner(cfg config.Bifrost,
 		}
 		na, err = bridge.GetNodeAccount(signerAddr.String())
 		if err != nil {
-			return nil, fmt.Errorf("fail to get node account from thorchain,err:%w", err)
+			return nil, fmt.Errorf("fail to get node account from relay,err:%w", err)
 		}
 		if na == nil {
 			continue
@@ -121,7 +121,7 @@ func NewSigner(cfg config.Bifrost,
 	// Create pubkey manager and add our private key
 	mapChainBlockScanner, err := mapo.NewBlockScan(cfg.Signer.BlockScanner, storage, bridge, m, pubkeyMgr)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create thorchain block scan: %w", err)
+		return nil, fmt.Errorf("fail to create relay block scan: %w", err)
 	}
 
 	blockScanner, err := blockscanner.NewBlockScanner(cfg.Signer.BlockScanner, storage, m, bridge, mapChainBlockScanner)
@@ -212,7 +212,7 @@ func (s *Signer) signTransactions() {
 			// When map relay chain is catching up , bifrost might get stale data from compass-tss , thus it shall pause signing
 			catchingUp, err := s.mapBridge.IsSyncing()
 			if err != nil {
-				s.logger.Error().Err(err).Msg("fail to get thorchain sync status")
+				s.logger.Error().Err(err).Msg("fail to get relay sync status")
 				time.Sleep(constants.MAPRelayChainBlockTime)
 				break // this will break select
 			}
@@ -557,7 +557,7 @@ func (s *Signer) sendKeygenToMap(epoch *big.Int, poolPubKey common.PubKey, blame
 // SignTx error for the chain client, if we receive checkpoint bytes we also return them
 // with the error so they can be set on the TxOutStoreItem and re-used on a subsequent
 // retry to avoid double spend. The second returned value is an optional observation
-// that should be submitted to THORChain.
+// that should be submitted to relay.
 func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem, error) {
 	height := item.Height
 	tx := item.TxOutItem

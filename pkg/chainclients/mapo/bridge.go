@@ -213,10 +213,6 @@ func (b *Bridge) GetBlockScannerHeight() int64 {
 	return b.blockHeight
 }
 
-func (b *Bridge) getWithPath(path string) ([]byte, int, error) {
-	return b.get(b.getRelayChainURL(path))
-}
-
 // get handle all the low level http GET calls using retryablehttp.Bridge
 func (b *Bridge) get(url string) ([]byte, int, error) {
 	// To reduce querying time and chance of "429 Too Many Requests",

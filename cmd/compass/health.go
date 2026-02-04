@@ -115,7 +115,7 @@ func (s *HealthServer) getP2pIDHandler(w http.ResponseWriter, _ *http.Request) {
 func (s *HealthServer) p2pStatus(w http.ResponseWriter, _ *http.Request) {
 	res := &P2PStatusResponse{Peers: make([]P2PStatusPeer, 0)}
 
-	// get thorchain nodes
+	// get relay nodes
 	nodesByIP := map[string]openapi.Node{}
 
 	// get all connected peers

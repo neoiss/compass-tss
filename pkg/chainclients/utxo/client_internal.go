@@ -607,7 +607,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		chainAndGasLimit := make([]byte, 32)
 		toChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 		copy(chainAndGasLimit[8:16], toChain)
-		//copy(chainAndGasLimit[24:32], big.NewInt(int64(fee)).Bytes())
 		txIn := types.TxInItem{
 			Tx:               tx.Txid,
 			Memo:             memo,

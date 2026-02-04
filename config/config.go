@@ -347,7 +347,7 @@ type MAPO struct {
 	// observed by bifrost.
 	VaultPubkeysCutoffBlocks int64 `mapstructure:"vault_pubkeys_cutoff_blocks"`
 
-	// SeedNodesEndpoint is the full URL to a /thorchain/nodes endpoint for finding active
+	// SeedNodesEndpoint is the full URL to a /relay/nodes endpoint for finding active
 	// validators to seed genesis and peers.
 	SeedNodesEndpoint string `mapstructure:"seed_nodes_endpoint"`
 
