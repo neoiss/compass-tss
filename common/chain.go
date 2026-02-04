@@ -182,7 +182,7 @@ func (c Chain) IsEmpty() bool {
 
 // String implement fmt.Stringer
 func (c Chain) String() string {
-	return strings.ToUpper(string(c))
+	return string(c)
 }
 
 func (c Chain) ChainID() (*big.Int, error) {
