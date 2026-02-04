@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/compass-tss/constants"
 	"math/big"
 	"strings"
 	"sync"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/compass-tss/constants"
 
 	"github.com/btcsuite/btcd/mempool"
 	btcwire "github.com/btcsuite/btcd/wire"

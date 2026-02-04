@@ -43,17 +43,6 @@ func (c *EVMClient) unstuckAction() {
 		return
 	}
 
-	// We only attempt unstuck on transactions within the reschedule buffer blocks of the
-	// next signing period. This will ensure we do not clear the signer cache and
-	// re-attempt signing right before a reschedule, which may assign to a different vault
-	// (behavior post https://gitlab.com/thorchain/thornode/-/merge_requests/3266 should
-	// not) or adjust gas values for the tx out. This should result in no more than one
-	// sign and broadcast per signing period for a given outbound.
-	// constValues, err := c.bridge.GetConstants()
-	// if err != nil {
-	// 	c.logger.Err(err).Msg("failed to get THORChain constants")
-	// 	return
-	// }
 	signingPeriod := int64(300)
 	if signingPeriod <= 0 {
 		c.logger.Err(err).Int64("signingPeriod", signingPeriod).Msg("invalid signing period")
@@ -76,7 +65,7 @@ func (c *EVMClient) unstuckAction() {
 
 		// this should not possible, but just skip it
 		if item.Height > height {
-			clog.Warn().Msg("Signed outbound height greater than current thorchain height")
+			clog.Warn().Msg("Signed outbound height greater than current relay height")
 			continue
 		}
 

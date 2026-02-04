@@ -532,6 +532,7 @@ func (o *Observer) Stop() error {
 	defer o.logger.Info().Msg("observer stopped")
 
 	for _, chain := range o.chains {
+		fmt.Println("chain.GetConfig().ChainID ", chain.GetConfig().ChainID)
 		chain.Stop()
 	}
 

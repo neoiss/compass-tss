@@ -5,10 +5,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
-	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -211,73 +208,6 @@ func (b *Bridge) GetContext() ctx.Context {
 
 func (b *Bridge) GetBlockScannerHeight() int64 {
 	return b.blockHeight
-}
-
-func (b *Bridge) getWithPath(path string) ([]byte, int, error) {
-	return b.get(b.getRelayChainURL(path))
-}
-
-// get handle all the low level http GET calls using retryablehttp.Bridge
-func (b *Bridge) get(url string) ([]byte, int, error) {
-	// To reduce querying time and chance of "429 Too Many Requests",
-	// do not query the same endpoint more than once per block time.
-	httpResponseCachesMu.Lock()
-	respCachePointer := httpResponseCaches[url]
-	if respCachePointer == nil {
-		// Since this is the first time using this endpoint, prepare a Mutex for it.
-		respCachePointer = &httpResponseCache{httpResponseMu: &sync.Mutex{}}
-		httpResponseCaches[url] = respCachePointer
-	}
-	httpResponseCachesMu.Unlock()
-
-	// So lengthy queries don't hold up short queries, use query-specific mutexes.
-	respCachePointer.httpResponseMu.Lock()
-	defer respCachePointer.httpResponseMu.Unlock()
-
-	// When the same endpoint has been checked within the span of a single block, return the cached response.
-	if time.Since(respCachePointer.httpResponseChecked) < constants.MAPRelayChainBlockTime && respCachePointer.httpResponse != nil {
-		return respCachePointer.httpResponse, http.StatusOK, nil
-	}
-
-	resp, err := b.httpClient.Get(url)
-	if err != nil {
-		b.errCounter.WithLabelValues("fail_get_from_thorchain", "").Inc()
-		return nil, http.StatusNotFound, fmt.Errorf("failed to GET from mapBridge: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			b.logger.Error().Err(err).Msg("failed to close response body")
-		}
-	}()
-
-	buf, err := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return buf, resp.StatusCode, errors.New("Status code: " + resp.Status + " returned")
-	}
-	if err != nil {
-		b.errCounter.WithLabelValues("fail_read_thorchain_resp", "").Inc()
-		return nil, resp.StatusCode, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// All being well with the response, save it to the cache.
-	respCachePointer.httpResponse = buf
-	respCachePointer.httpResponseChecked = time.Now()
-
-	return buf, resp.StatusCode, nil
-}
-
-// getRelayChainURL with the given path
-func (b *Bridge) getRelayChainURL(path string) string {
-	if strings.HasPrefix(b.cfg.ChainHost, "http") {
-		return fmt.Sprintf("%s/%s", b.cfg.ChainHost, path)
-	}
-
-	uri := url.URL{
-		Scheme: "http",
-		Host:   b.cfg.ChainHost,
-		Path:   path,
-	}
-	return uri.String()
 }
 
 // GetConfig return the configuration

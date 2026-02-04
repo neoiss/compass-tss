@@ -2,6 +2,7 @@ package mapo
 
 import (
 	"context"
+
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/compass-tss/constants"

@@ -2,9 +2,10 @@ package memo
 
 import (
 	"fmt"
-	"github.com/mapprotocol/compass-tss/common"
 	"math/big"
 	"strings"
+
+	"github.com/mapprotocol/compass-tss/common"
 )
 
 type Affiliates []*Affiliate

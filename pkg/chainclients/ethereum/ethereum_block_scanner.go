@@ -240,7 +240,7 @@ func (e *ETHScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		tcGasPrice = 1000000000
 	}
 
-	// post to thorchain if there is a fee and it has changed
+	// post to relay if there is a fee and it has changed
 	if gasPrice.Cmp(big.NewInt(0)) != 0 && tcGasPrice != e.lastReportedGasPrice {
 		cId, _ := common.ETHChain.ChainID()
 		e.globalNetworkFeeQueue <- stypes.NetworkFee{
@@ -511,7 +511,7 @@ func (e *ETHScanner) processReorg(block *etypes.Header) ([]stypes.TxIn, error) {
 // it will read through all the block meta data from local storage, and go through all the txs.
 // For each transaction, it will send a RPC request to ethereuem chain, double check whether the TX exist or not
 // if the tx still exist, then it is all good, if a transaction previous we detected, however doesn't exist anymore, that means
-// the transaction had been removed from chain, chain client should report to thorchain
+// the transaction had been removed from chain, chain client should report to relay
 // []int64 is the block heights that need to be rescanned
 func (e *ETHScanner) reprocessTxs() ([]int64, error) {
 	blockMetas, err := e.blockMetaAccessor.GetBlockMetas()
@@ -775,7 +775,7 @@ func (e *ETHScanner) getTokenDecimalsForTHORChain(token string) int64 {
 		return 0
 	}
 	// when the token's precision is more than THORChain , that's fine , just use THORChainDecimals
-	if tokenMeta.Decimal >= common.THORChainDecimals {
+	if tokenMeta.Decimal >= common.MAPODecimals {
 		return 0
 	}
 	return int64(tokenMeta.Decimal)

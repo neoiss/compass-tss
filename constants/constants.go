@@ -1,4 +1,4 @@
-// Package constants  contains all the constants used by thorchain
+// Package constants  contains all the constants used by relay
 // by default all the settings in this is for mainnet
 package constants
 
@@ -159,6 +159,7 @@ var ToMapIgnoreError = map[string]struct{}{
 
 const (
 	BTCToken = "BTC"
+	XRPToken = "XRP"
 )
 
 const DefaultTokenDecimals = 18

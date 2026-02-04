@@ -305,15 +305,6 @@ func (b *BlockScanner) updateStaleNetworkFee(currentBlock int64) {
 	}
 
 	transactionSize, transactionSwapSize, transactionFeeRate := b.chainScanner.GetNetworkFee()
-	onlineTxSize, onlineTxSwapSize, onlineTxFeeRate, err := b.bridge.GetNetworkFee(b.cfg.ChainID)
-	if err != nil {
-		b.logger.Error().Err(err).Msg("fail to get map network fee")
-		return
-	}
-	// Do not broadcast a regularly-timed network fee if the relay network fee is already consistent with the scanner's.
-	if onlineTxSize == transactionSize && onlineTxFeeRate == transactionFeeRate && onlineTxSwapSize == transactionSwapSize {
-		return
-	}
 
 	cId, _ := b.cfg.ChainID.ChainID()
 	b.globalNetworkFeeQueue <- types.NetworkFee{

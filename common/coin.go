@@ -9,8 +9,8 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
-// THORChainDecimals indicate the number of decimal points used in THORChain
-const THORChainDecimals = 8
+// MAPODecimals indicate the number of decimal points used in relay
+const MAPODecimals = 8
 
 // NoCoin is empty Coin
 var NoCoin = Coin{
@@ -100,7 +100,7 @@ func (c Coin) IsTCY() bool {
 // Native create a new instance of cosmos.Coin
 func (c Coin) Native() (cosmos.Coin, error) {
 	if !c.IsNative() {
-		return cosmos.Coin{}, errors.New("coin is not on thorchain")
+		return cosmos.Coin{}, errors.New("coin is not on relay")
 	}
 	return cosmos.NewCoin(
 		c.Asset.Native(),

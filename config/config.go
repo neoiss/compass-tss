@@ -352,7 +352,7 @@ type MAPO struct {
 	// observed by bifrost.
 	VaultPubkeysCutoffBlocks int64 `mapstructure:"vault_pubkeys_cutoff_blocks"`
 
-	// SeedNodesEndpoint is the full URL to a /thorchain/nodes endpoint for finding active
+	// SeedNodesEndpoint is the full URL to a /relay/nodes endpoint for finding active
 	// validators to seed genesis and peers.
 	SeedNodesEndpoint string `mapstructure:"seed_nodes_endpoint"`
 
@@ -488,6 +488,7 @@ type Bifrost struct {
 	Chains   struct {
 		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
 		BTC  BifrostChainConfiguration `mapstructure:"btc"`
+		XRP  BifrostChainConfiguration `mapstructure:"xrp"`
 		ETH  BifrostChainConfiguration `mapstructure:"eth"`
 		BASE BifrostChainConfiguration `mapstructure:"base"`
 		ARB  BifrostChainConfiguration `mapstructure:"arb"`
@@ -502,6 +503,7 @@ func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	return map[common.Chain]BifrostChainConfiguration{
 		common.BSCChain: b.Chains.BSC,
 		common.BTCChain: b.Chains.BTC,
+		common.XRPChain: b.Chains.XRP,
 		// common.ETHChain:  b.Chains.ETH,
 		// common.BASEChain: b.Chains.BASE,
 		// common.ARBChain:  b.Chains.ARB,
