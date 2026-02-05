@@ -18,15 +18,15 @@ func (m MigrateMemo) String() string {
 	return fmt.Sprintf("%s|%s|%s", m.TxType.String(), m.Chain, m.OrderID)
 }
 
-func NewMigrateMemo(chain, orderID string) InboundMemo {
-	return InboundMemo{
+func NewMigrateMemo(chain, orderID string) MigrateMemo {
+	return MigrateMemo{
 		MemoBase: MemoBase{TxType: TxMigrate},
 		Chain:    chain,
 		OrderID:  orderID,
 	}
 }
 
-func (p *parser) ParseMigrateMemo() (InboundMemo, error) {
+func (p *parser) ParseMigrateMemo() (MigrateMemo, error) {
 	chain := p.get(1)
 	order := p.get(2)
 	return NewMigrateMemo(chain, order), p.Error()
