@@ -241,7 +241,9 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		}
 		c.updateFeeCache(fee)
 		// check if we are an asgard address
-		if !c.isVaultAddress(payment.Destination.String()) && !c.isVaultAddress(payment.Account.String()) {
+		isTo := c.isVaultAddress(payment.Destination.String())
+		isSender := c.isVaultAddress(payment.Account.String())
+		if !isTo && !isSender {
 			continue
 		}
 
@@ -297,7 +299,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		}
 
 		// other2xrp
-		if c.isVaultAddress(payment.Account.String()) { // sender
+		if isSender { // sender
 			switch parseMemo.GetType() {
 			case mem.TxInbound:
 				txOutType = constants.TRANSFER
@@ -322,7 +324,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			gasUsed = big.NewInt(int64(payment.Fee.Uint64()))
 		}
 		// xrp2other
-		if c.isVaultAddress(payment.Destination.String()) {
+		if isTo {
 			// refund
 			if invalidMemo {
 				txOutType = constants.TRANSFER
