@@ -1,6 +1,7 @@
 package common
 
 import (
+	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -8,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/bech32"
@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	dogchaincfg "github.com/eager7/dogd/chaincfg"
 	"github.com/eager7/dogutil"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	eth "github.com/ethereum/go-ethereum/crypto"
 	bchchaincfg "github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
@@ -92,13 +93,25 @@ func (p PubKey) String() string {
 	return string(p)
 }
 
-func (p PubKey) Secp256K1() (*btcec.PublicKey, error) {
-	// todo handler
-	pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
-	if err != nil {
-		return nil, err
+func (p PubKey) Secp256K1() (*ecdsa.PublicKey, error) {
+	compressHexKey := string(p)
+	if len(compressHexKey) >= 2 && compressHexKey[:2] == "0x" {
+		compressHexKey = compressHexKey[2:]
 	}
-	return btcec.ParsePubKey(pk.Bytes(), btcec.S256())
+	compressedPubKey, err := hex.DecodeString(compressHexKey)
+	if err != nil {
+		return nil, fmt.Errorf("hex failed, err:%v", err)
+	}
+	if len(compressedPubKey) != 33 {
+		return nil, fmt.Errorf("invalid compressed public key length: expected 33, got %d", len(compressedPubKey))
+	}
+
+	uncompressedPubKey, err := ecrypto.DecompressPubkey(compressedPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("pk  %v", err)
+	}
+
+	return uncompressedPubKey, nil
 }
 
 // EVMPubkeyToAddress converts a pubkey of an EVM chain to the corresponding address
@@ -107,7 +120,7 @@ func (p PubKey) EVMPubkeyToAddress() (Address, error) {
 	if err != nil {
 		return NoAddress, err
 	}
-	str := strings.ToLower(eth.PubkeyToAddress(*pub.ToECDSA()).String())
+	str := strings.ToLower(eth.PubkeyToAddress(*pub).String())
 	return NewAddress(str)
 }
 
@@ -129,11 +142,11 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	var addressString string
 	switch chain {
 	case XRPChain:
-		pk, err := p.Secp256K1()
+		compressPkBytes, err := hex.DecodeString(p.String())
 		if err != nil {
-			return NoAddress, fmt.Errorf("get pub key secp256k1, %w", err)
+			return NoAddress, fmt.Errorf("fail to decode pub key, err: %w", err)
 		}
-		addressString = xrpkm.MasterPubKeyToAccountID(pk.SerializeCompressed())
+		addressString = xrpkm.MasterPubKeyToAccountID(compressPkBytes)
 		fmt.Println("xrp addressString ---------------- ", addressString)
 	case GAIAChain:
 		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
@@ -235,14 +248,6 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 	return address, nil
 }
 
-func (p PubKey) GetThorAddress() (cosmos.AccAddress, error) {
-	addr, err := p.GetAddress(MAPChain)
-	if err != nil {
-		return nil, err
-	}
-	return cosmos.AccAddressFromBech32(addr.String())
-}
-
 // MarshalJSON to Marshals to JSON using Bech32
 func (p PubKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.String())
@@ -326,18 +331,6 @@ func (p PubKeys) Strings() []string {
 		allStrings[i] = pk.String()
 	}
 	return allStrings
-}
-
-func (p PubKeys) Addresses() ([]cosmos.AccAddress, error) {
-	var err error
-	addrs := make([]cosmos.AccAddress, len(p))
-	for i, pk := range p {
-		addrs[i], err = pk.GetThorAddress()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return addrs, nil
 }
 
 // ConvertAndEncode converts from a base64 encoded byte string to hex or base32 encoded byte string and then to bech32

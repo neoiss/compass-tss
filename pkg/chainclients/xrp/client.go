@@ -1,7 +1,6 @@
 package xrp
 
 import (
-	"crypto/sha512"
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
@@ -21,6 +20,7 @@ import (
 	transactions "github.com/Peersyst/xrpl-go/xrpl/transaction"
 	txtypes "github.com/Peersyst/xrpl-go/xrpl/transaction/types"
 	ecommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/compass-tss/blockscanner"
@@ -248,11 +248,6 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 		return nil, fmt.Errorf("failed to convert address (%s) to bech32: %w", tx.VaultPubKey.String(), err)
 	}
 
-	signingPubKey, err := tx.VaultPubKey.Secp256K1()
-	if err != nil {
-		return nil, err
-	}
-
 	coin, err := decimalToXrp(tx.Amount)
 	if err != nil {
 		return nil, err
@@ -261,7 +256,7 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 	payment := transactions.Payment{
 		BaseTx: transactions.BaseTx{
 			Account:       txtypes.Address(fromAddr),
-			SigningPubKey: hex.EncodeToString(signingPubKey.SerializeCompressed()),
+			SigningPubKey: tx.VaultPubKey.String(),
 		},
 		Amount:      coin,
 		Destination: txtypes.Address(tx.To),
@@ -380,11 +375,6 @@ func (c *Client) signMsg(
 	payment *transactions.Payment,
 	pubkey common.PubKey,
 ) ([]byte, error) {
-	xrpPubKey, err := pubkey.Secp256K1()
-	if err != nil {
-		return nil, err
-	}
-
 	flatTx := payment.Flatten()
 	encodedTx, err := binarycodec.EncodeForSigning(flatTx)
 	if err != nil {
@@ -397,7 +387,7 @@ func (c *Client) signMsg(
 	}
 
 	var derSignature []byte
-	if c.localKeyManager.PublicKeyHex == hex.EncodeToString(xrpPubKey.SerializeCompressed()) {
+	if c.localKeyManager.PublicKeyHex == pubkey.String() {
 		derSignature, err = c.localKeyManager.Sign(signBytes)
 		if err != nil {
 			return nil, fmt.Errorf("unable to sign using localKeyManager: %w", err)
@@ -438,7 +428,8 @@ func (c *Client) signMsg(
 	flatTx["TxnSignature"] = hex.EncodeToString(derSignature) // use flatTx so we don't need to call autofill again
 
 	// Ensure the signature is valid
-	if !verifySignature(signBytes, derSignature, xrpPubKey.SerializeCompressed()) {
+	pkBytes, _ := hex.DecodeString(pubkey.String())
+	if !verifySignature(signBytes, derSignature, pkBytes) {
 		return nil, fmt.Errorf("unable to verify signature with secpPubKey")
 	}
 
@@ -457,8 +448,9 @@ func (c *Client) signMsg(
 
 func verifySignature(signBytes, signature, compressedPubKey []byte) bool {
 	// Hash the transaction data
-	messageHashFull := sha512.Sum512(signBytes)
-	messageHash := messageHashFull[:32]
+	// messageHashFull := sha512.Sum512(signBytes)
+	// messageHash := messageHashFull[:32]
+	messageHash := crypto.Keccak256(signBytes)
 
 	// Parse the DER signature
 	var sig secp256k1.ECDSASignature
