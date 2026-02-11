@@ -1,7 +1,6 @@
 package secp256k1
 
 import (
-	"crypto/sha512"
 	"encoding/asn1"
 	"fmt"
 	"math/big"
@@ -14,8 +13,9 @@ func (k *Keys) GetFormattedPublicKey() []byte {
 }
 
 func (k *Keys) Sign(message []byte) ([]byte, error) {
-	messageHashFull := sha512.Sum512(message)
-	messageHash := messageHashFull[:32]
+	// messageHashFull := sha512.Sum512(message)
+	// messageHash := messageHashFull[:32]
+	messageHash := crypto.Keccak256(message)
 	signature, err := crypto.Sign(messageHash, k.masterPrivateKey)
 	if err != nil {
 		return nil, err
@@ -42,8 +42,9 @@ func (k *Keys) Sign(message []byte) ([]byte, error) {
 
 func (k *Keys) Verify(message, signature []byte) (bool, error) {
 	// Hash the transaction data
-	messageHashFull := sha512.Sum512(message)
-	messageHash := messageHashFull[:32]
+	// messageHashFull := sha512.Sum512(message)
+	// messageHash := messageHashFull[:32]
+	messageHash := crypto.Keccak256(message)
 
 	// Parse the DER signature
 	var sig ECDSASignature

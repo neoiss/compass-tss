@@ -775,7 +775,7 @@ func (e *ETHScanner) getTokenDecimalsForTHORChain(token string) int64 {
 		return 0
 	}
 	// when the token's precision is more than THORChain , that's fine , just use THORChainDecimals
-	if tokenMeta.Decimal >= common.THORChainDecimals {
+	if tokenMeta.Decimal >= common.MAPODecimals {
 		return 0
 	}
 	return int64(tokenMeta.Decimal)

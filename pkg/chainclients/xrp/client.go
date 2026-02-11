@@ -11,29 +11,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/mapprotocol/compass-tss/internal/keys"
-	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	sdkmath "cosmossdk.io/math"
-
-	"github.com/mapprotocol/compass-tss/blockscanner"
-	"github.com/mapprotocol/compass-tss/metrics"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager/secp256k1"
-
-	"github.com/mapprotocol/compass-tss/common"
-	"github.com/mapprotocol/compass-tss/common/cosmos"
-	"github.com/mapprotocol/compass-tss/config"
-	"github.com/mapprotocol/compass-tss/constants"
-	"github.com/mapprotocol/compass-tss/mapclient/types"
-	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
-	"github.com/mapprotocol/compass-tss/tss"
-	memo "github.com/mapprotocol/compass-tss/x/memo"
-
 	binarycodec "github.com/Peersyst/xrpl-go/binary-codec"
 	"github.com/Peersyst/xrpl-go/xrpl/hash"
 	"github.com/Peersyst/xrpl-go/xrpl/queries/account"
@@ -42,8 +20,28 @@ import (
 	"github.com/Peersyst/xrpl-go/xrpl/rpc"
 	transactions "github.com/Peersyst/xrpl-go/xrpl/transaction"
 	txtypes "github.com/Peersyst/xrpl-go/xrpl/transaction/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/compass-tss/blockscanner"
+	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/config"
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/mapprotocol/compass-tss/internal/keys"
+	"github.com/mapprotocol/compass-tss/mapclient/types"
+	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/metrics"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp/keymanager/secp256k1"
+	"github.com/mapprotocol/compass-tss/tss"
+	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
+	memo "github.com/mapprotocol/compass-tss/x/memo"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // Client is a structure to sign and broadcast tx to XRP chain used by signer mostly
@@ -255,7 +253,7 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 		return nil, err
 	}
 
-	coin, err := fromThorchainToXrp(tx.Coins[0])
+	coin, err := decimalToXrp(tx.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +264,7 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 			SigningPubKey: hex.EncodeToString(signingPubKey.SerializeCompressed()),
 		},
 		Amount:      coin,
-		Destination: txtypes.Address(tx.ToAddress.String()),
+		Destination: txtypes.Address(tx.To),
 	}
 
 	// Network id is required when > 1024 (i.e. mocknet/standalone) and must not be included for mainnet/testnet
@@ -338,7 +336,14 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 		return nil, nil, nil, fmt.Errorf("fail to marshal checkpoint: %w", err)
 	}
 
-	feeCurrency, err := fromThorchainToXrp(common.NewCoin(common.XRPAsset, cosmos.NewUint(uint64(tx.GasRate))))
+	cgl, err := evm.ParseChainAndGasLimit(ecommon.BytesToHash(common.Completion(tx.ChainAndGasLimit.Bytes(), 32)))
+	if err != nil {
+		c.logger.Err(err).Str("relayHash", tx.TxHash).Msg("fail to parse chain and gas limit")
+		return nil, nil, nil, err
+	}
+	c.logger.Info().Str("relayHash", tx.TxHash).Str("tx_rate", cgl.Third.String()).Str("tx_size", cgl.End.String())
+
+	feeCurrency, err := decimalToXrp(cgl.Third)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("fail to get fee: %w", err)
 	}
@@ -398,7 +403,8 @@ func (c *Client) signMsg(
 			return nil, fmt.Errorf("unable to sign using localKeyManager: %w", err)
 		}
 	} else {
-		hashedMsg := sha512.Sum512(signBytes)
+		// hashedMsg := sha512.Sum512(signBytes)
+		hashedMsg := ecrypto.Keccak256(signBytes)
 		signature, _, err := c.tssKeyManager.RemoteSign(hashedMsg[:32], pubkey.String())
 		if err != nil {
 			c.logger.Err(err).Msg("xrp remote sign")
@@ -566,19 +572,18 @@ func (c *Client) ShouldReportSolvency(height int64) bool {
 
 // OnObservedTxIn update the signer cache (in case we haven't already)
 func (c *Client) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
-	m, err := memo.ParseMemo(common.LatestVersion, txIn.Memo)
+	m, err := memo.ParseMemo(txIn.Memo)
 	if err != nil {
 		// Debug log only as ParseMemo error is expected for THORName inbounds.
 		c.logger.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
 		return
 	}
-	if !m.IsOutbound() {
+	if m.GetType() != memo.TxOutbound {
 		return
 	}
-	if m.GetTxID().IsEmpty() {
-		return
-	}
-	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), m.GetTxID().String()), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
+
+	if err = c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(),
+		txIn.Tx), txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")
 	}
 }

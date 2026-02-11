@@ -188,9 +188,7 @@ func (c *XrpBlockScanner) updateFees(height int64) error {
 		}
 
 		c.lastFee = avgFee
-		c.logger.Info().
-			Uint64("fee", avgFee.Uint64()).
-			Int64("height", height).
+		c.logger.Info().Uint64("fee", avgFee.Uint64()).Int64("height", height).
 			Msg("sent network fee to relay")
 	}
 
@@ -286,10 +284,16 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			ctxLog.Msg("skipping tx, cannot parse delivered amount")
 			continue
 		}
+		// toBytes default is tx destination address
 		toBytes, err = parseMemo.GetChain().DecodeAddress(parseMemo.GetDestination())
 		if err != nil {
 			ctxLog.Err(err).Str("txid", hash).Str("memo", memo).Msg("fail to decode memo")
 			invalidMemo = true
+		}
+		// empty payload
+		payload, err = utxo.EncodePayload(nil, nil, nil) // todo utxo
+		if err != nil {
+			continue
 		}
 
 		// other2xrp
@@ -298,8 +302,14 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			case mem.TxInbound:
 				txOutType = constants.TRANSFER
 			case mem.TxMigrate:
+				toBytes = []byte{}
+				payload, err = utxo.GetAsgardPubKeyByAddress(c.cfg.ChainID, c.bridge, common.Address(payment.Destination.String()))
+				if err != nil {
+					continue
+				}
 				txOutType = constants.MIGRATE
 			case mem.TxRefund:
+				txOutType = constants.REFUND
 			default:
 				ctxLog.Str("memo", memo).Str("type", parseMemo.GetType().String()).Msg("invalid memo")
 				continue
@@ -391,7 +401,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			GasUsed:          gasUsed,                                 // done
 			Token:            toToken,                                 // done
 			Vault:            vaultPbuKey,                             // done
-			From:             fromBytes,                               // todo ensure
+			From:             fromBytes,                               // done
 			To:               toBytes,                                 // done
 			Payload:          payload,                                 // done
 			Method:           callMethod,                              // done

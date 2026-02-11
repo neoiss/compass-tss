@@ -9,8 +9,8 @@ import (
 	"github.com/mapprotocol/compass-tss/common/cosmos"
 )
 
-// THORChainDecimals indicate the number of decimal points used in THORChain
-const THORChainDecimals = 8
+// MAPODecimals indicate the number of decimal points used in relay
+const MAPODecimals = 8
 
 // NoCoin is empty Coin
 var NoCoin = Coin{

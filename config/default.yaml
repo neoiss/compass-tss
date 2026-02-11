@@ -253,6 +253,7 @@ bifrost:
     xrp:
       <<: *default-chain
       chain_id: Xrp
+      rpc_host: "https://testnet.xrpl-labs.com"
       solvency_blocks: 10
       block_scanner:
         <<: *default-block-scanner

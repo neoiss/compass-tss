@@ -39,23 +39,10 @@ func convertFee(coin txtypes.CurrencyAmount) (sdkmath.Uint, error) {
 	return sdkmath.NewUintFromBigInt(amount), nil
 }
 
-func fromThorchainToXrp(coin common.Coin) (txtypes.CurrencyAmount, error) {
-	asset, exists := GetAssetByThorchainAsset(coin.Asset)
+func decimalToXrp(amount *big.Int) (txtypes.CurrencyAmount, error) {
+	asset, exists := GetAssetByThorchainAsset(common.XRPAsset)
 	if !exists {
-		return nil, fmt.Errorf("asset (%s) does not exist / not whitelisted by client", coin.Asset)
-	}
-
-	decimals := asset.XrpDecimals
-	amount := coin.Amount.BigInt()
-	var exp big.Int
-	if decimals > common.THORChainDecimals {
-		// Decimals are more than native relay, so multiply...
-		decimalDiff := decimals - common.THORChainDecimals
-		amount.Mul(amount, exp.Exp(big.NewInt(10), big.NewInt(decimalDiff), nil))
-	} else if decimals < common.THORChainDecimals {
-		// Decimals are less than native relay, so divide...
-		decimalDiff := common.THORChainDecimals - decimals
-		amount.Quo(amount, exp.Exp(big.NewInt(10), big.NewInt(decimalDiff), nil))
+		return nil, fmt.Errorf("asset (xrp) does not exist / not whitelisted by client")
 	}
 
 	if asset.XrpKind == txtypes.ISSUED {

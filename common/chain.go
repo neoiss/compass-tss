@@ -64,6 +64,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(BASEChain, TestNet): big.NewInt(84532),
 	getChainKey(MAPChain, TestNet):  big.NewInt(212),
 	getChainKey(ARBChain, TestNet):  big.NewInt(42170),
+	getChainKey(XRPChain, TestNet):  big.NewInt(1360117358395394),
 
 	// main network
 	getChainKey(BSCChain, MainNet):  big.NewInt(56),
@@ -74,6 +75,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(BASEChain, MainNet): big.NewInt(8453),
 	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
 	getChainKey(ARBChain, MainNet):  big.NewInt(42161),
+	getChainKey(XRPChain, MainNet):  big.NewInt(1360117358395393),
 }
 
 var chainIDToChain = map[string]Chain{
@@ -86,6 +88,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(84532).String():            BASEChain,
 	big.NewInt(212).String():              MAPChain,
 	big.NewInt(42170).String():            ARBChain,
+	big.NewInt(1360117358395394).String(): XRPChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -96,6 +99,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(8453).String():             BASEChain,
 	big.NewInt(22776).String():            MAPChain,
 	big.NewInt(42161).String():            ARBChain,
+	big.NewInt(1360117358395393).String(): XRPChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {
@@ -247,9 +251,6 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		//case THORChain:
-		//	// TODO update this to use mocknet address prefix
-		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.TestNet3Params.Bech32HRPSegwit
 		case LTCChain:
@@ -261,8 +262,6 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		//case THORChain:
-		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.MainNetParams.Bech32HRPSegwit
 		case LTCChain:
@@ -350,8 +349,6 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 		return 3_000
 	case GAIAChain:
 		return 6_000
-	case THORChain:
-		return 6_000
 	case BASEChain:
 		return 2_000
 	case MAPChain:
@@ -396,7 +393,7 @@ func (c Chain) DecodeAddress(address string) ([]byte, error) {
 	}
 }
 
-// GetEVMChains returns all "EVM" chains connected to THORChain
+// GetEVMChains returns all "EVM" chains connected to mapo
 // "EVM" is defined, in thornode's context, as a chain that:
 // - uses 0x as an address prefix
 // - has a "Router" Smart Contract
@@ -404,7 +401,7 @@ func GetEVMChains() []Chain {
 	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain, ARBChain}
 }
 
-// GetUTXOChains returns all "UTXO" chains connected to THORChain.
+// GetUTXOChains returns all "UTXO" chains connected to mapo.
 func GetUTXOChains() []Chain {
 	return []Chain{BTCChain, LTCChain, BCHChain, DOGEChain}
 }
