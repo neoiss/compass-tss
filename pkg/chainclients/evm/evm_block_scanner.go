@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"sort"
 	"strings"
-	"time"
 
 	_ "embed"
 
@@ -167,7 +166,6 @@ func (e *EVMScanner) GetTokens() ([]*evmtypes.TokenMeta, error) {
 
 // FetchTxs extracts all relevant transactions from the block at the provided height.
 func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, error) {
-	now := time.Now()
 	logs, err := e.ethClient.FilterLogs(context.Background(), ethereum.FilterQuery{
 		FromBlock: big.NewInt(currentHeight),
 		ToBlock:   big.NewInt(currentHeight),
@@ -180,15 +178,12 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	now2 := time.Now()
-	fmt.Println("logs ", time.Since(now))
 
 	// process all transactions in the block
 	block, err := e.ethRpc.GetBlockSafe(currentHeight)
 	if err != nil {
 		return stypes.TxIn{}, err
 	}
-	fmt.Println("block ", time.Since(now2))
 	txIn, err := e.processBlock(block, logs)
 	if err != nil {
 		e.logger.Error().Err(err).Int64("currentHeight", currentHeight).Msg("failed to search tx in block")
