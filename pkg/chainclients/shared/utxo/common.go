@@ -32,10 +32,8 @@ func GetAsgardAddress(chain common.Chain, bridge shareTypes.Bridge) ([]common.Ad
 		var addr common.Address
 		addr, err = v.CompressedPubKey.GetAddress(chain)
 		if err != nil {
-			fmt.Println("chain", chain, "pk", v.CompressedPubKey.String(), "err", err)
 			continue
 		}
-		fmt.Println("addr.String() ", addr.String(), "chain", chain, "pk", v.CompressedPubKey.String())
 		newAddresses = append(newAddresses, addr)
 	}
 	return newAddresses, nil
