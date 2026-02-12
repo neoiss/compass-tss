@@ -2,7 +2,6 @@ package xrp
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	xrp "github.com/Peersyst/xrpl-go/address-codec"
 	xrplcommon "github.com/Peersyst/xrpl-go/xrpl/queries/common"
 	"github.com/Peersyst/xrpl-go/xrpl/queries/ledger"
 	requests "github.com/Peersyst/xrpl-go/xrpl/queries/transactions"
@@ -247,14 +247,10 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		if len(payment.Memos) == 1 {
 			memo = payment.Memos[0].Memo.MemoData
 		}
-		memoBytes, err := hex.DecodeString(memo)
-		if err != nil {
-			ctxLog.AnErr("error", err).Str("memo", memo).Msg("fail to decode memo")
-			continue
-		}
+
 		// update the signer cache
 		var parseMemo mem.Memo
-		parseMemo, err = mem.ParseMemo(string(memoBytes))
+		parseMemo, err = mem.ParseMemo(memo)
 		if err != nil {
 			// Debug log only as ParseMemo error is expected for THORName inbounds.
 			ctxLog.Err(err).Msgf("fail to parse memo: %s", memo)
@@ -337,7 +333,8 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 					txOutType = constants.TRANSFER
 					destChainID, err = c.bridge.GetChainID(parseMemo.GetChain().String())
 					if err != nil {
-						ctxLog.Msg(fmt.Sprint("fail to get destination chain id: %w, chain: %s", err, parseMemo.GetChain()))
+						ctxLog.Msg(fmt.Sprintf("fail to get destination chain id: %s, err: %v",
+							parseMemo.GetChain(), err))
 						continue
 					}
 					payload, err = c.encodePayload(nativeToken.Symbol.String(),
@@ -359,7 +356,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			vaultAddress = payment.Destination.String()
 			toToken, err = c.bridge.GetTokenAddress(selfId, nativeToken.Symbol.String())
 			if err != nil {
-				ctxLog.Msg(fmt.Sprint("fail to get token address: %w, chainID: %s, token: %s", err, selfId, nativeToken))
+				ctxLog.Msg(fmt.Sprintf("fail to get token err: %s, token: %s", err, nativeToken))
 				continue
 			}
 
@@ -387,14 +384,15 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 
 		txInAmount, ok := big.NewInt(0).SetString(amount.Flatten().(string), 10)
 		if !ok {
-			ctxLog.Msg(fmt.Sprintf("fail to parse amount(%f): %w", amount.Flatten().(string), err))
+			ctxLog.Msg(fmt.Sprintf("fail to parse amount(%s): %v", amount.Flatten().(string), err))
 			continue
 		}
-		fromBytes, err := hex.DecodeString(payment.Account.String())
+		fromBytes, err := xrp.DecodeBase58(payment.Account.String())
 		if err != nil {
 			ctxLog.Msg(fmt.Sprint("fail to decode from address: %w", err))
 			continue
 		}
+
 		txIn = append(txIn, &types.TxInItem{
 			Tx:               hash,                                    // done
 			Memo:             memo,                                    // done

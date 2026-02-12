@@ -1,6 +1,7 @@
 package xrp
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -48,11 +49,17 @@ func (c *XrpBlockScanner) processPayment(flatTx map[string]any) (*transaction.Pa
 		if !ok {
 			return nil, fmt.Errorf("cannot cast memo to map[string]any")
 		}
-		memoDataStr, ok := memo["MemoData"].(string)
+		memoDataHex, ok := memo["MemoData"].(string)
 		if !ok {
 			return nil, fmt.Errorf("cannot cast MemoData to string")
 		}
-		memoData = []byte(memoDataStr)
+		if memoDataHex == "" {
+			return nil, fmt.Errorf("MemoData is empty")
+		}
+		memoData, err = hex.DecodeString(memoDataHex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot decode memo data")
+		}
 	}
 
 	sender, ok := flatTx["Account"].(string)

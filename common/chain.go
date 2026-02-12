@@ -388,6 +388,8 @@ func (c Chain) DecodeAddress(address string) ([]byte, error) {
 		return solanaAddressToBytes(address)
 	case TRONChain:
 		return tronAddressToBytes(address)
+	case XRPChain:
+		return xrpAddressToBytes(address)
 	default:
 		return evmAddressToBytes(address)
 	}
