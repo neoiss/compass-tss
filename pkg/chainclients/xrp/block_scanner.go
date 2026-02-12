@@ -247,9 +247,14 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		if len(payment.Memos) == 1 {
 			memo = payment.Memos[0].Memo.MemoData
 		}
+		memoBytes, err := hex.DecodeString(memo)
+		if err != nil {
+			ctxLog.AnErr("error", err).Str("memo", memo).Msg("fail to decode memo")
+			continue
+		}
 		// update the signer cache
 		var parseMemo mem.Memo
-		parseMemo, err = mem.ParseMemo(memo)
+		parseMemo, err = mem.ParseMemo(string(memoBytes))
 		if err != nil {
 			// Debug log only as ParseMemo error is expected for THORName inbounds.
 			ctxLog.Err(err).Msgf("fail to parse memo: %s", memo)

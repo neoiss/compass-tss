@@ -354,7 +354,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 		msg.BaseTx.Memos = []txtypes.MemoWrapper{
 			{
 				Memo: txtypes.Memo{
-					MemoData: tx.Memo,
+					MemoData: hex.EncodeToString([]byte(tx.Memo)),
 				},
 			},
 		}
