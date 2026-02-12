@@ -36,15 +36,6 @@ See [docs/configuration.md](docs/configuration.md) for the full environment vari
 Before running, you **must** set the following environment variables:
 
 ```bash
-# MAP Relay Chain
-export SIGNER_NAME=<your_signer_name>
-export SIGNER_PASSWD=<your_signer_password>
-export CHAIN_ID=<map_relay_chain_id>
-export CHAIN_API=<map_relay_rpc_address>
-
-# TSS
-export PEER=<bootstrap_peer_addresses>
-export EXTERNAL_IP=<your_node_external_ip>
 
 # Chain RPC endpoints (at least one chain is required)
 export BTC_HOST=<btc_rpc_host>
@@ -58,13 +49,14 @@ export ETH_HOST=<eth_rpc_host>
 # Block scanner retry backoff
 export BLOCK_SCANNER_BACKOFF=<seconds>
 
+# btc rpc auth
+export BTC_USERNAME = ''
+export BTC_PASSWORD = ''
+
 # Start block heights
 export BTC_START_BLOCK_HEIGHT=<height>
 export ETH_START_BLOCK_HEIGHT=<height>
 
-# Disable specific chains
-export DOGE_DISABLED=true
-export AVAX_DISABLED=true
 ```
 
 ## Build & Run
