@@ -27,7 +27,7 @@ bifrost:
   mapo:
     chain_id: Map
     chain_host: https://rpc.maplabs.io
-    signer_name: "first_cosmos_name"
+    signer_name: "compass_tss"
     keystore_path: "./keystore/UTC--2025-07-30T07-55-30.878196000Z--25fa71d4f689f4b65eb6d020a414090828281d51"
     maintainer: "0xBfb6B7d0d5Fc120703F7B57CC18157d79a50a7e5"
     tss_manager: "0xf3Fa35B6e3753cFe88Da86c71B2283F75EB64BE9"
@@ -139,15 +139,16 @@ bifrost:
       # the following defaults must be defined to override with environment
       chain_host: ""
       chain_network: ""
-      rpc_host: "https://rpc.bitlayer.org"
+      rpc_host: "https://bitcoin-rpc.publicnode.com"
       cosmos_grpc_tls: false
       opt_to_retire: false
       solvency_blocks: 0
 
     eth:
+      disabled: false
       <<: *default-chain
       chain_id: Eth
-      rpc_host: "https://cf-rpc.omniservice.dev/compass/sepolia"
+      rpc_host: "https://eth.drpc.org"
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
       limit_multiplier: 2
@@ -156,7 +157,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
-        gateway: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         max_reorg_rescan_blocks: 96 # 3 epochs
         gas_cache_blocks: 40
         concurrency: 1
@@ -171,9 +172,10 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     base:
+      disabled: false
       <<: *default-chain
       chain_id: Base
-      rpc_host: "https://base.drpc.org"
+      rpc_host: "https://mainnet.base.org"
       solvency_blocks: 100
       max_pending_nonces: 3
       max_gas_tip_percentage: 20
@@ -183,7 +185,7 @@ bifrost:
       aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
-        gateway: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         gas_cache_blocks: 40
         gas_price_resolution: 1
         concurrency: 1
@@ -199,7 +201,7 @@ bifrost:
       disabled: false
       <<: *default-chain
       chain_id: Bsc
-      rpc_host: "https://bsc-testnet.drpc.org"
+      rpc_host: "https://bsc-dataseed.bnbchain.org"
       solvency_blocks: 100
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
@@ -223,10 +225,10 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     arb:
-      disabled: false
+      disabled: true
       <<: *default-chain
       chain_id: Arb
-      rpc_host: "https://arb-mainnet-public.unifra.io"
+      rpc_host: "https://arb1.arbitrum.io/rpc"
       solvency_blocks: 100
       max_pending_nonces: 3
       token_max_gas_multiplier: 3
