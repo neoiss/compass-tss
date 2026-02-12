@@ -265,17 +265,18 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			continue
 		}
 		var (
-			topic                                       string
-			invalidMemo                                 bool
-			vaultAddress                                = payment.Account.String()
-			callMethod                                  = constants.VoteTxOut
-			toBytes, chainAndGasLimit, payload, toToken []byte
-			orderId                                     ethcommon.Hash
-			destChainID, gasUsed                        = big.NewInt(0), big.NewInt(0)
-			txOutType                                   constants.TxInType
-			mapChainID, _                               = common.MAPChain.ChainID()
-			selfId, _                                   = c.cfg.ChainID.ChainID()
-			nativeToken                                 = common.XRPAsset
+			topic                     string
+			invalidMemo               bool
+			vaultAddress              = payment.Account.String()
+			callMethod                = constants.VoteTxOut
+			toBytes, payload, toToken []byte
+			chainAndGasLimit          = make([]byte, 32)
+			orderId                   ethcommon.Hash
+			destChainID, gasUsed      = big.NewInt(0), big.NewInt(0)
+			txOutType                 constants.TxInType
+			mapChainID, _             = common.MAPChain.ChainID()
+			selfId, _                 = c.cfg.ChainID.ChainID()
+			nativeToken               = common.XRPAsset
 		)
 		hash, ok := rawTx["hash"].(string)
 		if !ok {
@@ -317,7 +318,6 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 				ctxLog.Str("memo", memo).Str("type", parseMemo.GetType().String()).Msg("invalid memo")
 				continue
 			}
-			chainAndGasLimit := make([]byte, 32)
 			toChain := ethcommon.LeftPadBytes(selfId.Bytes(), 8)
 			copy(chainAndGasLimit[8:16], toChain)
 			orderId = ethcommon.HexToHash(parseMemo.GetOrderID())
