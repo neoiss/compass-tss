@@ -209,9 +209,6 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			continue
 		}
 
-		c.logger.Info().Any("meta", meta).Int64("height", height).
-			Msg("get meta from tx")
-
 		// Ignore failed transactions
 		if meta["TransactionResult"] != "tesSUCCESS" {
 			continue
