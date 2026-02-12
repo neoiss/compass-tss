@@ -215,7 +215,6 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 		}
 
 		ctxLog := c.logger.Info().Interface("tx", rawTx)
-		ctxLog.Msg("get tx")
 		flatTx, err := c.decodeTxBlobIfNecessary(rawTx)
 		if err != nil {
 			ctxLog.AnErr("error", err).Msg("fail to decode tx blob")
