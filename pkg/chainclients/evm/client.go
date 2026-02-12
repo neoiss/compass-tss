@@ -4,17 +4,18 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
 	"sync"
 
-	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/compass-tss/blockscanner"
@@ -89,17 +90,15 @@ func NewEVMClient(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key: %w", err)
 	}
-	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tm pub key: %w", err)
-	}
-	pk, err := common.NewPubKeyFromCrypto(temp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pub key: %w", err)
-	}
+
 	evmPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
 		return nil, err
+	}
+	compressPkBytes := crypto.CompressPubkey(&evmPrivateKey.PublicKey)
+	pk, err := common.NewPubKey(hex.EncodeToString(compressPkBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pub key: %w", err)
 	}
 
 	clog := log.With().Str("module", "evm").Stringer("chain", cfg.ChainID).Logger()
@@ -233,6 +232,13 @@ func NewEVMClient(
 	if err != nil {
 		return c, fmt.Errorf("fail to create block scanner: %w", err)
 	}
+
+	localNodeAddress, err := c.localPubKey.GetAddress(cfg.ChainID)
+	if err != nil {
+		c.logger.Err(err).Stringer("chain", cfg.ChainID).Msg("failed to get local node address")
+	}
+	c.logger.Info().Stringer("chain", cfg.ChainID).Stringer("address", localNodeAddress).
+		Msg("local node address")
 
 	return c, nil
 }

@@ -98,6 +98,7 @@ func (p PubKey) Secp256K1() (*ecdsa.PublicKey, error) {
 	if len(compressHexKey) >= 2 && compressHexKey[:2] == "0x" {
 		compressHexKey = compressHexKey[2:]
 	}
+	fmt.Println("compressHexKey ----------- ", compressHexKey)
 	compressedPubKey, err := hex.DecodeString(compressHexKey)
 	if err != nil {
 		return nil, fmt.Errorf("hex failed, err:%v", err)

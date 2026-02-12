@@ -3,6 +3,7 @@ package ethereum
 import (
 	"context"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -10,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecore "github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/hashicorp/go-multierror"
@@ -88,15 +89,6 @@ func NewClient(thorKeys *keys.Keys,
 		return nil, fmt.Errorf("fail to get private key: %w", err)
 	}
 
-	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
-	if err != nil {
-		return nil, fmt.Errorf("fail to get tm pub key: %w", err)
-	}
-	pk, err := common.NewPubKeyFromCrypto(temp)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pub key: %w", err)
-	}
-
 	if bridge == nil {
 		return nil, errors.New("relay bridge is nil")
 	}
@@ -106,6 +98,12 @@ func NewClient(thorKeys *keys.Keys,
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
 		return nil, err
+	}
+
+	compressPkBytes := crypto.CompressPubkey(&ethPrivateKey.PublicKey)
+	pk, err := common.NewPubKey(hex.EncodeToString(compressPkBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pub key: %w", err)
 	}
 
 	ethClient, err := ethclient.Dial(cfg.RPCHost)
