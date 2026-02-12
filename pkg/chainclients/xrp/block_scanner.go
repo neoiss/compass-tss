@@ -387,11 +387,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			ctxLog.Msg(fmt.Sprintf("fail to parse amount(%s): %v", amount.Flatten().(string), err))
 			continue
 		}
-		fromBytes, err := xrp.DecodeBase58(payment.Account.String())
-		if err != nil {
-			ctxLog.Msg(fmt.Sprint("fail to decode from address: %w", err))
-			continue
-		}
+		fromBytes := xrp.DecodeBase58(payment.Account.String())
 
 		txIn = append(txIn, &types.TxInItem{
 			Tx:               hash,                                    // done
