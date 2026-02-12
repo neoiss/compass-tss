@@ -359,7 +359,7 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 		// use outbound rate
 		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
 	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
-		// todo will next 2
+		gasRate = cgl.Third
 	}
 
 	if gasRate.Cmp(cgl.Third) != 0 {

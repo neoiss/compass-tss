@@ -662,7 +662,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 	// If this is a UTXO chain, lock the vault around sign and broadcast to avoid
 	// consolidate transactions from using the same UTXOs.
 	if utxoClient, ok := chain.(*utxo.Client); ok {
-		lock := utxoClient.GetVaultLock(string(tx.Vault)) // todo will next2
+		lock := utxoClient.GetVaultLock(string(tx.Vault))
 		// ensure vault rule
 		lock.Lock()
 		defer lock.Unlock()
