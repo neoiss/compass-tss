@@ -5,11 +5,12 @@ environment variables.
 
 ## 1. MAP Relay Chain
 
-| Configuration Item         | Environment Variable | Default                  | Description                 |
-|----------------------------|----------------------|--------------------------|-----------------------------|
-| `bifrost.mapo.signer_name` | `SIGNER_NAME`        | `first_cosmos_name`      | Signer name                 |
-| `bifrost.mapo.chain_id`    | `CHAIN_ID`           | `Map`                    | MAP Relay Chain ID          |
-| `bifrost.mapo.chain_host`  | `CHAIN_API`          | `https://rpc.maplabs.io` | MAP Relay Chain RPC Address |
+| Configuration Item           | Environment Variable | Default                  | Description                 |
+|------------------------------|----------------------|--------------------------|-----------------------------|
+| `bifrost.mapo.signer_name`   | `SIGNER_NAME`        | `first_cosmos_name`      | Signer name                 |
+| `bifrost.mapo.chain_id`      | `CHAIN_ID`           | `Map`                    | MAP Relay Chain ID          |
+| `bifrost.mapo.chain_host`    | `CHAIN_API`          | `https://rpc.maplabs.io` | MAP Relay Chain RPC Address |
+| `bifrost.mapo.keystore_path` | `KEYSTORE_PATH`      |                          | Path to keystore file       |
 
 ---
 
