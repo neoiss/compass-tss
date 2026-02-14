@@ -83,7 +83,6 @@ func Init() {
 	// TODO: The following can be cleaned once all deployments are updated to use
 	// explicit keys for the new configuration package. In the meantime we will preserve
 	// mappings from historical environment for backwards compatibility.
-	assert(viper.BindEnv("bifrost.mapo.signer_name", "SIGNER_NAME"))
 	assert(viper.BindEnv(
 		"bifrost.chains.btc.block_scanner.block_height_discover_back_off",
 		"BLOCK_SCANNER_BACKOFF",
@@ -114,12 +113,18 @@ func Init() {
 	))
 	assert(viper.BindEnv("bifrost.tss.bootstrap_peers", "PEER"))
 	assert(viper.BindEnv("bifrost.tss.external_ip", "EXTERNAL_IP"))
+
+	// mapo
+	assert(viper.BindEnv("bifrost.mapo.signer_name", "SIGNER_NAME"))
 	assert(viper.BindEnv("bifrost.mapo.chain_id", "CHAIN_ID"))
 	assert(viper.BindEnv("bifrost.mapo.chain_host", "CHAIN_API"))
+	assert(viper.BindEnv("bifrost.mapo.keystore_path", "KEYSTORE_PATH"))
 	assert(viper.BindEnv(
 		"bifrost.mapo.chain_rpc",
 		"CHAIN_RPC",
 	))
+
+	// btc
 	assert(viper.BindEnv(
 		"bifrost.chains.BTC.username",
 		"BTC_USERNAME",
@@ -750,7 +755,7 @@ type BifrostBlockScannerConfiguration struct {
 
 	// ObservationFlexibilityBlocks is the number of blocks behind the current tip we will
 	// submit network fee and solvency observations.
-	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"` // 类似 blockConfirm
+	ObservationFlexibilityBlocks int64 `mapstructure:"observation_flexibility_blocks"`
 
 	// MaxGasLimit is the maximum gas allowed for non-aggregator outbounds. This is used
 	// as the limit in the estimate gas call, and the estimate gas (lower) is used in the
