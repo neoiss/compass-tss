@@ -348,6 +348,18 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 		return nil, nil, nil, fmt.Errorf("fail to cast fee to xrp currency amount")
 	}
 
+	chainName, err := c.relayBridge.GetChainName(tx.FromChain)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
+	}
+	if tx.TxType == uint8(constants.MIGRATE) {
+		tx.Memo = memo.NewMigrateMemo(chainName, tx.OrderId.String()).String()
+	} else if tx.TxType == uint8(constants.REFUND) {
+		tx.Memo = memo.NewRefundMemo(chainName, tx.OrderId.String()).String()
+	} else {
+		tx.Memo = memo.NewInboundMemo(chainName, tx.OrderId.String()).String()
+	}
+
 	msg.Sequence = uint32(meta.SeqNumber)
 	msg.Fee = fee
 	if tx.Memo != "" {

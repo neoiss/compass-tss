@@ -577,7 +577,7 @@ func (s *Signer) signAndBroadcast(item TxOutStoreItem) ([]byte, *types.TxInItem,
 		return nil, nil, constants.ErrorOfOrderExecuted
 	}
 
-	//  utxo
+	//  utxo & xrp
 	pubKey, err := common.CompressPubKey(tx.Vault)
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to compress vault public key: %w", err)
