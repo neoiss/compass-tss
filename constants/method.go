@@ -45,14 +45,6 @@ const (
 )
 
 // -----------------------------------------------------------------
-// Method of GasService
-// -----------------------------------------------------------------
-const (
-	GetNetworkFeeInfo = "getNetworkFeeInfo"
-	GetNetworkFee     = "getNetworkFee"
-)
-
-// -----------------------------------------------------------------
 // Method of Gateway
 // -----------------------------------------------------------------
 
@@ -66,8 +58,27 @@ var ZeroHash = "0x0000000000000000000000000000000000000000"
 // Method of View
 // -----------------------------------------------------------------
 const (
-	GetPublickeys      = "getPublicKeys"
-	GetLastTxOutHeight = "getLastTxOutHeight"
-	GetLastTxInHeight  = "getLastTxInHeight"
-	GetVault           = "getVault"
+	GetPublickeys             = "getPublicKeys" // vaults
+	GetLastTxOutHeight        = "getLastTxOutHeight"
+	GetLastTxInHeight         = "getLastTxInHeight"
+	GetVault                  = "getVault"
+	GetNetworkFeeInfo         = "getNetworkFeeInfo" // gas
+	GetInfoByNickname         = "getInfoByNickname" // affiliate related
+	GetInfoByShortName        = "getInfoByShortName"
+	GetChainByName            = "getChainByName" // token
+	GetChainName              = "getChainName"
+	GetTokenAddressByNickname = "getTokenAddressByNickname"
+	GetTokenDecimals          = "getTokenDecimals"
+)
+
+// -----------------------------------------------------------------
+// Method of configration
+// -----------------------------------------------------------------
+
+const (
+	GetIntValue     = "getIntValue"
+	GetAddressValue = "getAddressValue"
+	GetBoolValue    = "getBoolValue"
+	GetStringValue  = "getStringValue"
+	GetBytesValue   = "getBytesValue"
 )

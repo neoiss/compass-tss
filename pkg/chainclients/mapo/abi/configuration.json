@@ -106,11 +106,6 @@
         "type": "error"
     },
     {
-        "inputs": [],
-        "name": "no_access",
-        "type": "error"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
@@ -154,36 +149,18 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "chain",
-                "type": "uint256"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
             },
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "height",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "transactionSize",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "transactionSizeWithCall",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "transactionRate",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "value",
+                "type": "address"
             }
         ],
-        "name": "PostNetworkFee",
+        "name": "SetAddressValue",
         "type": "event"
     },
     {
@@ -191,12 +168,18 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "address",
-                "name": "_periphery",
-                "type": "address"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "value",
+                "type": "bool"
             }
         ],
-        "name": "SetPeriphery",
+        "name": "SetBoolValue",
         "type": "event"
     },
     {
@@ -204,12 +187,56 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "address",
-                "name": "_swap",
-                "type": "address"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "value",
+                "type": "bytes"
             }
         ],
-        "name": "SetSwap",
+        "name": "SetBytesValue",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "int256",
+                "name": "value",
+                "type": "int256"
+            }
+        ],
+        "name": "SetIntValue",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "value",
+                "type": "string"
+            }
+        ],
+        "name": "SetStringValue",
         "type": "event"
     },
     {
@@ -267,32 +294,145 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "values",
+                "type": "address[]"
             }
         ],
-        "name": "chainNetworkFee",
+        "name": "batchSetAddressValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            },
+            {
+                "internalType": "bool[]",
+                "name": "values",
+                "type": "bool[]"
+            }
+        ],
+        "name": "batchSetBoolValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            },
+            {
+                "internalType": "bytes[]",
+                "name": "values",
+                "type": "bytes[]"
+            }
+        ],
+        "name": "batchSetBytesValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            },
+            {
+                "internalType": "int256[]",
+                "name": "values",
+                "type": "int256[]"
+            }
+        ],
+        "name": "batchSetIntValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            },
+            {
+                "internalType": "string[]",
+                "name": "values",
+                "type": "string[]"
+            }
+        ],
+        "name": "batchSetStringValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            }
+        ],
+        "name": "getAddressValue",
         "outputs": [
             {
-                "internalType": "uint256",
-                "name": "height",
-                "type": "uint256"
-            },
+                "internalType": "address",
+                "name": "value",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
             {
-                "internalType": "uint256",
-                "name": "transactionRate",
-                "type": "uint256"
-            },
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            }
+        ],
+        "name": "getBoolValue",
+        "outputs": [
             {
-                "internalType": "uint256",
-                "name": "transactionSize",
-                "type": "uint256"
-            },
+                "internalType": "bool",
+                "name": "value",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
             {
-                "internalType": "uint256",
-                "name": "transactionSizeWithCall",
-                "type": "uint256"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            }
+        ],
+        "name": "getBytesValue",
+        "outputs": [
+            {
+                "internalType": "bytes",
+                "name": "value",
+                "type": "bytes"
             }
         ],
         "stateMutability": "view",
@@ -314,22 +454,17 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "chain",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "withCall",
-                "type": "bool"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
             }
         ],
-        "name": "getNetworkFee",
+        "name": "getIntValue",
         "outputs": [
             {
-                "internalType": "uint256",
-                "name": "networkFee",
-                "type": "uint256"
+                "internalType": "int256",
+                "name": "value",
+                "type": "int256"
             }
         ],
         "stateMutability": "view",
@@ -338,56 +473,17 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "chain",
-                "type": "uint256"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
             }
         ],
-        "name": "getNetworkFeeInfo",
+        "name": "getStringValue",
         "outputs": [
             {
-                "internalType": "uint256",
-                "name": "transactionRate",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "transactionSize",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "transactionSizeWithCall",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "chain",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "withCall",
-                "type": "bool"
-            },
-            {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            }
-        ],
-        "name": "getNetworkFeeWithToken",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "networkFee",
-                "type": "uint256"
+                "internalType": "string",
+                "name": "value",
+                "type": "string"
             }
         ],
         "stateMutability": "view",
@@ -434,52 +530,6 @@
     },
     {
         "inputs": [],
-        "name": "periphery",
-        "outputs": [
-            {
-                "internalType": "contract IPeriphery",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "chain",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "height",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "transactionSize",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "transactionSizeWithCall",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "transactionRate",
-                "type": "uint256"
-            }
-        ],
-        "name": "postNetworkFee",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "proxiableUUID",
         "outputs": [
             {
@@ -489,6 +539,24 @@
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "internalType": "address",
+                "name": "value",
+                "type": "address"
+            }
+        ],
+        "name": "setAddressValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -507,12 +575,17 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_periphery",
-                "type": "address"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "internalType": "bool",
+                "name": "value",
+                "type": "bool"
             }
         ],
-        "name": "setPeriphery",
+        "name": "setBoolValue",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -520,27 +593,55 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_swap",
-                "type": "address"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "internalType": "bytes",
+                "name": "value",
+                "type": "bytes"
             }
         ],
-        "name": "setSwap",
+        "name": "setBytesValue",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "swap",
-        "outputs": [
+        "inputs": [
             {
-                "internalType": "contract ISwap",
-                "name": "",
-                "type": "address"
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "internalType": "int256",
+                "name": "value",
+                "type": "int256"
             }
         ],
-        "stateMutability": "view",
+        "name": "setIntValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "key",
+                "type": "string"
+            },
+            {
+                "internalType": "string",
+                "name": "value",
+                "type": "string"
+            }
+        ],
+        "name": "setStringValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {

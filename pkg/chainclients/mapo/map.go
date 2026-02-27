@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+
+	"github.com/mapprotocol/compass-tss/constants"
+	"github.com/pkg/errors"
 )
 
 func (b *Bridge) Stop() {
@@ -16,7 +19,7 @@ func (b *Bridge) GetGasPrice() *big.Int {
 	return b.gasPrice
 }
 
-// GetConstants from thornode
+// GetConstants from relay node
 func (b *Bridge) GetConstants() (map[string]int64, error) {
 	var constantStr = `{
 		"int_64_values": {
@@ -181,26 +184,20 @@ func (b *Bridge) GetConstants() (map[string]int64, error) {
 
 // GetMimir - get mimir settings
 func (b *Bridge) GetMimir(key string) (int64, error) {
-	// todo handler
-	switch key {
-	case "MaxConfirmations-ETH":
-		return 14, nil
-	case "MaxConfirmations-BSC":
-		return -1, nil
-	case "MaxConfirmations-BTC":
-		return 4, nil
-	case "SignerConcurrency":
-		return 20, nil
-	case "HALTSIGNINGBSC", "HALTSIGNINGETH", "HALTSIGNINGBTC", "HALTSIGNING":
-		return 0, nil
+	input, err := b.cfgAbi.Pack(constants.GetIntValue, key)
+	if err != nil {
+		return 0, errors.Wrap(err, "unable to pack input of getIntValue")
 	}
-	return 0, nil
+	var ret *big.Int
+	err = b.callContract(&ret, b.cfg.Configuration, constants.GetIntValue, input, b.cfgAbi)
+	if err != nil {
+		return 0, errors.Wrap(err, "fail to call contract getIntValue")
+	}
+	return ret.Int64(), nil
 }
 
 // GetMimirWithRef is a helper function to more readably insert references (such as Asset MimirString or Chain) into Mimir key templates.
 func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
-	// 'template' should be something like "Halt%sChain" (to halt an arbitrary specified chain)
-	// or "Ragnarok-%s" (to halt the pool of an arbitrary specified Asset (MimirString used for Assets to join Chain and Symbol with a hyphen).
 	key := fmt.Sprintf(template, ref)
 	return b.GetMimir(key)
 }

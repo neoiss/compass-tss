@@ -159,7 +159,21 @@ var ToMapIgnoreError = map[string]struct{}{
 
 const (
 	BTCToken = "BTC"
-	XRPToken = "XRP"
 )
 
 const DefaultTokenDecimals = 18
+
+const (
+	KeyOfMaxOutboundAttempts      = "MaxOutboundAttempts"
+	KeyOfSigningTransactionPeriod = "SigningTransactionPeriod"
+	KeyOfHALTSIGNINGBSC           = "HALTSIGNINGBSC"
+	KeyOfHALTSIGNINGETH           = "HALTSIGNINGETH"
+	KeyOfHALTSIGNINGBTC           = "HALTSIGNINGBTC"
+	KeyOfHALTSIGNING              = "HALTSIGNING"
+	KeyOfSignerConcurrency        = "SignerConcurrency"
+)
+
+const (
+	KeyOfConfirmCount           = "%s_CONFIRM_COUNT"            // cId
+	KeyOfTransferFailedReceiver = "%s_TRANSFER_FAILED_RECEIVER" // cId
+)

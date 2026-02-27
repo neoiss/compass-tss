@@ -35,33 +35,30 @@ import (
 
 // Endpoint urls
 const (
-	MimirEndpoint        = "/mapBridge/mimir"
 	ChainVersionEndpoint = "/mapBridge/version"
-	PoolsEndpoint        = "/mapBridge/pools"
 )
 
-// Bridge will be used to send tx to THORChain
+// Bridge will be used to send tx to relay
 type Bridge struct {
-	logger                                                    zerolog.Logger
-	cfg                                                       config.BifrostClientConfiguration
-	keys                                                      *keys2.Keys
-	errCounter                                                *prometheus.CounterVec
-	m                                                         *metrics.Metrics
-	blockHeight                                               int64
-	chainID, gasPrice, epoch                                  *big.Int
-	httpClient                                                *retryablehttp.Client
-	broadcastLock                                             *sync.RWMutex
-	ethClient                                                 *ethclient.Client
-	blockScanner                                              *MapChainBlockScan
-	stopChan                                                  chan struct{}
-	wg                                                        *sync.WaitGroup
-	gasCache                                                  []*big.Int
-	ethPriKey                                                 *ecdsa.PrivateKey
-	kw                                                        *evm.KeySignWrapper
-	ethRpc                                                    *evm.EthRPC
-	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi *abi.ABI
-	affiliateFeeAbi, fusionReceiverAbi                        *abi.ABI
-	epochHash                                                 ecommon.Hash
+	logger                                     zerolog.Logger
+	cfg                                        config.BifrostClientConfiguration
+	keys                                       *keys2.Keys
+	errCounter                                 *prometheus.CounterVec
+	m                                          *metrics.Metrics
+	blockHeight                                int64
+	chainID, gasPrice, epoch                   *big.Int
+	httpClient                                 *retryablehttp.Client
+	broadcastLock                              *sync.RWMutex
+	ethClient                                  *ethclient.Client
+	blockScanner                               *MapChainBlockScan
+	stopChan                                   chan struct{}
+	wg                                         *sync.WaitGroup
+	gasCache                                   []*big.Int
+	ethPriKey                                  *ecdsa.PrivateKey
+	kw                                         *evm.KeySignWrapper
+	ethRpc                                     *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, viewAbi, cfgAbi *abi.ABI
+	epochHash                                  ecommon.Hash
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -215,7 +212,7 @@ func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 	return b.cfg
 }
 
-// PostKeysignFailure generate and  post a keysign fail tx to thorchan
+// PostKeysignFailure generate and  post a keysign fail tx to relay
 func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
 	return b.Broadcast([]byte{})
 }
