@@ -70,6 +70,8 @@ func (p *parser) parse() (mem Memo, err error) {
 		return p.ParseRefundMemo()
 	case TxMigrate:
 		return p.ParseMigrateMemo()
+	case TxException:
+		return p.ParseExceptionMemo()
 	default:
 		return EmptyMemo, fmt.Errorf("TxType not supported: %s", p.getType().String())
 	}
