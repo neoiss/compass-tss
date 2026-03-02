@@ -92,6 +92,7 @@ type Bridge interface {
 	GetConstants() (map[string]int64, error)
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
+	GetMimirWithBytes(template, ref string) ([]byte, error)
 	GetMapVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)

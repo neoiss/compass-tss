@@ -242,15 +242,30 @@ func (c *Client) GetAccountByAddress(address string, height *big.Int) (common.Ac
 	}, nil
 }
 
-func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, error) {
+func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, bool, error) {
 	fromAddr, err := tx.VaultPubKey.GetAddress(c.GetChain())
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert address (%s) to bech32: %w", tx.VaultPubKey.String(), err)
+		return nil, false, fmt.Errorf("failed to convert address (%s) to bech32: %w", tx.VaultPubKey.String(), err)
 	}
 
 	coin, err := decimalToXrp(tx.Amount)
 	if err != nil {
-		return nil, err
+		return nil, false, err
+	}
+
+	inValidTo := false
+	selfId, _ := c.cfg.ChainID.ChainID()
+	dst := xrp.EncodeBase58(tx.To)
+	_, err = xrp.Base58CheckDecode(dst)
+	if err != nil {
+		toBytes, err := c.relayBridge.GetMimirWithBytes(constants.KeyOfTransferFailedReceiver, selfId.String())
+		if err != nil {
+			c.logger.Info().Any("relayHash", tx.TxHash).
+				Msg(fmt.Sprintf("failed getMimirWithBytes, err: %v", err))
+			return nil, false, err
+		}
+		dst = xrp.EncodeBase58(toBytes)
+		inValidTo = true
 	}
 
 	payment := transactions.Payment{
@@ -259,7 +274,7 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 			SigningPubKey: tx.VaultPubKey.String(),
 		},
 		Amount:      coin,
-		Destination: txtypes.Address(xrp.EncodeBase58(tx.To)),
+		Destination: txtypes.Address(dst),
 	}
 
 	c.logger.Info().Str("from", fromAddr.String()).Str("to", xrp.EncodeBase58(tx.To)).
@@ -269,7 +284,7 @@ func (c *Client) processOutboundTx(tx stypes.TxOutItem) (*transactions.Payment, 
 		payment.BaseTx.NetworkID = c.networkID
 	}
 
-	return &payment, nil
+	return &payment, inValidTo, nil
 }
 
 // SignTx sign the the given TxArrayItem
@@ -286,7 +301,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 		return nil, nil, nil, nil
 	}
 
-	msg, err := c.processOutboundTx(tx)
+	msg, inValidTo, err := c.processOutboundTx(tx)
 	if err != nil {
 		c.logger.Err(err).Msg("failed to process outbound tx")
 		return nil, nil, nil, err
@@ -354,12 +369,16 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) (signedTx, c
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("fail to get chain name by chain id(%s)", tx.FromChain.String())
 	}
-	if tx.TxType == uint8(constants.MIGRATE) {
-		tx.Memo = memo.NewMigrateMemo(chainName, tx.OrderId.String()).String()
-	} else if tx.TxType == uint8(constants.REFUND) {
-		tx.Memo = memo.NewRefundMemo(chainName, tx.OrderId.String()).String()
+	if inValidTo {
+		tx.Memo = memo.NewExceptionMemo(chainName, tx.OrderId.String()).String()
 	} else {
-		tx.Memo = memo.NewInboundMemo(chainName, tx.OrderId.String()).String()
+		if tx.TxType == uint8(constants.MIGRATE) {
+			tx.Memo = memo.NewMigrateMemo(chainName, tx.OrderId.String()).String()
+		} else if tx.TxType == uint8(constants.REFUND) {
+			tx.Memo = memo.NewRefundMemo(chainName, tx.OrderId.String()).String()
+		} else {
+			tx.Memo = memo.NewInboundMemo(chainName, tx.OrderId.String()).String()
+		}
 	}
 
 	msg.Sequence = uint32(meta.SeqNumber)

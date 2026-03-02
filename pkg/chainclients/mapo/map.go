@@ -201,3 +201,19 @@ func (b *Bridge) GetMimirWithRef(template, ref string) (int64, error) {
 	key := fmt.Sprintf(template, ref)
 	return b.GetMimir(key)
 }
+
+// GetMimirWithBytes is a helper function to more readably insert references (such as Asset MimirString or Chain) into Mimir key templates.
+func (b *Bridge) GetMimirWithBytes(template, ref string) ([]byte, error) {
+	key := fmt.Sprintf(template, ref)
+	method := constants.GetBytesValue
+	input, err := b.cfgAbi.Pack(method, key)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to pack input of getBytesValue")
+	}
+	var ret []byte
+	err = b.callContract(&ret, b.cfg.Configuration, method, input, b.cfgAbi)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to call contract getBytesValue")
+	}
+	return ret, nil
+}

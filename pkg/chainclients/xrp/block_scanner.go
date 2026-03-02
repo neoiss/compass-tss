@@ -334,7 +334,7 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			// toBytes default is tx destination address
 			toBytes, err = parseMemo.GetChain().DecodeAddress(parseMemo.GetDestination())
 			if err != nil {
-				ctxLog.Err(err).Msg("fail to decode memo")
+				ctxLog.Err(err).Msg("memo dst is invalid, treating as refund")
 				invalidMemo = true
 			}
 			// refund
