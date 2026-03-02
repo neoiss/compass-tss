@@ -314,6 +314,8 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 				txOutType = constants.MIGRATE
 			case mem.TxRefund:
 				txOutType = constants.REFUND
+			case mem.TxException:
+				txOutType = constants.TRANSFER
 			default:
 				ctxLog.Str("memo", memo).Str("type", parseMemo.GetType().String()).Msg("invalid memo")
 				continue
