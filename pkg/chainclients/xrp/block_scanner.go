@@ -239,7 +239,6 @@ func (c *XrpBlockScanner) processTxs(height int64, rawTxs []transaction.FlatTran
 			return nil, fmt.Errorf("cannot convert xrp fee to relay fee: %w", err)
 		}
 		c.updateFeeCache(fee)
-		fmt.Println("height ------ ", height, " fee ----------- ", fee)
 		// check if we are an asgard address
 		isTo := c.isVaultAddress(payment.Destination.String())
 		isSender := c.isVaultAddress(payment.Account.String())
