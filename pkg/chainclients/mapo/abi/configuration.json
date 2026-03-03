@@ -297,6 +297,101 @@
                 "internalType": "string[]",
                 "name": "keys",
                 "type": "string[]"
+            }
+        ],
+        "name": "batchGetAddressValue",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "values",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            }
+        ],
+        "name": "batchGetBoolValue",
+        "outputs": [
+            {
+                "internalType": "bool[]",
+                "name": "values",
+                "type": "bool[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            }
+        ],
+        "name": "batchGetBytesValue",
+        "outputs": [
+            {
+                "internalType": "bytes[]",
+                "name": "values",
+                "type": "bytes[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            }
+        ],
+        "name": "batchGetIntValue",
+        "outputs": [
+            {
+                "internalType": "int256[]",
+                "name": "values",
+                "type": "int256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
+            }
+        ],
+        "name": "batchGetStringValue",
+        "outputs": [
+            {
+                "internalType": "string[]",
+                "name": "values",
+                "type": "string[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string[]",
+                "name": "keys",
+                "type": "string[]"
             },
             {
                 "internalType": "address[]",

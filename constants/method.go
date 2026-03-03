@@ -76,9 +76,10 @@ const (
 // -----------------------------------------------------------------
 
 const (
-	GetIntValue     = "getIntValue"
-	GetAddressValue = "getAddressValue"
-	GetBoolValue    = "getBoolValue"
-	GetStringValue  = "getStringValue"
-	GetBytesValue   = "getBytesValue"
+	GetIntValue      = "getIntValue"
+	GetAddressValue  = "getAddressValue"
+	GetBoolValue     = "getBoolValue"
+	GetStringValue   = "getStringValue"
+	GetBytesValue    = "getBytesValue"
+	BatchGetIntValue = "batchGetIntValue"
 )
