@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/compass-tss/constants"
 
 	dogeec "github.com/eager7/dogd/btcec"
 	"github.com/eager7/dogd/chaincfg"
@@ -113,4 +114,33 @@ func (c *Client) signUTXODOGE(redeemTx *dogewire.MsgTx, tx stypes.TxOutItem, amo
 		return fmt.Errorf("fail to execute the script: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) decodeDOGEAddress(toAddress string, isMigrate bool, txHash string) (dogutil.Address, error) {
+	if isMigrate {
+		addr, err := dogutil.DecodeAddress(toAddress, c.getChainCfgDOGE())
+		if err != nil {
+			c.log.Error().Err(err).Str("relayHash", txHash).Str("toAddress", toAddress).Msg("fail to decode dogecoin address")
+			return nil, fmt.Errorf("fail to decode dogecoin address: %w", err)
+		}
+		return addr, nil
+	}
+
+	addr, err := DecodeDOGEAddress(toAddress, c.getChainCfgDOGE())
+	if err == nil {
+		return addr, nil
+	}
+
+	c.log.Error().Err(err).Str("relayHash", txHash).Str("toAddress", toAddress).Msg("fail to decode dogecoin address")
+	defaultAddress, err := c.bridge.GetMimirWithBytes(constants.KeyOfTransferFailedReceiver, c.cfg.ChainID.String())
+	if err != nil {
+		c.log.Error().Err(err).Str("relayHash", txHash).Str("chain", c.cfg.ChainID.String()).Msg("fail to get default receiver")
+		return nil, fmt.Errorf("fail to get default address config: %w", err)
+	}
+	addr, err = DecodeDOGEAddress(hex.EncodeToString(defaultAddress), c.getChainCfgDOGE())
+	if err != nil {
+		c.log.Error().Err(err).Str("relayHash", txHash).Str("addr", hex.EncodeToString(defaultAddress)).Msg("fail to decode dogecoin address")
+		return nil, fmt.Errorf("fail to decode next address: %w", err)
+	}
+	return addr, nil
 }
