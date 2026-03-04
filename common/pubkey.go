@@ -196,9 +196,9 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		}
 		addressString = addr.String()
 	case DOGEChain:
-		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
+		pubKey, err := hex.DecodeString(p.String())
 		if err != nil {
-			return NoAddress, err
+			return NoAddress, fmt.Errorf("fail to decode pub key, err: %w", err)
 		}
 		var net *dogchaincfg.Params
 		switch chainNetwork {
@@ -207,7 +207,9 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 		case MainNet:
 			net = &dogchaincfg.MainNetParams
 		}
-		addr, err := dogutil.NewAddressPubKeyHash(pk.Address().Bytes(), net)
+
+		hash160 := dogutil.Hash160(pubKey)
+		addr, err := dogutil.NewAddressPubKeyHash(hash160, net)
 		if err != nil {
 			return NoAddress, fmt.Errorf("fail to encode the address, err: %w", err)
 		}

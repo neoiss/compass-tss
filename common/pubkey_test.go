@@ -1,6 +1,9 @@
 package common
 
-import "testing"
+import (
+	"encoding/hex"
+	"testing"
+)
 
 // import (
 // 	"encoding/hex"
@@ -324,6 +327,28 @@ import "testing"
 // 	}
 // 	t.Log("script address : ", hex.EncodeToString(address2.ScriptAddress()))
 // }
+
+func Test_PubKeyToDOGEAddress(t *testing.T) {
+	pubKey := "dddc5378e96320f465f1bf8ab228c8d88ec4cff6a32f76ac066a9fd28cd614433f16b5fc49053ecd6d46a13948896f397fdc15cbb50a3a2092eda3379b536c8f"
+	bs, err := hex.DecodeString(pubKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compressPubKey, err := CompressPubKey(bs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := NewPubKey(compressPubKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	addr, err := key.GetAddress(DOGEChain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("address: ", addr)
+}
 
 func TestPubKey_GetAddress(t *testing.T) {
 	tests := []struct {
