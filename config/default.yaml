@@ -263,3 +263,26 @@ bifrost:
         observation_flexibility_blocks: 40
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
+
+    doge:
+      <<: *default-chain
+      chain_id: Doge
+      username:
+      password:
+      block_scanner:
+        <<: *default-block-scanner
+        max_reorg_rescan_blocks: 720 # 12h
+        chain_id: Doge
+        gas_price_resolution: 500_000 # sats
+        gas_cache_blocks: 10
+        scan_mempool: false
+      mempool_tx_id_cache_size: 1_000_000
+      scanner_leveldb: *default-leveldb
+      min_confirmations: 2
+      utxo:
+        <<: *utxo
+        block_cache_count: 1440
+        default_sats_per_vbyte: 25
+        max_sats_per_vbyte: 976562 # backwards compatible with 1e8*10/1024
+        min_sats_per_vbyte: 2
+      rpc_host: ""

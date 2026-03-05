@@ -492,6 +492,7 @@ type Bifrost struct {
 		ETH  BifrostChainConfiguration `mapstructure:"eth"`
 		BASE BifrostChainConfiguration `mapstructure:"base"`
 		ARB  BifrostChainConfiguration `mapstructure:"arb"`
+		DOGE BifrostChainConfiguration `mapstructure:"doge"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
@@ -501,9 +502,10 @@ type Bifrost struct {
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.BSCChain: b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
-		common.XRPChain: b.Chains.XRP,
+		common.BSCChain:  b.Chains.BSC,
+		common.BTCChain:  b.Chains.BTC,
+		common.XRPChain:  b.Chains.XRP,
+		common.DOGEChain: b.Chains.DOGE,
 		// common.ETHChain:  b.Chains.ETH,
 		// common.BASEChain: b.Chains.BASE,
 		// common.ARBChain:  b.Chains.ARB,
