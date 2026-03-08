@@ -51,7 +51,8 @@ var AllChains = [...]Chain{
 }
 
 var chainToNativeToken = map[Chain]string{
-	BTCChain: "BTC",
+	BTCChain:  "BTC",
+	DOGEChain: "DOGE",
 }
 
 var chainToChainID = map[string]*big.Int{
