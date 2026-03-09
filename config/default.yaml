@@ -258,6 +258,7 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     doge:
+      disabled: false
       <<: *default-chain
       chain_id: Doge
       username:
@@ -269,6 +270,7 @@ bifrost:
         gas_price_resolution: 500_000 # sats
         gas_cache_blocks: 10
         scan_mempool: false
+        start_block_height:
       mempool_tx_id_cache_size: 1_000_000
       scanner_leveldb: *default-leveldb
       min_confirmations: 2
@@ -300,7 +302,7 @@ bifrost:
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
-        start_block_height: 
+        start_block_height:
       scanner_leveldb: *default-leveldb
 
     uni:
@@ -323,5 +325,5 @@ bifrost:
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
         max_contract_tx_logs: 50
-        start_block_height: 
+        start_block_height:
       scanner_leveldb: *default-leveldb
