@@ -25,6 +25,9 @@ bifrost:
       - Base
       - Arb
       - Xrp
+      - Opt
+      - Uni
+      - Doge
   mapo:
     chain_id: Map
     chain_host: https://rpc.maplabs.io
@@ -91,8 +94,6 @@ bifrost:
       max_pending_nonces: 0
       authorization_bearer: ""
       max_gas_tip_percentage: 0
-      token_max_gas_multiplier: 0
-      aggregator_max_gas_multiplier: 0
       utxo: &utxo
         block_cache_count: 144
         transaction_batch_size: 500
@@ -152,8 +153,6 @@ bifrost:
       max_gas_tip_percentage: 20
       limit_multiplier: 2
       max_gas_limit: 3000000
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
@@ -180,8 +179,6 @@ bifrost:
       max_gas_tip_percentage: 20
       limit_multiplier: 2
       max_gas_limit: 3000000
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
@@ -203,8 +200,6 @@ bifrost:
       rpc_host: "https://bsc-dataseed.bnbchain.org"
       solvency_blocks: 100
       max_pending_nonces: 3
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       limit_multiplier: 2
       max_gas_limit: 3000000
       block_scanner:
@@ -230,8 +225,6 @@ bifrost:
       rpc_host: "https://arb1.arbitrum.io/rpc"
       solvency_blocks: 100
       max_pending_nonces: 3
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       limit_multiplier: 2
       max_gas_limit: 3000000
       block_scanner:
@@ -286,3 +279,49 @@ bifrost:
         max_sats_per_vbyte: 976562 # backwards compatible with 1e8*10/1024
         min_sats_per_vbyte: 2
       rpc_host: ""
+
+    opt:
+      disabled: false
+      <<: *default-chain
+      chain_id: Opt
+      rpc_host: "https://op-dataseed.org"
+      max_pending_nonces: 3
+      limit_multiplier: 2
+      max_gas_limit: 3000000
+      block_scanner:
+        <<: *default-block-scanner
+        gateway: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        max_reorg_rescan_blocks: 600 # 30m
+        concurrency: 1
+        chain_id: Opt
+        gas_cache_blocks: 40
+        gas_price_resolution: 10000000 # 10 gwei
+        observation_flexibility_blocks: 80
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
+        max_contract_tx_logs: 50
+        start_block_height: 
+      scanner_leveldb: *default-leveldb
+
+    uni:
+      disabled: false
+      <<: *default-chain
+      chain_id: Uni
+      rpc_host: "https://uni-dataseed.org"
+      max_pending_nonces: 3
+      limit_multiplier: 2
+      max_gas_limit: 3000000
+      block_scanner:
+        <<: *default-block-scanner
+        gateway: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        max_reorg_rescan_blocks: 600 # 30m
+        concurrency: 1
+        chain_id: Uni
+        gas_cache_blocks: 40
+        gas_price_resolution: 10000000 # 10 gwei
+        observation_flexibility_blocks: 80
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
+        max_contract_tx_logs: 50
+        start_block_height: 
+      scanner_leveldb: *default-leveldb

@@ -6,6 +6,8 @@ package txscript
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -4314,5 +4316,41 @@ func TestIsUnspendable(t *testing.T) {
 				i, res, test.expected)
 			continue
 		}
+	}
+}
+
+func TestDisasmString(t *testing.T) {
+	bbs, _ := hex.DecodeString("4d3e7c4d61706f7c307839633635643438376363656561313765343237353037623730666233313663316164353631656265636430353161666466646634363835363334656562636637")
+	fmt.Println("string -------- ", string(bbs))
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		buf     []byte
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "empty buffer",
+			buf:  bbs,
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := DisasmString(tt.buf)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("DisasmString() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("DisasmString() succeeded unexpectedly")
+			}
+			// TODO: update the condition below to compare got with tt.want.
+			if true {
+				t.Errorf("DisasmString() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

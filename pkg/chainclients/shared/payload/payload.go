@@ -22,7 +22,8 @@ func New(bridge shareTypes.Bridge) *Editer {
 	}
 }
 
-func (e *Editer) Encode(nativeToken, destToken string, mapChainID, destChainID *big.Int, to []byte, parsedMemo mem.Memo) (payload []byte, err error) {
+func (e *Editer) Encode(nativeToken, destToken string, mapChainID, destChainID *big.Int,
+	to []byte, parsedMemo mem.Memo) (payload []byte, err error) {
 	var relayData []byte
 	// if the dest token is not native token, we need to build the relay data
 	if !strings.EqualFold(destToken, nativeToken) {

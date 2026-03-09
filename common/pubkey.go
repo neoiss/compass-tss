@@ -148,7 +148,6 @@ func (p PubKey) GetAddress(chain Chain) (Address, error) {
 			return NoAddress, fmt.Errorf("fail to decode pub key, err: %w", err)
 		}
 		addressString = xrpkm.MasterPubKeyToAccountID(compressPkBytes)
-		fmt.Println("xrp addressString ---------------- ", addressString)
 	case GAIAChain:
 		pk, err := cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, string(p))
 		if err != nil {
