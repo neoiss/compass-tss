@@ -25,6 +25,7 @@ bifrost:
       - Base
       - Arb
       - Xrp
+      - Doge
   mapo:
     chain_id: Map
     chain_host: https://rpc.maplabs.io
@@ -265,6 +266,7 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     doge:
+      disabled: false
       <<: *default-chain
       chain_id: Doge
       username:
@@ -276,6 +278,7 @@ bifrost:
         gas_price_resolution: 500_000 # sats
         gas_cache_blocks: 10
         scan_mempool: false
+        start_block_height:
       mempool_tx_id_cache_size: 1_000_000
       scanner_leveldb: *default-leveldb
       min_confirmations: 2
