@@ -175,31 +175,31 @@ func (c *Client) getAddressesFromScriptPubKeyBTC(scriptPubKey btcjson.ScriptPubK
 	return addresses
 }
 
-func (c *Client) decodeBTCAddress(toAddress string, isMigrate bool, txHash string) (btcutil.Address, error) {
+func (c *Client) decodeBTCAddress(toAddress string, isMigrate bool, txHash string) (btcutil.Address, bool, error) {
 	if isMigrate {
 		addr, err := btcutil.DecodeAddress(toAddress, c.getChainCfgBTC())
 		if err != nil {
 			c.log.Error().Err(err).Str("relayHash", txHash).Str("toAddress", toAddress).Msg("fail to decode bitcoin address")
-			return nil, fmt.Errorf("fail to decode bitcoin address: %w", err)
+			return nil, false, fmt.Errorf("fail to decode bitcoin address: %w", err)
 		}
-		return addr, nil
+		return addr, false, nil
 	}
 
 	addr, err := DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 	if err == nil {
-		return addr, nil
+		return addr, false, nil
 	}
 
 	c.log.Error().Err(err).Str("relayHash", txHash).Str("toAddress", toAddress).Msg("fail to decode bitcoin address")
 	defaultAddress, err := c.bridge.GetMimirWithBytes(constants.KeyOfTransferFailedReceiver, c.cfg.ChainID.String())
 	if err != nil {
 		c.log.Error().Err(err).Str("relayHash", txHash).Str("chain", c.cfg.ChainID.String()).Msg("fail to get default receiver")
-		return nil, fmt.Errorf("fail to get default address config: %w", err)
+		return nil, false, fmt.Errorf("fail to get default address config: %w", err)
 	}
 	addr, err = DecodeBitcoinAddress(hex.EncodeToString(defaultAddress), c.getChainCfgBTC())
 	if err != nil {
 		c.log.Error().Err(err).Str("relayHash", txHash).Str("addr", hex.EncodeToString(defaultAddress)).Msg("fail to decode bitcoin address")
-		return nil, fmt.Errorf("fail to decode next address: %w", err)
+		return nil, false, fmt.Errorf("fail to decode next address: %w", err)
 	}
-	return addr, nil
+	return addr, true, nil
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/btcjson"
-	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcutil"
 	"github.com/eager7/dogutil"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	btypes "github.com/mapprotocol/compass-tss/blockscanner/types"

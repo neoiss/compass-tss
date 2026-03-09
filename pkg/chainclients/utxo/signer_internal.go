@@ -320,11 +320,13 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 		totalAmt += int64(amt)
 	}
 
-	var buf []byte
 	toAddress := hex.EncodeToString(tx.To)
-	buf, err = c.buildOutputScript(tx, toAddress)
+	buf, isDefaultAddress, err := c.buildOutputScript(tx, toAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to build output script: %w", err)
+	}
+	if isDefaultAddress {
+		tx.Memo = mem.NewExceptionMemo(chainName, tx.OrderId.String()).String()
 	}
 
 	//coinToCustomer := tx.Coins.GetCoin(c.cfg.ChainID.GetGasAsset())
@@ -450,69 +452,72 @@ func (c *Client) buildTx(tx stypes.TxOutItem, sourceScript []byte) (*wire.MsgTx,
 	return redeemTx, individualAmounts, nil
 }
 
-func (c *Client) buildOutputScript(tx stypes.TxOutItem, toAddress string) ([]byte, error) {
+func (c *Client) buildOutputScript(tx stypes.TxOutItem, toAddress string) ([]byte, bool, error) {
 	var (
-		err error
-		buf []byte
+		err              error
+		buf              []byte
+		isDefaultAddress bool
 	)
 
 	isMigrate := tx.TxType == uint8(constants.MIGRATE)
 	if isMigrate {
 		pubKey, err := common.CompressPubKey(tx.Data)
 		if err != nil {
-			return nil, fmt.Errorf("fail to compress pub key: %w", err)
+			return nil, false, fmt.Errorf("fail to compress pub key: %w", err)
 		}
 		addr, err := common.PubKey(pubKey).GetAddress(c.cfg.ChainID)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get vault address: %w", err)
+			return nil, false, fmt.Errorf("fail to get vault address: %w", err)
 		}
 		toAddress = addr.String()
 	}
 
 	switch c.cfg.ChainID {
 	case common.BTCChain:
-		outputAddr, err := c.decodeBTCAddress(toAddress, isMigrate, tx.TxHash)
+		var outputAddr btcutil.Address
+		outputAddr, isDefaultAddress, err = c.decodeBTCAddress(toAddress, isMigrate, tx.TxHash)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		buf, err = btctxscript.PayToAddrScript(outputAddr)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get pay to address script: %w", err)
+			return nil, false, fmt.Errorf("fail to get pay to address script: %w", err)
 		}
 	case common.LTCChain:
 		var outputAddr ltcutil.Address
 		outputAddr, err = ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
 		if err != nil {
-			return nil, fmt.Errorf("fail to decode litecoin address(%s): %w", toAddress, err)
+			return nil, false, fmt.Errorf("fail to decode litecoin address(%s): %w", toAddress, err)
 		}
 		buf, err = ltctxscript.PayToAddrScript(outputAddr)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get pay to address script: %w", err)
+			return nil, false, fmt.Errorf("fail to get pay to address script: %w", err)
 		}
 	case common.BCHChain:
 		var outputAddr bchutil.Address
 		outputAddr, err = bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
 		if err != nil {
-			return nil, fmt.Errorf("fail to decode bitcoin cash address(%s): %w", toAddress, err)
+			return nil, false, fmt.Errorf("fail to decode bitcoin cash address(%s): %w", toAddress, err)
 		}
 		buf, err = bchtxscript.PayToAddrScript(outputAddr)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get pay to address script: %w", err)
+			return nil, false, fmt.Errorf("fail to get pay to address script: %w", err)
 		}
 	case common.DOGEChain:
-		outputAddr, err := c.decodeDOGEAddress(toAddress, isMigrate, tx.TxHash)
+		var outputAddr dogutil.Address
+		outputAddr, isDefaultAddress, err = c.decodeDOGEAddress(toAddress, isMigrate, tx.TxHash)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		buf, err = dogetxscript.PayToAddrScript(outputAddr)
 		if err != nil {
-			return nil, fmt.Errorf("fail to get pay to address script: %w", err)
+			return nil, false, fmt.Errorf("fail to get pay to address script: %w", err)
 		}
 	default:
-		return nil, fmt.Errorf("unsupported chain: %s", c.cfg.ChainID)
+		return nil, false, fmt.Errorf("unsupported chain: %s", c.cfg.ChainID)
 	}
 
-	return buf, nil
+	return buf, isDefaultAddress, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
