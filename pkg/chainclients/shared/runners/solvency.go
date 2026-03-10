@@ -25,5 +25,5 @@ func SolvencyCheckRunner(chain common.Chain,
 	wg *sync.WaitGroup,
 	backOffDuration time.Duration,
 ) {
-
+	wg.Done()
 }
