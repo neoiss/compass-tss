@@ -576,7 +576,13 @@ func (c *Client) ConfirmationCountReady(txIn stypes.TxIn) bool {
 // NOTE: Xrp chains are instant finality, so confirmations are not needed.
 // If the transaction was successful, we know it is included in a block and thus immutable.
 func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
-	return 0
+	selfId, _ := c.cfg.ChainID.ChainID()
+	interval, err := c.relayBridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
+	if err != nil {
+		c.logger.Err(err).Msgf("fail to get mimir value for gas fee gap, use default value: %s", err)
+		return constants.DefaultConfirmCount
+	}
+	return interval
 }
 
 func (c *Client) ReportSolvency(blockHeight int64) error {

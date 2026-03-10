@@ -181,7 +181,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 	var block *evm.Block
 	selfId, _ := e.cfg.ChainID.ChainID()
-	interval, err := e.bridge.GetMimirWithRef(constants.KeyOfConfirmCount, selfId.String())
+	interval, err := e.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
 	if err != nil {
 		return stypes.TxIn{}, fmt.Errorf("failed to get confirm count: %w", err)
 	}
