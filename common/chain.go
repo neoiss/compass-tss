@@ -30,6 +30,8 @@ const (
 	ARBChain   = Chain("Arb")
 	TRONChain  = Chain("Tron")
 	SOLChain   = Chain("Sol")
+	OPTChain   = Chain("Opt")
+	UNIChain   = Chain("Uni")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -66,6 +68,8 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(MAPChain, TestNet):  big.NewInt(212),
 	getChainKey(ARBChain, TestNet):  big.NewInt(42170),
 	getChainKey(XRPChain, TestNet):  big.NewInt(1360117358395394),
+	getChainKey(OPTChain, TestNet):  big.NewInt(11),
+	getChainKey(UNIChain, TestNet):  big.NewInt(1337),
 
 	// main network
 	getChainKey(BSCChain, MainNet):  big.NewInt(56),
@@ -77,6 +81,8 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
 	getChainKey(ARBChain, MainNet):  big.NewInt(42161),
 	getChainKey(XRPChain, MainNet):  big.NewInt(1360117358395393),
+	getChainKey(OPTChain, MainNet):  big.NewInt(10),
+	getChainKey(UNIChain, MainNet):  big.NewInt(130),
 }
 
 var chainIDToChain = map[string]Chain{
@@ -90,6 +96,8 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(212).String():              MAPChain,
 	big.NewInt(42170).String():            ARBChain,
 	big.NewInt(1360117358395394).String(): XRPChain,
+	big.NewInt(11).String():               OPTChain,
+	big.NewInt(1337).String():             UNIChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -101,6 +109,8 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(22776).String():            MAPChain,
 	big.NewInt(42161).String():            ARBChain,
 	big.NewInt(1360117358395393).String(): XRPChain,
+	big.NewInt(130).String():              UNIChain,
+	big.NewInt(10).String():               OPTChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {
@@ -358,6 +368,10 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 		return 1_000
 	case XRPChain:
 		return 4_000 // approx 3-5 seconds
+	case OPTChain:
+		return 2_000 // approx 3-5 seconds
+	case UNIChain:
+		return 1_000 // approx 3-5 seconds
 	default:
 		return 0
 	}

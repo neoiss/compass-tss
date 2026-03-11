@@ -45,7 +45,7 @@ func LoadChains(relayKeys *keys.Keys,
 		switch chain.ChainID {
 		case common.ETHChain:
 			return ethereum.NewClient(relayKeys, chain, server, bridge, m, pubKeyValidator)
-		case common.BSCChain, common.BASEChain, common.ARBChain:
+		case common.BSCChain, common.BASEChain, common.ARBChain, common.OPTChain, common.UNIChain:
 			return evm.NewEVMClient(relayKeys, chain, server, bridge, m, pubKeyValidator)
 		//case common.GAIAChain:
 		//	return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)

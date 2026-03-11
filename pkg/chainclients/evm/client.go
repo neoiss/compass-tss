@@ -640,7 +640,7 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	case common.BASEChain:
 		// block is already finalized(settled to l1)
 		return true
-	case common.ARBChain:
+	case common.ARBChain, common.OPTChain, common.UNIChain:
 		if len(txIn.TxArray) == 0 {
 			return true
 		}
@@ -657,16 +657,6 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 
 // ReportSolvency reports solvency once per configured solvency blocks.
 func (c *EVMClient) ReportSolvency(height int64) error {
-	if !c.ShouldReportSolvency(height) {
-		return nil
-	}
-
-	// when block scanner is not healthy, only report from auto-unhalt SolvencyCheckRunner
-	// (FetchTxs passes currentBlockHeight, while SolvencyCheckRunner passes chainHeight)
-	if !c.IsBlockScannerHealthy() && height == c.evmScanner.currentBlockHeight {
-		return nil
-	}
-
 	return nil
 }
 
