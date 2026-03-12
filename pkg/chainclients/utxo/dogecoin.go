@@ -2,76 +2,19 @@ package utxo
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"github.com/mapprotocol/compass-tss/constants"
 
 	dogeec "github.com/eager7/dogd/btcec"
-	"github.com/eager7/dogd/chaincfg"
 	dogechaincfg "github.com/eager7/dogd/chaincfg"
 	dogewire "github.com/eager7/dogd/wire"
 	"github.com/eager7/dogutil"
-	ethcommon "github.com/ethereum/go-ethereum/common"
 	dogetxscript "github.com/mapprotocol/compass-tss/txscript/dogd-txscript"
 
 	"github.com/mapprotocol/compass-tss/common"
+	"github.com/mapprotocol/compass-tss/constants"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/pkg/address"
 )
-
-func EncodeDOGEAddress(addr dogutil.Address) (string, error) {
-	script := hex.EncodeToString(addr.ScriptAddress())
-
-	switch addr.(type) {
-	case *dogutil.AddressWitnessPubKeyHash: // P2WPKH
-		return P2WPKH + script, nil
-	case *dogutil.AddressWitnessScriptHash: // P2WSH
-		return P2WSH + script, nil
-	case *dogutil.AddressPubKeyHash: // P2PKH
-		return P2PKH + script, nil
-	case *dogutil.AddressScriptHash: // P2SH
-		return P2SH + script, nil
-	default:
-		return "", errUnknownAddressType
-	}
-}
-
-func DecodeDOGEAddress(addr string, network *chaincfg.Params) (dogutil.Address, error) {
-	if !common.HasHexPrefix(addr) {
-		addr = "0x" + addr
-	}
-	if len(addr) < 4 {
-		return nil, errors.New("invalid address")
-	}
-	prefix := addr[:4]
-	publicKey := addr[4:]
-	publicKeyLen := len(publicKey)
-	publicKeyBytes := ethcommon.Hex2Bytes(publicKey)
-
-	switch prefix {
-	case P2WPKHOrP2WSH:
-		switch publicKeyLen {
-		case 40: // P2WPKH
-			return dogutil.NewAddressWitnessPubKeyHash(publicKeyBytes, network)
-		case 64: // P2WSH
-			return dogutil.NewAddressWitnessScriptHash(publicKeyBytes, network)
-		default:
-			return nil, newUnsupportedPublicKeyLenError(prefix, publicKeyLen)
-		}
-	case P2PKHOrP2TR:
-		switch publicKeyLen {
-		case 40: // P2PKH
-			return dogutil.NewAddressPubKeyHash(publicKeyBytes, network) // base 58
-		//case 64: // P2TR dogecoin not support taproot
-		default:
-			return nil, newUnsupportedPublicKeyLenError(prefix, publicKeyLen)
-		}
-
-	case P2SH:
-		return dogutil.NewAddressScriptHashFromHash(publicKeyBytes, network) // base 58
-	default:
-		return nil, newUnsupportedPublicKeyLenError(prefix, publicKeyLen)
-	}
-}
 
 func (c *Client) getChainCfgDOGE() *dogechaincfg.Params {
 	switch common.CurrentChainNetwork {
@@ -126,7 +69,7 @@ func (c *Client) decodeDOGEAddress(toAddress string, isMigrate bool, txHash stri
 		return addr, false, nil
 	}
 
-	addr, err := DecodeDOGEAddress(toAddress, c.getChainCfgDOGE())
+	addr, err := address.DecodeDOGEAddress(toAddress, c.getChainCfgDOGE())
 	if err == nil {
 		return addr, false, nil
 	}
@@ -137,7 +80,7 @@ func (c *Client) decodeDOGEAddress(toAddress string, isMigrate bool, txHash stri
 		c.log.Error().Err(err).Str("relayHash", txHash).Str("chain", c.cfg.ChainID.String()).Msg("fail to get default receiver")
 		return nil, false, fmt.Errorf("fail to get default address config: %w", err)
 	}
-	addr, err = DecodeDOGEAddress(hex.EncodeToString(defaultAddress), c.getChainCfgDOGE())
+	addr, err = address.DecodeDOGEAddress(hex.EncodeToString(defaultAddress), c.getChainCfgDOGE())
 	if err != nil {
 		c.log.Error().Err(err).Str("relayHash", txHash).Str("addr", hex.EncodeToString(defaultAddress)).Msg("fail to decode dogecoin address")
 		return nil, false, fmt.Errorf("fail to decode next address: %w", err)

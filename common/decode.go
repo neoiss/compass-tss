@@ -8,7 +8,13 @@ import (
 
 	xrp "github.com/Peersyst/xrpl-go/address-codec"
 	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	dogechaincfg "github.com/eager7/dogd/chaincfg"
+	"github.com/eager7/dogutil"
 	ethcommon "github.com/ethereum/go-ethereum/common"
+
+	pkgaddress "github.com/mapprotocol/compass-tss/pkg/address"
 )
 
 func evmAddressToBytes(address string) ([]byte, error) {
@@ -79,4 +85,50 @@ func xrpAddressToBytes(address string) ([]byte, error) {
 
 	// return
 	return xrp.DecodeBase58(address), nil
+}
+
+func bitcoinAddressToBytes(address string) ([]byte, error) {
+	chainNetwork := CurrentChainNetwork
+
+	var net *chaincfg.Params
+	switch chainNetwork {
+	case TestNet:
+		net = &chaincfg.TestNet3Params
+	case MainNet:
+		net = &chaincfg.MainNetParams
+	}
+
+	btcAddr, err := btcutil.DecodeAddress(address, net)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bitcoin address: %w", err)
+	}
+
+	decoded, err := pkgaddress.EncodeBitcoinAddressToBytes(btcAddr)
+	if err != nil {
+		return nil, fmt.Errorf("fail to decode bitcoin hex address: %w", err)
+	}
+	return decoded, nil
+}
+
+func dogeAddressToBytes(address string) ([]byte, error) {
+	chainNetwork := CurrentChainNetwork
+
+	var net *dogechaincfg.Params
+	switch chainNetwork {
+	case TestNet:
+		net = &dogechaincfg.TestNet3Params
+	case MainNet:
+		net = &dogechaincfg.MainNetParams
+	}
+
+	btcAddr, err := dogutil.DecodeAddress(address, net)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bitcoin address: %w", err)
+	}
+
+	decoded, err := pkgaddress.EncodeDOGEAddressToBytes(btcAddr)
+	if err != nil {
+		return nil, fmt.Errorf("fail to decode bitcoin hex address: %w", err)
+	}
+	return decoded, nil
 }

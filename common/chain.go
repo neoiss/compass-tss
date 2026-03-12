@@ -390,6 +390,10 @@ func (c Chain) DecodeAddress(address string) ([]byte, error) {
 		return tronAddressToBytes(address)
 	case XRPChain:
 		return xrpAddressToBytes(address)
+	case BTCChain:
+		return bitcoinAddressToBytes(address)
+	case DOGEChain:
+		return dogeAddressToBytes(address)
 	default:
 		return evmAddressToBytes(address)
 	}

@@ -26,6 +26,7 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
+	"github.com/mapprotocol/compass-tss/pkg/address"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 )
 
@@ -118,7 +119,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 				return nil, nil, nil, fmt.Errorf("fail to decode next addres: %w", err)
 			}
 		} else {
-			outputAddr, err = DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
+			outputAddr, err = address.DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
 			if err != nil {
 				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
 				return nil, nil, nil, nil
