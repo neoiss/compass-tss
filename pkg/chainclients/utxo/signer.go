@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/compass-tss/constants"
 
 	"github.com/btcsuite/btcd/mempool"
 	btcwire "github.com/btcsuite/btcd/wire"
@@ -26,7 +25,6 @@ import (
 
 	"github.com/mapprotocol/compass-tss/common"
 	stypes "github.com/mapprotocol/compass-tss/mapclient/types"
-	"github.com/mapprotocol/compass-tss/pkg/address"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 )
 
@@ -77,60 +75,12 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 		return nil, nil, nil, fmt.Errorf("fail to get source pay to address script: %w", err)
 	}
 
-	// get chain specific address type
-	var outputAddr interface{}
-	var outputAddrStr string
-	switch c.cfg.ChainID {
-	case common.DOGEChain:
-		outputAddr, err = dogutil.DecodeAddress(toAddress, c.getChainCfgDOGE())
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
-		}
-		outputAddrStr = outputAddr.(dogutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
-	case common.BCHChain:
-		outputAddr, err = bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
-		}
-		outputAddrStr = outputAddr.(bchutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
-	case common.LTCChain:
-		outputAddr, err = ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("fail to decode next address: %w", err)
-		}
-		outputAddrStr = outputAddr.(ltcutil.Address).String() // trunk-ignore(golangci-lint/forcetypeassert)
-	case common.BTCChain:
-		var outputAddr btcutil.Address
-		if tx.TxType == uint8(constants.MIGRATE) {
-			// when migrating, we need to use the pubkey to get the address
-			pubKey, err := common.CompressPubKey(tx.Data)
-			if err != nil {
-				c.log.Error().Err(err).Str("pubkey", hex.EncodeToString(tx.Data)).Msg("fail to compress pub key")
-				return nil, nil, nil, fmt.Errorf("fail to compress pub key: %w", err)
-			}
-			addr, err := common.PubKey(pubKey).GetAddress(c.cfg.ChainID)
-			if err != nil {
-				c.log.Error().Err(err).Str("pubkey", pubKey).Msg("fail to get vault address")
-				return nil, nil, nil, fmt.Errorf("fail to get vault address: %w", err)
-			}
-			outputAddr, err = btcutil.DecodeAddress(addr.String(), c.getChainCfgBTC())
-			if err != nil {
-				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", addr.String()).Msg("fail to decode next address")
-				return nil, nil, nil, fmt.Errorf("fail to decode next addres: %w", err)
-			}
-		} else {
-			outputAddr, err = address.DecodeBitcoinAddress(toAddress, c.getChainCfgBTC())
-			if err != nil {
-				c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("DecodeBitcoinAddress failed, will ignore")
-				return nil, nil, nil, nil
-			}
-		}
-		outputAddrStr = outputAddr.(btcutil.Address).String()
-	default:
-		c.log.Fatal().Msg("unsupported chain")
+	outputAddr, outputAddrStr, err := c.getOutputAddress(tx, toAddress)
+	if err != nil {
+		c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("fail to decode output address")
+		return nil, nil, nil, nil
 	}
 
-	// todo utxo
 	// verify address
 	//if !strings.EqualFold(outputAddrStr, toAddress) {
 	//	c.log.Info().Msgf("output address: %s, to address: %s can't roundtrip", outputAddrStr, toAddress)

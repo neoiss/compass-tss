@@ -520,6 +520,51 @@ func (c *Client) buildOutputScript(tx stypes.TxOutItem, toAddress string) ([]byt
 	return buf, isDefaultAddress, nil
 }
 
+func (c *Client) getOutputAddress(tx stypes.TxOutItem, toAddress string) (interface{}, string, error) {
+	isMigrate := tx.TxType == uint8(constants.MIGRATE)
+	if isMigrate {
+		// when migrating, we need to use the pubkey to get the address
+		pubKey, err := common.CompressPubKey(tx.Data)
+		if err != nil {
+			return nil, "", fmt.Errorf("fail to compress pub key: %w", err)
+		}
+		addr, err := common.PubKey(pubKey).GetAddress(c.cfg.ChainID)
+		if err != nil {
+			return nil, "", fmt.Errorf("fail to get vault address: %w", err)
+		}
+		toAddress = addr.String()
+	}
+
+	switch c.cfg.ChainID {
+	case common.BTCChain:
+		outputAddr, _, err := c.decodeBTCAddress(toAddress, isMigrate, tx.TxHash)
+		if err != nil {
+			return nil, "", err
+		}
+		return outputAddr, outputAddr.String(), nil
+	case common.LTCChain:
+		outputAddr, err := ltcutil.DecodeAddress(toAddress, c.getChainCfgLTC())
+		if err != nil {
+			return nil, "", fmt.Errorf("fail to decode litecoin address(%s): %w", toAddress, err)
+		}
+		return outputAddr, outputAddr.String(), nil
+	case common.BCHChain:
+		outputAddr, err := bchutil.DecodeAddress(toAddress, c.getChainCfgBCH())
+		if err != nil {
+			return nil, "", fmt.Errorf("fail to decode bitcoin cash address(%s): %w", toAddress, err)
+		}
+		return outputAddr, outputAddr.String(), nil
+	case common.DOGEChain:
+		outputAddr, _, err := c.decodeDOGEAddress(toAddress, isMigrate, tx.TxHash)
+		if err != nil {
+			return nil, "", err
+		}
+		return outputAddr, outputAddr.String(), nil
+	default:
+		return nil, "", fmt.Errorf("unsupported chain: %s", c.cfg.ChainID)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // UTXO Consolidation
 ////////////////////////////////////////////////////////////////////////////////////////
