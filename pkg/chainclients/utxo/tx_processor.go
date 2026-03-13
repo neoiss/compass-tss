@@ -15,6 +15,7 @@ import (
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/mapclient/types"
+	pkgaddress "github.com/mapprotocol/compass-tss/pkg/address"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	mem "github.com/mapprotocol/compass-tss/x/memo"
 )
@@ -375,7 +376,7 @@ func (p *TxProcessor) EncodeAddressToBytes(addr string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("fail to decode bitcoin address(%s): %w", addr, err)
 		}
-		addrStr, err = EncodeBitcoinAddress(address)
+		addrStr, err = pkgaddress.EncodeBitcoinAddress(address)
 		if err != nil {
 			return nil, fmt.Errorf("fail to encode bitcoin address(%s): %w", address.String(), err)
 		}
@@ -385,7 +386,7 @@ func (p *TxProcessor) EncodeAddressToBytes(addr string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("fail to decode doge address(%s): %w", addr, err)
 		}
-		addrStr, err = EncodeDOGEAddress(address)
+		addrStr, err = pkgaddress.EncodeDOGEAddress(address)
 		if err != nil {
 			return nil, fmt.Errorf("fail to encode doge address(%s): %w", address.String(), err)
 		}

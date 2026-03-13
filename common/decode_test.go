@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/ethereum/go-ethereum/common"
@@ -230,6 +231,70 @@ func Test_evmAddressToBytes(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "evmAddressToBytes(%v)", tt.args.address)
+		})
+	}
+}
+
+func Test_bitcoinAddressToBytes(t *testing.T) {
+	type args struct {
+		address string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "test1",
+			args: args{
+				address: "bc1qwqdg6squsna38e46795at95yu9atm8azzmyvckulcc7kytlcckxswvvzej",
+			},
+			want: common.Hex2Bytes("00701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := bitcoinAddressToBytes(tt.args.address)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("bitcoinAddressToBytes() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !bytes.Equal(got, tt.want) {
+				t.Errorf("bitcoinAddressToBytes() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_dogeAddressToBytes(t *testing.T) {
+	type args struct {
+		address string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "test1",
+			args: args{
+				address: "DRcXz2Pai2yhHsMqTmGdCrtweyLwDJkmYz",
+			},
+			want: common.Hex2Bytes("01e092fc86c9c65ca6f6d91596461b1dbf5e014ddd"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := dogeAddressToBytes(tt.args.address)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("dogeAddressToBytes() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !bytes.Equal(got, tt.want) {
+				t.Errorf("dogeAddressToBytes() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
