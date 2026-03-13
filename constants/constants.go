@@ -175,5 +175,10 @@ const (
 
 const (
 	KeyOfConfirmCount           = "%s_CONFIRM_COUNT"            // cId
+	KeyOfGASFeeGap              = "%s_GAS_FEE_GAP"              // cId
 	KeyOfTransferFailedReceiver = "%s_TRANSFER_FAILED_RECEIVER" // cId
+)
+
+const (
+	DefaultConfirmCount = 5
 )

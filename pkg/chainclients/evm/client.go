@@ -615,19 +615,13 @@ func (c *EVMClient) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 
 // GetConfirmationCount returns the confirmation count for the given tx.
 func (c *EVMClient) GetConfirmationCount(txIn stypes.TxIn) int64 {
-	switch c.cfg.ChainID {
-	case common.AVAXChain: // instant finality
-		return 0
-	case common.ARBChain:
-		return 24
-	case common.BASEChain:
-		return 12 // ~2 Ethereum blocks for parity with the 2 block minimum in eth client
-	case common.BSCChain:
-		return 3 // round up from 2.5 blocks required for finality
-	default:
-		c.logger.Fatal().Msgf("unsupported chain: %s", c.cfg.ChainID)
-		return 0
+	selfId, _ := c.cfg.ChainID.ChainID()
+	interval, err := c.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
+	if err != nil {
+		c.logger.Err(err).Msgf("fail to get mimir value for gas fee gap, use default value: %s", err)
+		return constants.DefaultConfirmCount
 	}
+	return interval
 }
 
 // ConfirmationCountReady returns true if the confirmation count is ready.
@@ -646,7 +640,7 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	case common.BASEChain:
 		// block is already finalized(settled to l1)
 		return true
-	case common.ARBChain:
+	case common.ARBChain, common.OPTChain, common.UNIChain:
 		if len(txIn.TxArray) == 0 {
 			return true
 		}
@@ -663,16 +657,6 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 
 // ReportSolvency reports solvency once per configured solvency blocks.
 func (c *EVMClient) ReportSolvency(height int64) error {
-	if !c.ShouldReportSolvency(height) {
-		return nil
-	}
-
-	// when block scanner is not healthy, only report from auto-unhalt SolvencyCheckRunner
-	// (FetchTxs passes currentBlockHeight, while SolvencyCheckRunner passes chainHeight)
-	if !c.IsBlockScannerHealthy() && height == c.evmScanner.currentBlockHeight {
-		return nil
-	}
-
 	return nil
 }
 

@@ -181,7 +181,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 	var block *evm.Block
 	selfId, _ := e.cfg.ChainID.ChainID()
-	interval, err := e.bridge.GetMimirWithRef(constants.KeyOfConfirmCount, selfId.String())
+	interval, err := e.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
 	if err != nil {
 		return stypes.TxIn{}, fmt.Errorf("failed to get confirm count: %w", err)
 	}
@@ -226,11 +226,13 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		return txIn, nil
 	}
 
-	// report network fee and solvency
-	e.reportNetworkFee(currentHeight)
-	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(currentHeight); err != nil {
-			e.logger.Err(err).Msg("failed to report Solvency info to THORNode")
+	if !skip {
+		// report network fee and solvency
+		e.reportNetworkFee(currentHeight)
+		if e.solvencyReporter != nil {
+			if err = e.solvencyReporter(currentHeight); err != nil {
+				e.logger.Err(err).Msg("failed to report Solvency info to THORNode")
+			}
 		}
 	}
 
@@ -476,6 +478,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 	// find the median gas price in the block
 	sort.Slice(prices, func(i, j int) bool { return prices[i].Cmp(prices[j]) == -1 })
 	gasPrice := prices[len(prices)/2]
+	fmt.Println(e.cfg.ChainID, "gasPrice ", gasPrice, "len", len(e.gasCache))
 
 	// add to the cache
 	e.gasCache = append(e.gasCache, gasPrice)
@@ -511,6 +514,7 @@ func (e *EVMScanner) updateGasPrice(prices []*big.Int) {
 func (e *EVMScanner) reportNetworkFee(height int64) {
 	gasPrice := e.GetGasPrice()
 
+	fmt.Println(e.cfg.ChainID, "cureentGas ", gasPrice)
 	// skip posting if there is not yet a fee
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		return

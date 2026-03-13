@@ -772,35 +772,13 @@ func (c *Client) getTotalTransactionValue(txIn stypes.TxIn) cosmos.Uint {
 }
 
 // getBlockRequiredConfirmation find out how many confirmation the given txIn need to have before it can be send to MAP
-func (c *Client) getBlockRequiredConfirmation(txIn stypes.TxIn, height int64) (int64, error) {
-	// totalTxValue := c.getTotalTransactionValue(txIn)
-	// totalTxValueInWei := c.convertThorchainAmountToWei(totalTxValue.BigInt())
-	// confMul, err := utxo.GetConfMulBasisPoint(c.GetChain().String(), c.bridge)
-	// if err != nil {
-	// 	c.logger.Err(err).Msgf("failed to get conf multiplier mimir value for %s", c.GetChain().String())
-	// }
-	// totalFeeAndSubsidy, err := c.getBlockReward(height)
-	// confValue := common.GetUncappedShare(confMul, cosmos.NewUint(constants.MaxBasisPts), cosmos.NewUintFromBigInt(totalFeeAndSubsidy))
-	// if err != nil {
-	// 	return 0, fmt.Errorf("fail to get coinbase value: %w", err)
-	// }
-	// confirm := cosmos.NewUintFromBigInt(totalTxValueInWei).MulUint64(2).Quo(confValue).Uint64()
-	// confirm, err = utxo.MaxConfAdjustment(confirm, c.GetChain().String(), c.bridge)
-	// if err != nil {
-	// 	c.logger.Err(err).Msgf("fail to get max conf value adjustment for %s", c.GetChain().String())
-	// }
-	// c.logger.Info().Msgf("totalTxValue:%s,total fee and Subsidy:%d,confirmation:%d", totalTxValueInWei, totalFeeAndSubsidy, confirm)
-	// if confirm < 2 {
-	// 	// in ETH PoS (post merge) reorgs are harder to do but can occur. In
-	// 	// looking at 1k reorg blocks, 10 were reorg'ed at a height of 2, and
-	// 	// the rest were one (none were three or larger). While the odds of
-	// 	// getting reorg'ed are small (as it can only happen for very small
-	// 	// trades), the additional delay to swappers is also small (12 secs or
-	// 	// so). Thus, the determination by thorsec, 9R and devs were to set the
-	// 	// new min conf is 2.
-	// 	return 2, nil
-	// }
-	return 14, nil
+func (c *Client) getBlockRequiredConfirmation() (int64, error) {
+	selfId, _ := c.cfg.ChainID.ChainID()
+	interval, err := c.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
+	if err != nil {
+		return 0, fmt.Errorf("fail to get mimir value for key: %w", err)
+	}
+	return interval, nil
 }
 
 // GetConfirmationCount decide the given txIn how many confirmation it requires
@@ -812,8 +790,8 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	if txIn.MemPool {
 		return 0
 	}
-	blockHeight := txIn.TxArray[0].Height.Int64()
-	confirm, err := c.getBlockRequiredConfirmation(txIn, blockHeight)
+
+	confirm, err := c.getBlockRequiredConfirmation()
 	c.logger.Debug().Msgf("confirmation required: %d", confirm)
 	if err != nil {
 		c.logger.Err(err).Msg("fail to get block confirmation ")
