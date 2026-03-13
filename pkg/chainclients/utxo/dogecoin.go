@@ -75,7 +75,9 @@ func (c *Client) decodeDOGEAddress(toAddress string, isMigrate bool, txHash stri
 	}
 
 	c.log.Error().Err(err).Str("relayHash", txHash).Str("toAddress", toAddress).Msg("fail to decode dogecoin address")
-	defaultAddress, err := c.bridge.GetMimirWithBytes(constants.KeyOfTransferFailedReceiver, c.cfg.ChainID.String())
+
+	chainID, _ := c.cfg.ChainID.ChainID()
+	defaultAddress, err := c.bridge.GetMimirWithBytes(constants.KeyOfTransferFailedReceiver, chainID.String())
 	if err != nil {
 		c.log.Error().Err(err).Str("relayHash", txHash).Str("chain", c.cfg.ChainID.String()).Msg("fail to get default receiver")
 		return nil, false, fmt.Errorf("fail to get default address config: %w", err)

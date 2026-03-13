@@ -78,7 +78,7 @@ func (c *Client) SignTx(tx stypes.TxOutItem, thorchainHeight int64) ([]byte, []b
 	outputAddr, outputAddrStr, err := c.getOutputAddress(tx, toAddress)
 	if err != nil {
 		c.log.Error().Err(err).Str("relayHash", tx.TxHash).Str("toAddress", toAddress).Msg("fail to decode output address")
-		return nil, nil, nil, nil
+		return nil, nil, nil, fmt.Errorf("fail to decode output address: %w", err)
 	}
 
 	// verify address
