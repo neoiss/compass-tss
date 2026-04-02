@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -44,8 +43,7 @@ type TronBlockScanner struct {
 	bridge                shareTypes.Bridge
 	api                   *api.TronApi
 	gatewayAbi            abi.ABI
-	refBlocks             []RefBlock // todo can delete
-	refAddress            string     // needed for energy estimation via api
+	refAddress            string // needed for energy estimation via api
 	currentFee            uint64
 	ethClient             *ethclient.Client
 	globalNetworkFeeQueue chan stypes.NetworkFee
@@ -70,7 +68,6 @@ func NewTronBlockScanner(
 		logger:    logger,
 		api:       api.NewTronApi(cfg.RPCHost, cfg.BlockScanner.HTTPRequestTimeout),
 		bridge:    bridge,
-		refBlocks: []RefBlock{},
 		ethClient: ethClient,
 	}
 	scanner.gatewayAbi, err = abi.JSON(bytes.NewReader(gatewayABI))
@@ -131,17 +128,8 @@ func (s *TronBlockScanner) FetchTxs(
 	if interval != 0 && currentHeight%interval != 0 {
 		skip = true
 	}
-	if !skip {
-		s.logger.Info().Any("height", currentHeight).Msg("get block")
-		// process all transactions in the block
-		block, err = s.api.GetBlock(currentHeight)
-		if err != nil {
-			s.logger.Err(err).Msg("getBlock failed")
-			return types.TxIn{}, err
-		}
-	}
 
-	txs, err := s.processTxs(block, logs)
+	txs, err := s.processTxs(logs)
 	if err != nil {
 		s.logger.Err(err).Msg("processTxs failed")
 		return types.TxIn{}, err
@@ -166,19 +154,6 @@ func (s *TronBlockScanner) FetchTxs(
 		return txIn, nil
 	}
 
-	// update block history
-	if len(s.refBlocks) >= refBlocksMax {
-		s.refBlocks = s.refBlocks[len(s.refBlocks)-(refBlocksMax-1):]
-	}
-	s.refBlocks = append(s.refBlocks, RefBlock{
-		Timestamp: block.Header.RawData.Timestamp,
-		Height:    block.Header.RawData.Number,
-		Id:        block.BlockId,
-	})
-	sort.Slice(s.refBlocks, func(i, j int) bool {
-		return s.refBlocks[i].Height < s.refBlocks[j].Height
-	})
-
 	return txIn, nil
 }
 
@@ -198,12 +173,10 @@ func (s *TronBlockScanner) base58ToHex(addr string) (string, error) {
 // private
 // ----------------------------------------------------------------------------
 func (s *TronBlockScanner) processTxs(
-	block api.Block,
 	logs []etypes.Log,
 ) ([]*types.TxInItem, error) {
 	txInItems := make([]*types.TxInItem, 0)
 	cId, _ := s.cfg.ChainID.ChainID()
-	height := block.Header.RawData.Number
 
 	for _, ele := range logs {
 		// extract the txInItem
@@ -218,7 +191,7 @@ func (s *TronBlockScanner) processTxs(
 			Tx:        ele.TxHash.String()[2:], // drop the "0x" prefix
 			LogIndex:  ele.Index,
 			Topic:     ele.Topics[0].Hex(),
-			Height:    big.NewInt(height),
+			Height:    big.NewInt(int64(ele.BlockNumber)),
 			FromChain: cId,
 		}
 
