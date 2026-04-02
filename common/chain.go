@@ -80,6 +80,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(TRONChain, TestNet):   big.NewInt(728126427),
 	getChainKey(POLChain, TestNet):    big.NewInt(1101),
 	getChainKey(XLAYERChain, TestNet): big.NewInt(195),
+	getChainKey(SOLChain, TestNet):    big.NewInt(1360108768460800),
 
 	// main network
 	getChainKey(BSCChain, MainNet):    big.NewInt(56),
@@ -96,6 +97,7 @@ var chainToChainID = map[string]*big.Int{
 	getChainKey(TRONChain, MainNet):   big.NewInt(728126428),
 	getChainKey(POLChain, MainNet):    big.NewInt(137),
 	getChainKey(XLAYERChain, MainNet): big.NewInt(196),
+	getChainKey(SOLChain, MainNet):    big.NewInt(1360108768460801),
 }
 
 var chainIDToChain = map[string]Chain{
@@ -112,6 +114,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(11).String():               OPTChain,
 	big.NewInt(1337).String():             UNIChain,
 	big.NewInt(728126427).String():        TRONChain,
+	big.NewInt(1360108768460800).String(): SOLChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -126,6 +129,7 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(130).String():              UNIChain,
 	big.NewInt(10).String():               OPTChain,
 	big.NewInt(728126428).String():        TRONChain,
+	big.NewInt(1360108768460801).String(): SOLChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {

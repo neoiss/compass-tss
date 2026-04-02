@@ -714,7 +714,16 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 		toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
 
-		if destChainID.Cmp(mapChainID) != 0 {
+		solChainID, err := common.SOLChain.ChainID()
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, common.SOLChain)
+		}
+		tronChainID, err := common.TRONChain.ChainID()
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, common.TRONChain)
+		}
+
+		if destChainID.Cmp(solChainID) == 0 || destChainID.Cmp(tronChainID) == 0 {
 			destChainID = mapChainID
 			toChain = ethcommon.LeftPadBytes(mapChainID.Bytes(), 8)
 			toBytes = c.bridge.GetFusionReceiver().Bytes()
