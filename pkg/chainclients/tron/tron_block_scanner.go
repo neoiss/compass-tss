@@ -118,7 +118,6 @@ func (s *TronBlockScanner) FetchTxs(
 		return stypes.TxIn{}, err
 	}
 
-	var block api.Block
 	selfId, _ := s.cfg.ChainID.ChainID()
 	interval, err := s.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
 	if err != nil {
