@@ -507,10 +507,10 @@ type Bifrost struct {
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.BSCChain:    b.Chains.BSC,
-		common.BTCChain:    b.Chains.BTC,
-		common.XRPChain:    b.Chains.XRP,
-		common.DOGEChain:   b.Chains.DOGE,
+		common.BSCChain: b.Chains.BSC,
+		common.BTCChain: b.Chains.BTC,
+		// common.XRPChain: b.Chains.XRP,
+		// common.DOGEChain:   b.Chains.DOGE,
 		common.UNIChain:    b.Chains.UNI,
 		common.ETHChain:    b.Chains.ETH,
 		common.BASEChain:   b.Chains.BASE,
