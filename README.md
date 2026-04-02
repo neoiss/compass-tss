@@ -2,7 +2,7 @@
 
 **A multi-party secure validation node for cross-chain transactions on mainnet.**
 
-Compass-TSS (CrossX) is forked from [THORChain's Bifrost](https://gitlab.com/thorchain/thornode/-/tree/develop/bifrost), adapted for the MAP Protocol ecosystem. It serves as a core component of cross-chain infrastructure, participating in cross-chain transaction validation through Threshold Signature Scheme (TSS) technology. Multiple CrossX nodes form a validation network that jointly signs and confirms cross-chain messages, ensuring secure and trustworthy asset transfers between different blockchains while eliminating single points of failure and private key exposure risks.
+Compass-TSS (CrossX) is forked from [THORChain's Bifrost](https://github.com/mapprotocol/compass-tss/-/tree/develop/bifrost), adapted for the MAP Protocol ecosystem. It serves as a core component of cross-chain infrastructure, participating in cross-chain transaction validation through Threshold Signature Scheme (TSS) technology. Multiple CrossX nodes form a validation network that jointly signs and confirms cross-chain messages, ensuring secure and trustworthy asset transfers between different blockchains while eliminating single points of failure and private key exposure risks.
 
 ## Supported Chains
 

@@ -160,7 +160,7 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 			}
 
 			switch toChain {
-			case common.BTCChain, common.XRPChain:
+			case common.BTCChain, common.XRPChain, common.DOGEChain, common.BCHChain, common.LTCChain:
 				txOut.TxArray = append(txOut.TxArray, tmp)
 			default:
 				oracleTx.TxArray = append(oracleTx.TxArray, tmp)

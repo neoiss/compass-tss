@@ -100,7 +100,6 @@ func GetPriKeyRawBytes(priKey tcrypto.PrivKey) ([]byte, error) {
 }
 
 func CheckKeyOnCurve(pk string) (bool, error) {
-	fmt.Println("CheckKeyOnCurve pk ----------------------- ", pk)
 	ethPubKey, err := ecrypto.DecompressPubkey(ecommon.Hex2Bytes(pk))
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal ECDSA public key: %w", err)

@@ -4,17 +4,18 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
 	"sync"
 
-	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/compass-tss/blockscanner"
@@ -74,7 +75,7 @@ func NewEVMClient(
 		return nil, fmt.Errorf("failed to create EVM client, thor keys empty")
 	}
 	if bridge == nil {
-		return nil, errors.New("thorchain bridge is nil")
+		return nil, errors.New("bridge is nil")
 	}
 	if pubkeyMgr == nil {
 		return nil, errors.New("pubkey manager is nil")
@@ -89,17 +90,15 @@ func NewEVMClient(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key: %w", err)
 	}
-	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tm pub key: %w", err)
-	}
-	pk, err := common.NewPubKeyFromCrypto(temp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pub key: %w", err)
-	}
+
 	evmPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
 		return nil, err
+	}
+	compressPkBytes := crypto.CompressPubkey(&evmPrivateKey.PublicKey)
+	pk, err := common.NewPubKey(hex.EncodeToString(compressPkBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pub key: %w", err)
 	}
 
 	clog := log.With().Str("module", "evm").Stringer("chain", cfg.ChainID).Logger()
@@ -234,6 +233,13 @@ func NewEVMClient(
 		return c, fmt.Errorf("fail to create block scanner: %w", err)
 	}
 
+	localNodeAddress, err := c.localPubKey.GetAddress(cfg.ChainID)
+	if err != nil {
+		c.logger.Err(err).Stringer("chain", cfg.ChainID).Msg("failed to get local node address")
+	}
+	c.logger.Info().Stringer("chain", cfg.ChainID).Stringer("address", localNodeAddress).
+		Msg("local node address")
+
 	return c, nil
 }
 
@@ -353,7 +359,7 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 		// use outbound rate
 		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
 	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
-		// todo will next 2
+		gasRate = cgl.Third
 	}
 
 	if gasRate.Cmp(cgl.Third) != 0 {
@@ -594,6 +600,7 @@ func (c *EVMClient) BroadcastTx(txOutItem stypes.TxOutItem, hexTx []byte) (strin
 	} else if err = c.AddSignedTxItem(txID, blockHeight, string(common.EmptyPubKey), &txOutItem); err != nil { //txOutItem.VaultPubKey.String()
 		c.logger.Err(err).Str("hash", txID).Msg("fail to add signed tx item")
 	}
+	// add
 
 	return txID, nil
 }
@@ -609,19 +616,13 @@ func (c *EVMClient) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 
 // GetConfirmationCount returns the confirmation count for the given tx.
 func (c *EVMClient) GetConfirmationCount(txIn stypes.TxIn) int64 {
-	switch c.cfg.ChainID {
-	case common.AVAXChain: // instant finality
-		return 0
-	case common.ARBChain:
-		return 24
-	case common.BASEChain:
-		return 12 // ~2 Ethereum blocks for parity with the 2 block minimum in eth client
-	case common.BSCChain:
-		return 3 // round up from 2.5 blocks required for finality
-	default:
-		c.logger.Fatal().Msgf("unsupported chain: %s", c.cfg.ChainID)
-		return 0
+	selfId, _ := c.cfg.ChainID.ChainID()
+	interval, err := c.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
+	if err != nil {
+		c.logger.Err(err).Msgf("fail to get mimir value for gas fee gap, use default value: %s", err)
+		return constants.DefaultConfirmCount
 	}
+	return interval
 }
 
 // ConfirmationCountReady returns true if the confirmation count is ready.
@@ -640,7 +641,7 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	case common.BASEChain:
 		// block is already finalized(settled to l1)
 		return true
-	case common.ARBChain:
+	case common.ARBChain, common.OPTChain, common.UNIChain:
 		if len(txIn.TxArray) == 0 {
 			return true
 		}
@@ -657,16 +658,6 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 
 // ReportSolvency reports solvency once per configured solvency blocks.
 func (c *EVMClient) ReportSolvency(height int64) error {
-	if !c.ShouldReportSolvency(height) {
-		return nil
-	}
-
-	// when block scanner is not healthy, only report from auto-unhalt SolvencyCheckRunner
-	// (FetchTxs passes currentBlockHeight, while SolvencyCheckRunner passes chainHeight)
-	if !c.IsBlockScannerHealthy() && height == c.evmScanner.currentBlockHeight {
-		return nil
-	}
-
 	return nil
 }
 

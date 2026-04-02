@@ -11,20 +11,14 @@ import (
 var (
 	//go:embed abi/maintainer.json
 	maintainerAbi string
-	//go:embed abi/tokenRegister.json
-	tokenRegistryABI string
 	//go:embed abi/view.json
 	viewABI string
+	//go:embed abi/configuration.json
+	cfgABI string
 	//go:embed abi/relay.json
 	relayABI string
 	//go:embed abi/tssManager.json
 	tssABI string
-	//go:embed abi/gasService.json
-	gasABI string
-	//go:embed abi/affiliateFeeManager.json
-	affiliateFeeABI string
-	//go:embed abi/fusionReceiver.json
-	fusionReceiverABI string
 	//
 	packABI = `[{"inputs":[{"components":[{"internalType":"uint256","name":"chainAndGasLimit","type":"uint256"},{"internalType":"bytes","name":"vault","type":"bytes"},{"internalType":"enum TxType","name":"txType","type":"uint8"},{"internalType":"uint256","name":"sequence","type":"uint256"},{"internalType":"bytes","name":"token","type":"bytes"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"from","type":"bytes"},{"internalType":"bytes","name":"to","type":"bytes"},{"internalType":"bytes","name":"payload","type":"bytes"}],"internalType":"struct BridgeItem","name":"bridgeItem","type":"tuple"}],"name":"relaySignedPack","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"nonpayable","type":"function"}]`
 )
@@ -63,24 +57,6 @@ func init() {
 			return nil
 		},
 		func(b *Bridge) error {
-			gas, err := abi.JSON(strings.NewReader(gasABI))
-			if err != nil {
-				return fmt.Errorf("fail to unmarshal relayABI abi: %w", err)
-			}
-			b.gasAbi = &gas
-
-			return nil
-		},
-		func(b *Bridge) error {
-			registry, err := abi.JSON(strings.NewReader(tokenRegistryABI))
-			if err != nil {
-				return fmt.Errorf("failed to parse token registry abi: %w", err)
-			}
-			b.tokenRegistry = &registry
-
-			return nil
-		},
-		func(b *Bridge) error {
 			view, err := abi.JSON(strings.NewReader(viewABI))
 			if err != nil {
 				return fmt.Errorf("failed to parse view abi: %w", err)
@@ -90,20 +66,11 @@ func init() {
 			return nil
 		},
 		func(b *Bridge) error {
-			affiliateFee, err := abi.JSON(strings.NewReader(affiliateFeeABI))
+			cfg, err := abi.JSON(strings.NewReader(cfgABI))
 			if err != nil {
-				return fmt.Errorf("failed to parse affiliate fee abi: %w", err)
+				return fmt.Errorf("failed to parse cfg abi: %w", err)
 			}
-			b.affiliateFeeAbi = &affiliateFee
-
-			return nil
-		},
-		func(b *Bridge) error {
-			fusionReceiver, err := abi.JSON(strings.NewReader(fusionReceiverABI))
-			if err != nil {
-				return fmt.Errorf("failed to parse affiliate fee abi: %w", err)
-			}
-			b.fusionReceiverAbi = &fusionReceiver
+			b.cfgAbi = &cfg
 
 			return nil
 		},

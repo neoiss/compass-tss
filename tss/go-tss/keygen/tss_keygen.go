@@ -72,7 +72,6 @@ func (tKeyGen *TssKeyGen) GenerateNewKey(keygenReq Request) (*bcrypto.ECPoint, e
 	if err != nil {
 		return nil, fmt.Errorf("fail to get keygen parties: %w", err)
 	}
-	fmt.Println("GenerateNewKey partiesID : ", partiesID)
 
 	keyGenLocalStateItem := storage.KeygenLocalState{
 		ParticipantKeys: keygenReq.Keys,
@@ -129,7 +128,6 @@ func (tKeyGen *TssKeyGen) GenerateNewKey(keygenReq Request) (*bcrypto.ECPoint, e
 			close(errChan)
 		}
 	}()
-	fmt.Println("GenerateNewKey start goroutine handler msg")
 	go tKeyGen.tssCommonStruct.ProcessInboundMessages(tKeyGen.commStopChan, &keyGenWg)
 
 	r, err := tKeyGen.processKeyGen(errChan, outCh, endCh, keyGenLocalStateItem)

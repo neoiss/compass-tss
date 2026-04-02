@@ -76,7 +76,6 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
-	fmt.Println("stop ")
 	fmt.Println(s.Stop())
 }
 

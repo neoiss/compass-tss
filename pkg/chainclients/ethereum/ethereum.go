@@ -3,6 +3,7 @@ package ethereum
 import (
 	"context"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -10,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	ecore "github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/hashicorp/go-multierror"
@@ -32,7 +33,6 @@ import (
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/runners"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/signercache"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
-	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/utxo"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss"
 	tssp "github.com/mapprotocol/compass-tss/tss/go-tss/tss"
@@ -89,15 +89,6 @@ func NewClient(thorKeys *keys.Keys,
 		return nil, fmt.Errorf("fail to get private key: %w", err)
 	}
 
-	temp, err := codec.ToCmtPubKeyInterface(priv.PubKey())
-	if err != nil {
-		return nil, fmt.Errorf("fail to get tm pub key: %w", err)
-	}
-	pk, err := common.NewPubKeyFromCrypto(temp)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get pub key: %w", err)
-	}
-
 	if bridge == nil {
 		return nil, errors.New("relay bridge is nil")
 	}
@@ -107,6 +98,12 @@ func NewClient(thorKeys *keys.Keys,
 	ethPrivateKey, err := evm.GetPrivateKey(priv)
 	if err != nil {
 		return nil, err
+	}
+
+	compressPkBytes := crypto.CompressPubkey(&ethPrivateKey.PublicKey)
+	pk, err := common.NewPubKey(hex.EncodeToString(compressPkBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pub key: %w", err)
 	}
 
 	ethClient, err := ethclient.Dial(cfg.RPCHost)
@@ -775,35 +772,13 @@ func (c *Client) getTotalTransactionValue(txIn stypes.TxIn) cosmos.Uint {
 }
 
 // getBlockRequiredConfirmation find out how many confirmation the given txIn need to have before it can be send to MAP
-func (c *Client) getBlockRequiredConfirmation(txIn stypes.TxIn, height int64) (int64, error) {
-	// totalTxValue := c.getTotalTransactionValue(txIn)
-	// totalTxValueInWei := c.convertThorchainAmountToWei(totalTxValue.BigInt())
-	// confMul, err := utxo.GetConfMulBasisPoint(c.GetChain().String(), c.bridge)
-	// if err != nil {
-	// 	c.logger.Err(err).Msgf("failed to get conf multiplier mimir value for %s", c.GetChain().String())
-	// }
-	// totalFeeAndSubsidy, err := c.getBlockReward(height)
-	// confValue := common.GetUncappedShare(confMul, cosmos.NewUint(constants.MaxBasisPts), cosmos.NewUintFromBigInt(totalFeeAndSubsidy))
-	// if err != nil {
-	// 	return 0, fmt.Errorf("fail to get coinbase value: %w", err)
-	// }
-	// confirm := cosmos.NewUintFromBigInt(totalTxValueInWei).MulUint64(2).Quo(confValue).Uint64()
-	// confirm, err = utxo.MaxConfAdjustment(confirm, c.GetChain().String(), c.bridge)
-	// if err != nil {
-	// 	c.logger.Err(err).Msgf("fail to get max conf value adjustment for %s", c.GetChain().String())
-	// }
-	// c.logger.Info().Msgf("totalTxValue:%s,total fee and Subsidy:%d,confirmation:%d", totalTxValueInWei, totalFeeAndSubsidy, confirm)
-	// if confirm < 2 {
-	// 	// in ETH PoS (post merge) reorgs are harder to do but can occur. In
-	// 	// looking at 1k reorg blocks, 10 were reorg'ed at a height of 2, and
-	// 	// the rest were one (none were three or larger). While the odds of
-	// 	// getting reorg'ed are small (as it can only happen for very small
-	// 	// trades), the additional delay to swappers is also small (12 secs or
-	// 	// so). Thus, the determination by thorsec, 9R and devs were to set the
-	// 	// new min conf is 2.
-	// 	return 2, nil
-	// }
-	return 14, nil
+func (c *Client) getBlockRequiredConfirmation() (int64, error) {
+	selfId, _ := c.cfg.ChainID.ChainID()
+	interval, err := c.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
+	if err != nil {
+		return 0, fmt.Errorf("fail to get mimir value for key: %w", err)
+	}
+	return interval, nil
 }
 
 // GetConfirmationCount decide the given txIn how many confirmation it requires
@@ -815,8 +790,8 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	if txIn.MemPool {
 		return 0
 	}
-	blockHeight := txIn.TxArray[0].Height.Int64()
-	confirm, err := c.getBlockRequiredConfirmation(txIn, blockHeight)
+
+	confirm, err := c.getBlockRequiredConfirmation()
 	c.logger.Debug().Msgf("confirmation required: %d", confirm)
 	if err != nil {
 		c.logger.Err(err).Msg("fail to get block confirmation ")
@@ -825,36 +800,9 @@ func (c *Client) GetConfirmationCount(txIn stypes.TxIn) int64 {
 	return confirm
 }
 
-func (c *Client) getAsgardAddress() ([]common.Address, error) {
-	if time.Since(c.lastAsgard) < constants.MAPRelayChainBlockTime && c.asgardAddresses != nil {
-		return c.asgardAddresses, nil
-	}
-	newAddresses, err := utxo.GetAsgardAddress(common.ETHChain, c.bridge)
-	if err != nil {
-		return nil, fmt.Errorf("fail to get asgards : %w", err)
-	}
-	if len(newAddresses) > 0 { // ensure we don't overwrite with empty list
-		c.asgardAddresses = newAddresses
-	}
-	c.lastAsgard = time.Now()
-	return c.asgardAddresses, nil
-}
-
 // OnObservedTxIn gets called from observer when we have a valid observation
 func (c *Client) OnObservedTxIn(txIn stypes.TxInItem, blockHeight int64) {
 	c.ethScanner.onObservedTxIn(txIn, blockHeight)
-	//m, err := mem.ParseMemo(common.LatestVersion, txIn.Memo)
-	//if err != nil {
-	// //	Debug log only as ParseMemo error is expected for THORName inbounds.
-	//c.logger.Debug().Err(err).Msgf("fail to parse memo: %s", txIn.Memo)
-	//return
-	//}
-	//if !m.IsOutbound() {
-	//	return
-	//}
-	//if m.GetTxID().IsEmpty() {
-	//	return
-	//}
 	if err := c.signerCacheManager.SetSigned(txIn.CacheHash(c.GetChain(), txIn.Tx),
 		txIn.CacheVault(c.GetChain()), txIn.Tx); err != nil {
 		c.logger.Err(err).Msg("fail to update signer cache")

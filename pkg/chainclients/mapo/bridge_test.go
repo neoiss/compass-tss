@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
+	"github.com/mapprotocol/compass-tss/constants"
 	"github.com/mapprotocol/compass-tss/internal/keys"
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/evm"
@@ -172,11 +173,11 @@ func (s *BridgeSuite) SetUpTest(c *C) {
 
 	bridgeCfg := config.BifrostClientConfiguration{
 		ChainID:         "map",
-		ChainHost:       "https://testnet-rpc.maplabs.io",
+		ChainHost:       "https://rpc.maplabs.io",
 		SignerPasswd:    "password",
 		ChainHomeFolder: "./",
 		Maintainer:      "0x0EdA5e4015448A2283662174DD7def3C3d262D38",
-		ViewController:  "0x7Ea4dFBa2fA7de4C18395aCD391D9E67bECA47A6",
+		ViewController:  "0xaf720ad7086627034c4d8CA2b4493079E97f1C3A",
 	}
 
 	name := "test-eth"
@@ -279,4 +280,9 @@ func Test_Bridge_KeyShare(t *testing.T) {
 	assert.Nil(t, err)
 	t.Log("KeyShare: ", keyShare)
 	t.Log("Pubkey: ", pubkey)
+}
+
+func Test_Topics(t *testing.T) {
+	t.Log("EventOfBridgeIn ", constants.EventOfBridgeIn.GetTopic())
+	t.Log("EventOfBridgeOut ", constants.EventOfBridgeOut.GetTopic())
 }

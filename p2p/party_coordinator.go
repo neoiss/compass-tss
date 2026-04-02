@@ -183,7 +183,6 @@ func (pc *PartyCoordinator) HandleStreamWithLeader(stream network.Stream) {
 func (pc *PartyCoordinator) removePeerGroup(messageID string) {
 	pc.joinPartyGroupLock.Lock()
 	defer pc.joinPartyGroupLock.Unlock()
-	fmt.Println("messageID ---------------- ", messageID)
 	delete(pc.peersGroup, messageID)
 }
 
@@ -443,8 +442,6 @@ func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64,
 		return nil, "", err
 	}
 
-	fmt.Println("JoinPartyWithLeader leader ", leader, "leaderID", leaderID,
-		"peerIDs", peerIDs, "msgID", msgID)
 	peerGroup, err := pc.createJoinPartyGroups(msgID, leaderID, peerIDs, threshold)
 	if err != nil {
 		pc.logger.Error().Err(err).Msg("error creating peerStatus")
@@ -454,12 +451,10 @@ func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64,
 
 	if pc.host.ID() == leaderID {
 		onlines, err := pc.joinPartyLeader(msgID, peerGroup, sigChan)
-		fmt.Println("JoinPartyWithLeader onlines ", onlines)
 		return onlines, leader, err
 	}
 	// now we are just the normal peer
 	onlines, err := pc.joinPartyMember(msgID, peerGroup, sigChan)
-	fmt.Println("JoinPartyWithLeader joinPartyMember onlines ", onlines)
 	return onlines, leader, err
 }
 

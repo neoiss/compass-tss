@@ -92,6 +92,7 @@ type Bridge interface {
 	GetConstants() (map[string]int64, error)
 	GetMimir(key string) (int64, error)
 	GetMimirWithRef(template, ref string) (int64, error)
+	GetMimirWithBytes(template, ref string) ([]byte, error)
 	GetMapVersion() (string, error)
 	HasNetworkFee(chain common.Chain) (bool, error)
 	GetNetworkFee(chain common.Chain) (transactionSize, transactionSwapSize, transactionFeeRate uint64, err error)
@@ -113,7 +114,6 @@ type Bridge interface {
 	GetEpochInfo(epoch *big.Int) (*structure.EpochInfo, error)
 	GetChainID(name string) (*big.Int, error)
 	GetFusionReceiver() ecommon.Address
-	GetChainIDFromFusionReceiver(name string) (*big.Int, error)
 	GetChainName(chain *big.Int) (string, error)
 	GetTokenAddress(chainID *big.Int, name string) ([]byte, error)
 	GetTokenDecimals(chainID *big.Int, address []byte) (*big.Int, error)

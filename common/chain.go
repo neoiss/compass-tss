@@ -14,22 +14,26 @@ import (
 )
 
 const (
-	EmptyChain = Chain("")
-	BSCChain   = Chain("Bsc")
-	ETHChain   = Chain("Eth")
-	BTCChain   = Chain("Btc")
-	LTCChain   = Chain("Ltc")
-	BCHChain   = Chain("Bch")
-	DOGEChain  = Chain("Doge")
-	THORChain  = Chain("Thor")
-	GAIAChain  = Chain("Gaia")
-	AVAXChain  = Chain("Avax")
-	BASEChain  = Chain("Base")
-	XRPChain   = Chain("Xrp")
-	MAPChain   = Chain("Map")
-	ARBChain   = Chain("Arb")
-	TRONChain  = Chain("Tron")
-	SOLChain   = Chain("Sol")
+	EmptyChain  = Chain("")
+	BSCChain    = Chain("Bsc")
+	ETHChain    = Chain("Eth")
+	BTCChain    = Chain("Btc")
+	LTCChain    = Chain("Ltc")
+	BCHChain    = Chain("Bch")
+	DOGEChain   = Chain("Doge")
+	THORChain   = Chain("Thor")
+	GAIAChain   = Chain("Gaia")
+	AVAXChain   = Chain("Avax")
+	BASEChain   = Chain("Base")
+	XRPChain    = Chain("Xrp")
+	MAPChain    = Chain("Map")
+	ARBChain    = Chain("Arb")
+	TRONChain   = Chain("Tron")
+	SOLChain    = Chain("Sol")
+	OPTChain    = Chain("Opt")
+	UNIChain    = Chain("Uni")
+	XLAYERChain = Chain("Xlayer")
+	POLChain    = Chain("Pol")
 
 	SigningAlgoSecp256k1 = SigningAlgo("secp256k1")
 	SigningAlgoEd25519   = SigningAlgo("ed25519")
@@ -48,6 +52,12 @@ var AllChains = [...]Chain{
 	XRPChain,
 	MAPChain,
 	ARBChain,
+	TRONChain,
+	SOLChain,
+	OPTChain,
+	UNIChain,
+	XLAYERChain,
+	POLChain,
 }
 
 var chainToNativeToken = map[Chain]string{
@@ -56,24 +66,36 @@ var chainToNativeToken = map[Chain]string{
 
 var chainToChainID = map[string]*big.Int{
 	// test network
-	getChainKey(BSCChain, TestNet):  big.NewInt(97),
-	getChainKey(ETHChain, TestNet):  big.NewInt(11155111),
-	getChainKey(BTCChain, TestNet):  big.NewInt(1360095883558914),
-	getChainKey(DOGEChain, TestNet): big.NewInt(1360095883558916),
-	getChainKey(AVAXChain, TestNet): big.NewInt(43113),
-	getChainKey(BASEChain, TestNet): big.NewInt(84532),
-	getChainKey(MAPChain, TestNet):  big.NewInt(212),
-	getChainKey(ARBChain, TestNet):  big.NewInt(42170),
+	getChainKey(BSCChain, TestNet):    big.NewInt(97),
+	getChainKey(ETHChain, TestNet):    big.NewInt(11155111),
+	getChainKey(BTCChain, TestNet):    big.NewInt(1360095883558914),
+	getChainKey(DOGEChain, TestNet):   big.NewInt(1360121653362690),
+	getChainKey(AVAXChain, TestNet):   big.NewInt(43113),
+	getChainKey(BASEChain, TestNet):   big.NewInt(84532),
+	getChainKey(MAPChain, TestNet):    big.NewInt(212),
+	getChainKey(ARBChain, TestNet):    big.NewInt(42170),
+	getChainKey(XRPChain, TestNet):    big.NewInt(1360117358395394),
+	getChainKey(OPTChain, TestNet):    big.NewInt(11),
+	getChainKey(UNIChain, TestNet):    big.NewInt(1337),
+	getChainKey(TRONChain, TestNet):   big.NewInt(728126427),
+	getChainKey(POLChain, TestNet):    big.NewInt(1101),
+	getChainKey(XLAYERChain, TestNet): big.NewInt(195),
 
 	// main network
-	getChainKey(BSCChain, MainNet):  big.NewInt(56),
-	getChainKey(ETHChain, MainNet):  big.NewInt(1),
-	getChainKey(BTCChain, MainNet):  big.NewInt(1360095883558913),
-	getChainKey(DOGEChain, MainNet): big.NewInt(1360095883558915),
-	getChainKey(AVAXChain, MainNet): big.NewInt(43114),
-	getChainKey(BASEChain, MainNet): big.NewInt(8453),
-	getChainKey(MAPChain, MainNet):  big.NewInt(22776),
-	getChainKey(ARBChain, MainNet):  big.NewInt(42161),
+	getChainKey(BSCChain, MainNet):    big.NewInt(56),
+	getChainKey(ETHChain, MainNet):    big.NewInt(1),
+	getChainKey(BTCChain, MainNet):    big.NewInt(1360095883558913),
+	getChainKey(DOGEChain, MainNet):   big.NewInt(1360121653362689),
+	getChainKey(AVAXChain, MainNet):   big.NewInt(43114),
+	getChainKey(BASEChain, MainNet):   big.NewInt(8453),
+	getChainKey(MAPChain, MainNet):    big.NewInt(22776),
+	getChainKey(ARBChain, MainNet):    big.NewInt(42161),
+	getChainKey(XRPChain, MainNet):    big.NewInt(1360117358395393),
+	getChainKey(OPTChain, MainNet):    big.NewInt(10),
+	getChainKey(UNIChain, MainNet):    big.NewInt(130),
+	getChainKey(TRONChain, MainNet):   big.NewInt(728126428),
+	getChainKey(POLChain, MainNet):    big.NewInt(137),
+	getChainKey(XLAYERChain, MainNet): big.NewInt(196),
 }
 
 var chainIDToChain = map[string]Chain{
@@ -86,6 +108,10 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(84532).String():            BASEChain,
 	big.NewInt(212).String():              MAPChain,
 	big.NewInt(42170).String():            ARBChain,
+	big.NewInt(1360117358395394).String(): XRPChain,
+	big.NewInt(11).String():               OPTChain,
+	big.NewInt(1337).String():             UNIChain,
+	big.NewInt(728126427).String():        TRONChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -96,6 +122,10 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(8453).String():             BASEChain,
 	big.NewInt(22776).String():            MAPChain,
 	big.NewInt(42161).String():            ARBChain,
+	big.NewInt(1360117358395393).String(): XRPChain,
+	big.NewInt(130).String():              UNIChain,
+	big.NewInt(10).String():               OPTChain,
+	big.NewInt(728126428).String():        TRONChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {
@@ -247,9 +277,6 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		//case THORChain:
-		//	// TODO update this to use mocknet address prefix
-		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.TestNet3Params.Bech32HRPSegwit
 		case LTCChain:
@@ -261,8 +288,6 @@ func (c Chain) AddressPrefix(cn ChainNetwork) string {
 		switch c {
 		case GAIAChain:
 			return "cosmos"
-		//case THORChain:
-		//	return types.GetConfig().GetBech32AccountAddrPrefix()
 		case BTCChain:
 			return chaincfg.MainNetParams.Bech32HRPSegwit
 		case LTCChain:
@@ -347,10 +372,8 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 	case AVAXChain:
 		return 3_000
 	case BSCChain:
-		return 3_000
+		return 450
 	case GAIAChain:
-		return 6_000
-	case THORChain:
 		return 6_000
 	case BASEChain:
 		return 2_000
@@ -360,6 +383,16 @@ func (c Chain) ApproximateBlockMilliseconds() int64 {
 		return 1_000
 	case XRPChain:
 		return 4_000 // approx 3-5 seconds
+	case OPTChain:
+		return 2_000
+	case UNIChain:
+		return 1_000
+	case TRONChain:
+		return 3_000
+	case XLAYERChain:
+		return 1_000
+	case POLChain:
+		return 2_000
 	default:
 		return 0
 	}
@@ -391,20 +424,23 @@ func (c Chain) DecodeAddress(address string) ([]byte, error) {
 		return solanaAddressToBytes(address)
 	case TRONChain:
 		return tronAddressToBytes(address)
+	case XRPChain:
+		return xrpAddressToBytes(address)
 	default:
 		return evmAddressToBytes(address)
 	}
 }
 
-// GetEVMChains returns all "EVM" chains connected to THORChain
+// GetEVMChains returns all "EVM" chains connected to mapo
 // "EVM" is defined, in thornode's context, as a chain that:
 // - uses 0x as an address prefix
 // - has a "Router" Smart Contract
 func GetEVMChains() []Chain {
-	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain, MAPChain, ARBChain}
+	return []Chain{ETHChain, AVAXChain, BSCChain, BASEChain,
+		MAPChain, ARBChain, OPTChain, UNIChain, XLAYERChain, TRONChain, POLChain}
 }
 
-// GetUTXOChains returns all "UTXO" chains connected to THORChain.
+// GetUTXOChains returns all "UTXO" chains connected to mapo.
 func GetUTXOChains() []Chain {
 	return []Chain{BTCChain, LTCChain, BCHChain, DOGEChain}
 }

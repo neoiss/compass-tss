@@ -1,4 +1,4 @@
-// Package constants  contains all the constants used by thorchain
+// Package constants  contains all the constants used by relay
 // by default all the settings in this is for mainnet
 package constants
 
@@ -162,3 +162,23 @@ const (
 )
 
 const DefaultTokenDecimals = 18
+
+const (
+	KeyOfMaxOutboundAttempts      = "MaxOutboundAttempts"
+	KeyOfSigningTransactionPeriod = "SigningTransactionPeriod"
+	KeyOfHALTSIGNINGBSC           = "HALTSIGNINGBSC"
+	KeyOfHALTSIGNINGETH           = "HALTSIGNINGETH"
+	KeyOfHALTSIGNINGBTC           = "HALTSIGNINGBTC"
+	KeyOfHALTSIGNING              = "HALTSIGNING"
+	KeyOfSignerConcurrency        = "SignerConcurrency"
+)
+
+const (
+	KeyOfConfirmCount           = "%s_CONFIRM_COUNT"            // cId
+	KeyOfGASFeeGap              = "%s_GAS_FEE_GAP"              // cId
+	KeyOfTransferFailedReceiver = "%s_TRANSFER_FAILED_RECEIVER" // cId
+)
+
+const (
+	DefaultConfirmCount = 5
+)

@@ -10,14 +10,11 @@ import (
 	"github.com/mapprotocol/compass-tss/metrics"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/ethereum"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/evm"
-
-	//"github.com/mapprotocol/compass-tss/pkg/chainclients/gaia"
-
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/tron"
 	"github.com/mapprotocol/compass-tss/pkg/chainclients/utxo"
-
-	//"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp"
+	"github.com/mapprotocol/compass-tss/pkg/chainclients/xrp"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
 	"github.com/mapprotocol/compass-tss/tss/go-tss/tss"
 	"github.com/rs/zerolog/log"
@@ -27,7 +24,7 @@ import (
 type ChainClient = types.ChainClient
 
 // LoadChains returns chain clients from chain configuration
-func LoadChains(thorKeys *keys.Keys,
+func LoadChains(relayKeys *keys.Keys,
 	cfg map[common.Chain]config.BifrostChainConfiguration,
 	server *tss.TssServer,
 	bridge shareTypes.Bridge,
@@ -43,15 +40,18 @@ func LoadChains(thorKeys *keys.Keys,
 	loadChain := func(chain config.BifrostChainConfiguration) (ChainClient, error) {
 		switch chain.ChainID {
 		case common.ETHChain:
-			return ethereum.NewClient(thorKeys, chain, server, bridge, m, pubKeyValidator)
-		case common.BSCChain, common.BASEChain, common.ARBChain:
-			return evm.NewEVMClient(thorKeys, chain, server, bridge, m, pubKeyValidator)
+			return ethereum.NewClient(relayKeys, chain, server, bridge, m, pubKeyValidator)
+		case common.BSCChain, common.BASEChain, common.ARBChain, common.OPTChain,
+			common.UNIChain, common.AVAXChain, common.XLAYERChain, common.POLChain:
+			return evm.NewEVMClient(relayKeys, chain, server, bridge, m, pubKeyValidator)
 		//case common.GAIAChain:
 		//	return gaia.NewCosmosClient(thorKeys, chain, server, thorchainBridge, m)
 		case common.BTCChain, common.DOGEChain:
-			return utxo.NewClient(thorKeys, chain, server, bridge, m)
-		//case common.XRPChain:
-		//	return xrp.NewClient(thorKeys, chain, server, thorchainBridge, m)
+			return utxo.NewClient(relayKeys, chain, server, bridge, m)
+		case common.XRPChain:
+			return xrp.NewClient(relayKeys, chain, server, bridge, m)
+		case common.TRONChain:
+			return tron.NewTronClient(relayKeys, chain, server, bridge, m)
 		default:
 			log.Fatal().Msgf("chain %s is not supported", chain.ChainID)
 			return nil, nil

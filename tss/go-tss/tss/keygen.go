@@ -1,7 +1,6 @@
 package tss
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/mapprotocol/compass-tss/p2p/conversion"
@@ -50,7 +49,6 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 	sigChan := make(chan string)
 	blameMgr := keygenInstance.GetTssCommonStruct().GetBlameMgr()
 	joinPartyStartTime := time.Now()
-	fmt.Println("keyGen threshold ", len(req.Keys)-1)
 	onlinePeers, leader, errJoinParty := t.joinParty(msgID, req.Version, req.BlockHeight, req.Keys, len(req.Keys)-1, sigChan)
 	joinPartyTime := time.Since(joinPartyStartTime)
 	if errJoinParty != nil {

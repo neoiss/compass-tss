@@ -140,7 +140,6 @@ func (t *TssServer) generateSignature(msgID string, msgsToSign [][]byte, req key
 
 	parsedPeers := make([]string, len(onlinePeers))
 	for i, el := range onlinePeers {
-		fmt.Println("onlinePeers ------------------- ", el.String())
 		parsedPeers[i] = el.String()
 	}
 

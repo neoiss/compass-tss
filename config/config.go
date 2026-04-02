@@ -352,7 +352,7 @@ type MAPO struct {
 	// observed by bifrost.
 	VaultPubkeysCutoffBlocks int64 `mapstructure:"vault_pubkeys_cutoff_blocks"`
 
-	// SeedNodesEndpoint is the full URL to a /thorchain/nodes endpoint for finding active
+	// SeedNodesEndpoint is the full URL to a /relay/nodes endpoint for finding active
 	// validators to seed genesis and peers.
 	SeedNodesEndpoint string `mapstructure:"seed_nodes_endpoint"`
 
@@ -486,11 +486,18 @@ type Bifrost struct {
 	MAPRelay BifrostClientConfiguration  `mapstructure:"mapo"`
 	Metrics  BifrostMetricsConfiguration `mapstructure:"metrics"`
 	Chains   struct {
-		BSC  BifrostChainConfiguration `mapstructure:"bsc"`
-		BTC  BifrostChainConfiguration `mapstructure:"btc"`
-		ETH  BifrostChainConfiguration `mapstructure:"eth"`
-		BASE BifrostChainConfiguration `mapstructure:"base"`
-		ARB  BifrostChainConfiguration `mapstructure:"arb"`
+		BSC    BifrostChainConfiguration `mapstructure:"bsc"`
+		BTC    BifrostChainConfiguration `mapstructure:"btc"`
+		XRP    BifrostChainConfiguration `mapstructure:"xrp"`
+		ETH    BifrostChainConfiguration `mapstructure:"eth"`
+		BASE   BifrostChainConfiguration `mapstructure:"base"`
+		ARB    BifrostChainConfiguration `mapstructure:"arb"`
+		DOGE   BifrostChainConfiguration `mapstructure:"doge"`
+		OPT    BifrostChainConfiguration `mapstructure:"opt"`
+		UNI    BifrostChainConfiguration `mapstructure:"uni"`
+		TRON   BifrostChainConfiguration `mapstructure:"tron"`
+		POL    BifrostChainConfiguration `mapstructure:"pol"`
+		XLAYER BifrostChainConfiguration `mapstructure:"xlayer"`
 	} `mapstructure:"chains"`
 	TSS             BifrostTSSConfiguration `mapstructure:"tss"`
 	ObserverLevelDB LevelDBOptions          `mapstructure:"observer_leveldb"`
@@ -500,11 +507,17 @@ type Bifrost struct {
 func (b Bifrost) GetChains() map[common.Chain]BifrostChainConfiguration {
 	// add chain, first add this config
 	return map[common.Chain]BifrostChainConfiguration{
-		common.BSCChain: b.Chains.BSC,
-		common.BTCChain: b.Chains.BTC,
-		// common.ETHChain:  b.Chains.ETH,
-		// common.BASEChain: b.Chains.BASE,
-		// common.ARBChain:  b.Chains.ARB,
+		common.BSCChain:    b.Chains.BSC,
+		common.BTCChain:    b.Chains.BTC,
+		common.XRPChain:    b.Chains.XRP,
+		common.DOGEChain:   b.Chains.DOGE,
+		common.UNIChain:    b.Chains.UNI,
+		common.ETHChain:    b.Chains.ETH,
+		common.BASEChain:   b.Chains.BASE,
+		common.ARBChain:    b.Chains.ARB,
+		common.TRONChain:   b.Chains.TRON,
+		common.POLChain:    b.Chains.POL,
+		common.XLAYERChain: b.Chains.XLAYER,
 	}
 }
 
@@ -611,6 +624,7 @@ type BifrostChainConfiguration struct {
 	ChainNetwork        string                           `mapstructure:"chain_network"`
 	UserName            string                           `mapstructure:"username"`
 	Password            string                           `mapstructure:"password"`
+	APIHost             string                           `mapstructure:"api_host"`
 	RPCHost             string                           `mapstructure:"rpc_host"`
 	HTTPostMode         bool                             `mapstructure:"http_post_mode"` // Bitcoin core only supports HTTP POST mode
 	DisableTLS          bool                             `mapstructure:"disable_tls"`    // Bitcoin core does not provide TLS by default
@@ -645,16 +659,6 @@ type BifrostChainConfiguration struct {
 
 	// MaxGasLimit is the maximum gas limit before the final transaction is sent.
 	MaxGasLimit int `mapstructure:"max_gas_limit"`
-
-	// TokenMaxGasMultiplier is a multiplier applied to max gas for outbounds which are
-	// not the gas asset. This compensates for variance in gas units when contracts for
-	// pool assets use more than the configured MaxGasLimit gas units in transferOut.
-	TokenMaxGasMultiplier int64 `mapstructure:"token_max_gas_multiplier"`
-
-	// AggregatorMaxGasMultiplier is a multiplier applied to max gas for outbounds which
-	// swap out via an aggregator contract. This compensates for variance in gas units when
-	// aggregator swaps outs use more than the configured MaxGasLimit gas units.
-	AggregatorMaxGasMultiplier int64 `mapstructure:"aggregator_max_gas_multiplier"`
 
 	// MaxPendingNonces is the maximum number of pending nonces to allow before aborting
 	// new signing attempts.
@@ -801,29 +805,31 @@ type BifrostBlockScannerConfiguration struct {
 	MaxReorgRescanBlocks int64 `mapstructure:"max_reorg_rescan_blocks"`
 
 	Mos string `mapstructure:"gateway"`
+
+	// ReferenceAddress is needed for calculating TRC20 fees on Tron blockchain
+	// The default address is pre-funded with 1 TRX & 1 USDT, see config.yaml
+	ReferenceAddress string `mapstructure:"reference_address"`
 }
 
 type BifrostClientConfiguration struct {
-	ChainID             common.Chain `mapstructure:"chain_id" `
-	ChainHost           string       `mapstructure:"chain_host"`
-	ChainRPC            string       `mapstructure:"chain_rpc"`
-	ChainEBifrost       string       `mapstructure:"chain_ebifrost"`
-	ChainHomeFolder     string       `mapstructure:"chain_home_folder"`
-	SignerName          string       `mapstructure:"signer_name"`
-	KeystorePath        string       `mapstructure:"keystore_path"`
-	Maintainer          string       `mapstructure:"maintainer"`
-	TssManager          string       `mapstructure:"tss_manager"`
-	ViewController      string       `mapstructure:"view_controller"`
-	TokenRegistry       string       `mapstructure:"token_registry"`
-	AffiliateFeeManager string       `mapstructure:"affiliate_fee_manager"`
-	FusionReceiver      string       `mapstructure:"fusion_receiver"`
-	Relay               string       `mapstructure:"relay"`
-	GasService          string       `mapstructure:"gas_service"`
-	SignerPasswd        string       `mapstructure:"signer_passwd"`
-	Addr                string       `mapstructure:"addr"`
-	CrossDataPath       string       `mapstructure:"cross_data_path"`
-	CrossDataAddress    string       `mapstructure:"cross_data_address"`
-	IncreaseGasLimit    int64        `mapstructure:"increase_gas_limit"`
+	ChainID          common.Chain `mapstructure:"chain_id" `
+	ChainHost        string       `mapstructure:"chain_host"`
+	ChainRPC         string       `mapstructure:"chain_rpc"`
+	ChainEBifrost    string       `mapstructure:"chain_ebifrost"`
+	ChainHomeFolder  string       `mapstructure:"chain_home_folder"`
+	SignerName       string       `mapstructure:"signer_name"`
+	KeystorePath     string       `mapstructure:"keystore_path"`
+	Maintainer       string       `mapstructure:"maintainer"`
+	TssManager       string       `mapstructure:"tss_manager"`
+	ViewController   string       `mapstructure:"view_controller"`
+	FusionReceiver   string       `mapstructure:"fusion_receiver"`
+	Configuration    string       `mapstructure:"configuration"`
+	Relay            string       `mapstructure:"relay"`
+	SignerPasswd     string       `mapstructure:"signer_passwd"`
+	Addr             string       `mapstructure:"addr"`
+	CrossDataPath    string       `mapstructure:"cross_data_path"`
+	CrossDataAddress string       `mapstructure:"cross_data_address"`
+	IncreaseGasLimit int64        `mapstructure:"increase_gas_limit"`
 }
 
 type BifrostMetricsConfiguration struct {

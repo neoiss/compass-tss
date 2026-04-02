@@ -78,6 +78,9 @@ func (t *TxInItem) Equals(other *TxInItem) bool {
 	if ecommon.Bytes2Hex(t.To) != ecommon.Bytes2Hex(other.To) {
 		return false
 	}
+	if ecommon.Bytes2Hex(t.From) != ecommon.Bytes2Hex(other.From) {
+		return false
+	}
 
 	return true
 }
