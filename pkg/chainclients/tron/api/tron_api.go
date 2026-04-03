@@ -169,6 +169,7 @@ func (api *TronApi) TriggerSmartContract(
 		"fee_limit":         feeLimit,
 		"call_value":        0,
 		"visible":           false,
+		"expiration":        300000, // set to 5 minutes to avoid "transaction expired" error
 	})
 	if err != nil {
 		return Transaction{}, err
@@ -183,7 +184,6 @@ func (api *TronApi) TriggerSmartContract(
 		Transaction Transaction `json:"transaction"`
 	}
 
-	fmt.Println("triggersmartcontract data ------ ", string(data))
 	err = json.Unmarshal(data, &response)
 	if err != nil {
 		return Transaction{}, fmt.Errorf("failed to unmarshal response: %w", err)
