@@ -146,7 +146,15 @@ func NewTronClient(
 		logger.Err(err).Msg("failed to create signer cache manager")
 		return nil, err
 	}
-	relayKey.GetEthAddress()
+
+	selfAddr, err := client.localKeyManager.Pubkey().GetAddress(config.ChainID)
+	if err != nil {
+		logger.Err(err).Msg("failed to get address from pubkey")
+		return nil, err
+	}
+	tronAddr, _ := api.ConvertAddress(selfAddr.String())
+	logger.Info().Str("address", tronAddr).
+		Msg("tron client created with address")
 
 	return &client, nil
 }
