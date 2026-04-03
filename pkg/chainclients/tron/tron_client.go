@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -79,15 +80,21 @@ func NewTronClient(
 	var err error
 	logger := log.With().Str("module", config.ChainID.String()).Logger()
 
+	gatewayAbi, err := abi.JSON(bytes.NewReader(gatewayABI))
+	if err != nil {
+		logger.Err(err).Msg("failed to parse ABI")
+		return nil, err
+	}
 	client := TronClient{
-		logger:   logger,
-		chainId:  config.ChainID.String(),
-		cfg:      config,
-		bridge:   bridge,
-		wg:       &sync.WaitGroup{},
-		stopchan: make(chan struct{}),
-		api:      api.NewTronApi(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
-		rpc:      rpc.NewTronRpc(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
+		logger:     logger,
+		chainId:    config.ChainID.String(),
+		cfg:        config,
+		bridge:     bridge,
+		wg:         &sync.WaitGroup{},
+		stopchan:   make(chan struct{}),
+		gatewayAbi: &gatewayAbi,
+		api:        api.NewTronApi(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
+		rpc:        rpc.NewTronRpc(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
 	}
 
 	client.tssKeyManager, err = tss.NewKeySign(server, bridge)
