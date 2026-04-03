@@ -168,7 +168,7 @@ func (api *TronApi) TriggerSmartContract(
 		"parameter":         input,
 		"fee_limit":         feeLimit,
 		"call_value":        0,
-		"visible":           true,
+		"visible":           false,
 	})
 	if err != nil {
 		return Transaction{}, err
@@ -176,14 +176,21 @@ func (api *TronApi) TriggerSmartContract(
 
 	var response struct {
 		Result struct {
-			Result bool `json:"result"`
+			Result  bool   `json:"result"`
+			Code    string `json:"code"`
+			Message string `json:"message"`
 		} `json:"result"`
 		Transaction Transaction `json:"transaction"`
 	}
 
+	fmt.Println("triggersmartcontract data ------ ", string(data))
 	err = json.Unmarshal(data, &response)
 	if err != nil {
 		return Transaction{}, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	if response.Result.Code != "" || !response.Result.Result {
+		return Transaction{}, fmt.Errorf("failed to trigger smart contract: code:%s, msg:%s",
+			response.Result.Code, response.Result.Message)
 	}
 
 	return response.Transaction, nil
