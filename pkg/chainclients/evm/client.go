@@ -630,7 +630,7 @@ func (c *EVMClient) ConfirmationCountReady(txIn stypes.TxIn) bool {
 	switch c.cfg.ChainID {
 	case common.AVAXChain: // instant finality
 		return true
-	case common.BSCChain:
+	case common.BSCChain, common.POLChain, common.XLAYERChain:
 		if len(txIn.TxArray) == 0 {
 			return true
 		}
