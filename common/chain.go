@@ -115,6 +115,8 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(1337).String():             UNIChain,
 	big.NewInt(728126427).String():        TRONChain,
 	big.NewInt(1360108768460800).String(): SOLChain,
+	big.NewInt(1101).String():             POLChain,
+	big.NewInt(195).String():              XLAYERChain,
 
 	// main network
 	big.NewInt(56).String():               BSCChain,
@@ -130,6 +132,8 @@ var chainIDToChain = map[string]Chain{
 	big.NewInt(10).String():               OPTChain,
 	big.NewInt(728126428).String():        TRONChain,
 	big.NewInt(1360108768460801).String(): SOLChain,
+	big.NewInt(137).String():              POLChain,
+	big.NewInt(196).String():              XLAYERChain,
 }
 
 func GetChainName(key *big.Int) (Chain, bool) {
