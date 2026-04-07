@@ -68,11 +68,6 @@ type httpResponseCache struct {
 	httpResponseMu      *sync.Mutex
 }
 
-var (
-	httpResponseCaches   = make(map[string]*httpResponseCache) // String-to-pointer map for quicker lookup
-	httpResponseCachesMu = &sync.Mutex{}
-)
-
 // NewBridge create a new instance of Bridge
 func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *keys2.Keys) (shareTypes.Bridge, error) {
 	// main module logger

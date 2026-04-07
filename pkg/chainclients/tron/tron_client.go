@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -79,15 +80,21 @@ func NewTronClient(
 	var err error
 	logger := log.With().Str("module", config.ChainID.String()).Logger()
 
+	gatewayAbi, err := abi.JSON(bytes.NewReader(gatewayABI))
+	if err != nil {
+		logger.Err(err).Msg("failed to parse ABI")
+		return nil, err
+	}
 	client := TronClient{
-		logger:   logger,
-		chainId:  config.ChainID.String(),
-		cfg:      config,
-		bridge:   bridge,
-		wg:       &sync.WaitGroup{},
-		stopchan: make(chan struct{}),
-		api:      api.NewTronApi(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
-		rpc:      rpc.NewTronRpc(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
+		logger:     logger,
+		chainId:    config.ChainID.String(),
+		cfg:        config,
+		bridge:     bridge,
+		wg:         &sync.WaitGroup{},
+		stopchan:   make(chan struct{}),
+		gatewayAbi: &gatewayAbi,
+		api:        api.NewTronApi(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
+		rpc:        rpc.NewTronRpc(config.RPCHost, config.BlockScanner.HTTPRequestTimeout),
 	}
 
 	client.tssKeyManager, err = tss.NewKeySign(server, bridge)
@@ -146,7 +153,15 @@ func NewTronClient(
 		logger.Err(err).Msg("failed to create signer cache manager")
 		return nil, err
 	}
-	relayKey.GetEthAddress()
+
+	selfAddr, err := client.localKeyManager.Pubkey().GetAddress(config.ChainID)
+	if err != nil {
+		logger.Err(err).Msg("failed to get address from pubkey")
+		return nil, err
+	}
+	tronAddr, _ := api.ConvertAddress(selfAddr.String())
+	logger.Info().Str("address", tronAddr).
+		Msg("tron client created with address")
 
 	return &client, nil
 }

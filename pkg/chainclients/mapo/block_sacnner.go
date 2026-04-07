@@ -156,6 +156,7 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		case constants.RelaySigned:
 			toChain, ok := common.GetChainName(ele.ToChain)
 			if !ok {
+				b.logger.Info().Any("chain", ele.ToChain).Msg("this chain not support")
 				continue
 			}
 
