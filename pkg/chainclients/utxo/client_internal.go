@@ -607,7 +607,6 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		chainAndGasLimit := make([]byte, 32)
 		toChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 		copy(chainAndGasLimit[8:16], toChain)
-		//copy(chainAndGasLimit[24:32], big.NewInt(int64(fee)).Bytes())
 		txIn := types.TxInItem{
 			Tx:               tx.Txid,
 			Memo:             memo,
@@ -715,7 +714,12 @@ func (c *Client) getTxIn(tx *btcjson.TxRawResult, height int64, isMemPool bool, 
 		fromChain := ethcommon.LeftPadBytes(chainID.Bytes(), 8)
 		toChain := ethcommon.LeftPadBytes(destChainID.Bytes(), 8)
 
-		if destChainID.Cmp(mapChainID) != 0 {
+		solChainID, err := common.SOLChain.ChainID()
+		if err != nil {
+			return types.TxInItem{}, fmt.Errorf("fail to get chain id: %w, chain: %s", err, common.SOLChain)
+		}
+
+		if destChainID.Cmp(solChainID) == 0 {
 			destChainID = mapChainID
 			toChain = ethcommon.LeftPadBytes(mapChainID.Bytes(), 8)
 			toBytes = c.bridge.GetFusionReceiver().Bytes()

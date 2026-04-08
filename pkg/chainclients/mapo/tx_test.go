@@ -64,7 +64,6 @@ func TestBridge_GetObservationsStdTx(t *testing.T) {
 			if !assert.Nil(t, err) {
 				return
 			}
-			fmt.Println("=====")
 			fmt.Println(ecommon.Bytes2Hex(got))
 			assert.Equalf(t, tt.want, got, "GetObservationsStdTx(%v)", tt.args.txIn)
 		})

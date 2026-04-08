@@ -30,14 +30,14 @@ func PostKeysignFailure(
 	// 		return fmt.Errorf("fail to sign the message: %w", utxoErr)
 	// 	}
 
-	// 	// key sign error forward the keysign blame to thorchain
-	// 	txID, err := bridge.PostKeysignFailure(keysignError.Blame, thorchainHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
+	// 	// key sign error forward the keysign blame to relay
+	// 	txID, err := bridge.PostKeysignFailure(keysignError.Blame, relayHeight, tx.Memo, tx.Coins, tx.VaultPubKey)
 	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("fail to post keysign failure to thorchain")
+	// 		logger.Error().Err(err).Msg("fail to post keysign failure to relay")
 	// 		utxoErr = multierror.Append(utxoErr, fmt.Errorf("fail to post keysign failure to THORChain: %w", err))
 	// 		return fmt.Errorf("fail to sign the message: %w", utxoErr)
 	// 	}
-	// 	logger.Info().Str("tx_id", txID).Msgf("post keysign failure to thorchain")
+	// 	logger.Info().Str("tx_id", txID).Msgf("post keysign failure to relay")
 	// }
 	// return utxoErr
 

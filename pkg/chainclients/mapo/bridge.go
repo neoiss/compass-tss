@@ -5,10 +5,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
-	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -38,33 +35,30 @@ import (
 
 // Endpoint urls
 const (
-	MimirEndpoint        = "/mapBridge/mimir"
 	ChainVersionEndpoint = "/mapBridge/version"
-	PoolsEndpoint        = "/mapBridge/pools"
 )
 
-// Bridge will be used to send tx to THORChain
+// Bridge will be used to send tx to relay
 type Bridge struct {
-	logger                                                    zerolog.Logger
-	cfg                                                       config.BifrostClientConfiguration
-	keys                                                      *keys2.Keys
-	errCounter                                                *prometheus.CounterVec
-	m                                                         *metrics.Metrics
-	blockHeight                                               int64
-	chainID, gasPrice, epoch                                  *big.Int
-	httpClient                                                *retryablehttp.Client
-	broadcastLock                                             *sync.RWMutex
-	ethClient                                                 *ethclient.Client
-	blockScanner                                              *MapChainBlockScan
-	stopChan                                                  chan struct{}
-	wg                                                        *sync.WaitGroup
-	gasCache                                                  []*big.Int
-	ethPriKey                                                 *ecdsa.PrivateKey
-	kw                                                        *evm.KeySignWrapper
-	ethRpc                                                    *evm.EthRPC
-	mainAbi, tssAbi, relayAbi, gasAbi, tokenRegistry, viewAbi *abi.ABI
-	affiliateFeeAbi, fusionReceiverAbi                        *abi.ABI
-	epochHash                                                 ecommon.Hash
+	logger                                     zerolog.Logger
+	cfg                                        config.BifrostClientConfiguration
+	keys                                       *keys2.Keys
+	errCounter                                 *prometheus.CounterVec
+	m                                          *metrics.Metrics
+	blockHeight                                int64
+	chainID, gasPrice, epoch                   *big.Int
+	httpClient                                 *retryablehttp.Client
+	broadcastLock                              *sync.RWMutex
+	ethClient                                  *ethclient.Client
+	blockScanner                               *MapChainBlockScan
+	stopChan                                   chan struct{}
+	wg                                         *sync.WaitGroup
+	gasCache                                   []*big.Int
+	ethPriKey                                  *ecdsa.PrivateKey
+	kw                                         *evm.KeySignWrapper
+	ethRpc                                     *evm.EthRPC
+	mainAbi, tssAbi, relayAbi, viewAbi, cfgAbi *abi.ABI
+	epochHash                                  ecommon.Hash
 }
 
 // httpResponseCache used for caching HTTP responses for less frequent querying
@@ -73,11 +67,6 @@ type httpResponseCache struct {
 	httpResponseChecked time.Time
 	httpResponseMu      *sync.Mutex
 }
-
-var (
-	httpResponseCaches   = make(map[string]*httpResponseCache) // String-to-pointer map for quicker lookup
-	httpResponseCachesMu = &sync.Mutex{}
-)
 
 // NewBridge create a new instance of Bridge
 func NewBridge(cfg config.BifrostClientConfiguration, m *metrics.Metrics, k *keys2.Keys) (shareTypes.Bridge, error) {
@@ -213,79 +202,12 @@ func (b *Bridge) GetBlockScannerHeight() int64 {
 	return b.blockHeight
 }
 
-func (b *Bridge) getWithPath(path string) ([]byte, int, error) {
-	return b.get(b.getRelayChainURL(path))
-}
-
-// get handle all the low level http GET calls using retryablehttp.Bridge
-func (b *Bridge) get(url string) ([]byte, int, error) {
-	// To reduce querying time and chance of "429 Too Many Requests",
-	// do not query the same endpoint more than once per block time.
-	httpResponseCachesMu.Lock()
-	respCachePointer := httpResponseCaches[url]
-	if respCachePointer == nil {
-		// Since this is the first time using this endpoint, prepare a Mutex for it.
-		respCachePointer = &httpResponseCache{httpResponseMu: &sync.Mutex{}}
-		httpResponseCaches[url] = respCachePointer
-	}
-	httpResponseCachesMu.Unlock()
-
-	// So lengthy queries don't hold up short queries, use query-specific mutexes.
-	respCachePointer.httpResponseMu.Lock()
-	defer respCachePointer.httpResponseMu.Unlock()
-
-	// When the same endpoint has been checked within the span of a single block, return the cached response.
-	if time.Since(respCachePointer.httpResponseChecked) < constants.MAPRelayChainBlockTime && respCachePointer.httpResponse != nil {
-		return respCachePointer.httpResponse, http.StatusOK, nil
-	}
-
-	resp, err := b.httpClient.Get(url)
-	if err != nil {
-		b.errCounter.WithLabelValues("fail_get_from_thorchain", "").Inc()
-		return nil, http.StatusNotFound, fmt.Errorf("failed to GET from mapBridge: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			b.logger.Error().Err(err).Msg("failed to close response body")
-		}
-	}()
-
-	buf, err := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return buf, resp.StatusCode, errors.New("Status code: " + resp.Status + " returned")
-	}
-	if err != nil {
-		b.errCounter.WithLabelValues("fail_read_thorchain_resp", "").Inc()
-		return nil, resp.StatusCode, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// All being well with the response, save it to the cache.
-	respCachePointer.httpResponse = buf
-	respCachePointer.httpResponseChecked = time.Now()
-
-	return buf, resp.StatusCode, nil
-}
-
-// getRelayChainURL with the given path
-func (b *Bridge) getRelayChainURL(path string) string {
-	if strings.HasPrefix(b.cfg.ChainHost, "http") {
-		return fmt.Sprintf("%s/%s", b.cfg.ChainHost, path)
-	}
-
-	uri := url.URL{
-		Scheme: "http",
-		Host:   b.cfg.ChainHost,
-		Path:   path,
-	}
-	return uri.String()
-}
-
 // GetConfig return the configuration
 func (b *Bridge) GetConfig() config.BifrostClientConfiguration {
 	return b.cfg
 }
 
-// PostKeysignFailure generate and  post a keysign fail tx to thorchan
+// PostKeysignFailure generate and  post a keysign fail tx to relay
 func (b *Bridge) PostKeysignFailure(blame stypes.Blame, height int64, memo string, coins common.Coins, pubkey common.PubKey) (string, error) {
 	return b.Broadcast([]byte{})
 }

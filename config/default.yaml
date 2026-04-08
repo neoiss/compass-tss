@@ -24,6 +24,12 @@ bifrost:
       - Eth
       - Base
       - Arb
+      - Xrp
+      - Uni
+      - Doge
+      - Tron
+      - Pol
+      - Xlayer
   mapo:
     chain_id: Map
     chain_host: https://rpc.maplabs.io
@@ -32,11 +38,9 @@ bifrost:
     maintainer: "0xBfb6B7d0d5Fc120703F7B57CC18157d79a50a7e5"
     tss_manager: "0xf3Fa35B6e3753cFe88Da86c71B2283F75EB64BE9"
     relay: "0x00004080D86e1077ce96E67C1B167fF105025307"
-    gas_service: "0x1De9C47ae0074F347d9fF6bfA39CDd3389322eAD"
-    token_registry: "0xf2C3a9b547875C48Ba8598C4973BAC71eDc4C34c"
     view_controller: "0x8c98bA0a11Cbb0DB3C52e4CD91B0844B39BC1F11"
-    affiliate_fee_manager: "0x4De2ADb9cB88c10Bf200F76c18035cbB8906b6bC"
     fusion_receiver: "0xFe6Fc65c1B47be20bD776db55a412dF7520438F3"
+    configuration: "0xE45C548c066184894ABF542C7D223D58D443C1c9"
     cross_data_path: "./build/cross_dbs"
     cross_data_address: "0.0.0.0:6041"
     increase_gas_limit: 2000000
@@ -89,11 +93,11 @@ bifrost:
         block_cache_capacity: 536870912 # 512mb
       min_confirmations: 2
       max_rpc_retries: 9 # about 1 min
-      max_pending_nonces: 0
+      max_pending_nonces: 3
+      limit_multiplier: 2
+      max_gas_limit: 3000000
       authorization_bearer: ""
       max_gas_tip_percentage: 0
-      token_max_gas_multiplier: 0
-      aggregator_max_gas_multiplier: 0
       utxo: &utxo
         block_cache_count: 144
         transaction_batch_size: 500
@@ -114,7 +118,7 @@ bifrost:
         block_height_discover_back_off: 5s
         observation_flexibility_blocks: 3
         block_retry_interval: 10s
-        http_request_timeout: 30s
+        http_request_timeout: 10s
         http_request_read_timeout: 30s
         http_request_write_timeout: 30s
         max_http_request_retry: 10
@@ -149,12 +153,7 @@ bifrost:
       <<: *default-chain
       chain_id: Eth
       rpc_host: "https://eth.drpc.org"
-      max_pending_nonces: 3
       max_gas_tip_percentage: 20
-      limit_multiplier: 2
-      max_gas_limit: 3000000
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
@@ -163,11 +162,10 @@ bifrost:
         concurrency: 1
         chain_id: Eth
         observation_flexibility_blocks: 20
-        max_gas_limit: 100000
-        max_swap_gas_limit: 150000
-        max_contract_tx_logs: 50
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
         start_block_height: 9763169
-        gas_price_resolution: 1000000
+        gas_price_resolution: 10000000
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -177,23 +175,16 @@ bifrost:
       chain_id: Base
       rpc_host: "https://mainnet.base.org"
       solvency_blocks: 100
-      max_pending_nonces: 3
       max_gas_tip_percentage: 20
-      limit_multiplier: 2
-      max_gas_limit: 3000000
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
       block_scanner:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         gas_cache_blocks: 40
         gas_price_resolution: 1
-        concurrency: 1
         chain_id: Base
         observation_flexibility_blocks: 20
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
-        max_contract_tx_logs: 50
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -203,23 +194,15 @@ bifrost:
       chain_id: Bsc
       rpc_host: "https://bsc-dataseed.bnbchain.org"
       solvency_blocks: 100
-      max_pending_nonces: 3
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      limit_multiplier: 2
-      max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         max_reorg_rescan_blocks: 600 # 30m
-        concurrency: 1
         chain_id: Bsc
         gas_cache_blocks: 40
         gas_price_resolution: 10000000 # 10 gwei
-        observation_flexibility_blocks: 80
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
-        max_contract_tx_logs: 50
         start_block_height: 
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
@@ -230,24 +213,112 @@ bifrost:
       chain_id: Arb
       rpc_host: "https://arb1.arbitrum.io/rpc"
       solvency_blocks: 100
-      max_pending_nonces: 3
-      token_max_gas_multiplier: 3
-      aggregator_max_gas_multiplier: 10
-      limit_multiplier: 2
-      max_gas_limit: 3000000
       block_scanner:
         <<: *default-block-scanner
-        gateway: 0x42D64eD9381bF456697b0C360e8acE139F176a80
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         max_reorg_rescan_blocks: 600 # 30m
-        concurrency: 1
         chain_id: Arb
         gas_cache_blocks: 40
-        gas_price_resolution: 1000000 # 10 gwei
-        observation_flexibility_blocks: 80
+        gas_price_resolution: 1000000
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
-        max_contract_tx_logs: 50
         start_block_height: 
         max_healthy_lag: 30s
       mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
+
+    xrp:
+      <<: *default-chain
+      chain_id: Xrp
+      rpc_host: "https://testnet.xrpl-labs.com"
+      solvency_blocks: 10
+      block_scanner:
+        <<: *default-block-scanner
+        chain_id: Xrp
+        gas_price_resolution: 10 # drop
+        observation_flexibility_blocks: 40
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
+
+    doge:
+      <<: *default-chain
+      chain_id: Doge
+      username:
+      password:
+      block_scanner:
+        <<: *default-block-scanner
+        max_reorg_rescan_blocks: 720 # 12h
+        chain_id: Doge
+        gas_price_resolution: 500_000 # sats
+        gas_cache_blocks: 10
+        scan_mempool: false
+      mempool_tx_id_cache_size: 1_000_000
+      scanner_leveldb: *default-leveldb
+      min_confirmations: 2
+      utxo:
+        <<: *utxo
+        block_cache_count: 1440
+        default_sats_per_vbyte: 25
+        max_sats_per_vbyte: 976562 # backwards compatible with 1e8*10/1024
+        min_sats_per_vbyte: 2
+      rpc_host: ""
+
+    uni:
+      disabled: false
+      <<: *default-chain
+      chain_id: Uni
+      rpc_host: "https://uni-dataseed.org"
+      block_scanner:
+        <<: *default-block-scanner
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
+        max_reorg_rescan_blocks: 600 # 30m
+        chain_id: Uni
+        gas_cache_blocks: 40
+        gas_price_resolution: 10000000 
+        max_gas_limit: 1000000
+        max_swap_gas_limit: 1500000
+        start_block_height:
+      scanner_leveldb: *default-leveldb
+
+    tron:
+      <<: *default-chain
+      chain_id: Tron
+      block_scanner:
+        <<: *default-block-scanner
+        chain_id: Tron
+        gas_price_resolution: 100_000
+        observation_flexibility_blocks: 40
+        scan_mempool: false
+        gateway: TNFvEVGRMCo46j6zKXc2MKh64dxoLry1k2
+      mempool_tx_id_cache_size: 0
+      scanner_leveldb: *default-leveldb
+
+    pol:
+      disabled: false
+      <<: *default-chain
+      chain_id: Pol
+      rpc_host: "https://pol-dataseed.org"
+      block_scanner:
+        <<: *default-block-scanner
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
+        max_reorg_rescan_blocks: 600 # 30m
+        chain_id: Pol
+        gas_cache_blocks: 40
+        gas_price_resolution: 10000000
+        start_block_height:
+      scanner_leveldb: *default-leveldb
+
+    xlayer:
+      disabled: false
+      <<: *default-chain
+      chain_id: Xlayer
+      rpc_host: "https://xlayer-dataseed.org"
+      block_scanner:
+        <<: *default-block-scanner
+        gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
+        max_reorg_rescan_blocks: 600 # 30m
+        chain_id: Xlayer
+        gas_cache_blocks: 40
+        gas_price_resolution: 10000000
+        start_block_height:
       scanner_leveldb: *default-leveldb

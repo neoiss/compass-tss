@@ -156,11 +156,12 @@ func (b *MapChainBlockScan) processTxOutBlock(blockHeight int64) error {
 		case constants.RelaySigned:
 			toChain, ok := common.GetChainName(ele.ToChain)
 			if !ok {
+				b.logger.Info().Any("chain", ele.ToChain).Msg("this chain not support")
 				continue
 			}
 
 			switch toChain {
-			case common.BTCChain, common.XRPChain:
+			case common.BTCChain, common.XRPChain, common.DOGEChain, common.BCHChain, common.LTCChain:
 				txOut.TxArray = append(txOut.TxArray, tmp)
 			default:
 				oracleTx.TxArray = append(oracleTx.TxArray, tmp)

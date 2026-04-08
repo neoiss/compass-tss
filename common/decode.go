@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	xrp "github.com/Peersyst/xrpl-go/address-codec"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 )
@@ -63,4 +64,19 @@ func solanaAddressToBytes(address string) ([]byte, error) {
 		return []byte{}, fmt.Errorf("invalid solana address length")
 	}
 	return decoded, nil
+}
+
+func xrpAddressToBytes(address string) ([]byte, error) {
+	// checks checksum and returns prefix (1 byte, 0x00) + account id (20 bytes)
+	decoded, err := xrp.Base58CheckDecode(address)
+	if err != nil {
+		return nil, fmt.Errorf("invalid xrp address: %w", err)
+	}
+
+	if len(decoded) != 21 || decoded[0] != 0x00 {
+		return nil, fmt.Errorf("invalid xrp address")
+	}
+
+	// return
+	return xrp.DecodeBase58(address), nil
 }

@@ -15,10 +15,6 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/ethereum/go-ethereum/ethclient"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"github.com/mapprotocol/compass-tss/blockscanner"
 	"github.com/mapprotocol/compass-tss/common"
 	"github.com/mapprotocol/compass-tss/config"
@@ -32,6 +28,9 @@ import (
 	. "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/mapprotocol/compass-tss/pubkeymanager"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -179,12 +178,26 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		return stypes.TxIn{}, err
 	}
 
-	// process all transactions in the block
-	block, err := e.ethRpc.GetBlockSafe(currentHeight)
+	var block *evm.Block
+	selfId, _ := e.cfg.ChainID.ChainID()
+	interval, err := e.bridge.GetMimirWithRef(constants.KeyOfGASFeeGap, selfId.String())
 	if err != nil {
-		return stypes.TxIn{}, err
+		return stypes.TxIn{}, fmt.Errorf("failed to get confirm count: %w", err)
 	}
-	txIn, err := e.processBlock(block, logs)
+	skip := false
+	if interval != 0 && currentHeight%interval != 0 {
+		skip = true
+	}
+	if !skip {
+		e.logger.Info().Any("height", currentHeight).Msg("get block")
+		// process all transactions in the block
+		block, err = e.ethRpc.GetBlockSafe(currentHeight)
+		if err != nil {
+			return stypes.TxIn{}, err
+		}
+	}
+
+	txIn, err := e.processBlock(block, logs, skip)
 	if err != nil {
 		e.logger.Error().Err(err).Int64("currentHeight", currentHeight).Msg("failed to search tx in block")
 		return stypes.TxIn{}, fmt.Errorf("failed to process block: %d, err:%w", currentHeight, err)
@@ -192,7 +205,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 	e.currentBlockHeight = currentHeight
 	// if reorgs are possible on this chain store block meta for handling
-	if e.cfg.MaxReorgRescanBlocks > 0 {
+	if !skip && e.cfg.MaxReorgRescanBlocks > 0 {
 		blockMeta := evmtypes.NewBlockMeta(block.GetHeader(), txIn)
 		if err = e.blockMetaAccessor.SaveBlockMeta(currentHeight, blockMeta); err != nil {
 			e.logger.Err(err).Int64("currentHeight", currentHeight).Msg("fail to save block meta")
@@ -212,11 +225,13 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 		return txIn, nil
 	}
 
-	// report network fee and solvency
-	e.reportNetworkFee(currentHeight)
-	if e.solvencyReporter != nil {
-		if err = e.solvencyReporter(currentHeight); err != nil {
-			e.logger.Err(err).Msg("failed to report Solvency info to THORNode")
+	if !skip {
+		// report network fee and solvency
+		e.reportNetworkFee(currentHeight)
+		if e.solvencyReporter != nil {
+			if err = e.solvencyReporter(currentHeight); err != nil {
+				e.logger.Err(err).Msg("failed to report Solvency info to THORNode")
+			}
 		}
 	}
 
@@ -225,7 +240,7 @@ func (e *EVMScanner) FetchTxs(currentHeight, latestHeight int64) (stypes.TxIn, e
 
 // --------------------------------- extraction ---------------------------------
 
-func (e *EVMScanner) processBlock(block *evm.Block, logs []etypes.Log) (stypes.TxIn, error) {
+func (e *EVMScanner) processBlock(block *evm.Block, logs []etypes.Log, skip bool) (stypes.TxIn, error) {
 	txIn := stypes.TxIn{
 		Chain:    e.cfg.ChainID,
 		TxArray:  nil,
@@ -233,31 +248,33 @@ func (e *EVMScanner) processBlock(block *evm.Block, logs []etypes.Log) (stypes.T
 		MemPool:  false,
 	}
 
-	// collect gas prices of txs in current block
-	var txsGas []*big.Int
-	for _, tx := range block.Transactions {
-		gas, ok := tx.GetGasPrice()
-		if !ok {
-			e.logger.Warn().Any("txHash", tx.Hash).Any("tx", tx).Msg("tx gas price is error ")
-			continue
+	if !skip {
+		// collect gas prices of txs in current block
+		var txsGas []*big.Int
+		for _, tx := range block.Transactions {
+			gas, ok := tx.GetGasPrice()
+			if !ok {
+				e.logger.Warn().Any("txHash", tx.Hash).Any("tx", tx).Msg("tx gas price is error ")
+				continue
+			}
+			txsGas = append(txsGas, gas)
 		}
-		txsGas = append(txsGas, gas)
-	}
-	e.updateGasPrice(txsGas)
+		e.updateGasPrice(txsGas)
 
-	// process reorg if possible on this chain
-	if e.cfg.MaxReorgRescanBlocks > 0 {
-		reorgedTxIns, err := e.processReorg(block.GetHeader())
-		if err != nil {
-			e.logger.Error().Err(err).Msgf("fail to process reorg for block %d", block.Header.Number.Int64())
-			return txIn, err
-		}
-		if len(reorgedTxIns) > 0 {
-			for _, item := range reorgedTxIns {
-				if len(item.TxArray) == 0 {
-					continue
+		// process reorg if possible on this chain
+		if e.cfg.MaxReorgRescanBlocks > 0 {
+			reorgedTxIns, err := e.processReorg(block.GetHeader())
+			if err != nil {
+				e.logger.Error().Err(err).Msgf("fail to process reorg for block %d", block.Header.Number.Int64())
+				return txIn, err
+			}
+			if len(reorgedTxIns) > 0 {
+				for _, item := range reorgedTxIns {
+					if len(item.TxArray) == 0 {
+						continue
+					}
+					txIn.TxArray = append(txIn.TxArray, item.TxArray...)
 				}
-				txIn.TxArray = append(txIn.TxArray, item.TxArray...)
 			}
 		}
 	}

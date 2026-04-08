@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"math"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
+
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/binance-chain/tss-lib/crypto"
 	btss "github.com/binance-chain/tss-lib/tss"
@@ -102,8 +103,6 @@ func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.Par
 	var localPartyID *btss.PartyID
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)
-	fmt.Println("GetParties keys ------------------ ", keys)
-	fmt.Println("GetParties localPartyKey ------------------ ", localPartyKey)
 	for idx, item := range keys {
 		key := new(big.Int).SetBytes(ecommon.Hex2Bytes(item))
 		// Set up the parameters

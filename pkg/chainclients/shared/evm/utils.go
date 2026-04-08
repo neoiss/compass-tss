@@ -1,6 +1,12 @@
 package evm
 
-import etypes "github.com/ethereum/go-ethereum/core/types"
+import (
+	"fmt"
+
+	ecommon "github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+)
 
 // IsSmartContractCall - determine if the transaction is a smart contract call and thus should
 // be parsed using the SmartContractLogParser - these txs may have a DepositEvent from
@@ -18,4 +24,8 @@ func IsSmartContractCall(tx *etypes.Transaction, receipt *etypes.Receipt) bool {
 		return false
 	}
 	return true
+}
+
+func GenerateOrderID(chainID, txHash string) ecommon.Hash {
+	return crypto.Keccak256Hash([]byte(fmt.Sprintf("%s%s", chainID, txHash)))
 }

@@ -1,10 +1,13 @@
 package common
 
+import "github.com/mapprotocol/compass-tss/common/cosmos"
+
 // Account define a struct to hold account information across all chain
 type Account struct {
 	Sequence      int64
 	AccountNumber int64
 	Coins         Coins
+	Balance       cosmos.Uint
 	HasMemoFlag   bool
 }
 
