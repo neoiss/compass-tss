@@ -39,7 +39,6 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                    | Environment Variable       | Default                              |
 |-------------------------------------------------------|----------------------------|--------------------------------------|
-| `bifrost.chains.BTC.disabled`                         | `BTC_DISABLED`             | `false`                              |
 | `bifrost.chains.BTC.rpc_host`                         | `BTC_HOST`                 | `https://bitcoin-rpc.publicnode.com` |
 | `bifrost.chains.BTC.username`                         | `BTC_USERNAME`             |                                      |
 | `bifrost.chains.BTC.password`                         | `BTC_PASSWORD`             |                                      |
@@ -50,7 +49,6 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                    | Environment Variable       | Default                |
 |-------------------------------------------------------|----------------------------|------------------------|
-| `bifrost.chains.ETH.disabled`                         | `ETH_DISABLED`             | `false`                |
 | `bifrost.chains.ETH.rpc_host`                         | `ETH_HOST`                 | `https://eth.drpc.org` |
 | `bifrost.chains.ETH.username`                         | `ETH_USERNAME`             |                        |
 | `bifrost.chains.ETH.password`                         | `ETH_PASSWORD`             |                        |
@@ -61,7 +59,6 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                    | Environment Variable       | Default                             |
 |-------------------------------------------------------|----------------------------|-------------------------------------|
-| `bifrost.chains.BSC.disabled`                         | `BSC_DISABLED`             | `false`                             |
 | `bifrost.chains.BSC.rpc_host`                         | `BSC_HOST`                 | `https://bsc-dataseed.bnbchain.org` |
 | `bifrost.chains.BSC.username`                         | `BSC_USERNAME`             |                                     |
 | `bifrost.chains.BSC.password`                         | `BSC_PASSWORD`             |                                     |
@@ -72,7 +69,6 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                     | Environment Variable        | Default                    |
 |--------------------------------------------------------|-----------------------------|----------------------------|
-| `bifrost.chains.BASE.disabled`                         | `BASE_DISABLED`             | `false`                    |
 | `bifrost.chains.BASE.rpc_host`                         | `BASE_HOST`                 | `https://mainnet.base.org` |
 | `bifrost.chains.BASE.username`                         | `BASE_USERNAME`             |                            |
 | `bifrost.chains.BASE.password`                         | `BASE_PASSWORD`             |                            |
@@ -83,7 +79,6 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                    | Environment Variable       | Default                        |
 |-------------------------------------------------------|----------------------------|--------------------------------|
-| `bifrost.chains.ARB.disabled`                         | `ARB_DISABLED`             | `false`                        |
 | `bifrost.chains.ARB.rpc_host`                         | `ARB_HOST`                 | `https://arb1.arbitrum.io/rpc` |
 | `bifrost.chains.ARB.username`                         | `ARB_USERNAME`             |                                |
 | `bifrost.chains.ARB.password`                         | `ARB_PASSWORD`             |                                |
@@ -127,9 +122,38 @@ Wait time after block/transaction fetch failures. Applies to all chains.
 
 | Configuration Item                                     | Environment Variable        | Default |
 |--------------------------------------------------------|-----------------------------|---------|
-| `bifrost.chains.AVAX.disabled`                         | `AVAX_DISABLED`             | `false` |
 | `bifrost.chains.AVAX.rpc_host`                         | `AVAX_HOST`                 |         |
 | `bifrost.chains.AVAX.username`                         | `AVAX_USERNAME`             |         |
 | `bifrost.chains.AVAX.password`                         | `AVAX_PASSWORD`             |         |
 | `bifrost.chains.AVAX.authorization_bearer`             | `AVAX_AUTHORIZATION_BEARER` |         |
 | `bifrost.chains.AVAX.block_scanner.start_block_height` | `AVAX_START_BLOCK_HEIGHT`   |         |
+
+### 4.10 POL
+
+| Configuration Item                                    | Environment Variable       | Default |
+|-------------------------------------------------------|----------------------------|---------|
+| `bifrost.chains.POL.rpc_host`                         | `POL_HOST`                 |         |
+| `bifrost.chains.POL.block_scanner.start_block_height` | `POL_START_BLOCK_HEIGHT`   |         |
+
+### 4.11 XLAYER
+
+| Configuration Item                                    | Environment Variable       | Default |
+|-------------------------------------------------------|----------------------------|---------|
+| `bifrost.chains.XLAYER.rpc_host`                         | `XLAYER_HOST`                 |         |
+| `bifrost.chains.XLAYER.block_scanner.start_block_height` | `XLAYER_START_BLOCK_HEIGHT`   |         |
+
+
+### 4.11 TRON
+
+| Configuration Item                                    | Environment Variable       | Default |
+|-------------------------------------------------------|----------------------------|---------|
+| `bifrost.chains.TRON.rpc_host`                         | `TRON_HOST`                 |         |
+| `bifrost.chains.TRON.block_scanner.start_block_height` | `TRON_START_BLOCK_HEIGHT`   |         |
+
+
+### 4.11 Uni
+
+| Configuration Item                                    | Environment Variable       | Default |
+|-------------------------------------------------------|----------------------------|---------|
+| `bifrost.chains.UNI.rpc_host`                         | `UNI_HOST`                 |         |
+| `bifrost.chains.UNI.block_scanner.start_block_height` | `UNI_START_BLOCK_HEIGHT`   |         |

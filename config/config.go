@@ -168,6 +168,76 @@ func Init() {
 		"ETH_START_BLOCK_HEIGHT",
 	))
 
+	// pol
+	assert(viper.BindEnv(
+		"bifrost.chains.POL.rpc_host",
+		"POL_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.POL.block_scanner.start_block_height",
+		"POL_START_BLOCK_HEIGHT",
+	))
+
+	// XLAYER
+	assert(viper.BindEnv(
+		"bifrost.chains.XLAYER.rpc_host",
+		"XLAYER_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.XLAYER.block_scanner.start_block_height",
+		"XLAYER_START_BLOCK_HEIGHT",
+	))
+
+	// Uni
+	assert(viper.BindEnv(
+		"bifrost.chains.UNI.rpc_host",
+		"UNI_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.UNI.block_scanner.start_block_height",
+		"UNI_START_BLOCK_HEIGHT",
+	))
+
+	// Base
+	assert(viper.BindEnv(
+		"bifrost.chains.BASE.rpc_host",
+		"BASE_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BASE.block_scanner.start_block_height",
+		"BASE_START_BLOCK_HEIGHT",
+	))
+
+	// Arb
+	assert(viper.BindEnv(
+		"bifrost.chains.ARB.rpc_host",
+		"ARB_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.ARB.block_scanner.start_block_height",
+		"ARB_START_BLOCK_HEIGHT",
+	))
+
+	// Bsc
+	assert(viper.BindEnv(
+		"bifrost.chains.BSC.rpc_host",
+		"BSC_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.BSC.block_scanner.start_block_height",
+		"BSC_START_BLOCK_HEIGHT",
+	))
+
+	// Tron
+	assert(viper.BindEnv(
+		"bifrost.chains.TRON.rpc_host",
+		"TRON_HOST",
+	))
+	assert(viper.BindEnv(
+		"bifrost.chains.TRON.block_scanner.start_block_height",
+		"TRON_START_BLOCK_HEIGHT",
+	))
+
 	// avax
 	assert(viper.BindEnv(
 		"bifrost.chains.AVAX.username",
@@ -268,7 +338,6 @@ func Init() {
 	assert(viper.BindEnv("bifrost.chains.LTC.disabled", "LTC_DISABLED"))
 	assert(viper.BindEnv("bifrost.chains.AVAX.disabled", "AVAX_DISABLED"))
 	assert(viper.BindEnv("bifrost.chains.AVAX.block_scanner.gas_cache_size", "AVAX_GAS_CACHE_SIZE"))
-	assert(viper.BindEnv("thor.cosmos.halt_height", "HARDFORK_BLOCK_HEIGHT"))
 
 	// always override from environment
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
