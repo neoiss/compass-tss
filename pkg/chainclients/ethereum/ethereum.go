@@ -501,9 +501,6 @@ func (c *Client) SignTx(tx stypes.TxOutItem, height int64) ([]byte, []byte, *sty
 				Msg("max gas exceeded, aborting to let relay reschedule")
 		}
 
-		estimatedFee = big.NewInt(int64(estimatedGas))
-		totalGasRate := big.NewInt(0).Add(gasRate, tipCap)
-		estimatedFee.Mul(estimatedFee, totalGasRate)
 		c.logger.Info().Str("in_hash", tx.TxHash).Stringer("rate", gasRate).
 			Stringer("tipCap", tipCap).Uint64("estimated_gas_units", estimatedGas).
 			Msg("will send tx with dynamic fee")
