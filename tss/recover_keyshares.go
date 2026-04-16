@@ -16,7 +16,10 @@ import (
 )
 
 func RecoverKeyShares(mapchain sharedTypes.Bridge) error {
-	tctx := mapchain.GetContext()
+	tctx, err := mapchain.GetContext()
+	if err != nil {
+		return fmt.Errorf("fail to get context: %w", err)
+	}
 
 	// fetch the node account
 	na, err := mapchain.GetNodeAccount(tctx.FromAddress)

@@ -1,7 +1,6 @@
 package mapo
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
@@ -12,6 +11,17 @@ import (
 	shareTypes "github.com/mapprotocol/compass-tss/pkg/chainclients/shared/types"
 	"github.com/pkg/errors"
 )
+
+// callView executes a read-only contract call with a default RPC timeout.
+func (b *Bridge) callView(to ecommon.Address, data []byte) ([]byte, error) {
+	ctx, cancel := common.RPCContext()
+	defer cancel()
+	return b.ethClient.CallContract(ctx, ethereum.CallMsg{
+		From: constants.ZeroAddress,
+		To:   &to,
+		Data: data,
+	}, nil)
+}
 
 // //////////////////////////////////////////////////////////
 // block related
@@ -260,15 +270,7 @@ func (b *Bridge) GetAffiliateIDByName(name string) (uint16, error) {
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
@@ -306,15 +308,7 @@ func (b *Bridge) GetAffiliateIDByAlias(name string) (uint16, error) {
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
@@ -357,15 +351,7 @@ func (b *Bridge) GetChainID(name string) (*big.Int, error) {
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
@@ -392,15 +378,7 @@ func (b *Bridge) GetChainName(chain *big.Int) (string, error) {
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
@@ -429,15 +407,7 @@ func (b *Bridge) GetTokenAddress(chainID *big.Int, name string) ([]byte, error) 
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)
@@ -469,15 +439,7 @@ func (b *Bridge) GetTokenDecimals(chainID *big.Int, address []byte) (*big.Int, e
 	}
 
 	to := ecommon.HexToAddress(b.cfg.ViewController)
-	output, err := b.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			From: constants.ZeroAddress,
-			To:   &to,
-			Data: input,
-		},
-		nil,
-	)
+	output, err := b.callView(to, input)
 
 	outputs := b.viewAbi.Methods[method].Outputs
 	unpack, err := outputs.Unpack(output)

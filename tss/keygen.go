@@ -113,7 +113,7 @@ func (kg *KeyGen) GenerateNewKey(keygenBlockHeight int64, pKeys common.PubKeys) 
 	case <-ch:
 		// do nothing
 	case <-timer.C:
-		panic("tss keygen timeout")
+		return common.EmptyPubKeySet, types.Blame{FailReason: "tss keygen timeout"}, fmt.Errorf("tss keygen timeout after 30 minutes")
 	}
 
 	// copy blame to our own struct

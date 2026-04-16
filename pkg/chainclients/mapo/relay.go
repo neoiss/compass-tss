@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"time"
 
 	"github.com/ethereum/go-ethereum"
 	ecommon "github.com/ethereum/go-ethereum/common"
@@ -19,7 +18,7 @@ import (
 var ErrNotFound = fmt.Errorf("not found")
 
 func (b *Bridge) getContextWithTimeout() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), time.Second*5)
+	return common.RPCContext()
 }
 
 func (b *Bridge) getFilterLogs(query ethereum.FilterQuery) ([]etypes.Log, error) {

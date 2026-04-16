@@ -1,7 +1,6 @@
 package mapo
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -172,30 +171,30 @@ func (b *Bridge) SetTssKeyManager(server *gotss.TssServer) error {
 }
 
 // GetContext return a valid context with all relevant values set
-func (b *Bridge) GetContext() ctx.Context {
+func (b *Bridge) GetContext() (ctx.Context, error) {
 	signerAddr, err := b.keys.GetEthAddress()
 	if err != nil {
-		panic(err)
+		return ctx.Context{}, fmt.Errorf("fail to get eth address: %w", err)
 	}
-	ctx := ctx.Context{}
-	ctx = ctx.WithKeyring(b.keys.GetKeybase())
-	ctx = ctx.WithChainID(string(b.cfg.ChainID))
-	ctx = ctx.WithHomeDir(b.cfg.ChainHomeFolder)
-	ctx = ctx.WithFromName(b.cfg.SignerName)
-	ctx = ctx.WithFromAddress(signerAddr.Hex())
-	ctx = ctx.WithBroadcastMode("sync")
+	c := ctx.Context{}
+	c = c.WithKeyring(b.keys.GetKeybase())
+	c = c.WithChainID(string(b.cfg.ChainID))
+	c = c.WithHomeDir(b.cfg.ChainHomeFolder)
+	c = c.WithFromName(b.cfg.SignerName)
+	c = c.WithFromAddress(signerAddr.Hex())
+	c = c.WithBroadcastMode("sync")
 
 	remote := b.cfg.ChainRPC
 	if !strings.HasPrefix(b.cfg.ChainHost, "http") {
 		remote = fmt.Sprintf("tcp://%s", remote)
 	}
-	ctx = ctx.WithNodeURI(remote)
+	c = c.WithNodeURI(remote)
 	client, err := rpchttp.New(remote, "/websocket")
 	if err != nil {
-		panic(err)
+		return ctx.Context{}, fmt.Errorf("fail to create rpc client: %w", err)
 	}
-	ctx = ctx.WithClient(client)
-	return ctx
+	c = c.WithClient(client)
+	return c, nil
 }
 
 func (b *Bridge) GetBlockScannerHeight() int64 {
@@ -256,7 +255,9 @@ func (b *Bridge) HeartBeat() error {
 					b.logger.Error().Err(err).Msg("Fail to pack heartbeat input")
 					continue
 				}
-				txBytes, err := b.assemblyTx(context.TODO(), input, 0, b.cfg.Maintainer)
+				rpcCtx, rpcCancel := common.RPCContext()
+					txBytes, err := b.assemblyTx(rpcCtx, input, 0, b.cfg.Maintainer)
+					rpcCancel()
 				if err != nil {
 					b.logger.Error().Err(err).Msg("Fail to assembly heartbeat tx")
 					continue
@@ -281,7 +282,9 @@ func (b *Bridge) GetKeysignParty(vaultPubKey common.PubKey) (common.PubKeys, err
 // IsSyncing returns bool for if map relay is catching up to the rest of the
 // nodes. Returns yes, if it is, false if it is caught up.
 func (b *Bridge) IsSyncing() (bool, error) {
-	progress, err := b.ethClient.SyncProgress(context.Background())
+	rpcCtx, rpcCancel := common.RPCContext()
+	defer rpcCancel()
+	progress, err := b.ethClient.SyncProgress(rpcCtx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get sync progress: %w", err)
 	}

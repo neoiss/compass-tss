@@ -104,7 +104,7 @@ type Bridge interface {
 	Broadcast(hexTx []byte) (string, error)
 	InitBlockScanner(...BridgeOption) error
 	GetConfig() config.BifrostClientConfiguration
-	GetContext() ctx.Context
+	GetContext() (ctx.Context, error)
 	GetTxByBlockNumber(blockHeight int64) (types.TxOut, error)
 	SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signature, keyShares []byte, blame []ecommon.Address,
 		members []ecommon.Address) (string, error)

@@ -30,7 +30,7 @@ const (
 // Keys manages all the keys used by relay
 type Keys struct {
 	signerName string
-	password   string // TODO this is a bad way , need to fix it
+	password   string
 	kb         ckeys.Keyring
 	keyStore   *ekeystore.Key
 }
@@ -73,12 +73,8 @@ func GetKeyringKeybase(keyStorePath, signerName string) (ckeys.Keyring, *ekeysto
 }
 
 // GetSignerInfo return signer info
-func (k *Keys) GetSignerInfo() *ckeys.Record {
-	record, err := k.kb.Key(k.signerName)
-	if err != nil {
-		panic(err)
-	}
-	return record
+func (k *Keys) GetSignerInfo() (*ckeys.Record, error) {
+	return k.kb.Key(k.signerName)
 }
 
 func (k *Keys) GetEthAddress() (common.Address, error) {

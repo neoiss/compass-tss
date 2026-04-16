@@ -36,7 +36,8 @@ type Context struct {
 	LedgerHasProtobuf bool
 	// IsAux is true when the signer is an auxiliary signer (e.g. the tipper).
 	IsAux bool
-	// TODO: Deprecated (remove).
+	// Deprecated: LegacyAmino is retained only for backward compatibility and will be
+	// removed once all codec usage migrates to protobuf.
 	LegacyAmino *codec.LegacyAmino
 	// CmdContext is the context.Context from the Cobra command.
 	CmdContext context.Context

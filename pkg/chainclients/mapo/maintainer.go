@@ -1,7 +1,6 @@
 package mapo
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"sort"
@@ -185,7 +184,9 @@ func (b *Bridge) GetMapVersion() (string, error) {
 
 func (b *Bridge) callContract(ret interface{}, addr, method string, input []byte, abi *abi.ABI) error {
 	to := ecommon.HexToAddress(addr)
-	outPut, err := b.ethClient.CallContract(context.Background(), ethereum.CallMsg{
+	rpcCtx, rpcCancel := common.RPCContext()
+	defer rpcCancel()
+	outPut, err := b.ethClient.CallContract(rpcCtx, ethereum.CallMsg{
 		From: constants.ZeroAddress,
 		To:   &to,
 		Data: input,

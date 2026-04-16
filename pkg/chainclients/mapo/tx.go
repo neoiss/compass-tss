@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -126,7 +125,9 @@ func (b *Bridge) GetObservationsStdTx(txIn *types.TxIn) ([]byte, error) {
 		return nil, fmt.Errorf("fail to method(%s) pack input: %w", txIn.Method, err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.TssManager)
+	ctx, cancel := common.RPCContext()
+	defer cancel()
+	return b.assemblyTx(ctx, input, 0, b.cfg.TssManager)
 }
 
 // GetOracleStdTx Here we construct tx according to method， and return tx hex bytes
@@ -191,7 +192,9 @@ func (b *Bridge) GetOracleStdTx(txOut *types.TxOutItem) ([]byte, error) {
 		return nil, fmt.Errorf("fail to pack relaySigned: %w", err)
 	}
 
-	return b.assemblyTx(context.Background(), input, 0, b.cfg.Relay)
+	ctx, cancel := common.RPCContext()
+	defer cancel()
+	return b.assemblyTx(ctx, input, 0, b.cfg.Relay)
 }
 
 func (b *Bridge) OrderExecuted(orderId ecommon.Hash, txIn bool) (bool, error) {
@@ -260,7 +263,9 @@ func (b *Bridge) assemblyTx(ctx context.Context, input []byte, recommendLimit ui
 		return nil, err
 	}
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
-		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
+		hCtx, hCancel := common.RPCContext()
+			head, err := b.ethClient.HeaderByNumber(hCtx, nil)
+			hCancel()
 		if err != nil {
 			return nil, fmt.Errorf("fail to fetch head number: %w", err)
 		}
@@ -340,11 +345,13 @@ func (b *Bridge) Broadcast(hexTx []byte) (string, error) {
 }
 
 func (b *Bridge) getTimeoutContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), time.Second*5)
+	return common.RPCContext()
 }
 
 func (b *Bridge) TxStatus(txHash string) error {
-	_, pending, err := b.ethClient.TransactionByHash(context.Background(), ecommon.HexToHash(txHash))
+	ctx, cancel := common.RPCContext()
+	defer cancel()
+	_, pending, err := b.ethClient.TransactionByHash(ctx, ecommon.HexToHash(txHash))
 	if err != nil {
 		return errors.Wrap(err, "fail to get tx by hash")
 	}
@@ -353,7 +360,7 @@ func (b *Bridge) TxStatus(txHash string) error {
 		return errors.New("tx is pending")
 	}
 
-	receipt, err := b.ethClient.TransactionReceipt(context.Background(), ecommon.HexToHash(txHash))
+	receipt, err := b.ethClient.TransactionReceipt(ctx, ecommon.HexToHash(txHash))
 	if err != nil {
 		return errors.Wrap(err, "fail to get tx receipt")
 	}

@@ -77,14 +77,16 @@ func (b *Bridge) SendKeyGenStdTx(epoch *big.Int, poolPubKey common.PubKey, signa
 		Data:     input,
 	}
 
-	gasLimit, err := b.ethClient.EstimateGas(context.Background(), createdTx)
+	rpcCtx, rpcCancel := common.RPCContext()
+	defer rpcCancel()
+	gasLimit, err := b.ethClient.EstimateGas(rpcCtx, createdTx)
 	if err != nil {
 		b.logger.Info().Any("err", err).Msgf("Fail to estimate gas")
 		return "", err
 	}
 
 	if gasFeeCap.Cmp(big.NewInt(0)) == 0 {
-		head, err := b.ethClient.HeaderByNumber(context.Background(), nil)
+		head, err := b.ethClient.HeaderByNumber(rpcCtx, nil)
 		if err != nil {
 			return "", err
 		}
