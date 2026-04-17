@@ -289,7 +289,7 @@ bifrost:
         gas_price_resolution: 100_000
         observation_flexibility_blocks: 40
         scan_mempool: false
-        gateway: TNFvEVGRMCo46j6zKXc2MKh64dxoLry1k2
+        gateway: TFzUB3JgjWjaLJ85XpxTsZbX5wZ4czKVHv
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
