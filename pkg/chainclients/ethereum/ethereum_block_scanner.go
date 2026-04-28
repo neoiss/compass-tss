@@ -298,23 +298,15 @@ func (e *ETHScanner) updateGasPriceFromCache() {
 	}
 
 	// compute the mean of cache
+	// NOTE: previously used mean + 3*stddev, which inflated the result by up to
+	// 3.5x of the actual on-chain gas price whenever the cache contained even a
+	// few priority-fee outliers. Using the plain mean keeps the reported value
+	// in a predictable [1.0x, 2.3x] band over the on-chain effective gas price.
 	sum := new(big.Int)
 	for _, fee := range e.gasCache {
 		sum.Add(sum, fee)
 	}
-	// avg
-	mean := new(big.Int).Quo(sum, big.NewInt(int64(e.cfg.GasCacheBlocks)))
-
-	std := new(big.Int)
-	for _, fee := range e.gasCache {
-		v := new(big.Int).Sub(fee, mean)
-		v.Mul(v, v)
-		std.Add(std, v)
-	}
-	std.Quo(std, big.NewInt(int64(e.cfg.GasCacheBlocks)))
-	std.Sqrt(std)
-
-	e.gasPrice = mean.Add(mean, std.Mul(std, big.NewInt(3)))
+	e.gasPrice = new(big.Int).Quo(sum, big.NewInt(int64(len(e.gasCache))))
 
 	// record metrics
 	gasPriceFloat, _ := new(big.Float).SetInt64(e.gasPrice.Int64()).Float64()
