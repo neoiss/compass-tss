@@ -164,8 +164,8 @@ bifrost:
         observation_flexibility_blocks: 20
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
-        start_block_height: 9763169
-        gas_price_resolution: 10000000
+        start_block_height: 
+        gas_price_resolution: 200000000
       mempool_tx_id_cache_size: 0
       scanner_leveldb: *default-leveldb
 
@@ -180,7 +180,7 @@ bifrost:
         <<: *default-block-scanner
         gateway: 0x00004080D86e1077ce96E67C1B167fF105025307
         gas_cache_blocks: 40
-        gas_price_resolution: 1
+        gas_price_resolution: 2000000
         chain_id: Base
         observation_flexibility_blocks: 20
         max_gas_limit: 1000000
@@ -208,7 +208,7 @@ bifrost:
       scanner_leveldb: *default-leveldb
 
     arb:
-      disabled: true
+      disabled: false
       <<: *default-chain
       chain_id: Arb
       rpc_host: "https://arb1.arbitrum.io/rpc"
@@ -274,7 +274,7 @@ bifrost:
         max_reorg_rescan_blocks: 600 # 30m
         chain_id: Uni
         gas_cache_blocks: 40
-        gas_price_resolution: 10000000 
+        gas_price_resolution: 1000000 
         max_gas_limit: 1000000
         max_swap_gas_limit: 1500000
         start_block_height:
@@ -304,7 +304,7 @@ bifrost:
         max_reorg_rescan_blocks: 600 # 30m
         chain_id: Pol
         gas_cache_blocks: 40
-        gas_price_resolution: 10000000
+        gas_price_resolution: 1000000
         start_block_height:
       scanner_leveldb: *default-leveldb
 

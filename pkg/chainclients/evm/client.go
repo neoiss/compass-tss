@@ -354,17 +354,21 @@ func (c *EVMClient) buildOutboundTx(txOutItem stypes.TxOutItem, nonce uint64) (*
 	}
 
 	gasRate := c.GetGasPrice()
-	if c.cfg.BlockScanner.FixedGasRate > 0 && gasRate.Cmp(big.NewInt(0)) == 0 {
+	if c.cfg.BlockScanner.FixedGasRate > 0 || gasRate.Cmp(big.NewInt(0)) == 0 {
 		// if chain gas is zero we are still filling our gas price buffer,
 		// use outbound rate
-		gasRate = big.NewInt(c.cfg.BlockScanner.FixedGasRate)
-	} else if gasRate.Cmp(big.NewInt(0)) == 0 {
 		gasRate = cgl.Third
-	}
+	} else {
+		lowerBound := cgl.Third
+		lowerBound.Mul(lowerBound, big.NewInt(2))
+		lowerBound.Div(lowerBound, big.NewInt(3))
 
-	if gasRate.Cmp(cgl.Third) != 0 {
-		c.logger.Info().Str("txHash", txOutItem.TxHash).Str("eventRate", cgl.Third.String()).
-			Str("currentRate", gasRate.String()).Msg("gas rate")
+		if gasRate.Cmp(lowerBound) < 0 {
+			c.logger.Info().Str("txHash", txOutItem.TxHash).
+				Str("eventRate", cgl.Third.String()).
+				Str("currentRate", gasRate.String()).Msg("gas rate")
+			gasRate = lowerBound
+		}
 	}
 
 	// outbound tx always send to smart contract address
