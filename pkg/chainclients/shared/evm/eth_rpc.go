@@ -23,9 +23,10 @@ import (
 
 // EthRPC is a struct that interacts with an ETH RPC compatible blockchain
 type EthRPC struct {
-	client  *ethclient.Client
-	timeout time.Duration
-	logger  zerolog.Logger
+	client                     *ethclient.Client
+	timeout                    time.Duration
+	logger                     zerolog.Logger
+	reqTime, cacheLatestHeight int64
 }
 
 func NewEthRPC(client *ethclient.Client, timeout time.Duration, chain string) (*EthRPC, error) {
@@ -66,6 +67,9 @@ func (e *EthRPC) GetHeader(height int64) (*etypes.Header, error) {
 }
 
 func (e *EthRPC) GetBlockHeight() (int64, error) {
+	if time.Now().Unix()-e.reqTime < 1 { // request every 1 seconds
+		return e.cacheLatestHeight, nil
+	}
 	ctx, cancel := e.getContext()
 	defer cancel()
 	height, err := e.client.BlockNumber(ctx)
@@ -73,18 +77,26 @@ func (e *EthRPC) GetBlockHeight() (int64, error) {
 		e.logger.Info().Err(err).Msg("failed to get block height")
 		return -1, fmt.Errorf("fail to get block height: %w", err)
 	}
+	e.cacheLatestHeight = int64(height)
+	e.reqTime = time.Now().Unix()
 	return int64(height), nil
 }
 
 func (e *EthRPC) GetBlockHeightSafe() (int64, error) {
+	if time.Now().Unix()-e.reqTime < 5 { // request every 5 seconds
+		return e.cacheLatestHeight, nil
+	}
+
 	ctx, cancel := e.getContext()
 	defer cancel()
-	block, err := e.client.BlockByNumber(ctx, big.NewInt(rpc.SafeBlockNumber.Int64()))
+	header, err := e.client.HeaderByNumber(ctx, big.NewInt(rpc.SafeBlockNumber.Int64()))
 	if err != nil {
 		e.logger.Info().Err(err).Msg("failed to get block")
 		return -1, fmt.Errorf("fail to get block: %w", err)
 	}
-	return block.Number().Int64(), nil
+	e.cacheLatestHeight = int64(header.Number.Int64())
+	e.reqTime = time.Now().Unix()
+	return header.Number.Int64(), nil
 }
 
 func (e *EthRPC) GetBlock(height int64) (*etypes.Block, error) {
